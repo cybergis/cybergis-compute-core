@@ -26,7 +26,6 @@ class Supervisor {
 
             while (self.jobPool.length < this.jobPoolCapacity && !this.queue.isEmpty()) {
                 var job = self.queue.shift()
-                job.id = self._generateJobID()
                 self.jobPool.push(job)
                 self.emitter.register(job.id, 'JOB_REGISTERED', 'job [' + job.id + '] is registered with the supervisor, waiting for initialization')
             }
@@ -34,13 +33,14 @@ class Supervisor {
     }
 
     add(manifest: manifest) {
+        manifest.id = this._generateJobID()
         this.queue.push(manifest)
+        this.emitter.register(manifest.id, 'JOB_QUEUED', 'job [' + manifest.id + '] is queued, waiting for registration')
     }
 
     private _generateJobID(): string {
         return ''
     }
-
 }
 
 export default Supervisor
