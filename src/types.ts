@@ -19,6 +19,7 @@ export interface manifest {
         pwd: string
     },
     id?: string,
+    maintainer?: any,
     dest: string,
     env: any,
     payload: any

@@ -1,6 +1,7 @@
 import JAT from './JAT'
 import Helper from './Helper'
 import { manifest } from './types'
+import SSH from './SSH'
 
 class Guard {
     private secretTokens = {}
@@ -8,7 +9,10 @@ class Guard {
     private jat = new JAT()
 
     async issueSecretToken(destination: string, user: string, password: string): Promise<string> {
-        var isValid = await Helper.checkSSHLogin(destination, user, password)
+        var ssh = new SSH(destination, user, password)
+        await ssh.connect()
+        var isValid = ssh.isConnected()
+        await ssh.stop()
 
         if (!isValid) {
             throw new Error('unable to check credentials with ' + destination)
@@ -47,7 +51,7 @@ class Guard {
             }
         }
 
-        return undefined
+        throw new Error('invalid accessToken provided')
     }
 
     revokeSecretToken(secretToken: string) {

@@ -34,19 +34,67 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var _this = this;
 exports.__esModule = true;
-var Helper_1 = require("../src/Helper");
-var a = function () { return __awaiter(_this, void 0, void 0, function () {
-    var s;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0: return [4 /*yield*/, Helper_1["default"].checkSSHLogin('hadoop', 'zimox2', 'ZuggrUIUC61~')];
-            case 1:
-                s = _a.sent();
-                console.log(s);
-                return [2 /*return*/];
+var Helper_1 = require("../Helper");
+var SSH_1 = require("../SSH");
+var BaseMaintainer = /** @class */ (function () {
+    function BaseMaintainer(manifest) {
+        this.isInit = false;
+        this.isEnd = false;
+        this.rawManifest = null;
+        this.manifest = null;
+        this.events = [];
+        this.logs = [];
+        this.rawManifest = manifest;
+        this.manifest = Helper_1["default"].hideCredFromManifest(manifest);
+    }
+    BaseMaintainer.prototype.emitEvent = function (type, message) {
+        if (type === 'JOB_ENDED') {
+            this.isEnd = true;
         }
-    });
-}); };
-a();
+        if (type === 'JOB_INITIALIZED') {
+            this.isInit = true;
+        }
+        this.events.push({
+            type: type,
+            message: message
+        });
+    };
+    BaseMaintainer.prototype.getJobID = function () {
+        return this.manifest.id;
+    };
+    BaseMaintainer.prototype.emitLog = function (message) {
+        this.logs.push(message);
+    };
+    BaseMaintainer.prototype.connect = function (commands, options) {
+        if (options === void 0) { options = {}; }
+        return __awaiter(this, void 0, void 0, function () {
+            var ssh, out;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        ssh = new SSH_1["default"](this.rawManifest.dest, this.rawManifest.cred.usr, this.rawManifest.cred.pwd);
+                        return [4 /*yield*/, ssh.connect()];
+                    case 1:
+                        _a.sent();
+                        return [4 /*yield*/, ssh.exec(commands, options)];
+                    case 2:
+                        out = _a.sent();
+                        return [2 /*return*/, out];
+                }
+            });
+        });
+    };
+    BaseMaintainer.prototype.dumpEvents = function () {
+        var events = this.events;
+        this.events = [];
+        return events;
+    };
+    BaseMaintainer.prototype.dumpLogs = function () {
+        var logs = this.logs;
+        this.logs = [];
+        return logs;
+    };
+    return BaseMaintainer;
+}());
+exports["default"] = BaseMaintainer;

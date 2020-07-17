@@ -1,7 +1,5 @@
-import { options } from './types'
+import { options, manifest } from './types'
 import Constants from './constant'
-const NodeSSH = require('node-ssh')
-var ssh = new NodeSSH()
 
 var Helper = {
     btoa(target: string): string {
@@ -12,84 +10,14 @@ var Helper = {
         return Buffer.from(target).toString('base64')
     },
 
-    async checkSSHLogin(destination: string, user: string, password: string) {
-        var server = Constants.destinationMap[destination]
-
-        if (server === undefined) {
-            throw Error('cannot identify server from destination name ' + destination)
-        }
-
-        try {
-            await ssh.connect({
-                host: server.ip,
-                port: server.port,
-                username: user,
-                password: password
-            })
-
-            await ssh.dispose()
-
-            return true
-        } catch (e) {
-            return false
-        }
+    hideCredFromManifest(manifest: manifest) {
+        delete manifest.cred
+        return manifest
     },
 
-    async ssh(destination: string, user: string, password: string, commands: Array<string>, options: options = {}) {
-        var server = Constants.destinationMap[destination]
-
-        if (server === undefined) {
-            throw Error('cannot identify server from destination name ' + destination)
-        }
-
-        await ssh.connect({
-            host: server.ip,
-            port: server.port,
-            username: user,
-            password: password
-        })
-
-        var opt = Object.assign({
-            onStdout(out) {
-                if (o.out === null) {
-                    o.out = out.toString()
-                } else {
-                    o.out += out.toString()
-                }
-            },
-            onStderr(out) {
-                if (o.error === null) {
-                    o.error = out.toString()
-                } else {
-                    o.error += out.toString()
-                }
-            }
-        }, options)
-
-        var out = []
-
-        for (var i in commands) {
-            var cmd = commands[i]
-
-            var o = {
-                cmd: cmd,
-                out: null,
-                error: null
-            }
-
-            await ssh.execCommand(cmd, opt)
-
-            out.push(o)
-        }
-
-        await ssh.dispose()
-
-        return out
-    },
-
-    randomStr(length) {
+    randomStr(length): string {
         var result = ''
-        var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#%^&*'
+        var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
         var charactersLength = characters.length;
         for (var i = 0; i < length; i++) {
             result += characters.charAt(Math.floor(Math.random() * charactersLength))

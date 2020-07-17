@@ -3,7 +3,9 @@ import { ENOMEM } from "constants"
 class Emitter {
     private events = {}
 
-    register(jobID: string, type: string, message: string) {
+    private logs = {}
+
+    registerEvents(jobID: string, type: string, message: string) {
         if (this.events[jobID] === undefined) {
             this.events[jobID] = []
         }
@@ -12,10 +14,24 @@ class Emitter {
             message: message,
             at: new Date()
         })
+        console.log(type, message)
     }
 
-    check(jobID: string) {
-        return this.events[jobID]
+    registerLogs(jobID: string, message: string) {
+        if (this.logs[jobID] === undefined) {
+            this.logs[jobID] = []
+        }
+        this.logs[jobID].push({
+            message: message,
+            at: new Date()
+        })
+    }
+
+    status(jobID: string) {
+        return {
+            events: this.events[jobID],
+            logs: this.logs[jobID]
+        }
     }
 }
 

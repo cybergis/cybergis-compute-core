@@ -1,4 +1,6 @@
-export default {
+"use strict";
+exports.__esModule = true;
+exports["default"] = {
     destinationMap: {
         hadoop: {
             ip: "hadoop01.cigi.illinois.edu",
@@ -6,4 +8,4 @@ export default {
             maintainer: 'HadoopMaintainer'
         }
     }
-}
+};
