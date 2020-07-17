@@ -8,8 +8,13 @@ var Helper = {
         return Buffer.from(target).toString('base64');
     },
     hideCredFromManifest: function (manifest) {
-        delete manifest.cred;
-        return manifest;
+        var out = {};
+        for (var i in manifest) {
+            if (i != 'cred') {
+                out[i] = manifest[i];
+            }
+        }
+        return out;
     },
     randomStr: function (length) {
         var result = '';

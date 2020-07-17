@@ -39,6 +39,7 @@ var Helper_1 = require("../Helper");
 var SSH_1 = require("../SSH");
 var BaseMaintainer = /** @class */ (function () {
     function BaseMaintainer(manifest) {
+        this._lock = false;
         this.isInit = false;
         this.isEnd = false;
         this.rawManifest = null;
@@ -65,6 +66,12 @@ var BaseMaintainer = /** @class */ (function () {
     };
     BaseMaintainer.prototype.emitLog = function (message) {
         this.logs.push(message);
+    };
+    BaseMaintainer.prototype.unlock = function () {
+        this._lock = false;
+    };
+    BaseMaintainer.prototype.lock = function () {
+        this._lock = true;
     };
     BaseMaintainer.prototype.connect = function (commands, options) {
         if (options === void 0) { options = {}; }

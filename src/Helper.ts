@@ -11,8 +11,15 @@ var Helper = {
     },
 
     hideCredFromManifest(manifest: manifest) {
-        delete manifest.cred
-        return manifest
+        var out = {}
+
+        for (var i in manifest) {
+            if (i != 'cred') {
+                out[i] = manifest[i]
+            }
+        }
+
+        return out
     },
 
     randomStr(length): string {

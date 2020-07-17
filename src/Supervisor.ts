@@ -23,25 +23,28 @@ class Supervisor {
 
         this.worker = setInterval(async function () {
             if (self.jobPool.length > 0) {
-                console.log(self.jobPool)
                 for (var i in self.jobPool) {
                     var job = self.jobPool[i]
                     if (job.maintainer.isInit) {
-                        await job.onMaintain()
+                        job.maintainer.lock()
+                        await job.maintainer.onMaintain()
+                        job.maintainer.unlock()
                     } else {
-                        await job.onInit()
+                        job.maintainer.lock()
+                        await job.maintainer.onInit()
+                        job.maintainer.unlock()
                     }
 
-                    var events = job.dumpEvents()
-                    var logs = job.dumpLogs()
+                    var events = job.maintainer.dumpEvents()
+                    var logs = job.maintainer.dumpLogs()
 
                     for (var i in events) {
                         var event = events[i]
-                        self.emitter.registerEvents(job.getJobID(), event.type, event.message)
+                        self.emitter.registerEvents(job.maintainer.getJobID(), event.type, event.message)
                     }
 
                     for (var i in logs) {
-                        self.emitter.registerLogs(job.getJobID(), logs[i])
+                        self.emitter.registerLogs(job.maintainer.getJobID(), logs[i])
                     }
 
                     if (job.maintainer.isEnd) {
@@ -52,7 +55,7 @@ class Supervisor {
 
             while (self.jobPool.length < self.jobPoolCapacity && !self.queue.isEmpty()) {
                 var job = self.queue.shift()
-                var maintainer = require('./maintainers/' + constant.destinationMap[job.dest].maintainer)
+                var maintainer = require('./maintainers/' + constant.destinationMap[job.dest].maintainer).default // typescript compilation hack
                 job.maintainer = new maintainer(job)
                 self.jobPool.push(job)
                 self.emitter.registerEvents(job.id, 'JOB_REGISTERED', 'job [' + job.id + '] is registered with the supervisor, waiting for initialization')

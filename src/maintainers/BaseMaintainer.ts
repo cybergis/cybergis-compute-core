@@ -3,13 +3,15 @@ import SSH from "../SSH"
 import { manifest, options } from "../types"
 
 class BaseMaintainer {
+    private _lock = false
+
     public isInit = false
 
     public isEnd = false
 
     private rawManifest: manifest = null
 
-    protected manifest: manifest = null
+    protected manifest = null
 
     protected events = []
 
@@ -41,6 +43,14 @@ class BaseMaintainer {
 
     emitLog(message: string) {
         this.logs.push(message)
+    }
+
+    unlock() {
+        this._lock = false
+    }
+
+    lock() {
+        this._lock = true
     }
 
     async connect(commands: Array<any>, options: options = {}) {

@@ -55,7 +55,6 @@ var Supervisor = /** @class */ (function () {
                     switch (_c.label) {
                         case 0:
                             if (!(self.jobPool.length > 0)) return [3 /*break*/, 7];
-                            console.log(self.jobPool);
                             _a = [];
                             for (_b in self.jobPool)
                                 _a.push(_b);
@@ -66,23 +65,28 @@ var Supervisor = /** @class */ (function () {
                             i = _a[_i];
                             job = self.jobPool[i];
                             if (!job.maintainer.isInit) return [3 /*break*/, 3];
-                            return [4 /*yield*/, job.onMaintain()];
+                            job.maintainer.lock();
+                            return [4 /*yield*/, job.maintainer.onMaintain()];
                         case 2:
                             _c.sent();
+                            job.maintainer.unlock();
                             return [3 /*break*/, 5];
-                        case 3: return [4 /*yield*/, job.onInit()];
+                        case 3:
+                            job.maintainer.lock();
+                            return [4 /*yield*/, job.maintainer.onInit()];
                         case 4:
                             _c.sent();
+                            job.maintainer.unlock();
                             _c.label = 5;
                         case 5:
-                            events = job.dumpEvents();
-                            logs = job.dumpLogs();
+                            events = job.maintainer.dumpEvents();
+                            logs = job.maintainer.dumpLogs();
                             for (i in events) {
                                 event = events[i];
-                                self.emitter.registerEvents(job.getJobID(), event.type, event.message);
+                                self.emitter.registerEvents(job.maintainer.getJobID(), event.type, event.message);
                             }
                             for (i in logs) {
-                                self.emitter.registerLogs(job.getJobID(), logs[i]);
+                                self.emitter.registerLogs(job.maintainer.getJobID(), logs[i]);
                             }
                             if (job.maintainer.isEnd) {
                                 delete job.jobPool[i];
@@ -94,7 +98,8 @@ var Supervisor = /** @class */ (function () {
                         case 7:
                             while (self.jobPool.length < self.jobPoolCapacity && !self.queue.isEmpty()) {
                                 job = self.queue.shift();
-                                maintainer = require('./maintainers/' + constant_1["default"].destinationMap[job.dest].maintainer);
+                                maintainer = require('./maintainers/' + constant_1["default"].destinationMap[job.dest].maintainer)["default"] // typescript compilation hack
+                                ;
                                 job.maintainer = new maintainer(job);
                                 self.jobPool.push(job);
                                 self.emitter.registerEvents(job.id, 'JOB_REGISTERED', 'job [' + job.id + '] is registered with the supervisor, waiting for initialization');
