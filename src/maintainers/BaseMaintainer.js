@@ -46,9 +46,48 @@ var BaseMaintainer = /** @class */ (function () {
         this.manifest = null;
         this.events = [];
         this.logs = [];
+        this.env = {};
+        this.allowedEnv = undefined;
+        this.define();
+        if (this.allowedEnv === undefined) {
+            manifest.env = {};
+        }
+        var env = {};
+        for (var i in this.allowedEnv) {
+            var val = manifest.env[i];
+            if (val != undefined) {
+                var type = this.allowedEnv[i];
+                if (Array.isArray(type)) {
+                    if (type.includes(val)) {
+                        env[i] = val;
+                    }
+                }
+                else if (typeof val === type) {
+                    env[i] = val;
+                }
+            }
+        }
+        this.env = env;
         this.rawManifest = manifest;
         this.manifest = Helper_1["default"].hideCredFromManifest(manifest);
     }
+    BaseMaintainer.prototype.define = function () {
+        //
+    };
+    BaseMaintainer.prototype.onInit = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/];
+            });
+        });
+    };
+    BaseMaintainer.prototype.onMaintain = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/];
+            });
+        });
+    };
     BaseMaintainer.prototype.emitEvent = function (type, message) {
         if (type === 'JOB_ENDED') {
             this.isEnd = true;
@@ -67,11 +106,39 @@ var BaseMaintainer = /** @class */ (function () {
     BaseMaintainer.prototype.emitLog = function (message) {
         this.logs.push(message);
     };
-    BaseMaintainer.prototype.unlock = function () {
-        this._lock = false;
+    BaseMaintainer.prototype.init = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!!this._lock) return [3 /*break*/, 2];
+                        this._lock = true;
+                        return [4 /*yield*/, this.onInit()];
+                    case 1:
+                        _a.sent();
+                        this._lock = false;
+                        _a.label = 2;
+                    case 2: return [2 /*return*/];
+                }
+            });
+        });
     };
-    BaseMaintainer.prototype.lock = function () {
-        this._lock = true;
+    BaseMaintainer.prototype.maintain = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!!this._lock) return [3 /*break*/, 2];
+                        this._lock = true;
+                        return [4 /*yield*/, this.onMaintain()];
+                    case 1:
+                        _a.sent();
+                        this._lock = false;
+                        _a.label = 2;
+                    case 2: return [2 /*return*/];
+                }
+            });
+        });
     };
     BaseMaintainer.prototype.connect = function (commands, options) {
         if (options === void 0) { options = {}; }
@@ -81,7 +148,7 @@ var BaseMaintainer = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         ssh = new SSH_1["default"](this.rawManifest.dest, this.rawManifest.cred.usr, this.rawManifest.cred.pwd);
-                        return [4 /*yield*/, ssh.connect()];
+                        return [4 /*yield*/, ssh.connect(this.env)];
                     case 1:
                         _a.sent();
                         return [4 /*yield*/, ssh.exec(commands, options)];

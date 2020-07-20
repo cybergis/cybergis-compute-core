@@ -6,7 +6,7 @@ import constant from './constant'
 
 class Supervisor {
 
-    private jobPoolCapacity = 5
+    private jobPoolCapacity = 2
 
     private jobPool = []
 
@@ -14,41 +14,38 @@ class Supervisor {
 
     private emitter = new Emitter()
 
-    private worker = null
+    private maintainer = null
 
     private workerTimePeriodInSeconds = 1
 
     constructor() {
         var self = this
 
-        this.worker = setInterval(async function () {
+        this.maintainer = setInterval(async function () {
             if (self.jobPool.length > 0) {
-                for (var i in self.jobPool) {
+                for (var i = 0; i < self.jobPool.length; i++) {
                     var job = self.jobPool[i]
                     if (job.maintainer.isInit) {
-                        job.maintainer.lock()
-                        await job.maintainer.onMaintain()
-                        job.maintainer.unlock()
+                        await job.maintainer.maintain()
                     } else {
-                        job.maintainer.lock()
-                        await job.maintainer.onInit()
-                        job.maintainer.unlock()
+                        await job.maintainer.init()
                     }
 
                     var events = job.maintainer.dumpEvents()
                     var logs = job.maintainer.dumpLogs()
 
-                    for (var i in events) {
-                        var event = events[i]
+                    for (var j in events) {
+                        var event = events[j]
                         self.emitter.registerEvents(job.maintainer.getJobID(), event.type, event.message)
                     }
 
-                    for (var i in logs) {
-                        self.emitter.registerLogs(job.maintainer.getJobID(), logs[i])
+                    for (var j in logs) {
+                        self.emitter.registerLogs(job.maintainer.getJobID(), logs[j])
                     }
 
                     if (job.maintainer.isEnd) {
-                        delete job.jobPool[i]
+                        self.jobPool.splice(i, 1)
+                        i--
                     }
                 }
             }
@@ -76,6 +73,10 @@ class Supervisor {
 
     private _generateJobID(): string {
         return Math.round((new Date()).getTime() / 1000) + Helper.randomStr(2)
+    }
+
+    destroy() {
+        clearInterval(this.maintainer)
     }
 }
 

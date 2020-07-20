@@ -53,6 +53,7 @@ var JAT = /** @class */ (function () {
         }
         this.algorithmName = algorithm;
         this.secretToken = secretToken;
+        this.accessTokenCache = {};
         return this;
     };
     JAT.prototype.getAccessToken = function () {

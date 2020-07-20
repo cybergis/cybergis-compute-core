@@ -22,6 +22,7 @@ class JAT {
         }
         this.algorithmName = algorithm
         this.secretToken = secretToken
+        this.accessTokenCache = {}
         return this
     }
 

@@ -42,6 +42,7 @@ var Guard = /** @class */ (function () {
     function Guard() {
         this.secretTokens = {};
         this.jat = new JAT_1["default"]();
+        this.authenticatedAccessTokenCache = {};
     }
     Guard.prototype.issueSecretToken = function (destination, user, password) {
         return __awaiter(this, void 0, void 0, function () {
@@ -49,6 +50,7 @@ var Guard = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
+                        this._clearCache();
                         ssh = new SSH_1["default"](destination, user, password);
                         return [4 /*yield*/, ssh.connect()];
                     case 1:
@@ -78,12 +80,29 @@ var Guard = /** @class */ (function () {
         });
     };
     Guard.prototype.validateAccessToken = function (manifest) {
+        this._clearCache();
         var rawAT = this.jat.parseAccessToken(manifest.aT);
+        var date = this.jat.getDate();
+        if (rawAT.payload.decoded.date != date) {
+            throw new Error('invalid accessToken provided');
+        }
+        if (this.authenticatedAccessTokenCache[date] != undefined) {
+            var cred = this.authenticatedAccessTokenCache[date][rawAT.hash];
+            if (cred != undefined) {
+                delete manifest.aT;
+                manifest.cred = cred;
+                return manifest;
+            }
+        }
         for (var i in this.secretTokens) {
             var secretToken = this.secretTokens[i];
             if (secretToken.dest === manifest.dest) {
                 var hash = this.jat.init(rawAT.alg, secretToken.sT).hash(rawAT.payload.encoded);
                 if (hash == rawAT.hash) {
+                    if (this.authenticatedAccessTokenCache[date] === undefined) {
+                        this.authenticatedAccessTokenCache[date] = {};
+                    }
+                    this.authenticatedAccessTokenCache[date][rawAT.hash] = secretToken.cred;
                     delete manifest.aT;
                     manifest.cred = secretToken.cred;
                     return manifest;
@@ -94,6 +113,20 @@ var Guard = /** @class */ (function () {
     };
     Guard.prototype.revokeSecretToken = function (secretToken) {
         delete this.secretTokens[secretToken];
+    };
+    Guard.prototype._clearCache = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var date, i;
+            return __generator(this, function (_a) {
+                date = this.jat.getDate();
+                for (i in this.authenticatedAccessTokenCache) {
+                    if (parseInt(i) < date) {
+                        delete this.authenticatedAccessTokenCache[i];
+                    }
+                }
+                return [2 /*return*/];
+            });
+        });
     };
     return Guard;
 }());

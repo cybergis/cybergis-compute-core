@@ -54,16 +54,22 @@ var HadoopMaintainer = /** @class */ (function (_super) {
     function HadoopMaintainer() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
+    HadoopMaintainer.prototype.define = function () {
+        this.allowedEnv = {
+            A: 'number',
+            B: 'string'
+        };
+    };
     HadoopMaintainer.prototype.onInit = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var commands, out;
+            var pipeline, out;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        commands = [
+                        pipeline = [
                             'ls'
                         ];
-                        return [4 /*yield*/, this.connect(commands)];
+                        return [4 /*yield*/, this.connect(pipeline)];
                     case 1:
                         out = _a.sent();
                         if (out.length > 0) {
@@ -76,14 +82,24 @@ var HadoopMaintainer = /** @class */ (function (_super) {
     };
     HadoopMaintainer.prototype.onMaintain = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var commands, out;
+            var pipeline, out;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        commands = [
-                            'ls'
+                        pipeline = [
+                            'ls',
+                            'echo $A',
+                            'echo $B',
+                            'echo $C',
+                            function (prev) {
+                                if (prev.out == '\n') {
+                                    throw new Error('error');
+                                }
+                                return '';
+                            },
+                            'echo $A'
                         ];
-                        return [4 /*yield*/, this.connect(commands)];
+                        return [4 /*yield*/, this.connect(pipeline)];
                     case 1:
                         out = _a.sent();
                         if (out.length > 0) {

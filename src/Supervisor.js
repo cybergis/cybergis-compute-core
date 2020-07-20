@@ -41,59 +41,51 @@ var Helper_1 = require("./Helper");
 var constant_1 = require("./constant");
 var Supervisor = /** @class */ (function () {
     function Supervisor() {
-        this.jobPoolCapacity = 5;
+        this.jobPoolCapacity = 2;
         this.jobPool = [];
         this.queue = new Queue_1["default"]();
         this.emitter = new Emitter_1["default"]();
-        this.worker = null;
+        this.maintainer = null;
         this.workerTimePeriodInSeconds = 1;
         var self = this;
-        this.worker = setInterval(function () {
+        this.maintainer = setInterval(function () {
             return __awaiter(this, void 0, void 0, function () {
-                var _a, _b, _i, i, job, events, logs, i, event, i, job, maintainer;
-                return __generator(this, function (_c) {
-                    switch (_c.label) {
+                var i, job, events, logs, j, event, j, job, maintainer;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
                         case 0:
                             if (!(self.jobPool.length > 0)) return [3 /*break*/, 7];
-                            _a = [];
-                            for (_b in self.jobPool)
-                                _a.push(_b);
-                            _i = 0;
-                            _c.label = 1;
+                            i = 0;
+                            _a.label = 1;
                         case 1:
-                            if (!(_i < _a.length)) return [3 /*break*/, 7];
-                            i = _a[_i];
+                            if (!(i < self.jobPool.length)) return [3 /*break*/, 7];
                             job = self.jobPool[i];
                             if (!job.maintainer.isInit) return [3 /*break*/, 3];
-                            job.maintainer.lock();
-                            return [4 /*yield*/, job.maintainer.onMaintain()];
+                            return [4 /*yield*/, job.maintainer.maintain()];
                         case 2:
-                            _c.sent();
-                            job.maintainer.unlock();
+                            _a.sent();
                             return [3 /*break*/, 5];
-                        case 3:
-                            job.maintainer.lock();
-                            return [4 /*yield*/, job.maintainer.onInit()];
+                        case 3: return [4 /*yield*/, job.maintainer.init()];
                         case 4:
-                            _c.sent();
-                            job.maintainer.unlock();
-                            _c.label = 5;
+                            _a.sent();
+                            _a.label = 5;
                         case 5:
                             events = job.maintainer.dumpEvents();
                             logs = job.maintainer.dumpLogs();
-                            for (i in events) {
-                                event = events[i];
+                            for (j in events) {
+                                event = events[j];
                                 self.emitter.registerEvents(job.maintainer.getJobID(), event.type, event.message);
                             }
-                            for (i in logs) {
-                                self.emitter.registerLogs(job.maintainer.getJobID(), logs[i]);
+                            for (j in logs) {
+                                self.emitter.registerLogs(job.maintainer.getJobID(), logs[j]);
                             }
                             if (job.maintainer.isEnd) {
-                                delete job.jobPool[i];
+                                self.jobPool.splice(i, 1);
+                                i--;
                             }
-                            _c.label = 6;
+                            _a.label = 6;
                         case 6:
-                            _i++;
+                            i++;
                             return [3 /*break*/, 1];
                         case 7:
                             while (self.jobPool.length < self.jobPoolCapacity && !self.queue.isEmpty()) {
@@ -121,6 +113,9 @@ var Supervisor = /** @class */ (function () {
     };
     Supervisor.prototype._generateJobID = function () {
         return Math.round((new Date()).getTime() / 1000) + Helper_1["default"].randomStr(2);
+    };
+    Supervisor.prototype.destroy = function () {
+        clearInterval(this.maintainer);
     };
     return Supervisor;
 }());

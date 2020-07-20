@@ -5,8 +5,6 @@ const NodeSSH = require('node-ssh')
 class SSH {
     private SSH
 
-    private destination
-
     private user
 
     private password
@@ -17,9 +15,10 @@ class SSH {
 
     private loggedIn = false
 
+    private env = ''
+
     constructor(destination: string, user: string, password: string) {
         this.SSH = new NodeSSH()
-        this.destination = destination
         this.user = user
         this.password = password
 
@@ -33,7 +32,7 @@ class SSH {
         this.port = server.port
     }
 
-    async connect() {
+    async connect(env = {}) {
         try {
             await this.SSH.connect({
                 host: this.ip,
@@ -42,6 +41,14 @@ class SSH {
                 password: this.password
             })
             this.loggedIn = true
+
+            var envCmd = 'source /etc/profile;'
+            for (var i in env) {
+                var v = env[i]
+                envCmd += 'export ' + i + '=' + v + ';'
+            }
+
+            this.env = envCmd
         } catch (e) {
             this.loggedIn = false
         }
@@ -59,17 +66,21 @@ class SSH {
         var out = []
 
         var lastOut = {
+            stage: 0,
             cmd: null,
             out: null,
             error: null,
-            isFirstCmd: true
+            isFirstCmd: true,
+            isFail: false
         }
 
         var nextOut = {
+            stage: null,
             cmd: null,
             out: null,
             error: null,
-            isFirstCmd: false
+            isFirstCmd: false,
+            isFail: false
         }
 
         var opt = Object.assign({
@@ -92,20 +103,34 @@ class SSH {
         for (var i in commands) {
             var command = commands[i]
             var cmd
+
+            nextOut.stage = lastOut.stage + 1
+
             if (typeof command === 'string') {
                 cmd = command
             } else {
-                cmd = command(lastOut)
+                try {
+                    cmd = command(lastOut)
+                } catch (e) {
+                    nextOut.error = e
+                    nextOut.isFail = true
+                    out.push(nextOut)
+                    break
+                }
             }
+
             nextOut.cmd = cmd
-            await this.SSH.execCommand(cmd, opt)
-            out.push(nextOut)
+            await this.SSH.execCommand(this.env + cmd, opt)
             lastOut = nextOut
+            delete nextOut.isFirstCmd
+            out.push(nextOut)
             nextOut = {
+                stage: null,
                 cmd: null,
                 out: null,
                 error: null,
-                isFirstCmd: false
+                isFirstCmd: false,
+                isFail: false
             }
         }
 

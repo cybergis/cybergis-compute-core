@@ -1,8 +1,8 @@
 export default {
     destinationMap: {
         hadoop: {
-            ip: "hadoop01.cigi.illinois.edu",
-            port: 50022,
+            ip: "128.174.25.25",
+            port: 22,
             maintainer: 'HadoopMaintainer'
         }
     }

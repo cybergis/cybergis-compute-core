@@ -17,9 +17,48 @@ class BaseMaintainer {
 
     protected logs = []
 
+    protected env = {}
+
+    public allowedEnv = undefined
+
     constructor(manifest: manifest) {
+        this.define()
+
+        if (this.allowedEnv === undefined) {
+            manifest.env = {}
+        }
+
+        var env = {}
+
+        for (var i in this.allowedEnv) {
+            var val = manifest.env[i]
+            if (val != undefined) {
+                var type = this.allowedEnv[i]
+                if (Array.isArray(type)) {
+                    if (type.includes(val)) {
+                        env[i] = val
+                    }
+                } else if (typeof val === type) {
+                    env[i] = val
+                }
+            }
+        }
+
+        this.env = env
         this.rawManifest = manifest
         this.manifest = Helper.hideCredFromManifest(manifest)
+    }
+
+    define() {
+        //
+    }
+
+    async onInit() {
+        //
+    }
+
+    async onMaintain() {
+
     }
 
     emitEvent(type: string, message: string) {
@@ -45,17 +84,25 @@ class BaseMaintainer {
         this.logs.push(message)
     }
 
-    unlock() {
-        this._lock = false
+    async init() {
+        if (!this._lock) {
+            this._lock = true
+            await this.onInit()
+            this._lock = false
+        }
     }
 
-    lock() {
-        this._lock = true
+    async maintain() {
+        if (!this._lock) {
+            this._lock = true
+            await this.onMaintain()
+            this._lock = false
+        }
     }
 
     async connect(commands: Array<any>, options: options = {}) {
         var ssh = new SSH(this.rawManifest.dest, this.rawManifest.cred.usr, this.rawManifest.cred.pwd)
-        await ssh.connect()
+        await ssh.connect(this.env)
         var out = await ssh.exec(commands, options)
         return out
     }

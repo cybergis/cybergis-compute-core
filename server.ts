@@ -1,5 +1,4 @@
 import Guard from './src/Guard'
-import { manifest } from './src/types'
 import Supervisor from './src/Supervisor'
 import Helper from './src/Helper'
 const bodyParser = require('body-parser')
@@ -13,6 +12,8 @@ app.use(bodyParser.urlencoded({ extended: true }))
 var guard = new Guard()
 var supervisor = new Supervisor()
 var validator = new Validator()
+
+var port = 3000
 
 var schemas = {
     manifest: {
@@ -143,4 +144,10 @@ app.post('/supervisor', function (req, res) {
     res.json(manifest)
 })
 
-app.listen(3000, () => console.log(`Example app listening at http://localhost:`))
+app.listen(port, () => console.log('supervisor server is up, listening to port: ' + port))
+
+Helper.onExit(function () {
+    console.log('safely exiting supervisor server...')
+    supervisor.destroy()
+    app.close()
+})

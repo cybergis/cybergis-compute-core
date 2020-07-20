@@ -40,8 +40,8 @@ var NodeSSH = require('node-ssh');
 var SSH = /** @class */ (function () {
     function SSH(destination, user, password) {
         this.loggedIn = false;
+        this.env = '';
         this.SSH = new NodeSSH();
-        this.destination = destination;
         this.user = user;
         this.password = password;
         var server = constant_1["default"].destinationMap[destination];
@@ -51,9 +51,10 @@ var SSH = /** @class */ (function () {
         this.ip = server.ip;
         this.port = server.port;
     }
-    SSH.prototype.connect = function () {
+    SSH.prototype.connect = function (env) {
+        if (env === void 0) { env = {}; }
         return __awaiter(this, void 0, void 0, function () {
-            var e_1;
+            var envCmd, i, v, e_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -67,6 +68,12 @@ var SSH = /** @class */ (function () {
                     case 1:
                         _a.sent();
                         this.loggedIn = true;
+                        envCmd = 'source /etc/profile;';
+                        for (i in env) {
+                            v = env[i];
+                            envCmd += 'export ' + i + '=' + v + ';';
+                        }
+                        this.env = envCmd;
                         return [3 /*break*/, 3];
                     case 2:
                         e_1 = _a.sent();
@@ -101,16 +108,20 @@ var SSH = /** @class */ (function () {
                     case 0:
                         out = [];
                         lastOut = {
+                            stage: 0,
                             cmd: null,
                             out: null,
                             error: null,
-                            isFirstCmd: true
+                            isFirstCmd: true,
+                            isFail: false
                         };
                         nextOut = {
+                            stage: null,
                             cmd: null,
                             out: null,
                             error: null,
-                            isFirstCmd: false
+                            isFirstCmd: false,
+                            isFail: false
                         };
                         opt = Object.assign({
                             onStdout: function (out) {
@@ -139,23 +150,35 @@ var SSH = /** @class */ (function () {
                         if (!(_i < _a.length)) return [3 /*break*/, 4];
                         i = _a[_i];
                         command = commands[i];
+                        nextOut.stage = lastOut.stage + 1;
                         if (typeof command === 'string') {
                             cmd = command;
                         }
                         else {
-                            cmd = command(lastOut);
+                            try {
+                                cmd = command(lastOut);
+                            }
+                            catch (e) {
+                                nextOut.error = e;
+                                nextOut.isFail = true;
+                                out.push(nextOut);
+                                return [3 /*break*/, 4];
+                            }
                         }
                         nextOut.cmd = cmd;
-                        return [4 /*yield*/, this.SSH.execCommand(cmd, opt)];
+                        return [4 /*yield*/, this.SSH.execCommand(this.env + cmd, opt)];
                     case 2:
                         _c.sent();
-                        out.push(nextOut);
                         lastOut = nextOut;
+                        delete nextOut.isFirstCmd;
+                        out.push(nextOut);
                         nextOut = {
+                            stage: null,
                             cmd: null,
                             out: null,
                             error: null,
-                            isFirstCmd: false
+                            isFirstCmd: false,
+                            isFail: false
                         };
                         _c.label = 3;
                     case 3:

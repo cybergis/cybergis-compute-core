@@ -47,6 +47,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 var guard = new Guard_1["default"]();
 var supervisor = new Supervisor_1["default"]();
 var validator = new Validator();
+var port = 3000;
 var schemas = {
     manifest: {
         type: 'object',
@@ -176,4 +177,9 @@ app.post('/supervisor', function (req, res) {
     manifest = Helper_1["default"].hideCredFromManifest(manifest);
     res.json(manifest);
 });
-app.listen(3000, function () { return console.log("Example app listening at http://localhost:"); });
+app.listen(port, function () { return console.log('supervisor server is up, listening to port: ' + port); });
+Helper_1["default"].onExit(function () {
+    console.log('safely exiting supervisor server...');
+    supervisor.destroy();
+    app.close();
+});
