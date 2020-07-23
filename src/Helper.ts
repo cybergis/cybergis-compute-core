@@ -1,5 +1,4 @@
-import { options, manifest } from './types'
-import Constants from './constant'
+import { manifest } from './types'
 
 var Helper = {
     btoa(target: string): string {

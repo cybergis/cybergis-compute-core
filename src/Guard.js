@@ -34,50 +34,76 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 var JAT_1 = require("./JAT");
 var Helper_1 = require("./Helper");
 var SSH_1 = require("./SSH");
-var Guard = /** @class */ (function () {
+var constant_1 = require("./constant");
+var config = require('../config.json');
+var Guard = (function () {
     function Guard() {
         this.secretTokens = {};
-        this.jat = new JAT_1["default"]();
+        this.jat = new JAT_1.default();
         this.authenticatedAccessTokenCache = {};
+        this.uidCounter = 0;
     }
-    Guard.prototype.issueSecretToken = function (destination, user, password) {
+    Guard.prototype.issueSecretTokenViaSSH = function (destination, user, password) {
         return __awaiter(this, void 0, void 0, function () {
             var ssh, isValid, secretToken;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         this._clearCache();
-                        ssh = new SSH_1["default"](destination, user, password);
-                        return [4 /*yield*/, ssh.connect()];
+                        ssh = new SSH_1.default(destination, user, password);
+                        return [4, ssh.connect()];
                     case 1:
                         _a.sent();
                         isValid = ssh.isConnected();
-                        return [4 /*yield*/, ssh.stop()];
+                        return [4, ssh.stop()];
                     case 2:
                         _a.sent();
                         if (!isValid) {
                             throw new Error('unable to check credentials with ' + destination);
                         }
-                        secretToken = Helper_1["default"].randomStr(45);
+                        secretToken = Helper_1.default.randomStr(45);
                         while (this.secretTokens[secretToken] != undefined) {
-                            secretToken = Helper_1["default"].randomStr(45);
+                            secretToken = Helper_1.default.randomStr(45);
                         }
+                        this.uidCounter += 1;
                         this.secretTokens[secretToken] = {
                             cred: {
                                 usr: user,
                                 pwd: password
                             },
                             dest: destination,
-                            sT: secretToken
+                            sT: secretToken,
+                            uid: this.uidCounter
                         };
-                        return [2 /*return*/, secretToken];
+                        return [2, secretToken];
                 }
             });
         });
+    };
+    Guard.prototype.issueSecretTokenViaWhitelist = function (destination, user, requestIP) {
+        this._clearCache();
+        if (!constant_1.default.whitelistIPs.includes(requestIP) && !config.isTesting) {
+            throw new Error('ip ' + requestIP + ' is not in whitelist');
+        }
+        var secretToken = Helper_1.default.randomStr(45);
+        while (this.secretTokens[secretToken] != undefined) {
+            secretToken = Helper_1.default.randomStr(45);
+        }
+        this.uidCounter += 1;
+        this.secretTokens[secretToken] = {
+            cred: {
+                usr: user,
+                pwd: null
+            },
+            dest: destination,
+            sT: secretToken,
+            uid: this.uidCounter
+        };
+        return secretToken;
     };
     Guard.prototype.validateAccessToken = function (manifest) {
         this._clearCache();
@@ -87,24 +113,29 @@ var Guard = /** @class */ (function () {
             throw new Error('invalid accessToken provided');
         }
         if (this.authenticatedAccessTokenCache[date] != undefined) {
-            var cred = this.authenticatedAccessTokenCache[date][rawAT.hash];
-            if (cred != undefined) {
+            var cache = this.authenticatedAccessTokenCache[date][rawAT.hash];
+            if (cache != undefined) {
                 delete manifest.aT;
-                manifest.cred = cred;
+                manifest.cred = cache.cred;
+                manifest.uid = cache.uid;
                 return manifest;
             }
         }
         for (var i in this.secretTokens) {
             var secretToken = this.secretTokens[i];
-            if (secretToken.dest === manifest.dest) {
+            if (secretToken.dest === manifest.dest || manifest.dest === undefined) {
                 var hash = this.jat.init(rawAT.alg, secretToken.sT).hash(rawAT.payload.encoded);
                 if (hash == rawAT.hash) {
                     if (this.authenticatedAccessTokenCache[date] === undefined) {
                         this.authenticatedAccessTokenCache[date] = {};
                     }
-                    this.authenticatedAccessTokenCache[date][rawAT.hash] = secretToken.cred;
+                    this.authenticatedAccessTokenCache[date][rawAT.hash] = {
+                        cred: secretToken.cred,
+                        uid: secretToken.uid
+                    };
                     delete manifest.aT;
                     manifest.cred = secretToken.cred;
+                    manifest.uid = secretToken.uid;
                     return manifest;
                 }
             }
@@ -124,10 +155,10 @@ var Guard = /** @class */ (function () {
                         delete this.authenticatedAccessTokenCache[i];
                     }
                 }
-                return [2 /*return*/];
+                return [2];
             });
         });
     };
     return Guard;
 }());
-exports["default"] = Guard;
+exports.default = Guard;

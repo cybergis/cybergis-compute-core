@@ -34,15 +34,14 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 var Helper_1 = require("./Helper");
-var JAT = /** @class */ (function () {
+var JAT = (function () {
     function JAT() {
         this.accessTokenCache = {};
         this.secretToken = null;
         this.algorithm = null;
         this.algorithmName = null;
-        //
     }
     JAT.prototype.init = function (algorithm, secretToken) {
         try {
@@ -102,12 +101,11 @@ var JAT = /** @class */ (function () {
                         delete this.accessTokenCache[i];
                     }
                 }
-                return [2 /*return*/];
+                return [2];
             });
         });
     };
     JAT.prototype._date = function () {
-        // trust for an accessToken is established in the confine of an hour
         var current = new Date();
         var y = current.getUTCFullYear();
         var m = current.getUTCMonth() + 1;
@@ -119,16 +117,16 @@ var JAT = /** @class */ (function () {
         return parseInt(y + mStr + dStr + hStr);
     };
     JAT.prototype._encodeJSON = function (target) {
-        return Helper_1["default"].atob(JSON.stringify(target));
+        return Helper_1.default.atob(JSON.stringify(target));
     };
     JAT.prototype._decodeJSON = function (target) {
-        return JSON.parse(Helper_1["default"].btoa(target));
+        return JSON.parse(Helper_1.default.btoa(target));
     };
     JAT.prototype._encodeStr = function (target) {
-        return Helper_1["default"].atob(target);
+        return Helper_1.default.atob(target);
     };
     JAT.prototype._decodeStr = function (target) {
-        return Helper_1["default"].btoa(target);
+        return Helper_1.default.btoa(target);
     };
     JAT.prototype._checkInit = function () {
         if (this.algorithm == null || this.secretToken == null || this.algorithmName == null) {
@@ -137,4 +135,4 @@ var JAT = /** @class */ (function () {
     };
     return JAT;
 }());
-exports["default"] = JAT;
+exports.default = JAT;

@@ -18,11 +18,22 @@ export interface manifest {
         usr: string,
         pwd: string
     },
+    uid?: number,
     id?: string,
     maintainer?: any,
     dest: string,
     env: any,
     payload: any
+}
+
+export interface aT {
+    aT: string,
+    cred?: {
+        usr: string,
+        pwd: string
+    },
+    uid?: number,
+    dest: undefined // hack
 }
 
 export interface secretTokenCache {

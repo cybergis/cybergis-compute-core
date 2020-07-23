@@ -34,10 +34,10 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 var Helper_1 = require("../Helper");
 var SSH_1 = require("../SSH");
-var BaseMaintainer = /** @class */ (function () {
+var BaseMaintainer = (function () {
     function BaseMaintainer(manifest) {
         this._lock = false;
         this.isInit = false;
@@ -69,27 +69,26 @@ var BaseMaintainer = /** @class */ (function () {
         }
         this.env = env;
         this.rawManifest = manifest;
-        this.manifest = Helper_1["default"].hideCredFromManifest(manifest);
+        this.manifest = Helper_1.default.hideCredFromManifest(manifest);
     }
     BaseMaintainer.prototype.define = function () {
-        //
     };
     BaseMaintainer.prototype.onInit = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                return [2 /*return*/];
+                return [2];
             });
         });
     };
     BaseMaintainer.prototype.onMaintain = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                return [2 /*return*/];
+                return [2];
             });
         });
     };
     BaseMaintainer.prototype.emitEvent = function (type, message) {
-        if (type === 'JOB_ENDED') {
+        if (type === 'JOB_ENDED' || type === 'JOB_FAILED') {
             this.isEnd = true;
         }
         if (type === 'JOB_INITIALIZED') {
@@ -111,14 +110,14 @@ var BaseMaintainer = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (!!this._lock) return [3 /*break*/, 2];
+                        if (!!this._lock) return [3, 2];
                         this._lock = true;
-                        return [4 /*yield*/, this.onInit()];
+                        return [4, this.onInit()];
                     case 1:
                         _a.sent();
                         this._lock = false;
                         _a.label = 2;
-                    case 2: return [2 /*return*/];
+                    case 2: return [2];
                 }
             });
         });
@@ -128,14 +127,14 @@ var BaseMaintainer = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (!!this._lock) return [3 /*break*/, 2];
+                        if (!!this._lock) return [3, 2];
                         this._lock = true;
-                        return [4 /*yield*/, this.onMaintain()];
+                        return [4, this.onMaintain()];
                     case 1:
                         _a.sent();
                         this._lock = false;
                         _a.label = 2;
-                    case 2: return [2 /*return*/];
+                    case 2: return [2];
                 }
             });
         });
@@ -147,14 +146,40 @@ var BaseMaintainer = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        ssh = new SSH_1["default"](this.rawManifest.dest, this.rawManifest.cred.usr, this.rawManifest.cred.pwd);
-                        return [4 /*yield*/, ssh.connect(this.env)];
+                        ssh = new SSH_1.default(this.rawManifest.dest, this.rawManifest.cred.usr, this.rawManifest.cred.pwd);
+                        return [4, ssh.connect(this.env)];
                     case 1:
                         _a.sent();
-                        return [4 /*yield*/, ssh.exec(commands, options)];
+                        return [4, ssh.exec(commands, options, this)];
                     case 2:
                         out = _a.sent();
-                        return [2 /*return*/, out];
+                        return [2, out];
+                }
+            });
+        });
+    };
+    BaseMaintainer.prototype.upload = function (from, to, isDirectory, fileNameValidation) {
+        if (isDirectory === void 0) { isDirectory = false; }
+        if (fileNameValidation === void 0) { fileNameValidation = null; }
+        return __awaiter(this, void 0, void 0, function () {
+            var ssh, out;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        ssh = new SSH_1.default(this.rawManifest.dest, this.rawManifest.cred.usr, this.rawManifest.cred.pwd);
+                        return [4, ssh.connect(this.env)];
+                    case 1:
+                        _a.sent();
+                        if (!isDirectory) return [3, 3];
+                        return [4, ssh.putDirectory(from, to, fileNameValidation)];
+                    case 2:
+                        out = _a.sent();
+                        return [2, out];
+                    case 3: return [4, ssh.putFile(from, to)];
+                    case 4:
+                        _a.sent();
+                        _a.label = 5;
+                    case 5: return [2];
                 }
             });
         });
@@ -171,4 +196,4 @@ var BaseMaintainer = /** @class */ (function () {
     };
     return BaseMaintainer;
 }());
-exports["default"] = BaseMaintainer;
+exports.default = BaseMaintainer;

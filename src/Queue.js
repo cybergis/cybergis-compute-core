@@ -1,6 +1,6 @@
 "use strict";
-exports.__esModule = true;
-var Queue = /** @class */ (function () {
+Object.defineProperty(exports, "__esModule", { value: true });
+var Queue = (function () {
     function Queue() {
         this.queue = [];
     }
@@ -21,4 +21,4 @@ var Queue = /** @class */ (function () {
     };
     return Queue;
 }());
-exports["default"] = Queue;
+exports.default = Queue;

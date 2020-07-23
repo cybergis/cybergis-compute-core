@@ -34,20 +34,23 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 var Guard_1 = require("./src/Guard");
 var Supervisor_1 = require("./src/Supervisor");
 var Helper_1 = require("./src/Helper");
+var constant_1 = require("./src/constant");
 var bodyParser = require('body-parser');
+var config = require('./config.json');
 var Validator = require('jsonschema').Validator;
 var express = require('express');
+var requestIp = require('request-ip');
 var app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-var guard = new Guard_1["default"]();
-var supervisor = new Supervisor_1["default"]();
+app.use(requestIp.mw({ attributeName: 'ip' }));
+var guard = new Guard_1.default();
+var supervisor = new Supervisor_1.default();
 var validator = new Validator();
-var port = 3000;
 var schemas = {
     manifest: {
         type: 'object',
@@ -80,7 +83,16 @@ var schemas = {
                 type: 'string'
             }
         },
-        required: ['destination', 'user', 'password']
+        required: ['destination', 'user']
+    },
+    accessToken: {
+        type: 'object',
+        properties: {
+            aT: {
+                type: 'string'
+            }
+        },
+        required: ['aT']
     }
 };
 function requestErrors(v) {
@@ -101,14 +113,12 @@ function setDefaultValues(data, defaults) {
     }
     return data;
 }
-// index
 app.get('/', function (req, res) {
     res.json({ message: 'hello world' });
 });
-// guard
 app.post('/guard/secretToken', function (req, res) {
     return __awaiter(this, void 0, void 0, function () {
-        var cred, errors, sT, e_1;
+        var cred, errors, server, sT, sT, e_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -120,33 +130,47 @@ app.post('/guard/secretToken', function (req, res) {
                             messages: errors
                         });
                         res.status(402);
-                        return [2 /*return*/];
+                        return [2];
+                    }
+                    server = constant_1.default.destinationMap[cred.destination];
+                    if (server === undefined) {
+                        res.json({
+                            error: "unrecognized destination " + cred.destination,
+                            message: ''
+                        });
+                        res.status(401);
+                        return [2];
                     }
                     _a.label = 1;
                 case 1:
-                    _a.trys.push([1, 3, , 4]);
-                    return [4 /*yield*/, guard.issueSecretToken(cred.destination, cred.user, cred.password)];
+                    _a.trys.push([1, 6, , 7]);
+                    if (!server.isCommunityAccount) return [3, 3];
+                    return [4, guard.issueSecretTokenViaWhitelist(cred.destination, server.communityAccountUser, req.ip)];
                 case 2:
                     sT = _a.sent();
-                    return [3 /*break*/, 4];
-                case 3:
+                    return [3, 5];
+                case 3: return [4, guard.issueSecretTokenViaSSH(cred.destination, cred.user, cred.password)];
+                case 4:
+                    sT = _a.sent();
+                    _a.label = 5;
+                case 5: return [3, 7];
+                case 6:
                     e_1 = _a.sent();
                     res.json({
                         error: "invalid credentials",
                         messages: [e_1.toString()]
                     });
                     res.status(401);
-                    return [2 /*return*/];
-                case 4:
+                    return [2];
+                case 7:
                     res.json({
                         secretToken: sT
                     });
-                    return [2 /*return*/];
+                    return [2];
             }
         });
     });
 });
-// supervisor
 app.post('/supervisor', function (req, res) {
     var manifest = req.body;
     var errors = requestErrors(validator.validate(manifest, schemas['manifest']));
@@ -174,12 +198,59 @@ app.post('/supervisor', function (req, res) {
         return;
     }
     manifest = supervisor.add(manifest);
-    manifest = Helper_1["default"].hideCredFromManifest(manifest);
+    manifest = Helper_1.default.hideCredFromManifest(manifest);
     res.json(manifest);
 });
-app.listen(port, function () { return console.log('supervisor server is up, listening to port: ' + port); });
-Helper_1["default"].onExit(function () {
+app.get('/supervisor/:jobID', function (req, res) {
+    var aT = req.body;
+    var errors = requestErrors(validator.validate(aT, schemas['accessToken']));
+    if (errors.length > 0) {
+        res.json({
+            error: "invalid input",
+            messages: errors
+        });
+        res.status(402);
+        return;
+    }
+    try {
+        aT = guard.validateAccessToken(aT);
+    }
+    catch (e) {
+        res.json({
+            error: "invalid access token",
+            messages: [e.toString()]
+        });
+        res.status(401);
+        return;
+    }
+    res.json(supervisor.status(aT.uid, req.params.jobID));
+});
+app.get('/supervisor', function (req, res) {
+    var aT = req.body;
+    var errors = requestErrors(validator.validate(aT, schemas['accessToken']));
+    if (errors.length > 0) {
+        res.json({
+            error: "invalid input",
+            messages: errors
+        });
+        res.status(402);
+        return;
+    }
+    try {
+        aT = guard.validateAccessToken(aT);
+    }
+    catch (e) {
+        res.json({
+            error: "invalid access token",
+            messages: [e.toString()]
+        });
+        res.status(401);
+        return;
+    }
+    res.json(supervisor.status(aT.uid));
+});
+app.listen(config.serverPort, function () { return console.log('supervisor server is up, listening to port: ' + config.serverPort); });
+Helper_1.default.onExit(function () {
     console.log('safely exiting supervisor server...');
     supervisor.destroy();
-    app.close();
 });

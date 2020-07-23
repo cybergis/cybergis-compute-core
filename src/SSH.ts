@@ -13,11 +13,17 @@ class SSH {
 
     private port
 
+    private privateKey
+
     private loggedIn = false
+
+    private isCommunityAccount = false
+
+    private passphrase
 
     private env = ''
 
-    constructor(destination: string, user: string, password: string) {
+    constructor(destination: string, user: string, password: string = null) {
         this.SSH = new NodeSSH()
         this.user = user
         this.password = password
@@ -28,18 +34,35 @@ class SSH {
             throw Error('cannot identify server from destination name ' + destination)
         }
 
+        if (server.isCommunityAccount) {
+            this.isCommunityAccount = true
+            var config = require('../config.json')
+            this.privateKey = config.privateKeyPath
+            this.passphrase = config.passphrase
+        }
+
         this.ip = server.ip
         this.port = server.port
     }
 
     async connect(env = {}) {
         try {
-            await this.SSH.connect({
-                host: this.ip,
-                port: this.port,
-                username: this.user,
-                password: this.password
-            })
+            if (this.isCommunityAccount) {
+                var out = await this.SSH.connect({
+                    host: this.ip,
+                    port: this.port,
+                    username: this.user,
+                    privateKey: this.privateKey,
+                    passphrase: this.passphrase
+                })
+            } else {
+                await this.SSH.connect({
+                    host: this.ip,
+                    port: this.port,
+                    username: this.user,
+                    password: this.password
+                })
+            }
             this.loggedIn = true
 
             var envCmd = 'source /etc/profile;'
@@ -50,6 +73,7 @@ class SSH {
 
             this.env = envCmd
         } catch (e) {
+            console.log(e)
             this.loggedIn = false
         }
     }
@@ -62,7 +86,7 @@ class SSH {
         return this.loggedIn
     }
 
-    async exec(commands, options: options = {}) {
+    async exec(commands, options: options = {}, context = null) {
         var out = []
 
         var lastOut = {
@@ -110,7 +134,7 @@ class SSH {
                 cmd = command
             } else {
                 try {
-                    cmd = command(lastOut)
+                    cmd = command(lastOut, context)
                 } catch (e) {
                     nextOut.error = e
                     nextOut.isFail = true
@@ -135,6 +159,45 @@ class SSH {
         }
 
         return out
+    }
+
+    async putFile(from: string, to: string) {
+        try {
+            await this.SSH.putFile(from, to)
+        } catch (e) {
+            throw new Error('unable to put file: ' + e.toString())
+        }
+    }
+
+    async putDirectory(from: string, to: string, validate = null) {
+        try {
+            var out = {
+                failed: [],
+                successful: []
+            }
+
+            var opts = {
+                recursive: true,
+                concurrency: 10,
+                tick: function (localPath, remotePath, error) {
+                    if (error) {
+                        out.failed.push(localPath)
+                    } else {
+                        out.successful.push(localPath)
+                    }
+                }
+            }
+
+            if (validate != null) {
+                opts['validate'] = validate
+            }
+
+            await this.SSH.putDirectory(from, to, opts)
+
+            return out
+        } catch (e) {
+            throw new Error('unable to put directory: ' + e.toString())
+        }
     }
 }
 

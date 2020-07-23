@@ -47,20 +47,20 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 var BaseMaintainer_1 = require("./BaseMaintainer");
-var HadoopMaintainer = /** @class */ (function (_super) {
-    __extends(HadoopMaintainer, _super);
-    function HadoopMaintainer() {
+var ExampleMaintainer = (function (_super) {
+    __extends(ExampleMaintainer, _super);
+    function ExampleMaintainer() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    HadoopMaintainer.prototype.define = function () {
+    ExampleMaintainer.prototype.define = function () {
         this.allowedEnv = {
             A: 'number',
             B: 'string'
         };
     };
-    HadoopMaintainer.prototype.onInit = function () {
+    ExampleMaintainer.prototype.onInit = function () {
         return __awaiter(this, void 0, void 0, function () {
             var pipeline, out;
             return __generator(this, function (_a) {
@@ -69,18 +69,18 @@ var HadoopMaintainer = /** @class */ (function (_super) {
                         pipeline = [
                             'ls'
                         ];
-                        return [4 /*yield*/, this.connect(pipeline)];
+                        return [4, this.connect(pipeline, {})];
                     case 1:
                         out = _a.sent();
                         if (out.length > 0) {
                             this.emitEvent('JOB_INITIALIZED', 'job [' + this.manifest.id + '] is initialized, waiting for job completion');
                         }
-                        return [2 /*return*/];
+                        return [2];
                 }
             });
         });
     };
-    HadoopMaintainer.prototype.onMaintain = function () {
+    ExampleMaintainer.prototype.onMaintain = function () {
         return __awaiter(this, void 0, void 0, function () {
             var pipeline, out;
             return __generator(this, function (_a) {
@@ -91,7 +91,8 @@ var HadoopMaintainer = /** @class */ (function (_super) {
                             'echo $A',
                             'echo $B',
                             'echo $C',
-                            function (prev) {
+                            function (prev, self) {
+                                self.emitEvent('JOB_CUSTOM_EVENT', 'emit a custom event...');
                                 if (prev.out == '\n') {
                                     throw new Error('error');
                                 }
@@ -99,17 +100,20 @@ var HadoopMaintainer = /** @class */ (function (_super) {
                             },
                             'echo $A'
                         ];
-                        return [4 /*yield*/, this.connect(pipeline)];
+                        return [4, this.connect(pipeline, {})];
                     case 1:
                         out = _a.sent();
                         if (out.length > 0) {
                             this.emitEvent('JOB_ENDED', 'job [' + this.manifest.id + '] finished');
                         }
-                        return [2 /*return*/];
+                        else {
+                            this.emitEvent('JOB_FAILED', 'job [' + this.manifest.id + '] failed');
+                        }
+                        return [2];
                 }
             });
         });
     };
-    return HadoopMaintainer;
-}(BaseMaintainer_1["default"]));
-exports["default"] = HadoopMaintainer;
+    return ExampleMaintainer;
+}(BaseMaintainer_1.default));
+exports.default = ExampleMaintainer;

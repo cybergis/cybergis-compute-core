@@ -1,5 +1,5 @@
 "use strict";
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 var Helper = {
     btoa: function (target) {
         return Buffer.from(target, 'base64').toString('binary');
@@ -26,21 +26,18 @@ var Helper = {
         return result;
     },
     onExit: function (callback) {
-        //do something when app is closing
         process.on('exit', function () {
             callback();
             setTimeout(function () {
                 process.exit(1);
             }, 3 * 1000);
         });
-        //catches ctrl+c event
         process.on('SIGINT', function () {
             callback();
             setTimeout(function () {
                 process.exit(1);
             }, 3 * 1000);
         });
-        // catches "kill pid" (for example: nodemon restart)
         process.on('SIGUSR1', function () {
             callback();
             setTimeout(function () {
@@ -69,4 +66,4 @@ var Helper = {
     consoleEnd: '\x1b[0m',
     consoleGreen: '\x1b[32m'
 };
-exports["default"] = Helper;
+exports.default = Helper;

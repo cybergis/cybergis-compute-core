@@ -113,3 +113,11 @@ config/*
 
 log/*
 !log/.gitkeep
+
+key/*
+!key/.gitkeep
+
+log/*
+!log/.gitkeep
+
+config.json

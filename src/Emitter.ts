@@ -1,36 +1,74 @@
-import { ENOMEM } from "constants"
-
 class Emitter {
     private events = {}
 
     private logs = {}
 
-    registerEvents(jobID: string, type: string, message: string) {
-        if (this.events[jobID] === undefined) {
-            this.events[jobID] = []
+    registerEvents(uid: number, jobID: string, type: string, message: string) {
+        if (this.events[uid] === undefined) {
+            this.events[uid] = {}
         }
-        this.events[jobID].push({
+
+        if (this.events[uid][jobID] === undefined) {
+            this.events[uid][jobID] = []
+        }
+        this.events[uid][jobID].push({
             type: type,
             message: message,
             at: new Date()
         })
-        console.log(type, message)
     }
 
-    registerLogs(jobID: string, message: string) {
-        if (this.logs[jobID] === undefined) {
-            this.logs[jobID] = []
+    registerLogs(uid: number, jobID: string, message: string) {
+        if (this.logs[uid] === undefined) {
+            this.logs[uid]  = {}
         }
-        this.logs[jobID].push({
+
+        if (this.logs[uid][jobID] === undefined) {
+            this.logs[uid][jobID] = []
+        }
+        this.logs[uid][jobID].push({
             message: message,
             at: new Date()
         })
     }
 
-    status(jobID: string) {
-        return {
-            events: this.events[jobID],
-            logs: this.logs[jobID]
+    status(uid: number, jobID: string = null) {
+        if (jobID === null) {
+            var usrEvents = {}
+            var usrLogs = {}
+
+            if (this.events[uid] != undefined) {
+                usrEvents = this.events[uid]
+            }
+
+            if (this.logs[uid] != undefined) {
+                usrLogs = this.logs[uid]
+            }
+
+            return {
+                events: usrEvents,
+                logs: usrLogs
+            }
+        } else {
+            var events = []
+            var logs = []
+
+            if (this.events[uid] != undefined) {
+                if (this.events[uid][jobID] != undefined) {
+                    events = this.events[uid][jobID]
+                }
+            }
+
+            if (this.logs[uid] != undefined) {
+                if (this.logs[uid][jobID] != undefined) {
+                    logs = this.logs[uid][jobID]
+                }
+            }
+
+            return {
+                events: events,
+                logs: logs
+            }
         }
     }
 }

@@ -35,20 +35,20 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 var _this = this;
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 var SSH_1 = require("../src/SSH");
 var a = function () { return __awaiter(_this, void 0, void 0, function () {
     var ssh, _a, _b;
     return __generator(this, function (_c) {
         switch (_c.label) {
             case 0:
-                ssh = new SSH_1["default"]('hadoop', 'zimox2', 'ZuggrUIUC61~');
-                return [4 /*yield*/, ssh.connect()];
+                ssh = new SSH_1.default('hadoop', 'xxx', 'xxx~');
+                return [4, ssh.connect()];
             case 1:
                 _c.sent();
                 console.log(ssh.isConnected());
                 _b = (_a = console).log;
-                return [4 /*yield*/, ssh.exec([
+                return [4, ssh.exec([
                         function (last) {
                             console.log(last);
                             return 'ls';
@@ -66,7 +66,7 @@ var a = function () { return __awaiter(_this, void 0, void 0, function () {
             case 2:
                 _b.apply(_a, [_c.sent()]);
                 ssh.stop();
-                return [2 /*return*/];
+                return [2];
         }
     });
 }); };

@@ -34,19 +34,27 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 var constant_1 = require("./constant");
 var NodeSSH = require('node-ssh');
-var SSH = /** @class */ (function () {
+var SSH = (function () {
     function SSH(destination, user, password) {
+        if (password === void 0) { password = null; }
         this.loggedIn = false;
+        this.isCommunityAccount = false;
         this.env = '';
         this.SSH = new NodeSSH();
         this.user = user;
         this.password = password;
-        var server = constant_1["default"].destinationMap[destination];
+        var server = constant_1.default.destinationMap[destination];
         if (server === undefined) {
             throw Error('cannot identify server from destination name ' + destination);
+        }
+        if (server.isCommunityAccount) {
+            this.isCommunityAccount = true;
+            var config = require('../config.json');
+            this.privateKey = config.privateKeyPath;
+            this.passphrase = config.passphrase;
         }
         this.ip = server.ip;
         this.port = server.port;
@@ -54,19 +62,32 @@ var SSH = /** @class */ (function () {
     SSH.prototype.connect = function (env) {
         if (env === void 0) { env = {}; }
         return __awaiter(this, void 0, void 0, function () {
-            var envCmd, i, v, e_1;
+            var out, envCmd, i, v, e_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, this.SSH.connect({
+                        _a.trys.push([0, 5, , 6]);
+                        if (!this.isCommunityAccount) return [3, 2];
+                        return [4, this.SSH.connect({
                                 host: this.ip,
                                 port: this.port,
                                 username: this.user,
-                                password: this.password
+                                privateKey: this.privateKey,
+                                passphrase: this.passphrase
                             })];
                     case 1:
+                        out = _a.sent();
+                        return [3, 4];
+                    case 2: return [4, this.SSH.connect({
+                            host: this.ip,
+                            port: this.port,
+                            username: this.user,
+                            password: this.password
+                        })];
+                    case 3:
                         _a.sent();
+                        _a.label = 4;
+                    case 4:
                         this.loggedIn = true;
                         envCmd = 'source /etc/profile;';
                         for (i in env) {
@@ -74,12 +95,13 @@ var SSH = /** @class */ (function () {
                             envCmd += 'export ' + i + '=' + v + ';';
                         }
                         this.env = envCmd;
-                        return [3 /*break*/, 3];
-                    case 2:
+                        return [3, 6];
+                    case 5:
                         e_1 = _a.sent();
+                        console.log(e_1);
                         this.loggedIn = false;
-                        return [3 /*break*/, 3];
-                    case 3: return [2 /*return*/];
+                        return [3, 6];
+                    case 6: return [2];
                 }
             });
         });
@@ -88,10 +110,10 @@ var SSH = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.SSH.dispose()];
+                    case 0: return [4, this.SSH.dispose()];
                     case 1:
                         _a.sent();
-                        return [2 /*return*/];
+                        return [2];
                 }
             });
         });
@@ -99,8 +121,9 @@ var SSH = /** @class */ (function () {
     SSH.prototype.isConnected = function () {
         return this.loggedIn;
     };
-    SSH.prototype.exec = function (commands, options) {
+    SSH.prototype.exec = function (commands, options, context) {
         if (options === void 0) { options = {}; }
+        if (context === void 0) { context = null; }
         return __awaiter(this, void 0, void 0, function () {
             var out, lastOut, nextOut, opt, _a, _b, _i, i, command, cmd;
             return __generator(this, function (_c) {
@@ -147,7 +170,7 @@ var SSH = /** @class */ (function () {
                         _i = 0;
                         _c.label = 1;
                     case 1:
-                        if (!(_i < _a.length)) return [3 /*break*/, 4];
+                        if (!(_i < _a.length)) return [3, 4];
                         i = _a[_i];
                         command = commands[i];
                         nextOut.stage = lastOut.stage + 1;
@@ -156,17 +179,17 @@ var SSH = /** @class */ (function () {
                         }
                         else {
                             try {
-                                cmd = command(lastOut);
+                                cmd = command(lastOut, context);
                             }
                             catch (e) {
                                 nextOut.error = e;
                                 nextOut.isFail = true;
                                 out.push(nextOut);
-                                return [3 /*break*/, 4];
+                                return [3, 4];
                             }
                         }
                         nextOut.cmd = cmd;
-                        return [4 /*yield*/, this.SSH.execCommand(this.env + cmd, opt)];
+                        return [4, this.SSH.execCommand(this.env + cmd, opt)];
                     case 2:
                         _c.sent();
                         lastOut = nextOut;
@@ -183,12 +206,70 @@ var SSH = /** @class */ (function () {
                         _c.label = 3;
                     case 3:
                         _i++;
-                        return [3 /*break*/, 1];
-                    case 4: return [2 /*return*/, out];
+                        return [3, 1];
+                    case 4: return [2, out];
+                }
+            });
+        });
+    };
+    SSH.prototype.putFile = function (from, to) {
+        return __awaiter(this, void 0, void 0, function () {
+            var e_2;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4, this.SSH.putFile(from, to)];
+                    case 1:
+                        _a.sent();
+                        return [3, 3];
+                    case 2:
+                        e_2 = _a.sent();
+                        throw new Error('unable to put file: ' + e_2.toString());
+                    case 3: return [2];
+                }
+            });
+        });
+    };
+    SSH.prototype.putDirectory = function (from, to, validate) {
+        if (validate === void 0) { validate = null; }
+        return __awaiter(this, void 0, void 0, function () {
+            var out, opts, e_3;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        out = {
+                            failed: [],
+                            successful: []
+                        };
+                        opts = {
+                            recursive: true,
+                            concurrency: 10,
+                            tick: function (localPath, remotePath, error) {
+                                if (error) {
+                                    out.failed.push(localPath);
+                                }
+                                else {
+                                    out.successful.push(localPath);
+                                }
+                            }
+                        };
+                        if (validate != null) {
+                            opts['validate'] = validate;
+                        }
+                        return [4, this.SSH.putDirectory(from, to, opts)];
+                    case 1:
+                        _a.sent();
+                        return [2, out];
+                    case 2:
+                        e_3 = _a.sent();
+                        throw new Error('unable to put directory: ' + e_3.toString());
+                    case 3: return [2];
                 }
             });
         });
     };
     return SSH;
 }());
-exports["default"] = SSH;
+exports.default = SSH;

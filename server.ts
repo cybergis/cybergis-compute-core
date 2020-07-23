@@ -1,19 +1,21 @@
 import Guard from './src/Guard'
 import Supervisor from './src/Supervisor'
 import Helper from './src/Helper'
+import constant from './src/constant'
 const bodyParser = require('body-parser')
+const config = require('./config.json')
 var Validator = require('jsonschema').Validator;
 const express = require('express')
+const requestIp = require('request-ip')
 
 const app = express()
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
+app.use(requestIp.mw({ attributeName: 'ip' }))
 
 var guard = new Guard()
 var supervisor = new Supervisor()
 var validator = new Validator()
-
-var port = 3000
 
 var schemas = {
     manifest: {
@@ -47,7 +49,16 @@ var schemas = {
                 type: 'string'
             }
         },
-        required: ['destination', 'user', 'password']
+        required: ['destination', 'user']
+    },
+    accessToken: {
+        type: 'object',
+        properties: {
+            aT: {
+                type: 'string'
+            }
+        },
+        required: ['aT']
     }
 }
 
@@ -93,8 +104,23 @@ app.post('/guard/secretToken', async function (req, res) {
         return
     }
 
-    try{
-        var sT = await guard.issueSecretToken(cred.destination, cred.user, cred.password)
+    var server = constant.destinationMap[cred.destination]
+
+    if (server === undefined) {
+        res.json({
+            error: "unrecognized destination " + cred.destination,
+            message: ''
+        })
+        res.status(401)
+        return
+    }
+
+    try {
+        if (server.isCommunityAccount) {
+            var sT = await guard.issueSecretTokenViaWhitelist(cred.destination, server.communityAccountUser, req.ip)
+        } else {
+            var sT = await guard.issueSecretTokenViaSSH(cred.destination, cred.user, cred.password)
+        }
     } catch (e) {
         res.json({
             error: "invalid credentials",
@@ -144,10 +170,63 @@ app.post('/supervisor', function (req, res) {
     res.json(manifest)
 })
 
-app.listen(port, () => console.log('supervisor server is up, listening to port: ' + port))
+app.get('/supervisor/:jobID', function (req, res) {
+    var aT = req.body
+    var errors = requestErrors(validator.validate(aT, schemas['accessToken']))
+
+    if (errors.length > 0) {
+        res.json({
+            error: "invalid input",
+            messages: errors
+        })
+        res.status(402)
+        return
+    }
+
+    try {
+        aT = guard.validateAccessToken(aT)
+    } catch (e) {
+        res.json({
+            error: "invalid access token",
+            messages: [e.toString()]
+        })
+        res.status(401)
+        return
+    }
+
+    res.json(supervisor.status(aT.uid, req.params.jobID))
+})
+
+app.get('/supervisor', function (req, res) {
+    var aT = req.body
+    var errors = requestErrors(validator.validate(aT, schemas['accessToken']))
+
+    if (errors.length > 0) {
+        res.json({
+            error: "invalid input",
+            messages: errors
+        })
+        res.status(402)
+        return
+    }
+
+    try {
+        aT = guard.validateAccessToken(aT)
+    } catch (e) {
+        res.json({
+            error: "invalid access token",
+            messages: [e.toString()]
+        })
+        res.status(401)
+        return
+    }
+
+    res.json(supervisor.status(aT.uid))
+})
+
+app.listen(config.serverPort, () => console.log('supervisor server is up, listening to port: ' + config.serverPort))
 
 Helper.onExit(function () {
     console.log('safely exiting supervisor server...')
     supervisor.destroy()
-    app.close()
 })

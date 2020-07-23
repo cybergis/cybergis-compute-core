@@ -62,7 +62,7 @@ class BaseMaintainer {
     }
 
     emitEvent(type: string, message: string) {
-        if (type === 'JOB_ENDED') {
+        if (type === 'JOB_ENDED' || type === 'JOB_FAILED') {
             this.isEnd = true
         }
 
@@ -103,8 +103,20 @@ class BaseMaintainer {
     async connect(commands: Array<any>, options: options = {}) {
         var ssh = new SSH(this.rawManifest.dest, this.rawManifest.cred.usr, this.rawManifest.cred.pwd)
         await ssh.connect(this.env)
-        var out = await ssh.exec(commands, options)
+        var out = await ssh.exec(commands, options, this)
         return out
+    }
+
+    async upload(from, to, isDirectory = false, fileNameValidation = null) {
+        var ssh = new SSH(this.rawManifest.dest, this.rawManifest.cred.usr, this.rawManifest.cred.pwd)
+        await ssh.connect(this.env)
+
+        if (isDirectory) {
+            var out = await ssh.putDirectory(from, to, fileNameValidation)
+            return out
+        } else {
+            await ssh.putFile(from, to)
+        }
     }
 
     dumpEvents() {

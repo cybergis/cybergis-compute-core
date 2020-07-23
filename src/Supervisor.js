@@ -34,69 +34,87 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 var Queue_1 = require("./Queue");
 var Emitter_1 = require("./Emitter");
 var Helper_1 = require("./Helper");
 var constant_1 = require("./constant");
-var Supervisor = /** @class */ (function () {
+var Supervisor = (function () {
     function Supervisor() {
-        this.jobPoolCapacity = 2;
-        this.jobPool = [];
-        this.queue = new Queue_1["default"]();
-        this.emitter = new Emitter_1["default"]();
-        this.maintainer = null;
+        this.jobPoolCapacities = {};
+        this.jobPools = {};
+        this.queues = {};
+        this.emitter = new Emitter_1.default();
+        this.maintainerThread = null;
         this.workerTimePeriodInSeconds = 1;
         var self = this;
-        this.maintainer = setInterval(function () {
+        for (var service in constant_1.default.destinationMap) {
+            var destination = constant_1.default.destinationMap[service];
+            this.jobPoolCapacities[service] = destination.capacity;
+            this.jobPools[service] = [];
+            this.queues[service] = new Queue_1.default();
+        }
+        this.maintainerThread = setInterval(function () {
             return __awaiter(this, void 0, void 0, function () {
-                var i, job, events, logs, j, event, j, job, maintainer;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
+                var _a, _b, _i, service, jobPool, i, job, events, logs, j, event, j, job, maintainer;
+                return __generator(this, function (_c) {
+                    switch (_c.label) {
                         case 0:
-                            if (!(self.jobPool.length > 0)) return [3 /*break*/, 7];
-                            i = 0;
-                            _a.label = 1;
+                            _a = [];
+                            for (_b in self.jobPools)
+                                _a.push(_b);
+                            _i = 0;
+                            _c.label = 1;
                         case 1:
-                            if (!(i < self.jobPool.length)) return [3 /*break*/, 7];
-                            job = self.jobPool[i];
-                            if (!job.maintainer.isInit) return [3 /*break*/, 3];
-                            return [4 /*yield*/, job.maintainer.maintain()];
+                            if (!(_i < _a.length)) return [3, 10];
+                            service = _a[_i];
+                            jobPool = self.jobPools[service];
+                            if (!(jobPool.length > 0)) return [3, 8];
+                            i = 0;
+                            _c.label = 2;
                         case 2:
-                            _a.sent();
-                            return [3 /*break*/, 5];
-                        case 3: return [4 /*yield*/, job.maintainer.init()];
-                        case 4:
-                            _a.sent();
-                            _a.label = 5;
+                            if (!(i < jobPool.length)) return [3, 8];
+                            job = jobPool[i];
+                            if (!job.maintainer.isInit) return [3, 4];
+                            return [4, job.maintainer.maintain()];
+                        case 3:
+                            _c.sent();
+                            return [3, 6];
+                        case 4: return [4, job.maintainer.init()];
                         case 5:
+                            _c.sent();
+                            _c.label = 6;
+                        case 6:
                             events = job.maintainer.dumpEvents();
                             logs = job.maintainer.dumpLogs();
                             for (j in events) {
                                 event = events[j];
-                                self.emitter.registerEvents(job.maintainer.getJobID(), event.type, event.message);
+                                self.emitter.registerEvents(job.uid, job.maintainer.getJobID(), event.type, event.message);
                             }
                             for (j in logs) {
-                                self.emitter.registerLogs(job.maintainer.getJobID(), logs[j]);
+                                self.emitter.registerLogs(job.uid, job.maintainer.getJobID(), logs[j]);
                             }
                             if (job.maintainer.isEnd) {
-                                self.jobPool.splice(i, 1);
+                                jobPool.splice(i, 1);
                                 i--;
                             }
-                            _a.label = 6;
-                        case 6:
-                            i++;
-                            return [3 /*break*/, 1];
+                            _c.label = 7;
                         case 7:
-                            while (self.jobPool.length < self.jobPoolCapacity && !self.queue.isEmpty()) {
-                                job = self.queue.shift();
-                                maintainer = require('./maintainers/' + constant_1["default"].destinationMap[job.dest].maintainer)["default"] // typescript compilation hack
-                                ;
+                            i++;
+                            return [3, 2];
+                        case 8:
+                            while (jobPool.length < self.jobPoolCapacities[service] && !self.queues[service].isEmpty()) {
+                                job = self.queues[service].shift();
+                                maintainer = require('./maintainers/' + constant_1.default.destinationMap[job.dest].maintainer).default;
                                 job.maintainer = new maintainer(job);
-                                self.jobPool.push(job);
-                                self.emitter.registerEvents(job.id, 'JOB_REGISTERED', 'job [' + job.id + '] is registered with the supervisor, waiting for initialization');
+                                jobPool.push(job);
+                                self.emitter.registerEvents(job.uid, job.id, 'JOB_REGISTERED', 'job [' + job.id + '] is registered with the supervisor, waiting for initialization');
                             }
-                            return [2 /*return*/];
+                            _c.label = 9;
+                        case 9:
+                            _i++;
+                            return [3, 1];
+                        case 10: return [2];
                     }
                 });
             });
@@ -104,19 +122,20 @@ var Supervisor = /** @class */ (function () {
     }
     Supervisor.prototype.add = function (manifest) {
         manifest.id = this._generateJobID();
-        this.queue.push(manifest);
-        this.emitter.registerEvents(manifest.id, 'JOB_QUEUED', 'job [' + manifest.id + '] is queued, waiting for registration');
+        this.queues[manifest.dest].push(manifest);
+        this.emitter.registerEvents(manifest.uid, manifest.id, 'JOB_QUEUED', 'job [' + manifest.id + '] is queued, waiting for registration');
         return manifest;
     };
-    Supervisor.prototype.status = function (jobID) {
-        return this.emitter.status(jobID);
+    Supervisor.prototype.status = function (uid, jobID) {
+        if (jobID === void 0) { jobID = null; }
+        return this.emitter.status(uid, jobID);
     };
     Supervisor.prototype._generateJobID = function () {
-        return Math.round((new Date()).getTime() / 1000) + Helper_1["default"].randomStr(2);
+        return Math.round((new Date()).getTime() / 1000) + Helper_1.default.randomStr(4);
     };
     Supervisor.prototype.destroy = function () {
-        clearInterval(this.maintainer);
+        clearInterval(this.maintainerThread);
     };
     return Supervisor;
 }());
-exports["default"] = Supervisor;
+exports.default = Supervisor;

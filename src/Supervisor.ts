@@ -6,77 +6,88 @@ import constant from './constant'
 
 class Supervisor {
 
-    private jobPoolCapacity = 2
+    private jobPoolCapacities = {}
 
-    private jobPool = []
+    private jobPools = {}
 
-    private queue = new Queue()
+    private queues = {}
 
     private emitter = new Emitter()
 
-    private maintainer = null
+    private maintainerThread = null
 
     private workerTimePeriodInSeconds = 1
 
     constructor() {
         var self = this
 
-        this.maintainer = setInterval(async function () {
-            if (self.jobPool.length > 0) {
-                for (var i = 0; i < self.jobPool.length; i++) {
-                    var job = self.jobPool[i]
-                    if (job.maintainer.isInit) {
-                        await job.maintainer.maintain()
-                    } else {
-                        await job.maintainer.init()
-                    }
+        for (var service in constant.destinationMap) {
+            var destination = constant.destinationMap[service]
+            this.jobPoolCapacities[service] = destination.capacity
+            this.jobPools[service] = []
+            this.queues[service] = new Queue()
+        }
 
-                    var events = job.maintainer.dumpEvents()
-                    var logs = job.maintainer.dumpLogs()
+        this.maintainerThread = setInterval(async function () {
+            for (var service in self.jobPools) {
+                var jobPool = self.jobPools[service]
 
-                    for (var j in events) {
-                        var event = events[j]
-                        self.emitter.registerEvents(job.maintainer.getJobID(), event.type, event.message)
-                    }
+                if (jobPool.length > 0) {
+                    for (var i = 0; i < jobPool.length; i++) {
+                        var job = jobPool[i]
+                        if (job.maintainer.isInit) {
+                            await job.maintainer.maintain()
+                        } else {
+                            await job.maintainer.init()
+                        }
 
-                    for (var j in logs) {
-                        self.emitter.registerLogs(job.maintainer.getJobID(), logs[j])
-                    }
+                        var events = job.maintainer.dumpEvents()
+                        var logs = job.maintainer.dumpLogs()
 
-                    if (job.maintainer.isEnd) {
-                        self.jobPool.splice(i, 1)
-                        i--
+                        for (var j in events) {
+                            var event = events[j]
+                            self.emitter.registerEvents(job.uid, job.maintainer.getJobID(), event.type, event.message)
+                        }
+
+                        for (var j in logs) {
+                            self.emitter.registerLogs(job.uid, job.maintainer.getJobID(), logs[j])
+                        }
+
+                        if (job.maintainer.isEnd) {
+                            jobPool.splice(i, 1)
+                            i--
+                        }
                     }
                 }
-            }
 
-            while (self.jobPool.length < self.jobPoolCapacity && !self.queue.isEmpty()) {
-                var job = self.queue.shift()
-                var maintainer = require('./maintainers/' + constant.destinationMap[job.dest].maintainer).default // typescript compilation hack
-                job.maintainer = new maintainer(job)
-                self.jobPool.push(job)
-                self.emitter.registerEvents(job.id, 'JOB_REGISTERED', 'job [' + job.id + '] is registered with the supervisor, waiting for initialization')
+                while (jobPool.length < self.jobPoolCapacities[service] && !self.queues[service].isEmpty()) {
+                    var job = self.queues[service].shift()
+                    var maintainer = require('./maintainers/' + constant.destinationMap[job.dest].maintainer).default // typescript compilation hack
+                    job.maintainer = new maintainer(job)
+                    jobPool.push(job)
+                    self.emitter.registerEvents(job.uid, job.id, 'JOB_REGISTERED', 'job [' + job.id + '] is registered with the supervisor, waiting for initialization')
+                }
             }
         }, this.workerTimePeriodInSeconds * 1000)
     }
 
     add(manifest: manifest) {
         manifest.id = this._generateJobID()
-        this.queue.push(manifest)
-        this.emitter.registerEvents(manifest.id, 'JOB_QUEUED', 'job [' + manifest.id + '] is queued, waiting for registration')
+        this.queues[manifest.dest].push(manifest)
+        this.emitter.registerEvents(manifest.uid, manifest.id, 'JOB_QUEUED', 'job [' + manifest.id + '] is queued, waiting for registration')
         return manifest
     }
 
-    status(jobID: string) {
-        return this.emitter.status(jobID)
+    status(uid: number, jobID: string = null) {
+        return this.emitter.status(uid, jobID)
     }
 
     private _generateJobID(): string {
-        return Math.round((new Date()).getTime() / 1000) + Helper.randomStr(2)
+        return Math.round((new Date()).getTime() / 1000) + Helper.randomStr(4)
     }
 
     destroy() {
-        clearInterval(this.maintainer)
+        clearInterval(this.maintainerThread)
     }
 }
 

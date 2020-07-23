@@ -1,6 +1,6 @@
 import BaseMaintainer from './BaseMaintainer'
 
-class HadoopMaintainer extends BaseMaintainer {
+class ExampleMaintainer extends BaseMaintainer {
     define() {
         this.allowedEnv = {
             A: 'number',
@@ -12,8 +12,11 @@ class HadoopMaintainer extends BaseMaintainer {
         var pipeline = [
             'ls'
         ]
-        var out = await this.connect(pipeline)
+        var out = await this.connect(pipeline, {})
         if (out.length > 0) {
+            // condition when job is initialized
+            // if job fail, please do not emit JOB_INITIALIZED event
+            // failed initialization can be rebooted
             this.emitEvent('JOB_INITIALIZED', 'job [' + this.manifest.id + '] is initialized, waiting for job completion')
         }
     }
@@ -24,7 +27,8 @@ class HadoopMaintainer extends BaseMaintainer {
             'echo $A',
             'echo $B',
             'echo $C',
-            (prev) => {
+            (prev, self) => {
+                self.emitEvent('JOB_CUSTOM_EVENT', 'emit a custom event...')
                 if (prev.out == '\n') {
                     throw new Error('error')
                 }
@@ -32,11 +36,15 @@ class HadoopMaintainer extends BaseMaintainer {
             },
             'echo $A'
         ]
-        var out = await this.connect(pipeline)
+        var out = await this.connect(pipeline, {})
         if (out.length > 0) {
+            // ending condition
             this.emitEvent('JOB_ENDED', 'job [' + this.manifest.id + '] finished')
+        } else {
+            // failing condition
+            this.emitEvent('JOB_FAILED', 'job [' + this.manifest.id + '] failed')
         }
     }
 }
 
-export default HadoopMaintainer
+export default ExampleMaintainer

@@ -1,36 +1,70 @@
 "use strict";
-exports.__esModule = true;
-var Emitter = /** @class */ (function () {
+Object.defineProperty(exports, "__esModule", { value: true });
+var Emitter = (function () {
     function Emitter() {
         this.events = {};
         this.logs = {};
     }
-    Emitter.prototype.registerEvents = function (jobID, type, message) {
-        if (this.events[jobID] === undefined) {
-            this.events[jobID] = [];
+    Emitter.prototype.registerEvents = function (uid, jobID, type, message) {
+        if (this.events[uid] === undefined) {
+            this.events[uid] = {};
         }
-        this.events[jobID].push({
+        if (this.events[uid][jobID] === undefined) {
+            this.events[uid][jobID] = [];
+        }
+        this.events[uid][jobID].push({
             type: type,
             message: message,
             at: new Date()
         });
-        console.log(type, message);
     };
-    Emitter.prototype.registerLogs = function (jobID, message) {
-        if (this.logs[jobID] === undefined) {
-            this.logs[jobID] = [];
+    Emitter.prototype.registerLogs = function (uid, jobID, message) {
+        if (this.logs[uid] === undefined) {
+            this.logs[uid] = {};
         }
-        this.logs[jobID].push({
+        if (this.logs[uid][jobID] === undefined) {
+            this.logs[uid][jobID] = [];
+        }
+        this.logs[uid][jobID].push({
             message: message,
             at: new Date()
         });
     };
-    Emitter.prototype.status = function (jobID) {
-        return {
-            events: this.events[jobID],
-            logs: this.logs[jobID]
-        };
+    Emitter.prototype.status = function (uid, jobID) {
+        if (jobID === void 0) { jobID = null; }
+        if (jobID === null) {
+            var usrEvents = {};
+            var usrLogs = {};
+            if (this.events[uid] != undefined) {
+                usrEvents = this.events[uid];
+            }
+            if (this.logs[uid] != undefined) {
+                usrLogs = this.logs[uid];
+            }
+            return {
+                events: usrEvents,
+                logs: usrLogs
+            };
+        }
+        else {
+            var events = [];
+            var logs = [];
+            if (this.events[uid] != undefined) {
+                if (this.events[uid][jobID] != undefined) {
+                    events = this.events[uid][jobID];
+                }
+            }
+            if (this.logs[uid] != undefined) {
+                if (this.logs[uid][jobID] != undefined) {
+                    logs = this.logs[uid][jobID];
+                }
+            }
+            return {
+                events: events,
+                logs: logs
+            };
+        }
     };
     return Emitter;
 }());
-exports["default"] = Emitter;
+exports.default = Emitter;

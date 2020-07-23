@@ -1,0 +1,6 @@
+{
+    "privateKeyPath": "/dir/to/privatekey",
+    "passphrase": "passphrase",
+    "serverPort": 3000,
+    "isTesting": true
+}
