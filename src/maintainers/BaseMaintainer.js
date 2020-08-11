@@ -37,6 +37,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var Helper_1 = require("../Helper");
 var SSH_1 = require("../SSH");
+var config = require('../../config.json');
 var spawn = require('child-process-async').spawn;
 var BaseMaintainer = (function () {
     function BaseMaintainer(manifest) {
@@ -91,9 +92,9 @@ var BaseMaintainer = (function () {
     BaseMaintainer.prototype.runPython = function (file, args) {
         if (args === void 0) { args = []; }
         return __awaiter(this, void 0, void 0, function () {
-            var child, out, self;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var child, out, self, _a, stdout, stderr, exitCode;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         args.unshift(__dirname + "/python/" + file);
                         child = spawn('python3', args);
@@ -101,6 +102,9 @@ var BaseMaintainer = (function () {
                         self = this;
                         child.stdout.on('data', function (result) {
                             var stdout = Buffer.from(result, 'utf-8').toString();
+                            if (config.isTesting) {
+                                console.log(stdout);
+                            }
                             var parsedStdout = stdout.split('@');
                             for (var i in parsedStdout) {
                                 var o = parsedStdout[i];
@@ -134,7 +138,10 @@ var BaseMaintainer = (function () {
                         });
                         return [4, child];
                     case 1:
-                        _a.sent();
+                        _a = _b.sent(), stdout = _a.stdout, stderr = _a.stderr, exitCode = _a.exitCode;
+                        if (config.isTesting) {
+                            console.log(stderr.toString());
+                        }
                         return [2, out];
                 }
             });

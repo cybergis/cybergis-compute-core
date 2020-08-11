@@ -1,6 +1,7 @@
 import Helper from "../Helper"
 import SSH from "../SSH"
 import { manifest, options } from "../types"
+const config = require('../../config.json')
 const { spawn } = require('child-process-async')
 
 class BaseMaintainer {
@@ -71,6 +72,11 @@ class BaseMaintainer {
 
         child.stdout.on('data', function (result) {
             var stdout = Buffer.from(result, 'utf-8').toString()
+
+            if (config.isTesting) {
+                console.log(stdout)
+            }
+
             var parsedStdout = stdout.split('@')
 
             for (var i in parsedStdout) {
@@ -106,7 +112,11 @@ class BaseMaintainer {
             }
         })
 
-        await child
+        const { stdout, stderr, exitCode } = await child
+
+        if (config.isTesting) {
+            console.log(stderr.toString())
+        }
 
         return out
     }
