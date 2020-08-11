@@ -38,7 +38,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var JAT_1 = require("./JAT");
 var Helper_1 = require("./Helper");
 var SSH_1 = require("./SSH");
-var constant_1 = require("./constant");
 var config = require('../config.json');
 var Guard = (function () {
     function Guard() {
@@ -47,7 +46,7 @@ var Guard = (function () {
         this.authenticatedAccessTokenCache = {};
         this.uidCounter = 0;
     }
-    Guard.prototype.issueSecretTokenViaSSH = function (destination, user, password) {
+    Guard.prototype.issueSecretTokenForPrivateAccount = function (destination, user, password) {
         return __awaiter(this, void 0, void 0, function () {
             var ssh, isValid, secretToken;
             return __generator(this, function (_a) {
@@ -84,11 +83,8 @@ var Guard = (function () {
             });
         });
     };
-    Guard.prototype.issueSecretTokenViaWhitelist = function (destination, user, requestIP) {
+    Guard.prototype.issueSecretTokenForCommunityAccount = function (destination, user) {
         this._clearCache();
-        if (!constant_1.default.whitelistIPs.includes(requestIP) && !config.isTesting) {
-            throw new Error('ip ' + requestIP + ' is not in whitelist');
-        }
         var secretToken = Helper_1.default.randomStr(45);
         while (this.secretTokens[secretToken] != undefined) {
             secretToken = Helper_1.default.randomStr(45);

@@ -21,7 +21,7 @@ function getDate() {
 }
 
 
-cmd.command('run')
+cmd.command('serve')
     .action(() => {
         var date = getDate()
 

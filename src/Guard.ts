@@ -14,7 +14,7 @@ class Guard {
 
     private uidCounter = 0
 
-    async issueSecretTokenViaSSH(destination: string, user: string, password: string): Promise<string> {
+    async issueSecretTokenForPrivateAccount(destination: string, user: string, password: string): Promise<string> {
         this._clearCache()
         var ssh = new SSH(destination, user, password)
         await ssh.connect()
@@ -45,12 +45,8 @@ class Guard {
         return secretToken
     }
 
-    issueSecretTokenViaWhitelist(destination: string, user: string, requestIP: string) {
+    issueSecretTokenForCommunityAccount(destination: string, user: string) {
         this._clearCache()
-
-        if (!constant.whitelistIPs.includes(requestIP) && !config.isTesting) {
-            throw new Error('ip ' + requestIP + ' is not in whitelist')
-        }
 
         var secretToken = Helper.randomStr(45)
 

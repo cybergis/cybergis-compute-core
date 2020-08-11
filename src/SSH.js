@@ -52,9 +52,15 @@ var SSH = (function () {
         }
         if (server.isCommunityAccount) {
             this.isCommunityAccount = true;
-            var config = require('../config.json');
-            this.privateKey = config.privateKeyPath;
-            this.passphrase = config.passphrase;
+            if (server.communityAccountSSH.useLocalKeys) {
+                var config = require('../config.json');
+                this.privateKey = config.privateKeyPath;
+                this.passphrase = config.passphrase;
+            }
+            else {
+                this.privateKey = server.communityAccountSSH.key.privateKey;
+                this.passphrase = server.communityAccountSSH.key.passphrase;
+            }
         }
         this.ip = server.ip;
         this.port = server.port;
@@ -62,7 +68,7 @@ var SSH = (function () {
     SSH.prototype.connect = function (env) {
         if (env === void 0) { env = {}; }
         return __awaiter(this, void 0, void 0, function () {
-            var out, envCmd, i, v, e_1;
+            var envCmd, i, v, e_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -76,7 +82,7 @@ var SSH = (function () {
                                 passphrase: this.passphrase
                             })];
                     case 1:
-                        out = _a.sent();
+                        _a.sent();
                         return [3, 4];
                     case 2: return [4, this.SSH.connect({
                             host: this.ip,

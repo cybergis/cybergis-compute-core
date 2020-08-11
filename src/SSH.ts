@@ -36,9 +36,14 @@ class SSH {
 
         if (server.isCommunityAccount) {
             this.isCommunityAccount = true
-            var config = require('../config.json')
-            this.privateKey = config.privateKeyPath
-            this.passphrase = config.passphrase
+            if (server.communityAccountSSH.useLocalKeys) {
+                var config = require('../config.json')
+                this.privateKey = config.privateKeyPath
+                this.passphrase = config.passphrase
+            } else {
+                this.privateKey = server.communityAccountSSH.key.privateKey
+                this.passphrase = server.communityAccountSSH.key.passphrase
+            }
         }
 
         this.ip = server.ip
@@ -48,7 +53,7 @@ class SSH {
     async connect(env = {}) {
         try {
             if (this.isCommunityAccount) {
-                var out = await this.SSH.connect({
+                await this.SSH.connect({
                     host: this.ip,
                     port: this.port,
                     username: this.user,

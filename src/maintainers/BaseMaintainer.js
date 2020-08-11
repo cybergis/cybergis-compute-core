@@ -37,6 +37,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var Helper_1 = require("../Helper");
 var SSH_1 = require("../SSH");
+var spawn = require('child-process-async').spawn;
 var BaseMaintainer = (function () {
     function BaseMaintainer(manifest) {
         this._lock = false;
@@ -84,6 +85,58 @@ var BaseMaintainer = (function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 return [2];
+            });
+        });
+    };
+    BaseMaintainer.prototype.runPython = function (file, args) {
+        if (args === void 0) { args = []; }
+        return __awaiter(this, void 0, void 0, function () {
+            var child, out, self;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        args.unshift(__dirname + "/python/" + file);
+                        child = spawn('python3', args);
+                        out = {};
+                        self = this;
+                        child.stdout.on('data', function (result) {
+                            var stdout = Buffer.from(result, 'utf-8').toString();
+                            var parsedStdout = stdout.split('@');
+                            for (var i in parsedStdout) {
+                                var o = parsedStdout[i];
+                                var log = o.match(/log=\[[\s\S]*\]/g);
+                                if (log != null) {
+                                    log.forEach(function (v, i) {
+                                        v = v.replace('log=[', '');
+                                        v = v.replace(/]$/g, '');
+                                        self.emitLog(v);
+                                    });
+                                }
+                                var event = o.match(/event=\[[\s\S]*:[\s\S]*\]/g);
+                                if (event != null) {
+                                    event.forEach(function (v, i) {
+                                        v = v.replace('event=[', '');
+                                        v = v.replace(/]$/g, '');
+                                        var e = v.split(':');
+                                        self.emitEvent(e[0], e[1]);
+                                    });
+                                }
+                                var variable = o.match(/var=\[[\s\S]*:[\s\S]*\]/g);
+                                if (variable != null) {
+                                    variable.forEach(function (v, i) {
+                                        v = v.replace('var=[', '');
+                                        v = v.replace(/]$/g, '');
+                                        var e = v.split(':');
+                                        out[e[0]] = e[1];
+                                    });
+                                }
+                            }
+                        });
+                        return [4, child];
+                    case 1:
+                        _a.sent();
+                        return [2, out];
+                }
             });
         });
     };

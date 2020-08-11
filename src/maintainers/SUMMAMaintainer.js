@@ -49,73 +49,55 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var BaseMaintainer_1 = require("./BaseMaintainer");
-var ExampleMaintainer = (function (_super) {
-    __extends(ExampleMaintainer, _super);
-    function ExampleMaintainer() {
+var SUMMAMaintainer = (function (_super) {
+    __extends(SUMMAMaintainer, _super);
+    function SUMMAMaintainer() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    ExampleMaintainer.prototype.define = function () {
-        this.allowedEnv = {
-            A: 'number',
-            B: 'string'
-        };
+    SUMMAMaintainer.prototype.define = function () {
+        this.allowedEnv = {};
     };
-    ExampleMaintainer.prototype.onInit = function () {
+    SUMMAMaintainer.prototype.onInit = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var pipeline, out;
+            var params;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4, this.runPython('Example/init.py', [])];
+                    case 0: return [4, this.runPython('SUMMA/init.py', [
+                            'cigi-gisolve',
+                            __dirname + '/../../key/cigi-gisolve.key',
+                            __dirname + '/../../data/SUMMA'
+                        ])];
+                    case 1:
+                        params = _a.sent();
+                        this.remote_id = params['remote_id'];
+                        this.remote_slurm_out_file_path = params['remote_slurm_out_file_path'];
+                        this.remote_model_folder_path = params['remote_model_folder_path'];
+                        this.local_job_folder_path = params['local_job_folder_path'];
+                        return [2];
+                }
+            });
+        });
+    };
+    SUMMAMaintainer.prototype.onMaintain = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4, this.runPython('SUMMA/maintain.py', [
+                            'keeling',
+                            'cigi-gisolve',
+                            __dirname + '/../../key/cigi-gisolve.key',
+                            this.remote_id,
+                            this.remote_slurm_out_file_path,
+                            this.remote_model_folder_path,
+                            this.local_job_folder_path
+                        ])];
                     case 1:
                         _a.sent();
-                        pipeline = [
-                            'ls'
-                        ];
-                        return [4, this.connect(pipeline, {})];
-                    case 2:
-                        out = _a.sent();
-                        if (out.length > 0) {
-                            this.emitEvent('JOB_INITIALIZED', 'job [' + this.manifest.id + '] is initialized, waiting for job completion');
-                        }
                         return [2];
                 }
             });
         });
     };
-    ExampleMaintainer.prototype.onMaintain = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var pipeline, out;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        pipeline = [
-                            'ls',
-                            'echo $A',
-                            'echo $B',
-                            'echo $C',
-                            function (prev, self) {
-                                self.emitEvent('JOB_CUSTOM_EVENT', 'emit a custom event...');
-                                if (prev.out == '\n') {
-                                    throw new Error('error');
-                                }
-                                return '';
-                            },
-                            'echo $A'
-                        ];
-                        return [4, this.connect(pipeline, {})];
-                    case 1:
-                        out = _a.sent();
-                        if (out.length > 0) {
-                            this.emitEvent('JOB_ENDED', 'job [' + this.manifest.id + '] finished');
-                        }
-                        else {
-                            this.emitEvent('JOB_FAILED', 'job [' + this.manifest.id + '] failed');
-                        }
-                        return [2];
-                }
-            });
-        });
-    };
-    return ExampleMaintainer;
+    return SUMMAMaintainer;
 }(BaseMaintainer_1.default));
-exports.default = ExampleMaintainer;
+exports.default = SUMMAMaintainer;

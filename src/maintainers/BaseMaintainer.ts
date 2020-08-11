@@ -1,6 +1,7 @@
 import Helper from "../Helper"
 import SSH from "../SSH"
 import { manifest, options } from "../types"
+const { spawn } = require('child-process-async')
 
 class BaseMaintainer {
     private _lock = false
@@ -59,6 +60,55 @@ class BaseMaintainer {
 
     async onMaintain() {
 
+    }
+
+    async runPython(file, args = []) {
+        args.unshift(`${__dirname}/python/${file}`)
+        const child = spawn('python3', args)
+
+        var out = {}
+        var self = this
+
+        child.stdout.on('data', function (result) {
+            var stdout = Buffer.from(result, 'utf-8').toString()
+            var parsedStdout = stdout.split('@')
+
+            for (var i in parsedStdout) {
+                var o = parsedStdout[i]
+                var log = o.match(/log=\[[\s\S]*\]/g)
+                if (log != null) {
+                    log.forEach((v, i) => {
+                        v = v.replace('log=[', '')
+                        v = v.replace(/]$/g, '')
+                        self.emitLog(v)
+                    })
+                }
+
+                var event = o.match(/event=\[[\s\S]*:[\s\S]*\]/g)
+                if (event != null) {
+                    event.forEach((v, i) => {
+                        v = v.replace('event=[', '')
+                        v = v.replace(/]$/g, '')
+                        var e = v.split(':')
+                        self.emitEvent(e[0], e[1])
+                    })
+                }
+
+                var variable = o.match(/var=\[[\s\S]*:[\s\S]*\]/g)
+                if (variable != null) {
+                    variable.forEach((v, i) => {
+                        v = v.replace('var=[', '')
+                        v = v.replace(/]$/g, '')
+                        var e = v.split(':')
+                        out[e[0]] = e[1]
+                    })
+                }
+            }
+        })
+
+        await child
+
+        return out
     }
 
     emitEvent(type: string, message: string) {

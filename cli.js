@@ -14,7 +14,7 @@ function getDate() {
     var dStr = d < 10 ? '0' + d.toString() : d.toString();
     return yStr + '-' + mStr + '-' + dStr;
 }
-cmd.command('run')
+cmd.command('serve')
     .action(function () {
     var date = getDate();
     var forever = require('forever');

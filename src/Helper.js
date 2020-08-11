@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+var execSync = require('child_process').execSync;
 var Helper = {
     btoa: function (target) {
         return Buffer.from(target, 'base64').toString('binary');
@@ -24,6 +25,61 @@ var Helper = {
             result += characters.charAt(Math.floor(Math.random() * charactersLength));
         }
         return result;
+    },
+    setupFirewallRules: function (rules, sys) {
+        if (sys == 'linux') {
+            for (var i in rules) {
+                var rule = rules[i];
+                var t = '';
+                var r = '';
+                if (Array.isArray(rule)) {
+                    t = rule[0] + ' ';
+                    r = rule[1];
+                }
+                else {
+                    r = rule;
+                }
+                try {
+                    execSync('iptables ' + t + '-D ' + r, {
+                        stdio: 'ignore'
+                    });
+                }
+                catch (e) {
+                }
+                try {
+                    execSync('iptables ' + t + '-A ' + r, {
+                        stdio: 'ignore'
+                    });
+                }
+                catch (err) {
+                    console.error('error occurred when adding rule ' + 'iptables ' + t + '-A ' + r);
+                    console.error(err.toString());
+                }
+            }
+        }
+    },
+    teardownFirewallRules: function (rules, sys) {
+        if (sys == 'linux') {
+            for (var i in rules) {
+                var rule = rules[i];
+                var t = '';
+                var r = '';
+                if (Array.isArray(rule)) {
+                    t = rule[0] + ' ';
+                    r = rule[1];
+                }
+                else {
+                    r = rule;
+                }
+                try {
+                    execSync('iptables ' + t + '-D ' + r, {
+                        stdio: 'ignore'
+                    });
+                }
+                catch (e) {
+                }
+            }
+        }
     },
     onExit: function (callback) {
         process.on('exit', function () {

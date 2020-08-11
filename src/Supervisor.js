@@ -50,7 +50,7 @@ var Supervisor = (function () {
         var self = this;
         for (var service in constant_1.default.destinationMap) {
             var destination = constant_1.default.destinationMap[service];
-            this.jobPoolCapacities[service] = destination.capacity;
+            this.jobPoolCapacities[service] = destination.jobPoolCapacity;
             this.jobPools[service] = [];
             this.queues[service] = new Queue_1.default();
         }

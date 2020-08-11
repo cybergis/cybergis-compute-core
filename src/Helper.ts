@@ -1,4 +1,5 @@
 import { manifest } from './types'
+const { execSync } = require('child_process')
 
 var Helper = {
     btoa(target: string): string {
@@ -29,6 +30,65 @@ var Helper = {
             result += characters.charAt(Math.floor(Math.random() * charactersLength))
         }
         return result
+    },
+
+    setupFirewallRules(rules: Array<string | Array<string>>, sys: 'linux') {
+        if (sys == 'linux') {
+            for (var i in rules) {
+                var rule = rules[i]
+                var t = ''
+                var r = ''
+
+                if (Array.isArray(rule)) {
+                    t = rule[0] + ' '
+                    r = rule[1]
+                } else {
+                    r = rule
+                }
+
+                try {
+                    execSync('iptables ' + t + '-D ' + r, {
+                        stdio: 'ignore'
+                    })
+                } catch (e) {
+                    //
+                }
+
+                try {
+                    execSync('iptables ' + t + '-A ' + r, {
+                        stdio: 'ignore'
+                    })
+                } catch (err) {
+                    console.error('error occurred when adding rule ' + 'iptables ' + t + '-A ' + r)
+                    console.error(err.toString())
+                }
+            }
+        }
+    },
+
+    teardownFirewallRules(rules: Array<string | Array<string>>, sys: 'linux') {
+        if (sys == 'linux') {
+            for (var i in rules) {
+                var rule = rules[i]
+                var t = ''
+                var r = ''
+
+                if (Array.isArray(rule)) {
+                    t = rule[0] + ' '
+                    r = rule[1]
+                } else {
+                    r = rule
+                }
+
+                try {
+                    execSync('iptables ' + t + '-D ' + r, {
+                        stdio: 'ignore'
+                    })
+                } catch (e) {
+                    //
+                }
+            }
+        }
     },
 
     onExit(callback) {

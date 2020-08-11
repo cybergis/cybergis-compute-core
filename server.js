@@ -51,6 +51,15 @@ app.use(requestIp.mw({ attributeName: 'ip' }));
 var guard = new Guard_1.default();
 var supervisor = new Supervisor_1.default();
 var validator = new Validator();
+if (process.platform == "linux") {
+    var iptablesRules = [];
+    for (var k in config.clientIPs) {
+        iptablesRules.push('INPUT -p tcp -s ' + config.clientIPs[k] + ' --dport ' + config.serverPort + ' -j ACCEPT');
+    }
+    iptablesRules.push('INPUT -p tcp -s localhost --dport ' + config.serverPort + ' -j ACCEPT');
+    iptablesRules.push('INPUT -p tcp --dport ' + config.serverPort + ' -j DROP');
+    Helper_1.default.setupFirewallRules(iptablesRules, 'linux');
+}
 var schemas = {
     manifest: {
         type: 'object',
@@ -145,11 +154,11 @@ app.post('/guard/secretToken', function (req, res) {
                 case 1:
                     _a.trys.push([1, 6, , 7]);
                     if (!server.isCommunityAccount) return [3, 3];
-                    return [4, guard.issueSecretTokenViaWhitelist(cred.destination, server.communityAccountUser, req.ip)];
+                    return [4, guard.issueSecretTokenForCommunityAccount(cred.destination, server.communityAccountSSH.user)];
                 case 2:
                     sT = _a.sent();
                     return [3, 5];
-                case 3: return [4, guard.issueSecretTokenViaSSH(cred.destination, cred.user, cred.password)];
+                case 3: return [4, guard.issueSecretTokenForPrivateAccount(cred.destination, cred.user, cred.password)];
                 case 4:
                     sT = _a.sent();
                     _a.label = 5;
@@ -250,7 +259,3 @@ app.get('/supervisor', function (req, res) {
     res.json(supervisor.status(aT.uid));
 });
 app.listen(config.serverPort, function () { return console.log('supervisor server is up, listening to port: ' + config.serverPort); });
-Helper_1.default.onExit(function () {
-    console.log('safely exiting supervisor server...');
-    supervisor.destroy();
-});

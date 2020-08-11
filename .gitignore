@@ -121,3 +121,9 @@ log/*
 !log/.gitkeep
 
 config.json
+
+data/SUMMA/*
+!data/SUMMA/.gitkeep
+!data/SUMMA/model
+data/SUMMA/model/*
+!data/SUMMA/model/.gitkeep

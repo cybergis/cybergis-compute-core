@@ -1,6 +1,10 @@
 {
-    "privateKeyPath": "/dir/to/privatekey",
-    "passphrase": "passphrase",
+    "localSSHKey": {
+        "privateKeyPath": "/dir/to/privatekey",
+        "passphrase": "passphrase"
+    },
     "serverPort": 3000,
-    "isTesting": true
+    "clientIPs": [
+        "0.0.0.0"
+    ]
 }

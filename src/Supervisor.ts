@@ -23,7 +23,7 @@ class Supervisor {
 
         for (var service in constant.destinationMap) {
             var destination = constant.destinationMap[service]
-            this.jobPoolCapacities[service] = destination.capacity
+            this.jobPoolCapacities[service] = destination.jobPoolCapacity
             this.jobPools[service] = []
             this.queues[service] = new Queue()
         }
