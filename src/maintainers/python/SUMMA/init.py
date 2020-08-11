@@ -1,7 +1,5 @@
-import json
 import os
 import subprocess
-import tempfile
 import netCDF4 as nc
 import sys
 import numpy as np
