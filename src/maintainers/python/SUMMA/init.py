@@ -70,18 +70,18 @@ if (not os.path.exists(workspace_dir + '/' + model_folder_name + '/installTestCa
         ["chmod", "-x", "./installTestCases_local.sh"], cwd=model_source_folder_path,
     )
 
-    if (platform.system() == 'Linux'):
-        subprocess.run(
-            ["source", "./installTestCases_local.sh"], cwd=model_source_folder_path,
-        )
-    else:
-        subprocess.run(
-            ["chmod", "755", "./installTestCases_local.sh"], cwd=model_source_folder_path,
-        )
+    # if (platform.system() == 'Linux'):
+    #     subprocess.run(
+    #         ["source", "./installTestCases_local.sh"], cwd=model_source_folder_path,
+    #     )
+    # else:
+    subprocess.run(
+        ["chmod", "755", "./installTestCases_local.sh"], cwd=model_source_folder_path,
+    )
 
-        subprocess.run(
-            ["./installTestCases_local.sh"], cwd=model_source_folder_path,
-        )
+    subprocess.run(
+        ["./installTestCases_local.sh"], cwd=model_source_folder_path,
+    )
 
     name = os.path.join(
         model_source_folder_path, "settings/summa_zParamTrial_riparianAspen.nc"
