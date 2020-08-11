@@ -27,6 +27,12 @@ if (process.platform == "linux") {
     Helper.setupFirewallRules(iptablesRules, 'linux')
 }
 
+Helper.onExit(function () {
+    if (process.platform == "linux") {
+        Helper.teardownFirewallRules(iptablesRules, 'linux')
+    }
+})
+
 var schemas = {
     manifest: {
         type: 'object',

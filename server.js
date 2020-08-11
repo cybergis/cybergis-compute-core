@@ -60,6 +60,11 @@ if (process.platform == "linux") {
     iptablesRules.push('INPUT -p tcp --dport ' + config.serverPort + ' -j DROP');
     Helper_1.default.setupFirewallRules(iptablesRules, 'linux');
 }
+Helper_1.default.onExit(function () {
+    if (process.platform == "linux") {
+        Helper_1.default.teardownFirewallRules(iptablesRules, 'linux');
+    }
+});
 var schemas = {
     manifest: {
         type: 'object',
