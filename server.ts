@@ -17,21 +17,23 @@ var guard = new Guard()
 var supervisor = new Supervisor()
 var validator = new Validator()
 
-if (process.platform == "linux") {
-    var iptablesRules = []
-    for (var k in config.clientIPs) {
-        iptablesRules.push('INPUT -p tcp -s ' + config.clientIPs[k] + ' --dport ' + config.serverPort + ' -j ACCEPT')
-    }
-    iptablesRules.push('INPUT -p tcp -s localhost --dport ' + config.serverPort + ' -j ACCEPT')
-    iptablesRules.push('INPUT -p tcp --dport ' + config.serverPort + ' -j DROP')
-    Helper.setupFirewallRules(iptablesRules, 'linux')
-}
-
-Helper.onExit(function () {
+if (!config.isTesting) {
     if (process.platform == "linux") {
-        Helper.teardownFirewallRules(iptablesRules, 'linux')
+        var iptablesRules = []
+        for (var k in config.clientIPs) {
+            iptablesRules.push('INPUT -p tcp -s ' + config.clientIPs[k] + ' --dport ' + config.serverPort + ' -j ACCEPT')
+        }
+        iptablesRules.push('INPUT -p tcp -s localhost --dport ' + config.serverPort + ' -j ACCEPT')
+        iptablesRules.push('INPUT -p tcp --dport ' + config.serverPort + ' -j DROP')
+        Helper.setupFirewallRules(iptablesRules, 'linux')
     }
-})
+
+    Helper.onExit(function () {
+        if (process.platform == "linux") {
+            Helper.teardownFirewallRules(iptablesRules, 'linux')
+        }
+    })
+}
 
 var schemas = {
     manifest: {

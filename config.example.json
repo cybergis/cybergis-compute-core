@@ -6,5 +6,6 @@
     "serverPort": 3000,
     "clientIPs": [
         "0.0.0.0"
-    ]
+    ],
+    "isTesting": true
 }
