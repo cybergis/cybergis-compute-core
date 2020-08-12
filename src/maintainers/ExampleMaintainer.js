@@ -65,14 +65,12 @@ var ExampleMaintainer = (function (_super) {
             var pipeline, out;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4, this.runPython('Example/init.py', [])];
-                    case 1:
-                        _a.sent();
+                    case 0:
                         pipeline = [
                             'ls'
                         ];
                         return [4, this.connect(pipeline, {})];
-                    case 2:
+                    case 1:
                         out = _a.sent();
                         if (out.length > 0) {
                             this.emitEvent('JOB_INITIALIZED', 'job [' + this.manifest.id + '] is initialized, waiting for job completion');

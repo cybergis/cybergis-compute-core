@@ -9,8 +9,6 @@ class ExampleMaintainer extends BaseMaintainer {
     }
 
     async onInit() {
-        await this.runPython('Example/init.py', [])
-
         var pipeline = [
             'ls'
         ]
