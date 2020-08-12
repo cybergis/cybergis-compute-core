@@ -1,9 +1,10 @@
 # Job Supervisor
-A Restful API server for job submission and monitoring to HPC
+HPC job submission and maintaining framework with Restful API
 
 ## Setup a Supervisor Server
 0. Requirements
-    - NodeJS
+    - NodeJS + npm/yarn
+    - Python3 + pip3
 
 1. Install Job Supervisor
     ```bash
@@ -17,9 +18,9 @@ A Restful API server for job submission and monitoring to HPC
     cp config.example.json config.json
     ```
 
-3. Run server to check if install correctly
+3. Run doctor script to check if Bash/Python dependencies are install correctly
     ```bash
-    node ./server.js
+    node ./doctor.js
     ```
 
 4. Run server in background

@@ -35,5 +35,10 @@ exports.default = {
                 useLocalKeys: true
             }
         }
+    },
+    doctorScripts: {
+        python: [
+            __dirname + '/maintainers/python/SUMMA/doctor.py'
+        ]
     }
 };
