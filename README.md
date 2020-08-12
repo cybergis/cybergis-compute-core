@@ -4,6 +4,7 @@ HPC job submitting and maintaining framework with Restful API
 
 ## Content
 - [Setup a Supervisor Server](https://github.com/cybergis/job-supervisor#setup-a-supervisor-server)
+- [Restful API](https://github.com/cybergis/job-supervisor#restful-api)
 - [General Development Guidelines](https://github.com/cybergis/job-supervisor#general-development-guidelines)
   - [Development Environment Setup](https://github.com/cybergis/job-supervisor#development-environment-setup)
   - [Add Service](https://github.com/cybergis/job-supervisor#add-service)
