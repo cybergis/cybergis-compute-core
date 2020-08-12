@@ -15,6 +15,7 @@ HPC job submitting and maintaining framework with Restful API
 0. Requirements
     - NodeJS & npm/yarn
     - Python3.4+ & pip3
+> ⚠️ please run the following under root
 
 1. Install Job Supervisor
     ```bash
@@ -37,6 +38,125 @@ HPC job submitting and maintaining framework with Restful API
     ```bash
     node ./cli.js serve
     ```
+
+## Restful API
+#### POST /guard/secretToken, get secretToken
+request BODY:
+```JavaScript
+{
+    "destination": "summa",
+    "user": "zimox2",
+    "password": "myPassword" // optional, only needed for private account service
+}
+```
+response BOYD:
+```JavaScript
+{
+    "secretToken": "P7iLpaF9PXtdlXHathBjnY4PcR6w2bZ280xVDk6nhvsWD"
+}
+```
+
+#### POST /supervisor
+request BODY:
+```JavaScript
+{
+	"aT": "bWQ1.eyJkYXRlIjoyMDIwMDgxMjAyfQ==.af415c396e9a21cb725c1a8e1e79e049",
+	"dest": "summa",
+	"env": {
+		"A": 1,
+		"B": "B",
+		"C": 2
+	},
+	"payload": {
+		"scripts": [
+			"1.sh",
+			"2.sh"
+		]
+	}
+}
+```
+response BODY:
+```JavaScript
+{
+    "aT": "bWQ1.eyJkYXRlIjoyMDIwMDgxMjAyfQ==.af415c396e9a21cb725c1a8e1e79e049",
+    "uid": 1,
+    "id": "1597266236HDAL",
+	"dest": "summa",
+	"env": {
+		"A": 1,
+		"B": "B",
+		"C": 2
+	},
+	"payload": {
+		"scripts": [
+			"1.sh",
+			"2.sh"
+		]
+	}
+}
+```
+
+#### GET /supervisor
+request BODY:
+```JavaScript
+{
+	"aT": "bWQ1.eyJkYXRlIjoyMDIwMDgxMjIxfQ==.517fa03046ae53d3b14d6fcb2dc44274"
+}
+```
+
+response BODY:
+```JavaScript
+{
+    "events": {
+        "1597266236HDAL": [
+            {
+                "type": "JOB_QUEUED",
+                "message": "job [1597266236HDAL] is queued, waiting for registration",
+                "at": "2020-08-12T21:03:55.898Z"
+            },
+            {
+                "type": "JOB_REGISTERED",
+                "message": "job [1597266236HDAL] is registered with the supervisor, waiting for initialization",
+                "at": "2020-08-12T21:03:56.601Z"
+            }
+        ]
+    },
+    "logs": {
+        "1597266236HDAL": [
+            "this is a log"
+        ]
+    }
+}
+```
+
+#### /supervisor/:id (ex. /supervisor/1597266236HDAL)
+request BODY:
+```JavaScript
+{
+	"aT": "bWQ1.eyJkYXRlIjoyMDIwMDgxMjIxfQ==.517fa03046ae53d3b14d6fcb2dc44274"
+}
+```
+
+response BODY:
+```JavaScript
+{
+    "events": [
+        {
+            "type": "JOB_QUEUED",
+            "message": "job [1597266236HDAL] is queued, waiting for registration",
+            "at": "2020-08-12T21:03:55.898Z"
+        },
+        {
+            "type": "JOB_REGISTERED",
+            "message": "job [1597266236HDAL] is registered with the supervisor, waiting for initialization",
+            "at": "2020-08-12T21:03:56.601Z"
+        }
+    ],
+    "logs": [
+        "this is a log"
+    ]
+}
+```
 
 ## General Development Guidelines
 #### Development Environment Setup
