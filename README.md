@@ -4,7 +4,7 @@ HPC job submission and maintaining framework with Restful API
 ## Setup a Supervisor Server
 0. Requirements
     - NodeJS + npm/yarn
-    - Python3 + pip3
+    - Python3.4+ + pip3
 
 1. Install Job Supervisor
     ```bash

@@ -1,21 +1,35 @@
 import subprocess
 import os
+import importlib
 
 print('🚩Python/SUMMA')
 print('trying to import python dependencies...')
 
+def checkPythonPkg(pkg):
+    loader = importlib.util.find_spec(pkg)
+    if loader is None:
+        print('❌ python pkg ' + pkg + ' not found!')
+
 print('package: netCDF4')
-import netCDF4 as nc
+checkPythonPkg('netCDF4')
 print('package: numpy')
-import numpy as np
+checkPythonPkg('numpy')
 print('package: platform')
-import platform
+checkPythonPkg('platform')
 print('package: pysumma')
-from pysumma import ensemble
+checkPythonPkg('pysumma')
 print('package: cybergis')
-from cybergis import SummaSupervisorToHPC
+checkPythonPkg('cybergis')
 print('package: hs_restclient')
-from hs_restclient import HydroShare, HydroShareAuthBasic
+checkPythonPkg('hs_restclient')
+print('package: tkinter')
+checkPythonPkg('tkinter')
+print('package: cyborgs')
+checkPythonPkg('tkinter')
+print('package: distributed')
+checkPythonPkg('distributed')
+print('package: pyproj')
+checkPythonPkg('pyproj')
 
 print('testing if BASH command exists...')
 
