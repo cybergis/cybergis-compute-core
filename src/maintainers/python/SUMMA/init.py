@@ -8,14 +8,16 @@ from pysumma import ensemble
 from cybergis import SummaSupervisorToHPC
 from hs_restclient import HydroShare, HydroShareAuthBasic
 
+
 def safe_arange(start, stop, step):
     a = np.arange(start, stop, step)
 
-    result =[]
+    result = []
     for i in a:
         par = round(i, 10)
         result = np.append(result, par)
     return result
+
 
 resource_id = "1f3f310af8364d2aa3e6a9459152a21c"
 
@@ -46,7 +48,9 @@ if resource_id.encode("utf-8") not in stdout or stdout2 == b"":
     with open(base_dir + "/managementfile", "a") as file:
         file.write(timestamp)
 
-print('@event=[SUMMA_RESOURCES_DOWNLOADED:downloaded resources from Hydroshare for SUMMA]')
+print(
+    "@event=[SUMMA_RESOURCES_DOWNLOADED:downloaded resources from Hydroshare for SUMMA]"
+)
 
 # Unzip model file
 content_folder = os.path.join(
@@ -58,12 +62,16 @@ workspace_dir = os.path.join(base_dir, "workspace")
 subprocess.run(["mkdir", "-p", workspace_dir])
 unzip_dir = workspace_dir
 model_source_folder_path = os.path.join(unzip_dir, model_folder_name)
-if (not os.path.exists(workspace_dir + '/' + model_folder_name + '/installTestCases_local.sh')):
+if not os.path.exists(
+    workspace_dir + "/" + model_folder_name + "/installTestCases_local.sh"
+):
     subprocess.run(
         ["unzip", "-o", model_folder_name + ".zip", "-d", unzip_dir], cwd=content_folder
     )
 
-    print('@event=[SUMMA_RESOURCES_UNZIPPED:decompressed resources from Hydroshare for SUMMA]')
+    print(
+        "@event=[SUMMA_RESOURCES_UNZIPPED:decompressed resources from Hydroshare for SUMMA]"
+    )
 
     # Init
     subprocess.run(
@@ -113,13 +121,18 @@ params["walltime"] = 1
 
 s = SummaSupervisorToHPC(params, username, key_path)
 
-print('@event=[SUMMA_HPC_CONNECTED:connected to HPC]')
+print("@event=[SUMMA_HPC_CONNECTED:connected to HPC]")
 
 out = s.connect().submit()
 
-print('@event=[SUMMA_HPC_SUBMITTED:submitted SUMMA job to HPC]')
+print("@event=[SUMMA_HPC_SUBMITTED:submitted SUMMA job to HPC]")
 
 for i in out.keys():
     print("@var=[" + i + ":" + out[i] + "]")
 
-print('@event=[JOB_INITIALIZED:SUMMA job in HPC job queue with remote_id: ' + out['remote_id'] + ']')
+print(
+    "@event=[JOB_INITIALIZED:initialized SUMMA job in HPC job queue with remote_id: "
+    + out["remote_id"]
+    + "]"
+)
+

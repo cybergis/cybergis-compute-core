@@ -110,7 +110,7 @@ The lifecycle of a **Maintainer** class is defined as the following:
      - The `Supervisor` invoke the `onMaintain()` method and stop when received a `JOB_ENDED` or `JOB_FAILED` event emitted by the `Maintainer`. 
      - `onMaintain()` should always emit `JOB_ENDED` or `JOB_FAILED` event when job is completed or failed on remote terminal.
 
-Maintainer Interface:
+**Maintainer** Interface:
   - **user define methods**
     - `define()`: *(optional)* define allowed system environment variables when connected to the remote terminal
     - `await onInit()`: *[async]* initialize job
@@ -133,9 +133,52 @@ Maintainer Interface:
         - anonymous function: a function that receives 
       - **options**:
 ```JavaScript
-export interface options {
+options {
     cwd?: string,
     execOptions?: any,
     encoding?: BufferEncoding
 }
 ```
+
+Python **Maintainer** Example
+- ExampleMaintainer.ts
+```JavaScript
+import BaseMaintainer from './BaseMaintainer'
+
+class ExampleMaintainer extends BaseMaintainer {
+    private output_a
+
+    async onInit() {
+        var params = await this.runPython('SUMMA/init.py', ['input_a', 'input_b'])
+        this.output_a = params['output_a']
+    }
+
+    async onMaintain() {
+        await this.runPython('SUMMA/maintain.py', [this.output_a])
+    }
+}
+
+export default SUMMAMaintainer
+```
+- SUMMA/init.py
+```python
+# some code that initialize job
+print("@event=[JOB_INITIALIZED:initialized SUMMA job in HPC job queue with remote_id: "
+    + out["remote_id"]
+    + "]")
+print("@var=[output_a:"+out['a']+"]")
+```
+
+- SUMMA/maintain.py
+```python
+# some code that check job status
+if job.status() == 'finished':
+    print("@event=[JOB_ENDED:SUMMA job with remote_id: "
+    + out["remote_id"]
+    + " completed]")
+elif job.status() == 'error':
+    print("@event=[JOB_FAILED:SUMMA job with remote_id: "
+    + out["remote_id"]
+    + " failed]")
+```
+
