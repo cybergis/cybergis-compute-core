@@ -80,7 +80,7 @@ if (not os.path.exists(workspace_dir + '/' + model_folder_name + '/installTestCa
     )
 
     subprocess.run(
-        ["./installTestCases_local.sh"], cwd=model_source_folder_path,
+        ["source", "./installTestCases_local.sh"], cwd=model_source_folder_path,
     )
 
     name = os.path.join(
