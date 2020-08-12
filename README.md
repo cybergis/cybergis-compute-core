@@ -40,9 +40,9 @@ tsc
 ```
 
 #### Add Service
- - Service is defined in `src/constant.ts`. There are three types:
-   - private account services:
-   - > Users use their own Linux account & password to login and submit jobs to a remote terminal
+Service is defined in `src/constant.ts`. There are three types:
+private account services:
+> Users use their own Linux account & password to login and submit jobs to a remote terminal
 ```js
 serviceName: {
     ip: "hadoop01.cigi.illinois.edu",
@@ -52,8 +52,8 @@ serviceName: {
     isCommunityAccount: false
 }
 ```
-  - community account using local key:
-  - > A local private key is defined in config.json, usually under ~/.ssh. User login to community account using the machine's private-public key pairs
+community account using local key:
+> A local private key is defined in config.json, usually under ~/.ssh. User login to community account using the machine's private-public key pairs
 ```js
 serviceName: {
     ip: "keeling.earth.illinois.edu",
@@ -67,8 +67,8 @@ serviceName: {
     }
 }
 ```
-  - community account using custom key:
-  - > A custom private key is copied under ./key. Define the location of the private key and the passphrase associated with the key. User login to community account using the custom private-public key pairs
+community account using custom key:
+> A custom private key is copied under ./key. Define the location of the private key and the passphrase associated with the key. User login to community account using the custom private-public key pairs
 ```js
 serviceName: {
     ip: "keeling.earth.illinois.edu",
@@ -115,6 +115,8 @@ Maintainer Interface:
     - `await onInit()`: *[async]* initialize job
     - `await onMaintain()`: *[async]* monitor job status
   - **helper methods**
+    - `this.emitLog(message: string)`: emit log
+    - `this.emitEvent(type: string, message: string)`: emit event
     - `await this.runPython(file: string, args?: Array<string>): any{}`: *[async]* run python script
       - **file**: name of the python script under `src/maintainers/python`
       - **args**: array of arguments passed in to the python script
@@ -125,6 +127,9 @@ Maintainer Interface:
           - `print('@event=[EVENT_NAME:event message]')`: emit an event to `Maintainer`
           - `print('@var=[NAME:value]')`: define an output of the `runPython()` class.
     - `await this.connect(cmdPipeline: Array<any>, ?options: options)`: *[async]* execute BASH commands in sequence on remote terminal
+      - **cmdPipeline**: an array of strings or anonymous functions
+        - string: a command to execute (ex. `echo $A`)
+        - anonymous function: a function that receives 
       - **options**:
 ```JavaScript
 export interface options {
@@ -133,8 +138,3 @@ export interface options {
     encoding?: BufferEncoding
 }
 ```
-
-
-  - **cmdPipeline**: an array of strings or anonymous functions
-    - string: a command to execute (ex. `echo $A`)
-    - anonymous function: a function that receives 
