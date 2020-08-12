@@ -1,5 +1,15 @@
 # Job Supervisor
 HPC job submitting and maintaining framework with Restful API
+<img width="1028" alt="Screen Shot 2020-08-12 at 3 37 04 PM" src="https://user-images.githubusercontent.com/34933627/90065330-bad40280-dcb1-11ea-8e8c-4edfd3eb8987.png">
+
+## Content
+- [Setup a Supervisor Server](https://github.com/cybergis/job-supervisor#setup-a-supervisor-server)
+- [General Development Guidelines](https://github.com/cybergis/job-supervisor#general-development-guidelines)
+  - [Development Environment Setup](https://github.com/cybergis/job-supervisor#development-environment-setup)
+  - [Add Service](https://github.com/cybergis/job-supervisor#add-service)
+  - [Define Maintainer Class](https://github.com/cybergis/job-supervisor#define-maintainer-class)
+- [Future Roadmap]()
+
 
 ## Setup a Supervisor Server
 0. Requirements
@@ -238,3 +248,6 @@ class ExampleMaintainer extends BaseMaintainer {
 
 export default ExampleMaintainer
 ```
+
+## Future Roadmap
+- Spark/YARN submission
