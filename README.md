@@ -42,7 +42,7 @@ tsc
 #### Add Service
 Service is defined in `src/constant.ts`. There are three types:
 
-private account services:
+- private account services:
 > Users use their own Linux account & password to login and submit jobs to a remote terminal
 ```js
 serviceName: {
@@ -53,7 +53,7 @@ serviceName: {
     isCommunityAccount: false
 }
 ```
-community account using local key:
+- community account using local key:
 > A local private key is defined in config.json, usually under ~/.ssh. User login to community account using the machine's private-public key pairs
 ```js
 serviceName: {
@@ -68,7 +68,7 @@ serviceName: {
     }
 }
 ```
-community account using custom key:
+- community account using custom key:
 > A custom private key is copied under ./key. Define the location of the private key and the passphrase associated with the key. User login to community account using the custom private-public key pairs
 ```js
 serviceName: {
