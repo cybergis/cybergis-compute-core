@@ -132,13 +132,13 @@ The lifecycle of a **Maintainer** class is defined as the following:
         - string: a command to execute (ex. `echo $A`)
         - anonymous function: a function that receives 
       - **options**:
-```JavaScript
-options {
-    cwd?: string,
-    execOptions?: any,
-    encoding?: BufferEncoding
-}
-```
+        ```JavaScript
+        options {
+            cwd?: string,
+            execOptions?: any,
+            encoding?: BufferEncoding
+        }
+        ```
 
 Python **Maintainer** Example
 - ExampleMaintainer.ts
