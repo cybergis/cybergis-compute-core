@@ -73,30 +73,21 @@ if not os.path.exists(
         "@event=[SUMMA_RESOURCES_UNZIPPED:decompressed resources from Hydroshare for SUMMA]"
     )
 
-    # Init
-    subprocess.run(
-        ["chmod", "-x", "./installTestCases_local.sh"], cwd=model_source_folder_path,
-    )
+# Init
+subprocess.run(
+    ["chmod", "-x", "./installTestCases_local.sh"], cwd=model_source_folder_path,
+)
 
-    # if (platform.system() == 'Linux'):
-    #     subprocess.run(
-    #         ["source", "./installTestCases_local.sh"], cwd=model_source_folder_path,
-    #     )
-    # else:
-    subprocess.run(
-        ["chmod", "755", "./installTestCases_local.sh"], cwd=model_source_folder_path,
-    )
+subprocess.run(
+    ["chmod", "755", "./installTestCases_local.sh"], cwd=model_source_folder_path,
+)
 
-    subprocess.run(
-        ["source", "./installTestCases_local.sh"], cwd=model_source_folder_path,
-    )
-
-    name = os.path.join(
-        model_source_folder_path, "settings/summa_zParamTrial_riparianAspen.nc"
-    )
-    param_trial = nc.Dataset(name, "w", format="NETCDF3_CLASSIC")
-    param_trial.createDimension("hru", 1)
-    param_trial.close()
+name = os.path.join(
+    model_source_folder_path, "settings/summa_zParamTrial_riparianAspen.nc"
+)
+param_trial = nc.Dataset(name, "w", format="NETCDF3_CLASSIC")
+param_trial.createDimension("hru", 1)
+param_trial.close()
 
 # create ensemble
 # different parameterizations
@@ -135,4 +126,3 @@ print(
     + out["remote_id"]
     + "]"
 )
-
