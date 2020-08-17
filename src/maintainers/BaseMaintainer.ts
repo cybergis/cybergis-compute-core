@@ -13,13 +13,15 @@ class BaseMaintainer {
 
     private rawManifest: manifest = null
 
-    protected manifest = null
+    public manifest = null
 
     protected events = []
 
     protected logs = []
 
     protected env = {}
+
+    public downloadDir: string = undefined
 
     public allowedEnv = undefined
 
@@ -65,7 +67,9 @@ class BaseMaintainer {
 
     async runPython(file: string, args = []) {
         args.unshift(`${__dirname}/python/${file}`)
-        const child = spawn('python3', args)
+        const child = spawn('python3', args, {
+            shell: true
+        })
 
         var out = {}
         var self = this
@@ -109,6 +113,15 @@ class BaseMaintainer {
                         out[e[0]] = e[1]
                     })
                 }
+
+                var download = o.match(/download=\[[\s\S]*\]/g)
+                if (download != null) {
+                    download.forEach((v, i) => {
+                        v = v.replace('download=[', '')
+                        v = v.replace(/]$/g, '')
+                        self.registerDownloadDir(v)
+                    })
+                }
             }
         })
 
@@ -119,6 +132,10 @@ class BaseMaintainer {
         }
 
         return out
+    }
+
+    registerDownloadDir(dir: string) {
+        this.downloadDir = dir
     }
 
     emitEvent(type: string, message: string) {

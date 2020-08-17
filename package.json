@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/cybergis/job-supervisor#readme",
   "dependencies": {
+    "archiver": "^5.0.0",
     "body-parser": "^1.19.0",
     "child-process-async": "^1.0.1",
     "commander": "^6.0.0",

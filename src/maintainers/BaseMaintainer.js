@@ -49,6 +49,7 @@ var BaseMaintainer = (function () {
         this.events = [];
         this.logs = [];
         this.env = {};
+        this.downloadDir = undefined;
         this.allowedEnv = undefined;
         this.define();
         if (this.allowedEnv === undefined) {
@@ -97,7 +98,9 @@ var BaseMaintainer = (function () {
                 switch (_b.label) {
                     case 0:
                         args.unshift(__dirname + "/python/" + file);
-                        child = spawn('python3', args);
+                        child = spawn('python3', args, {
+                            shell: true
+                        });
                         out = {};
                         self = this;
                         child.stdout.on('data', function (result) {
@@ -134,6 +137,14 @@ var BaseMaintainer = (function () {
                                         out[e[0]] = e[1];
                                     });
                                 }
+                                var download = o.match(/download=\[[\s\S]*\]/g);
+                                if (download != null) {
+                                    download.forEach(function (v, i) {
+                                        v = v.replace('download=[', '');
+                                        v = v.replace(/]$/g, '');
+                                        self.registerDownloadDir(v);
+                                    });
+                                }
                             }
                         });
                         return [4, child];
@@ -146,6 +157,9 @@ var BaseMaintainer = (function () {
                 }
             });
         });
+    };
+    BaseMaintainer.prototype.registerDownloadDir = function (dir) {
+        this.downloadDir = dir;
     };
     BaseMaintainer.prototype.emitEvent = function (type, message) {
         if (type === 'JOB_ENDED' || type === 'JOB_FAILED') {

@@ -3,12 +3,16 @@ import Emitter from "./Emitter"
 import Helper from "./Helper"
 import { manifest } from './types'
 import constant from './constant'
+const fs = require('fs')
+const archiver = require('archiver')
 
 class Supervisor {
 
     private jobPoolCapacities = {}
 
     private jobPools = {}
+
+    private downloadPools = {}
 
     private queues = {}
 
@@ -55,6 +59,9 @@ class Supervisor {
 
                         if (job.maintainer.isEnd) {
                             jobPool.splice(i, 1)
+                            if (job.maintainer.downloadDir != undefined) {
+                                self.downloadPools[job.maintainer.getJobID()] = job.maintainer.downloadDir
+                            }
                             i--
                         }
                     }
@@ -80,6 +87,37 @@ class Supervisor {
 
     status(uid: number, jobID: string = null) {
         return this.emitter.status(uid, jobID)
+    }
+
+    async getDownloadDir(jobID: string): Promise<string> {
+        var dir = __dirname + '/../data/download/' + jobID + '.zip'
+        if (!fs.existsSync(dir)) {
+            if (this.downloadPools[jobID] != undefined) {
+                var self = this
+                await new Promise((resolve, reject) => {
+                    var stream = fs.createWriteStream(dir)
+                    var archive = archiver('zip')
+                    archive.pipe(stream)
+                    archive.directory(self.downloadPools[jobID], false)
+                    archive.finalize()
+                    archive.on('error', function (err) {
+                        console.log('la')
+                        reject(err)
+                    })
+                    stream.on('end', function () {
+                        resolve('')
+                    })
+                    stream.on('close', function () {
+                        resolve('')
+                    })
+                })
+                return dir
+            } else {
+                return null
+            }
+        } else {
+            return dir
+        }
     }
 
     private _generateJobID(): string {

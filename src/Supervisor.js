@@ -39,10 +39,13 @@ var Queue_1 = require("./Queue");
 var Emitter_1 = require("./Emitter");
 var Helper_1 = require("./Helper");
 var constant_1 = require("./constant");
+var fs = require('fs');
+var archiver = require('archiver');
 var Supervisor = (function () {
     function Supervisor() {
         this.jobPoolCapacities = {};
         this.jobPools = {};
+        this.downloadPools = {};
         this.queues = {};
         this.emitter = new Emitter_1.default();
         this.maintainerThread = null;
@@ -96,6 +99,9 @@ var Supervisor = (function () {
                             }
                             if (job.maintainer.isEnd) {
                                 jobPool.splice(i, 1);
+                                if (job.maintainer.downloadDir != undefined) {
+                                    self.downloadPools[job.maintainer.getJobID()] = job.maintainer.downloadDir;
+                                }
                                 i--;
                             }
                             _c.label = 7;
@@ -129,6 +135,44 @@ var Supervisor = (function () {
     Supervisor.prototype.status = function (uid, jobID) {
         if (jobID === void 0) { jobID = null; }
         return this.emitter.status(uid, jobID);
+    };
+    Supervisor.prototype.getDownloadDir = function (jobID) {
+        return __awaiter(this, void 0, void 0, function () {
+            var dir, self;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        dir = __dirname + '/../data/download/' + jobID + '.zip';
+                        if (!!fs.existsSync(dir)) return [3, 4];
+                        if (!(this.downloadPools[jobID] != undefined)) return [3, 2];
+                        self = this;
+                        return [4, new Promise(function (resolve, reject) {
+                                var stream = fs.createWriteStream(dir);
+                                var archive = archiver('zip');
+                                archive.pipe(stream);
+                                archive.directory(self.downloadPools[jobID], false);
+                                archive.finalize();
+                                archive.on('error', function (err) {
+                                    console.log('la');
+                                    reject(err);
+                                });
+                                stream.on('end', function () {
+                                    resolve('');
+                                });
+                                stream.on('close', function () {
+                                    resolve('');
+                                });
+                            })];
+                    case 1:
+                        _a.sent();
+                        return [2, dir];
+                    case 2: return [2, null];
+                    case 3: return [3, 5];
+                    case 4: return [2, dir];
+                    case 5: return [2];
+                }
+            });
+        });
     };
     Supervisor.prototype._generateJobID = function () {
         return Math.round((new Date()).getTime() / 1000) + Helper_1.default.randomStr(4);

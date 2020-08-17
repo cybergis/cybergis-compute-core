@@ -67,7 +67,7 @@ var schemas = {
                 type: 'string'
             }
         },
-        required: ['destination', 'user']
+        required: ['destination']
     },
     accessToken: {
         type: 'object',
@@ -186,6 +186,42 @@ app.post('/supervisor', function (req, res) {
     manifest = supervisor.add(manifest)
     manifest = Helper.hideCredFromManifest(manifest)
     res.json(manifest)
+})
+
+app.get('/supervisor/download/:jobID', async function (req, res) {
+    var aT = req.body
+    var errors = requestErrors(validator.validate(aT, schemas['accessToken']))
+
+    if (errors.length > 0) {
+        res.json({
+            error: "invalid input",
+            messages: errors
+        })
+        res.status(402)
+        return
+    }
+
+    try {
+        aT = guard.validateAccessToken(aT)
+    } catch (e) {
+        res.json({
+            error: "invalid access token",
+            messages: [e.toString()]
+        })
+        res.status(401)
+        return
+    }
+
+    var jobID = req.params.jobID
+    var dir = await supervisor.getDownloadDir(jobID)
+
+    if (dir != null) {
+        res.download(dir)
+    } else {
+        res.json({
+            error: "job id " + jobID + " does not have a download file"
+        })
+    }
 })
 
 app.get('/supervisor/:jobID', function (req, res) {

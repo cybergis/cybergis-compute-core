@@ -122,7 +122,7 @@ for i in out.keys():
     print("@var=[" + i + ":" + out[i] + "]")
 
 print(
-    "@event=[JOB_INITIALIZED:initialized SUMMA job in HPC job queue with remote_id: "
+    "@event=[JOB_INITIALIZED:initialized SUMMA job in HPC job queue with remote_id "
     + out["remote_id"]
     + "]"
 )

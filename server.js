@@ -99,7 +99,7 @@ var schemas = {
                 type: 'string'
             }
         },
-        required: ['destination', 'user']
+        required: ['destination']
     },
     accessToken: {
         type: 'object',
@@ -216,6 +216,50 @@ app.post('/supervisor', function (req, res) {
     manifest = supervisor.add(manifest);
     manifest = Helper_1.default.hideCredFromManifest(manifest);
     res.json(manifest);
+});
+app.get('/supervisor/download/:jobID', function (req, res) {
+    return __awaiter(this, void 0, void 0, function () {
+        var aT, errors, jobID, dir;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    aT = req.body;
+                    errors = requestErrors(validator.validate(aT, schemas['accessToken']));
+                    if (errors.length > 0) {
+                        res.json({
+                            error: "invalid input",
+                            messages: errors
+                        });
+                        res.status(402);
+                        return [2];
+                    }
+                    try {
+                        aT = guard.validateAccessToken(aT);
+                    }
+                    catch (e) {
+                        res.json({
+                            error: "invalid access token",
+                            messages: [e.toString()]
+                        });
+                        res.status(401);
+                        return [2];
+                    }
+                    jobID = req.params.jobID;
+                    return [4, supervisor.getDownloadDir(jobID)];
+                case 1:
+                    dir = _a.sent();
+                    if (dir != null) {
+                        res.download(dir);
+                    }
+                    else {
+                        res.json({
+                            error: "job id " + jobID + " does not have a download file"
+                        });
+                    }
+                    return [2];
+            }
+        });
+    });
 });
 app.get('/supervisor/:jobID', function (req, res) {
     var aT = req.body;
