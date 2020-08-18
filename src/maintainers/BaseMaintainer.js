@@ -98,9 +98,7 @@ var BaseMaintainer = (function () {
                 switch (_b.label) {
                     case 0:
                         args.unshift(__dirname + "/python/" + file);
-                        child = spawn('python3', args, {
-                            shell: true
-                        });
+                        child = spawn('python3', args);
                         out = {};
                         self = this;
                         child.stdout.on('data', function (result) {

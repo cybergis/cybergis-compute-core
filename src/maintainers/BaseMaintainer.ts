@@ -67,9 +67,7 @@ class BaseMaintainer {
 
     async runPython(file: string, args = []) {
         args.unshift(`${__dirname}/python/${file}`)
-        const child = spawn('python3', args, {
-            shell: true
-        })
+        const child = spawn('python3', args)
 
         var out = {}
         var self = this
