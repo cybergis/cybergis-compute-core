@@ -38,13 +38,118 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var JAT_1 = require("./JAT");
 var Helper_1 = require("./Helper");
 var SSH_1 = require("./SSH");
+var redis = require('redis');
 var config = require('../config.json');
+var promisify = require("util").promisify;
+var SecretTokens = (function () {
+    function SecretTokens() {
+        this.indexName = 'sT';
+        this.redis = {
+            push: null,
+            keys: null,
+            getValue: null,
+            length: null,
+            setValue: null
+        };
+        this.isConnected = false;
+    }
+    SecretTokens.prototype.add = function (sT, data) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4, this.connect()];
+                    case 1:
+                        _a.sent();
+                        return [4, this.redis.push(this.indexName, sT)];
+                    case 2:
+                        _a.sent();
+                        return [4, this.redis.setValue(sT, JSON.stringify(data))];
+                    case 3:
+                        _a.sent();
+                        return [2];
+                }
+            });
+        });
+    };
+    SecretTokens.prototype.getAll = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4, this.connect()];
+                    case 1:
+                        _a.sent();
+                        return [4, this.redis.keys(this.indexName)];
+                    case 2: return [2, _a.sent()];
+                }
+            });
+        });
+    };
+    SecretTokens.prototype.getManifestByST = function (sT) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _a, _b;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
+                    case 0: return [4, this.connect()];
+                    case 1:
+                        _c.sent();
+                        _b = (_a = JSON).parse;
+                        return [4, this.redis.getValue(sT)];
+                    case 2: return [2, _b.apply(_a, [_c.sent()])];
+                }
+            });
+        });
+    };
+    SecretTokens.prototype.exists = function (sT) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4, this.connect()];
+                    case 1:
+                        _a.sent();
+                        return [4, this.redis.getValue(sT)];
+                    case 2: return [2, (_a.sent()) != undefined];
+                }
+            });
+        });
+    };
+    SecretTokens.prototype.connect = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var client, redisAuth;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!!this.isConnected) return [3, 3];
+                        client = new redis.createClient({
+                            host: config.redis.host,
+                            port: config.redis.port
+                        });
+                        if (!(config.redis.password != null && config.redis.password != undefined)) return [3, 2];
+                        redisAuth = promisify(client.auth).bind(client);
+                        return [4, redisAuth(config.redis.password)];
+                    case 1:
+                        _a.sent();
+                        _a.label = 2;
+                    case 2:
+                        this.redis.push = promisify(client.sadd).bind(client);
+                        this.redis.keys = promisify(client.smembers).bind(client);
+                        this.redis.getValue = promisify(client.get).bind(client);
+                        this.redis.setValue = promisify(client.set).bind(client);
+                        this.redis.length = promisify(client.scard).bind(client);
+                        this.isConnected = true;
+                        _a.label = 3;
+                    case 3: return [2];
+                }
+            });
+        });
+    };
+    return SecretTokens;
+}());
 var Guard = (function () {
     function Guard() {
-        this.secretTokens = {};
         this.jat = new JAT_1.default();
         this.authenticatedAccessTokenCache = {};
         this.uidCounter = 0;
+        this.secretTokens = new SecretTokens();
     }
     Guard.prototype.issueSecretTokenForPrivateAccount = function (destination, user, password) {
         return __awaiter(this, void 0, void 0, function () {
@@ -65,78 +170,122 @@ var Guard = (function () {
                             throw new Error('unable to check credentials with ' + destination);
                         }
                         secretToken = Helper_1.default.randomStr(45);
-                        while (this.secretTokens[secretToken] != undefined) {
-                            secretToken = Helper_1.default.randomStr(45);
-                        }
+                        _a.label = 3;
+                    case 3: return [4, this.secretTokens.exists(secretToken)];
+                    case 4:
+                        if (!_a.sent()) return [3, 5];
+                        secretToken = Helper_1.default.randomStr(45);
+                        return [3, 3];
+                    case 5:
                         this.uidCounter += 1;
-                        this.secretTokens[secretToken] = {
-                            cred: {
-                                usr: user,
-                                pwd: password
-                            },
-                            dest: destination,
-                            sT: secretToken,
-                            uid: this.uidCounter
-                        };
+                        return [4, this.secretTokens.add(secretToken, {
+                                cred: {
+                                    usr: user,
+                                    pwd: password
+                                },
+                                dest: destination,
+                                sT: secretToken,
+                                uid: this.uidCounter
+                            })];
+                    case 6:
+                        _a.sent();
                         return [2, secretToken];
                 }
             });
         });
     };
     Guard.prototype.issueSecretTokenForCommunityAccount = function (destination, user) {
-        this._clearCache();
-        var secretToken = Helper_1.default.randomStr(45);
-        while (this.secretTokens[secretToken] != undefined) {
-            secretToken = Helper_1.default.randomStr(45);
-        }
-        this.uidCounter += 1;
-        this.secretTokens[secretToken] = {
-            cred: {
-                usr: user,
-                pwd: null
-            },
-            dest: destination,
-            sT: secretToken,
-            uid: this.uidCounter
-        };
-        return secretToken;
+        return __awaiter(this, void 0, void 0, function () {
+            var secretToken;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        this._clearCache();
+                        secretToken = Helper_1.default.randomStr(45);
+                        _a.label = 1;
+                    case 1: return [4, this.secretTokens.exists(secretToken)];
+                    case 2:
+                        if (!_a.sent()) return [3, 3];
+                        secretToken = Helper_1.default.randomStr(45);
+                        return [3, 1];
+                    case 3:
+                        this.uidCounter += 1;
+                        return [4, this.secretTokens.add(secretToken, {
+                                cred: {
+                                    usr: user,
+                                    pwd: null
+                                },
+                                dest: destination,
+                                sT: secretToken,
+                                uid: this.uidCounter
+                            })];
+                    case 4:
+                        _a.sent();
+                        return [2, secretToken];
+                }
+            });
+        });
     };
     Guard.prototype.validateAccessToken = function (manifest) {
-        this._clearCache();
-        var rawAT = this.jat.parseAccessToken(manifest.aT);
-        var date = this.jat.getDate();
-        if (rawAT.payload.decoded.date != date) {
-            throw new Error('invalid accessToken provided');
-        }
-        if (this.authenticatedAccessTokenCache[date] != undefined) {
-            var cache = this.authenticatedAccessTokenCache[date][rawAT.hash];
-            if (cache != undefined) {
-                delete manifest.aT;
-                manifest.cred = cache.cred;
-                manifest.uid = cache.uid;
-                return manifest;
-            }
-        }
-        for (var i in this.secretTokens) {
-            var secretToken = this.secretTokens[i];
-            if (secretToken.dest === manifest.dest || manifest.dest === undefined) {
-                var hash = this.jat.init(rawAT.alg, secretToken.sT).hash(rawAT.payload.encoded);
-                if (hash == rawAT.hash) {
-                    if (this.authenticatedAccessTokenCache[date] === undefined) {
-                        this.authenticatedAccessTokenCache[date] = {};
-                    }
-                    this.authenticatedAccessTokenCache[date][rawAT.hash] = {
-                        cred: secretToken.cred,
-                        uid: secretToken.uid
-                    };
-                    delete manifest.aT;
-                    manifest.cred = secretToken.cred;
-                    manifest.uid = secretToken.uid;
-                    return manifest;
+        return __awaiter(this, void 0, void 0, function () {
+            var rawAT, date, cache, keys, _a, _b, _i, i, sT, secretToken, hash;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
+                    case 0:
+                        this._clearCache();
+                        rawAT = this.jat.parseAccessToken(manifest.aT);
+                        date = this.jat.getDate();
+                        if (rawAT.payload.decoded.date != date) {
+                            throw new Error('invalid accessToken provided');
+                        }
+                        if (this.authenticatedAccessTokenCache[date] != undefined) {
+                            cache = this.authenticatedAccessTokenCache[date][rawAT.hash];
+                            if (cache != undefined) {
+                                delete manifest.aT;
+                                manifest.cred = cache.cred;
+                                manifest.uid = cache.uid;
+                                return [2, manifest];
+                            }
+                        }
+                        return [4, this.secretTokens.getAll()];
+                    case 1:
+                        keys = _c.sent();
+                        _a = [];
+                        for (_b in keys)
+                            _a.push(_b);
+                        _i = 0;
+                        _c.label = 2;
+                    case 2:
+                        if (!(_i < _a.length)) return [3, 5];
+                        i = _a[_i];
+                        sT = keys[i];
+                        return [4, this.secretTokens.getManifestByST(sT)];
+                    case 3:
+                        secretToken = _c.sent();
+                        if (secretToken.dest === manifest.dest || manifest.dest === undefined) {
+                            hash = this.jat.init(rawAT.alg, secretToken.sT).hash(rawAT.payload.encoded);
+                            if (hash == rawAT.hash) {
+                                if (this.authenticatedAccessTokenCache[date] === undefined) {
+                                    this.authenticatedAccessTokenCache[date] = {};
+                                }
+                                this.authenticatedAccessTokenCache[date][rawAT.hash] = {
+                                    cred: secretToken.cred,
+                                    uid: secretToken.uid
+                                };
+                                delete manifest.aT;
+                                manifest.cred = secretToken.cred;
+                                manifest.uid = secretToken.uid;
+                                return [2, manifest];
+                            }
+                        }
+                        _c.label = 4;
+                    case 4:
+                        _i++;
+                        return [3, 2];
+                    case 5: throw new Error('invalid accessToken provided');
                 }
-            }
-        }
-        throw new Error('invalid accessToken provided');
+            });
+        });
     };
     Guard.prototype.revokeSecretToken = function (secretToken) {
         delete this.secretTokens[secretToken];

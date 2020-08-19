@@ -188,38 +188,53 @@ app.post('/guard/secretToken', function (req, res) {
     });
 });
 app.post('/supervisor', function (req, res) {
-    var manifest = req.body;
-    var errors = requestErrors(validator.validate(manifest, schemas['manifest']));
-    if (errors.length > 0) {
-        res.json({
-            error: "invalid input",
-            messages: errors
+    return __awaiter(this, void 0, void 0, function () {
+        var manifest, errors, e_2;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    manifest = req.body;
+                    errors = requestErrors(validator.validate(manifest, schemas['manifest']));
+                    if (errors.length > 0) {
+                        res.json({
+                            error: "invalid input",
+                            messages: errors
+                        });
+                        res.status(402);
+                        return [2];
+                    }
+                    manifest = setDefaultValues(manifest, {
+                        env: {},
+                        payload: {}
+                    });
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 3, , 4]);
+                    return [4, guard.validateAccessToken(manifest)];
+                case 2:
+                    manifest = _a.sent();
+                    return [3, 4];
+                case 3:
+                    e_2 = _a.sent();
+                    res.json({
+                        error: "invalid access token",
+                        messages: [e_2.toString()]
+                    });
+                    res.status(401);
+                    return [2];
+                case 4: return [4, supervisor.add(manifest)];
+                case 5:
+                    manifest = _a.sent();
+                    manifest = Helper_1.default.hideCredFromManifest(manifest);
+                    res.json(manifest);
+                    return [2];
+            }
         });
-        res.status(402);
-        return;
-    }
-    manifest = setDefaultValues(manifest, {
-        env: {},
-        payload: {}
     });
-    try {
-        manifest = guard.validateAccessToken(manifest);
-    }
-    catch (e) {
-        res.json({
-            error: "invalid access token",
-            messages: [e.toString()]
-        });
-        res.status(401);
-        return;
-    }
-    manifest = supervisor.add(manifest);
-    manifest = Helper_1.default.hideCredFromManifest(manifest);
-    res.json(manifest);
 });
 app.get('/supervisor/download/:jobID', function (req, res) {
     return __awaiter(this, void 0, void 0, function () {
-        var aT, errors, jobID, dir;
+        var aT, errors, e_3, jobID, dir;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -233,20 +248,25 @@ app.get('/supervisor/download/:jobID', function (req, res) {
                         res.status(402);
                         return [2];
                     }
-                    try {
-                        aT = guard.validateAccessToken(aT);
-                    }
-                    catch (e) {
-                        res.json({
-                            error: "invalid access token",
-                            messages: [e.toString()]
-                        });
-                        res.status(401);
-                        return [2];
-                    }
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 3, , 4]);
+                    return [4, guard.validateAccessToken(aT)];
+                case 2:
+                    aT = _a.sent();
+                    return [3, 4];
+                case 3:
+                    e_3 = _a.sent();
+                    res.json({
+                        error: "invalid access token",
+                        messages: [e_3.toString()]
+                    });
+                    res.status(401);
+                    return [2];
+                case 4:
                     jobID = req.params.jobID;
                     return [4, supervisor.getDownloadDir(jobID)];
-                case 1:
+                case 5:
                     dir = _a.sent();
                     if (dir != null) {
                         res.download(dir);
@@ -262,51 +282,79 @@ app.get('/supervisor/download/:jobID', function (req, res) {
     });
 });
 app.get('/supervisor/:jobID', function (req, res) {
-    var aT = req.body;
-    var errors = requestErrors(validator.validate(aT, schemas['accessToken']));
-    if (errors.length > 0) {
-        res.json({
-            error: "invalid input",
-            messages: errors
+    return __awaiter(this, void 0, void 0, function () {
+        var aT, errors, e_4;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    aT = req.body;
+                    errors = requestErrors(validator.validate(aT, schemas['accessToken']));
+                    if (errors.length > 0) {
+                        res.json({
+                            error: "invalid input",
+                            messages: errors
+                        });
+                        res.status(402);
+                        return [2];
+                    }
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 3, , 4]);
+                    return [4, guard.validateAccessToken(aT)];
+                case 2:
+                    aT = _a.sent();
+                    return [3, 4];
+                case 3:
+                    e_4 = _a.sent();
+                    res.json({
+                        error: "invalid access token",
+                        messages: [e_4.toString()]
+                    });
+                    res.status(401);
+                    return [2];
+                case 4:
+                    res.json(supervisor.status(aT.uid, req.params.jobID));
+                    return [2];
+            }
         });
-        res.status(402);
-        return;
-    }
-    try {
-        aT = guard.validateAccessToken(aT);
-    }
-    catch (e) {
-        res.json({
-            error: "invalid access token",
-            messages: [e.toString()]
-        });
-        res.status(401);
-        return;
-    }
-    res.json(supervisor.status(aT.uid, req.params.jobID));
+    });
 });
 app.get('/supervisor', function (req, res) {
-    var aT = req.body;
-    var errors = requestErrors(validator.validate(aT, schemas['accessToken']));
-    if (errors.length > 0) {
-        res.json({
-            error: "invalid input",
-            messages: errors
+    return __awaiter(this, void 0, void 0, function () {
+        var aT, errors, e_5;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    aT = req.body;
+                    errors = requestErrors(validator.validate(aT, schemas['accessToken']));
+                    if (errors.length > 0) {
+                        res.json({
+                            error: "invalid input",
+                            messages: errors
+                        });
+                        res.status(402);
+                        return [2];
+                    }
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 3, , 4]);
+                    return [4, guard.validateAccessToken(aT)];
+                case 2:
+                    aT = _a.sent();
+                    return [3, 4];
+                case 3:
+                    e_5 = _a.sent();
+                    res.json({
+                        error: "invalid access token",
+                        messages: [e_5.toString()]
+                    });
+                    res.status(401);
+                    return [2];
+                case 4:
+                    res.json(supervisor.status(aT.uid));
+                    return [2];
+            }
         });
-        res.status(402);
-        return;
-    }
-    try {
-        aT = guard.validateAccessToken(aT);
-    }
-    catch (e) {
-        res.json({
-            error: "invalid access token",
-            messages: [e.toString()]
-        });
-        res.status(401);
-        return;
-    }
-    res.json(supervisor.status(aT.uid));
+    });
 });
 app.listen(config.serverPort, function () { return console.log('supervisor server is up, listening to port: ' + config.serverPort); });

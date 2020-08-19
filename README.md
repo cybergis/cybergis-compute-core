@@ -16,13 +16,20 @@ HPC job submitting and maintaining framework with Restful API
 0. Requirements
     - NodeJS & npm/yarn
     - Python3.4+ & pip3
+    - Redis
 > ⚠️ please run the following under root
 
-1. Install Job Supervisor
+1. Install Job Supervisor & Redis
     ```bash
     git clone https://github.com/cybergis/job-supervisor.git
     cd job-supervisor
     npm install
+
+    # instal redis
+    apt install redis
+    vi /etc/redis/redis.conf
+    # setting up password is strongly recommended
+    # please follow this tutorial -> https://www.digitalocean.com/community/tutorials/how-to-secure-your-redis-installation-on-ubuntu-14-04
     ```
 
 2. Configure

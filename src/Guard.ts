@@ -2,17 +2,78 @@ import JAT from './JAT'
 import Helper from './Helper'
 import { manifest, aT } from './types'
 import SSH from './SSH'
-import constant from './constant'
+const redis = require('redis')
 const config = require('../config.json')
+const { promisify } = require("util")
+
+class SecretTokens {
+    private indexName = 'sT'
+
+    private redis = {
+        push: null,
+        keys: null,
+        getValue: null,
+        length: null,
+        setValue: null
+    }
+
+    private isConnected = false
+
+    constructor() {
+        //
+    }
+
+    async add(sT: string, data: any) {
+        await this.connect()
+        await this.redis.push(this.indexName, sT)
+        await this.redis.setValue(sT, JSON.stringify(data))
+    }
+
+    async getAll() {
+        await this.connect()
+        return await this.redis.keys(this.indexName)
+    }
+
+    async getManifestByST(sT: string) {
+        await this.connect()
+        return JSON.parse(await this.redis.getValue(sT))
+    }
+
+    async exists(sT: string) {
+        await this.connect()
+        return await this.redis.getValue(sT) != undefined
+    }
+
+    private async connect() {
+        if (!this.isConnected) {
+            var client = new redis.createClient({
+                host: config.redis.host,
+                port: config.redis.port
+            })
+
+            if (config.redis.password != null && config.redis.password != undefined) {
+                var redisAuth = promisify(client.auth).bind(client)
+                await redisAuth(config.redis.password)
+            }
+
+            this.redis.push = promisify(client.sadd).bind(client)
+            this.redis.keys = promisify(client.smembers).bind(client)
+            this.redis.getValue = promisify(client.get).bind(client)
+            this.redis.setValue = promisify(client.set).bind(client)
+            this.redis.length = promisify(client.scard).bind(client)
+            this.isConnected = true
+        }
+    }
+}
 
 class Guard {
-    private secretTokens = {}
-
     private jat = new JAT()
 
     private authenticatedAccessTokenCache = {}
 
     private uidCounter = 0
+
+    private secretTokens = new SecretTokens()
 
     async issueSecretTokenForPrivateAccount(destination: string, user: string, password: string): Promise<string> {
         this._clearCache()
@@ -27,12 +88,12 @@ class Guard {
 
         var secretToken = Helper.randomStr(45)
 
-        while (this.secretTokens[secretToken] != undefined) {
+        while (await this.secretTokens.exists(secretToken)) {
             secretToken = Helper.randomStr(45)
         }
 
         this.uidCounter += 1
-        this.secretTokens[secretToken] = {
+        await this.secretTokens.add(secretToken, {
             cred: {
                 usr: user,
                 pwd: password
@@ -40,22 +101,22 @@ class Guard {
             dest: destination,
             sT: secretToken,
             uid: this.uidCounter
-        }
+        })
 
         return secretToken
     }
 
-    issueSecretTokenForCommunityAccount(destination: string, user: string) {
+    async issueSecretTokenForCommunityAccount(destination: string, user: string) {
         this._clearCache()
 
         var secretToken = Helper.randomStr(45)
 
-        while (this.secretTokens[secretToken] != undefined) {
+        while (await this.secretTokens.exists(secretToken)) {
             secretToken = Helper.randomStr(45)
         }
 
         this.uidCounter += 1
-        this.secretTokens[secretToken] = {
+        await this.secretTokens.add(secretToken, {
             cred: {
                 usr: user,
                 pwd: null
@@ -63,12 +124,12 @@ class Guard {
             dest: destination,
             sT: secretToken,
             uid: this.uidCounter
-        }
+        })
 
         return secretToken
     }
 
-    validateAccessToken(manifest: manifest | aT): manifest | aT {
+    async validateAccessToken(manifest: manifest | aT): Promise<manifest | aT> {
         this._clearCache()
 
         var rawAT = this.jat.parseAccessToken(manifest.aT)
@@ -88,8 +149,10 @@ class Guard {
             }
         }
 
-        for (var i in this.secretTokens) {
-            var secretToken = this.secretTokens[i]
+        var keys = await this.secretTokens.getAll()
+        for (var i in keys) {
+            var sT = keys[i]
+            var secretToken = await this.secretTokens.getManifestByST(sT)
             if (secretToken.dest === manifest.dest || manifest.dest === undefined) {
                 var hash: string = this.jat.init(rawAT.alg, secretToken.sT).hash(rawAT.payload.encoded)
                 if (hash == rawAT.hash) {

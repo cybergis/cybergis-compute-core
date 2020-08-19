@@ -154,7 +154,7 @@ app.post('/guard/secretToken', async function (req, res) {
 })
 
 // supervisor
-app.post('/supervisor', function (req, res) {
+app.post('/supervisor', async function (req, res) {
     var manifest = req.body
     var errors = requestErrors(validator.validate(manifest, schemas['manifest']))
 
@@ -173,7 +173,7 @@ app.post('/supervisor', function (req, res) {
     })
 
     try {
-        manifest = guard.validateAccessToken(manifest)
+        manifest = await guard.validateAccessToken(manifest)
     } catch (e) {
         res.json({
             error: "invalid access token",
@@ -183,7 +183,7 @@ app.post('/supervisor', function (req, res) {
         return
     }
 
-    manifest = supervisor.add(manifest)
+    manifest = await supervisor.add(manifest)
     manifest = Helper.hideCredFromManifest(manifest)
     res.json(manifest)
 })
@@ -202,7 +202,7 @@ app.get('/supervisor/download/:jobID', async function (req, res) {
     }
 
     try {
-        aT = guard.validateAccessToken(aT)
+        aT = await guard.validateAccessToken(aT)
     } catch (e) {
         res.json({
             error: "invalid access token",
@@ -224,7 +224,7 @@ app.get('/supervisor/download/:jobID', async function (req, res) {
     }
 })
 
-app.get('/supervisor/:jobID', function (req, res) {
+app.get('/supervisor/:jobID', async function (req, res) {
     var aT = req.body
     var errors = requestErrors(validator.validate(aT, schemas['accessToken']))
 
@@ -238,7 +238,7 @@ app.get('/supervisor/:jobID', function (req, res) {
     }
 
     try {
-        aT = guard.validateAccessToken(aT)
+        aT = await guard.validateAccessToken(aT)
     } catch (e) {
         res.json({
             error: "invalid access token",
@@ -251,7 +251,7 @@ app.get('/supervisor/:jobID', function (req, res) {
     res.json(supervisor.status(aT.uid, req.params.jobID))
 })
 
-app.get('/supervisor', function (req, res) {
+app.get('/supervisor', async function (req, res) {
     var aT = req.body
     var errors = requestErrors(validator.validate(aT, schemas['accessToken']))
 
@@ -265,7 +265,7 @@ app.get('/supervisor', function (req, res) {
     }
 
     try {
-        aT = guard.validateAccessToken(aT)
+        aT = await guard.validateAccessToken(aT)
     } catch (e) {
         res.json({
             error: "invalid access token",

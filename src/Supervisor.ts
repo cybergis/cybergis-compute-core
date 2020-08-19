@@ -29,7 +29,7 @@ class Supervisor {
             var destination = constant.destinationMap[service]
             this.jobPoolCapacities[service] = destination.jobPoolCapacity
             this.jobPools[service] = []
-            this.queues[service] = new Queue()
+            this.queues[service] = new Queue(service)
         }
 
         this.maintainerThread = setInterval(async function () {
@@ -77,8 +77,8 @@ class Supervisor {
                     }
                 }
 
-                while (jobPool.length < self.jobPoolCapacities[service] && !self.queues[service].isEmpty()) {
-                    var job = self.queues[service].shift()
+                while (jobPool.length < self.jobPoolCapacities[service] && !await self.queues[service].isEmpty()) {
+                    var job = await self.queues[service].shift()
                     var maintainer = require('./maintainers/' + constant.destinationMap[job.dest].maintainer).default // typescript compilation hack
                     job.maintainer = new maintainer(job)
                     jobPool.push(job)
@@ -88,9 +88,9 @@ class Supervisor {
         }, this.workerTimePeriodInSeconds * 1000)
     }
 
-    add(manifest: manifest) {
+    async add(manifest: manifest) {
         manifest.id = this._generateJobID()
-        this.queues[manifest.dest].push(manifest)
+        await this.queues[manifest.dest].push(manifest)
         this.emitter.registerEvents(manifest.uid, manifest.id, 'JOB_QUEUED', 'job [' + manifest.id + '] is queued, waiting for registration')
         return manifest
     }
