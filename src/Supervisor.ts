@@ -39,10 +39,20 @@ class Supervisor {
                 if (jobPool.length > 0) {
                     for (var i = 0; i < jobPool.length; i++) {
                         var job = jobPool[i]
+                        var jobThrowError = false
+
                         if (job.maintainer.isInit) {
-                            await job.maintainer.maintain()
+                            try {
+                                await job.maintainer.maintain()
+                            } catch {
+                                jobThrowError = true
+                            }
                         } else {
-                            await job.maintainer.init()
+                            try {
+                                await job.maintainer.init()
+                            } catch {
+                                jobThrowError = true
+                            }
                         }
 
                         var events = job.maintainer.dumpEvents()
@@ -57,7 +67,7 @@ class Supervisor {
                             self.emitter.registerLogs(job.uid, job.maintainer.getJobID(), logs[j])
                         }
 
-                        if (job.maintainer.isEnd) {
+                        if (job.maintainer.isEnd || jobThrowError) {
                             jobPool.splice(i, 1)
                             if (job.maintainer.downloadDir != undefined) {
                                 self.downloadPools[job.maintainer.getJobID()] = job.maintainer.downloadDir

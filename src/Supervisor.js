@@ -59,35 +59,50 @@ var Supervisor = (function () {
         }
         this.maintainerThread = setInterval(function () {
             return __awaiter(this, void 0, void 0, function () {
-                var _a, _b, _i, service, jobPool, i, job, events, logs, j, event, j, job, maintainer;
-                return __generator(this, function (_c) {
-                    switch (_c.label) {
+                var _a, _b, _i, service, jobPool, i, job, jobThrowError, _c, _d, events, logs, j, event, j, job, maintainer;
+                return __generator(this, function (_e) {
+                    switch (_e.label) {
                         case 0:
                             _a = [];
                             for (_b in self.jobPools)
                                 _a.push(_b);
                             _i = 0;
-                            _c.label = 1;
+                            _e.label = 1;
                         case 1:
-                            if (!(_i < _a.length)) return [3, 10];
+                            if (!(_i < _a.length)) return [3, 14];
                             service = _a[_i];
                             jobPool = self.jobPools[service];
-                            if (!(jobPool.length > 0)) return [3, 8];
+                            if (!(jobPool.length > 0)) return [3, 12];
                             i = 0;
-                            _c.label = 2;
+                            _e.label = 2;
                         case 2:
-                            if (!(i < jobPool.length)) return [3, 8];
+                            if (!(i < jobPool.length)) return [3, 12];
                             job = jobPool[i];
-                            if (!job.maintainer.isInit) return [3, 4];
-                            return [4, job.maintainer.maintain()];
+                            jobThrowError = false;
+                            if (!job.maintainer.isInit) return [3, 7];
+                            _e.label = 3;
                         case 3:
-                            _c.sent();
+                            _e.trys.push([3, 5, , 6]);
+                            return [4, job.maintainer.maintain()];
+                        case 4:
+                            _e.sent();
                             return [3, 6];
-                        case 4: return [4, job.maintainer.init()];
                         case 5:
-                            _c.sent();
-                            _c.label = 6;
-                        case 6:
+                            _c = _e.sent();
+                            jobThrowError = true;
+                            return [3, 6];
+                        case 6: return [3, 10];
+                        case 7:
+                            _e.trys.push([7, 9, , 10]);
+                            return [4, job.maintainer.init()];
+                        case 8:
+                            _e.sent();
+                            return [3, 10];
+                        case 9:
+                            _d = _e.sent();
+                            jobThrowError = true;
+                            return [3, 10];
+                        case 10:
                             events = job.maintainer.dumpEvents();
                             logs = job.maintainer.dumpLogs();
                             for (j in events) {
@@ -97,18 +112,18 @@ var Supervisor = (function () {
                             for (j in logs) {
                                 self.emitter.registerLogs(job.uid, job.maintainer.getJobID(), logs[j]);
                             }
-                            if (job.maintainer.isEnd) {
+                            if (job.maintainer.isEnd || jobThrowError) {
                                 jobPool.splice(i, 1);
                                 if (job.maintainer.downloadDir != undefined) {
                                     self.downloadPools[job.maintainer.getJobID()] = job.maintainer.downloadDir;
                                 }
                                 i--;
                             }
-                            _c.label = 7;
-                        case 7:
+                            _e.label = 11;
+                        case 11:
                             i++;
                             return [3, 2];
-                        case 8:
+                        case 12:
                             while (jobPool.length < self.jobPoolCapacities[service] && !self.queues[service].isEmpty()) {
                                 job = self.queues[service].shift();
                                 maintainer = require('./maintainers/' + constant_1.default.destinationMap[job.dest].maintainer).default;
@@ -116,11 +131,11 @@ var Supervisor = (function () {
                                 jobPool.push(job);
                                 self.emitter.registerEvents(job.uid, job.id, 'JOB_REGISTERED', 'job [' + job.id + '] is registered with the supervisor, waiting for initialization');
                             }
-                            _c.label = 9;
-                        case 9:
+                            _e.label = 13;
+                        case 13:
                             _i++;
                             return [3, 1];
-                        case 10: return [2];
+                        case 14: return [2];
                     }
                 });
             });
