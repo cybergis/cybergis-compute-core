@@ -53,7 +53,7 @@ var BaseMaintainer = (function () {
             initCounter: 0,
             initThresholdInCount: 3,
             maintainAt: null,
-            maintainThresholdInHours: 0.01
+            maintainThresholdInHours: 0.0001
         };
         this.downloadDir = undefined;
         this.allowedEnv = undefined;
@@ -188,19 +188,20 @@ var BaseMaintainer = (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (!!this._lock) return [3, 2];
+                        if (!!this._lock) return [3, 4];
                         this._lock = true;
-                        if (this.lifeCycleState.initCounter >= this.lifeCycleState.initThresholdInCount) {
-                            this.emitEvent('JOB_LIFECYCLE_ENDED', 'initialization counter exceeds ' + this.lifeCycleState.initThresholdInCount + ' counts');
-                            throw new Error('initialization counter exceeds ' + this.lifeCycleState.initThresholdInCount + ' counts');
-                        }
-                        return [4, this.onInit()];
-                    case 1:
+                        if (!(this.lifeCycleState.initCounter >= this.lifeCycleState.initThresholdInCount)) return [3, 1];
+                        this.emitEvent('JOB_FAILED', 'initialization counter exceeds ' + this.lifeCycleState.initThresholdInCount + ' counts');
+                        return [3, 3];
+                    case 1: return [4, this.onInit()];
+                    case 2:
                         _a.sent();
                         this.lifeCycleState.initCounter++;
+                        _a.label = 3;
+                    case 3:
                         this._lock = false;
-                        _a.label = 2;
-                    case 2: return [2];
+                        _a.label = 4;
+                    case 4: return [2];
                 }
             });
         });
@@ -210,23 +211,22 @@ var BaseMaintainer = (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (!!this._lock) return [3, 2];
+                        if (!!this._lock) return [3, 4];
                         this._lock = true;
                         if (this.lifeCycleState.maintainAt === null) {
                             this.lifeCycleState.maintainAt = Date.now();
                         }
-                        else {
-                            if (((this.lifeCycleState.maintainAt - Date.now()) / (1000 * 60 * 60)) >= this.lifeCycleState.maintainThresholdInHours) {
-                                this.emitEvent('JOB_LIFECYCLE_ENDED', 'maintain time exceeds ' + this.lifeCycleState.maintainThresholdInHours + ' hours');
-                                throw new Error('maintain time exceeds ' + this.lifeCycleState.maintainThresholdInHours + ' hours');
-                            }
-                        }
-                        return [4, this.onMaintain()];
-                    case 1:
+                        if (!(((this.lifeCycleState.maintainAt - Date.now()) / (1000 * 60 * 60)) >= this.lifeCycleState.maintainThresholdInHours)) return [3, 1];
+                        this.emitEvent('JOB_FAILED', 'maintain time exceeds ' + this.lifeCycleState.maintainThresholdInHours + ' hours');
+                        return [3, 3];
+                    case 1: return [4, this.onMaintain()];
+                    case 2:
                         _a.sent();
+                        _a.label = 3;
+                    case 3:
                         this._lock = false;
-                        _a.label = 2;
-                    case 2: return [2];
+                        _a.label = 4;
+                    case 4: return [2];
                 }
             });
         });

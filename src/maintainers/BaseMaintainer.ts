@@ -171,12 +171,12 @@ class BaseMaintainer {
             this._lock = true
 
             if (this.lifeCycleState.initCounter >= this.lifeCycleState.initThresholdInCount) {
-                this.emitEvent('JOB_LIFECYCLE_ENDED', 'initialization counter exceeds ' + this.lifeCycleState.initThresholdInCount + ' counts')
-                throw new Error('initialization counter exceeds ' + this.lifeCycleState.initThresholdInCount + ' counts')
+                this.emitEvent('JOB_FAILED', 'initialization counter exceeds ' + this.lifeCycleState.initThresholdInCount + ' counts')
+            } else {
+                await this.onInit()
+                this.lifeCycleState.initCounter++
             }
 
-            await this.onInit()
-            this.lifeCycleState.initCounter++
             this._lock = false
         }
     }
@@ -187,14 +187,14 @@ class BaseMaintainer {
 
             if (this.lifeCycleState.maintainAt === null) {
                 this.lifeCycleState.maintainAt = Date.now()
-            } else {
-                if (((this.lifeCycleState.maintainAt - Date.now()) / (1000 * 60 * 60)) >= this.lifeCycleState.maintainThresholdInHours) {
-                    this.emitEvent('JOB_LIFECYCLE_ENDED', 'maintain time exceeds ' + this.lifeCycleState.maintainThresholdInHours + ' hours')
-                    throw new Error('maintain time exceeds ' + this.lifeCycleState.maintainThresholdInHours + ' hours')
-                }
             }
 
-            await this.onMaintain()
+            if (((this.lifeCycleState.maintainAt - Date.now()) / (1000 * 60 * 60)) >= this.lifeCycleState.maintainThresholdInHours) {
+                this.emitEvent('JOB_FAILED', 'maintain time exceeds ' + this.lifeCycleState.maintainThresholdInHours + ' hours')
+            } else {
+                await this.onMaintain()
+            }
+
             this._lock = false
         }
     }
