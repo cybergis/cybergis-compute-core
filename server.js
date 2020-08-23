@@ -37,6 +37,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var Guard_1 = require("./src/Guard");
 var Supervisor_1 = require("./src/Supervisor");
+var File_1 = require("./src/File");
 var Helper_1 = require("./src/Helper");
 var constant_1 = require("./src/constant");
 var bodyParser = require('body-parser');
@@ -44,13 +45,30 @@ var config = require('./config.json');
 var Validator = require('jsonschema').Validator;
 var express = require('express');
 var requestIp = require('request-ip');
+var fileUpload = require('express-fileupload');
+var tmpDir = __dirname + '/data/tmp';
 var app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(requestIp.mw({ attributeName: 'ip' }));
+app.use(fileUpload({
+    limits: { fileSize: 50 * 1024 * 1024 },
+    useTempFiles: true,
+    abortOnLimit: true,
+    tempFileDir: tmpDir,
+    safeFileNames: true,
+    limitHandler: function (req, res, next) {
+        res.json({
+            error: "file too large"
+        });
+        res.status(402);
+    }
+}));
 var guard = new Guard_1.default();
 var supervisor = new Supervisor_1.default();
+var file = new File_1.default();
 var validator = new Validator();
+file.clearTmpFiles();
 if (!config.isTesting) {
     if (process.platform == "linux") {
         var iptablesRules = [];
@@ -79,6 +97,9 @@ var schemas = {
             },
             env: {
                 type: 'object'
+            },
+            file: {
+                type: 'string'
             },
             payload: {
                 type: 'object'
@@ -189,7 +210,7 @@ app.post('/guard/secretToken', function (req, res) {
 });
 app.post('/supervisor', function (req, res) {
     return __awaiter(this, void 0, void 0, function () {
-        var manifest, errors, e_2;
+        var manifest, errors, e_2, e_3;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -222,9 +243,20 @@ app.post('/supervisor', function (req, res) {
                     });
                     res.status(401);
                     return [2];
-                case 4: return [4, supervisor.add(manifest)];
+                case 4:
+                    _a.trys.push([4, 6, , 7]);
+                    return [4, supervisor.add(manifest)];
                 case 5:
                     manifest = _a.sent();
+                    return [3, 7];
+                case 6:
+                    e_3 = _a.sent();
+                    res.json({
+                        error: e_3.toString()
+                    });
+                    res.status(402);
+                    return [2];
+                case 7:
                     manifest = Helper_1.default.hideCredFromManifest(manifest);
                     res.json(manifest);
                     return [2];
@@ -232,9 +264,64 @@ app.post('/supervisor', function (req, res) {
         });
     });
 });
+app.post('/supervisor/upload', function (req, res) {
+    return __awaiter(this, void 0, void 0, function () {
+        var aT, errors, manifest, e_4, fileID, e_5;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    if (res.statusCode == 402) {
+                        return [2];
+                    }
+                    aT = req.body;
+                    errors = requestErrors(validator.validate(aT, schemas['accessToken']));
+                    if (errors.length > 0) {
+                        res.json({
+                            error: "invalid input",
+                            messages: errors
+                        });
+                        res.status(402);
+                        return [2];
+                    }
+                    _a.label = 1;
+                case 1:
+                    _a.trys.push([1, 3, , 4]);
+                    return [4, guard.validateAccessToken(aT)];
+                case 2:
+                    manifest = _a.sent();
+                    return [3, 4];
+                case 3:
+                    e_4 = _a.sent();
+                    res.json({
+                        error: "invalid access token",
+                        messages: [e_4.toString()]
+                    });
+                    res.status(401);
+                    return [2];
+                case 4:
+                    _a.trys.push([4, 6, , 7]);
+                    return [4, file.upload(manifest.uid, req.files.file.tempFilePath)];
+                case 5:
+                    fileID = _a.sent();
+                    res.json({
+                        file: fileID
+                    });
+                    return [3, 7];
+                case 6:
+                    e_5 = _a.sent();
+                    res.json({
+                        error: e_5.toString()
+                    });
+                    res.status(402);
+                    return [2];
+                case 7: return [2];
+            }
+        });
+    });
+});
 app.get('/supervisor/download/:jobID', function (req, res) {
     return __awaiter(this, void 0, void 0, function () {
-        var aT, errors, e_3, jobID, dir;
+        var aT, errors, e_6, jobID, dir;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -253,13 +340,13 @@ app.get('/supervisor/download/:jobID', function (req, res) {
                     _a.trys.push([1, 3, , 4]);
                     return [4, guard.validateAccessToken(aT)];
                 case 2:
-                    aT = _a.sent();
+                    _a.sent();
                     return [3, 4];
                 case 3:
-                    e_3 = _a.sent();
+                    e_6 = _a.sent();
                     res.json({
                         error: "invalid access token",
-                        messages: [e_3.toString()]
+                        messages: [e_6.toString()]
                     });
                     res.status(401);
                     return [2];
@@ -283,7 +370,7 @@ app.get('/supervisor/download/:jobID', function (req, res) {
 });
 app.get('/supervisor/:jobID', function (req, res) {
     return __awaiter(this, void 0, void 0, function () {
-        var aT, errors, e_4;
+        var aT, errors, manifest, e_7;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -302,18 +389,18 @@ app.get('/supervisor/:jobID', function (req, res) {
                     _a.trys.push([1, 3, , 4]);
                     return [4, guard.validateAccessToken(aT)];
                 case 2:
-                    aT = _a.sent();
+                    manifest = _a.sent();
                     return [3, 4];
                 case 3:
-                    e_4 = _a.sent();
+                    e_7 = _a.sent();
                     res.json({
                         error: "invalid access token",
-                        messages: [e_4.toString()]
+                        messages: [e_7.toString()]
                     });
                     res.status(401);
                     return [2];
                 case 4:
-                    res.json(supervisor.status(aT.uid, req.params.jobID));
+                    res.json(supervisor.status(manifest.uid, req.params.jobID));
                     return [2];
             }
         });
@@ -321,7 +408,7 @@ app.get('/supervisor/:jobID', function (req, res) {
 });
 app.get('/supervisor', function (req, res) {
     return __awaiter(this, void 0, void 0, function () {
-        var aT, errors, e_5;
+        var aT, errors, manifest, e_8;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -340,18 +427,18 @@ app.get('/supervisor', function (req, res) {
                     _a.trys.push([1, 3, , 4]);
                     return [4, guard.validateAccessToken(aT)];
                 case 2:
-                    aT = _a.sent();
+                    manifest = _a.sent();
                     return [3, 4];
                 case 3:
-                    e_5 = _a.sent();
+                    e_8 = _a.sent();
                     res.json({
                         error: "invalid access token",
-                        messages: [e_5.toString()]
+                        messages: [e_8.toString()]
                     });
                     res.status(401);
                     return [2];
                 case 4:
-                    res.json(supervisor.status(aT.uid));
+                    res.json(supervisor.status(manifest.uid));
                     return [2];
             }
         });

@@ -23,7 +23,8 @@ export interface manifest {
     maintainer?: any,
     dest: string,
     env: any,
-    payload: any
+    payload: any,
+    file?: any
 }
 
 export interface aT {
@@ -33,6 +34,7 @@ export interface aT {
         pwd: string
     },
     uid?: number,
+    file?: any,
     dest: undefined // hack
 }
 

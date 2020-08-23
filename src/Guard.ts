@@ -71,8 +71,6 @@ class Guard {
 
     private authenticatedAccessTokenCache = {}
 
-    private uidCounter = 0
-
     private secretTokens = new SecretTokens()
 
     async issueSecretTokenForPrivateAccount(destination: string, user: string, password: string): Promise<string> {
@@ -92,7 +90,6 @@ class Guard {
             secretToken = Helper.randomStr(45)
         }
 
-        this.uidCounter += 1
         await this.secretTokens.add(secretToken, {
             cred: {
                 usr: user,
@@ -100,7 +97,7 @@ class Guard {
             },
             dest: destination,
             sT: secretToken,
-            uid: this.uidCounter
+            uid: this._generateUserID()
         })
 
         return secretToken
@@ -115,7 +112,6 @@ class Guard {
             secretToken = Helper.randomStr(45)
         }
 
-        this.uidCounter += 1
         await this.secretTokens.add(secretToken, {
             cred: {
                 usr: user,
@@ -123,7 +119,7 @@ class Guard {
             },
             dest: destination,
             sT: secretToken,
-            uid: this.uidCounter
+            uid: this._generateUserID()
         })
 
         return secretToken
@@ -185,6 +181,10 @@ class Guard {
                 delete this.authenticatedAccessTokenCache[i]
             }
         }
+    }
+
+    private _generateUserID(): string {
+        return Math.round((new Date()).getTime() / 1000) + Helper.randomStr(4)
     }
 }
 

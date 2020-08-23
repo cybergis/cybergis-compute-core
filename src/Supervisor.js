@@ -151,9 +151,21 @@ var Supervisor = (function () {
     }
     Supervisor.prototype.add = function (manifest) {
         return __awaiter(this, void 0, void 0, function () {
+            var dest;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
+                        dest = constant_1.default.destinationMap[manifest.dest];
+                        if (dest.useUploadedModel) {
+                            if (manifest.file != undefined) {
+                                if (!fs.existsSync(__dirname + '/../data/upload/' + manifest.uid + '/' + manifest.file)) {
+                                    throw new Error('file [' + manifest.file + '] not exists');
+                                }
+                            }
+                            else {
+                                throw new Error('no file provided');
+                            }
+                        }
                         manifest.id = this._generateJobID();
                         return [4, this.queues[manifest.dest].push(manifest)];
                     case 1:

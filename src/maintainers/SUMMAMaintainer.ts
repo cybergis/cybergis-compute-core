@@ -14,10 +14,18 @@ class SUMMAMaintainer extends BaseMaintainer {
     }
 
     async onInit() {
+        var machine = this.manifest.payload.machine === undefined ? 'keeling' : this.manifest.payload.machine
+        var node = this.manifest.payload.node === undefined ? 16 : this.manifest.payload.node
+        var walltime = this.manifest.payload.walltime === undefined ? 1 : this.manifest.payload.walltime
+
         var params = await this.runPython('SUMMA/init.py', [
             'cigi-gisolve',
             __dirname + '/../../key/cigi-gisolve.key',
-            __dirname + '/../../data/SUMMA'
+            __dirname + '/../../data',
+            'upload/' + this.manifest.uid + '/' + this.manifest.file,
+            machine,
+            node,
+            walltime
         ])
 
         this.remote_id = params['remote_id']

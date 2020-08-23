@@ -89,6 +89,18 @@ class Supervisor {
     }
 
     async add(manifest: manifest) {
+        const dest = constant.destinationMap[manifest.dest]
+
+        if (dest.useUploadedModel) {
+            if (manifest.file != undefined) {
+                if (!fs.existsSync(__dirname + '/../data/upload/' + manifest.uid + '/' + manifest.file)) {
+                    throw new Error('file [' + manifest.file + '] not exists')
+                }
+            } else {
+                throw new Error('no file provided')
+            }
+        }
+
         manifest.id = this._generateJobID()
         await this.queues[manifest.dest].push(manifest)
         this.emitter.registerEvents(manifest.uid, manifest.id, 'JOB_QUEUED', 'job [' + manifest.id + '] is queued, waiting for registration')

@@ -148,7 +148,6 @@ var Guard = (function () {
     function Guard() {
         this.jat = new JAT_1.default();
         this.authenticatedAccessTokenCache = {};
-        this.uidCounter = 0;
         this.secretTokens = new SecretTokens();
     }
     Guard.prototype.issueSecretTokenForPrivateAccount = function (destination, user, password) {
@@ -176,17 +175,15 @@ var Guard = (function () {
                         if (!_a.sent()) return [3, 5];
                         secretToken = Helper_1.default.randomStr(45);
                         return [3, 3];
-                    case 5:
-                        this.uidCounter += 1;
-                        return [4, this.secretTokens.add(secretToken, {
-                                cred: {
-                                    usr: user,
-                                    pwd: password
-                                },
-                                dest: destination,
-                                sT: secretToken,
-                                uid: this.uidCounter
-                            })];
+                    case 5: return [4, this.secretTokens.add(secretToken, {
+                            cred: {
+                                usr: user,
+                                pwd: password
+                            },
+                            dest: destination,
+                            sT: secretToken,
+                            uid: this._generateUserID()
+                        })];
                     case 6:
                         _a.sent();
                         return [2, secretToken];
@@ -208,17 +205,15 @@ var Guard = (function () {
                         if (!_a.sent()) return [3, 3];
                         secretToken = Helper_1.default.randomStr(45);
                         return [3, 1];
-                    case 3:
-                        this.uidCounter += 1;
-                        return [4, this.secretTokens.add(secretToken, {
-                                cred: {
-                                    usr: user,
-                                    pwd: null
-                                },
-                                dest: destination,
-                                sT: secretToken,
-                                uid: this.uidCounter
-                            })];
+                    case 3: return [4, this.secretTokens.add(secretToken, {
+                            cred: {
+                                usr: user,
+                                pwd: null
+                            },
+                            dest: destination,
+                            sT: secretToken,
+                            uid: this._generateUserID()
+                        })];
                     case 4:
                         _a.sent();
                         return [2, secretToken];
@@ -303,6 +298,9 @@ var Guard = (function () {
                 return [2];
             });
         });
+    };
+    Guard.prototype._generateUserID = function () {
+        return Math.round((new Date()).getTime() / 1000) + Helper_1.default.randomStr(4);
     };
     return Guard;
 }());

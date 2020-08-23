@@ -15,6 +15,13 @@ exports.default = {
                     privateKeyPath: __dirname + '/../key/cigi-gisolve.key',
                     passphrase: null
                 }
+            },
+            useUploadedModel: true,
+            uploadModelExpectingFolderEntries: {
+                'installTestCases_local.sh': 'File',
+                'data': 'Directory',
+                'output': 'Directory',
+                'settings': 'Directory'
             }
         },
         examplePrivateAccountService: {

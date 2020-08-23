@@ -130,3 +130,9 @@ data/SUMMA/model/*
 
 data/download/*
 !data/download/.gitkeep
+
+data/upload/*
+!data/upload/.gitkeep
+
+data/tmp/*
+!data/tmp/.gitkeep

@@ -1,21 +1,42 @@
 import Guard from './src/Guard'
 import Supervisor from './src/Supervisor'
+import File from './src/File'
 import Helper from './src/Helper'
 import constant from './src/constant'
+import { FileFormatError, FileStructureError } from './src/errors'
 const bodyParser = require('body-parser')
 const config = require('./config.json')
-var Validator = require('jsonschema').Validator;
+const Validator = require('jsonschema').Validator;
 const express = require('express')
 const requestIp = require('request-ip')
+const fileUpload = require('express-fileupload')
+
+const tmpDir = __dirname + '/data/tmp'
 
 const app = express()
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(requestIp.mw({ attributeName: 'ip' }))
+app.use(fileUpload({
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+    useTempFiles: true,
+    abortOnLimit: true,
+    tempFileDir: tmpDir,
+    safeFileNames: true,
+    limitHandler: (req, res, next) => {
+        res.json({
+            error: "file too large"
+        })
+        res.status(402)
+    }
+}))
 
-var guard = new Guard()
-var supervisor = new Supervisor()
-var validator = new Validator()
+const guard = new Guard()
+const supervisor = new Supervisor()
+const file = new File()
+const validator = new Validator()
+
+file.clearTmpFiles()
 
 if (!config.isTesting) {
     if (process.platform == "linux") {
@@ -47,6 +68,9 @@ var schemas = {
             },
             env: {
                 type: 'object'
+            },
+            file: {
+                type: 'string'
             },
             payload: {
                 type: 'object'
@@ -183,9 +207,59 @@ app.post('/supervisor', async function (req, res) {
         return
     }
 
-    manifest = await supervisor.add(manifest)
+    try {
+        manifest = await supervisor.add(manifest)
+    } catch (e) {
+        res.json({
+            error: e.toString()
+        })
+        res.status(402)
+        return
+    }
     manifest = Helper.hideCredFromManifest(manifest)
     res.json(manifest)
+})
+
+app.post('/supervisor/upload', async function (req, res) {
+    if (res.statusCode == 402) {
+        return
+    }
+
+    var aT = req.body
+    var errors = requestErrors(validator.validate(aT, schemas['accessToken']))
+
+    if (errors.length > 0) {
+        res.json({
+            error: "invalid input",
+            messages: errors
+        })
+        res.status(402)
+        return
+    }
+
+    try {
+        var manifest = await guard.validateAccessToken(aT)
+    } catch (e) {
+        res.json({
+            error: "invalid access token",
+            messages: [e.toString()]
+        })
+        res.status(401)
+        return
+    }
+
+    try {
+        var fileID = await file.upload(manifest.uid, req.files.file.tempFilePath)
+        res.json({
+            file: fileID
+        })
+    } catch (e) {
+        res.json({
+            error: e.toString()
+        })
+        res.status(402)
+        return
+    }
 })
 
 app.get('/supervisor/download/:jobID', async function (req, res) {
@@ -202,7 +276,7 @@ app.get('/supervisor/download/:jobID', async function (req, res) {
     }
 
     try {
-        aT = await guard.validateAccessToken(aT)
+        await guard.validateAccessToken(aT)
     } catch (e) {
         res.json({
             error: "invalid access token",
@@ -238,7 +312,7 @@ app.get('/supervisor/:jobID', async function (req, res) {
     }
 
     try {
-        aT = await guard.validateAccessToken(aT)
+        var manifest = await guard.validateAccessToken(aT)
     } catch (e) {
         res.json({
             error: "invalid access token",
@@ -248,7 +322,7 @@ app.get('/supervisor/:jobID', async function (req, res) {
         return
     }
 
-    res.json(supervisor.status(aT.uid, req.params.jobID))
+    res.json(supervisor.status(manifest.uid, req.params.jobID))
 })
 
 app.get('/supervisor', async function (req, res) {
@@ -265,7 +339,7 @@ app.get('/supervisor', async function (req, res) {
     }
 
     try {
-        aT = await guard.validateAccessToken(aT)
+        var manifest = await guard.validateAccessToken(aT)
     } catch (e) {
         res.json({
             error: "invalid access token",
@@ -275,7 +349,7 @@ app.get('/supervisor', async function (req, res) {
         return
     }
 
-    res.json(supervisor.status(aT.uid))
+    res.json(supervisor.status(manifest.uid))
 })
 
 app.listen(config.serverPort, () => console.log('supervisor server is up, listening to port: ' + config.serverPort))
