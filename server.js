@@ -309,6 +309,7 @@ app.post('/supervisor/upload', function (req, res) {
                     return [3, 7];
                 case 6:
                     e_5 = _a.sent();
+                    console.log(e_5);
                     res.json({
                         error: e_5.toString()
                     });

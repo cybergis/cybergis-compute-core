@@ -254,6 +254,7 @@ app.post('/supervisor/upload', async function (req, res) {
             file: fileID
         })
     } catch (e) {
+        console.log(e)
         res.json({
             error: e.toString()
         })

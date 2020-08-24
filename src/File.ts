@@ -35,14 +35,13 @@ class File {
 
     async upload(uid, tempFilePath: string,): Promise<string> {
         var fileID = this._generateFileID()
-        var zip = fs.createReadStream(tempFilePath).pipe(unzipper.Parse({ forceStream: true }))
 
         const userDir = __dirname + '/../data/upload/' + uid
         const dir = userDir + '/' + fileID
         const dest = constant.destinationMap['summa']
 
         const clearUpload = () => {
-            fs.rmdir(dir, { recursive: true })
+            // fs.rmdir(dir, { recursive: true })
         }
 
         if (!fs.existsSync(userDir)) {
@@ -53,50 +52,65 @@ class File {
             fs.mkdirSync(dir)
         }
 
-        var zipContainFiles = {}
+        var zipContainFiles = []
+
+        var zip = fs.createReadStream(tempFilePath).pipe(unzipper.Parse({ forceStream: true }))
 
         try {
-            var tested = false
-
             for await (const entry of zip) {
+                entry.autodrain()
                 const fileName = entry.path
-                const type = entry.type
-                const f = fileName.split('/')
-                const baseFile = f[1]
-                const fileDir = f.slice(1).join('/')
-
-                if ((f.length === 2 && type === 'File') || (f.length === 3 && type === 'Directory')) {
-                    if (dest.uploadModelExpectingFolderEntries[baseFile] === type) {
-                        zipContainFiles[baseFile] = type
-                    }
-                } else {
-                    if (f.length > 3 && !tested) {
-                        for (var i in dest.uploadModelExpectingFolderEntries) {
-                            if (zipContainFiles[i] != dest.uploadModelExpectingFolderEntries[i]) {
-                                clearUpload()
-                                throw new FileFormatError("missing required file [" + i + "] with type [" + dest.uploadModelExpectingFolderEntries[i] + "]")
-                            }
-                        }
-                        tested = true
-                    }
+                const baseFile = fileName.split('/')[1]
+                if (dest.uploadModelExpectingBaseStructure.includes(baseFile)) {
+                    zipContainFiles.push(baseFile)
                 }
+            }
 
-                if (dest.uploadModelExpectingFolderEntries[baseFile] != undefined) {
-                    if (type === 'File') {
-                        entry.pipe(fs.createWriteStream(dir + '/' + fileDir))
-                    } else if (type === 'Directory') {
-                        if (!fs.existsSync(dir + '/' + fileDir)) {
-                            fs.mkdirSync(dir + '/' + fileDir)
-                        }
+            for (var i in dest.uploadModelExpectingBaseStructure) {
+                if (!zipContainFiles.includes(dest.uploadModelExpectingBaseStructure[i])) {
+                    throw new FileStructureError("missing required base file/folder [" + dest.uploadModelExpectingBaseStructure[i] + "]")
+                }
+            }
+        } catch (e) {
+            if (e.name === 'FileStructureError') {
+                throw e
+            }
+            clearUpload()
+            throw new FileFormatError("provided file is not a zip file")
+        }
+
+        zip = fs.createReadStream(tempFilePath).pipe(unzipper.Parse({ forceStream: true }))
+
+        const ignoreFiles = ['.placeholder', '.DS_Store']
+
+        for await (const entry of zip) {
+            const filePath = entry.path
+            const type = entry.type
+            const f = filePath.split('/')
+            const fileName = f.pop()
+            const baseFile = f[1]
+            const fileDir = f.slice(1).join('/')
+
+            if (baseFile != undefined) {
+                if (dest.uploadModelExpectingBaseStructure.includes(baseFile)) {
+                    if (!fs.existsSync(dir + '/' + fileDir)) {
+                        fs.promises.mkdir(dir + '/' + fileDir, { recursive: true })
+                    }
+
+                    if (type === 'File' && !ignoreFiles.includes(fileName)) {
+                        entry.pipe(fs.createWriteStream(dir + '/' + fileDir + '/' + fileName))
                     }
                 } else {
                     entry.autodrain()
                 }
+            } else {
+                if (dest.uploadModelExpectingBaseStructure.includes(fileName)) {
+                    if (type === 'File' && !ignoreFiles.includes(fileName)) {
+                        entry.pipe(fs.createWriteStream(dir + '/' + fileName))
+                    }
+                }
             }
-        } catch (e) {
-            clearUpload()
-            throw new FileFormatError("provided file is not a zip file")
-        }
+    }
 
         return fileID
     }

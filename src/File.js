@@ -77,17 +77,15 @@ var File = (function () {
     };
     File.prototype.upload = function (uid, tempFilePath) {
         return __awaiter(this, void 0, void 0, function () {
-            var e_1, _a, fileID, zip, userDir, dir, dest, clearUpload, zipContainFiles, tested, zip_1, zip_1_1, entry, fileName, type, f, baseFile, fileDir, i, e_1_1, e_2;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var e_1, _a, e_2, _b, fileID, userDir, dir, dest, clearUpload, zipContainFiles, zip, zip_1, zip_1_1, entry, fileName, baseFile, e_1_1, i, e_3, ignoreFiles, zip_2, zip_2_1, entry, filePath, type, f, fileName, baseFile, fileDir, e_2_1;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         fileID = this._generateFileID();
-                        zip = fs.createReadStream(tempFilePath).pipe(unzipper.Parse({ forceStream: true }));
                         userDir = __dirname + '/../data/upload/' + uid;
                         dir = userDir + '/' + fileID;
                         dest = constant_1.default.destinationMap['summa'];
                         clearUpload = function () {
-                            fs.rmdir(dir, { recursive: true });
                         };
                         if (!fs.existsSync(userDir)) {
                             fs.mkdirSync(userDir);
@@ -95,79 +93,117 @@ var File = (function () {
                         if (!fs.existsSync(dir)) {
                             fs.mkdirSync(dir);
                         }
-                        zipContainFiles = {};
-                        _b.label = 1;
+                        zipContainFiles = [];
+                        zip = fs.createReadStream(tempFilePath).pipe(unzipper.Parse({ forceStream: true }));
+                        _c.label = 1;
                     case 1:
-                        _b.trys.push([1, 14, , 15]);
-                        tested = false;
-                        _b.label = 2;
+                        _c.trys.push([1, 14, , 15]);
+                        _c.label = 2;
                     case 2:
-                        _b.trys.push([2, 7, 8, 13]);
+                        _c.trys.push([2, 7, 8, 13]);
                         zip_1 = __asyncValues(zip);
-                        _b.label = 3;
+                        _c.label = 3;
                     case 3: return [4, zip_1.next()];
                     case 4:
-                        if (!(zip_1_1 = _b.sent(), !zip_1_1.done)) return [3, 6];
+                        if (!(zip_1_1 = _c.sent(), !zip_1_1.done)) return [3, 6];
                         entry = zip_1_1.value;
+                        entry.autodrain();
                         fileName = entry.path;
-                        type = entry.type;
-                        f = fileName.split('/');
-                        baseFile = f[1];
-                        fileDir = f.slice(1).join('/');
-                        if ((f.length === 2 && type === 'File') || (f.length === 3 && type === 'Directory')) {
-                            if (dest.uploadModelExpectingFolderEntries[baseFile] === type) {
-                                zipContainFiles[baseFile] = type;
-                            }
+                        baseFile = fileName.split('/')[1];
+                        if (dest.uploadModelExpectingBaseStructure.includes(baseFile)) {
+                            zipContainFiles.push(baseFile);
                         }
-                        else {
-                            if (f.length > 3 && !tested) {
-                                for (i in dest.uploadModelExpectingFolderEntries) {
-                                    if (zipContainFiles[i] != dest.uploadModelExpectingFolderEntries[i]) {
-                                        clearUpload();
-                                        throw new errors_1.FileFormatError("missing required file [" + i + "] with type [" + dest.uploadModelExpectingFolderEntries[i] + "]");
-                                    }
-                                }
-                                tested = true;
-                            }
-                        }
-                        if (dest.uploadModelExpectingFolderEntries[baseFile] != undefined) {
-                            if (type === 'File') {
-                                entry.pipe(fs.createWriteStream(dir + '/' + fileDir));
-                            }
-                            else if (type === 'Directory') {
-                                if (!fs.existsSync(dir + '/' + fileDir)) {
-                                    fs.mkdirSync(dir + '/' + fileDir);
-                                }
-                            }
-                        }
-                        else {
-                            entry.autodrain();
-                        }
-                        _b.label = 5;
+                        _c.label = 5;
                     case 5: return [3, 3];
                     case 6: return [3, 13];
                     case 7:
-                        e_1_1 = _b.sent();
+                        e_1_1 = _c.sent();
                         e_1 = { error: e_1_1 };
                         return [3, 13];
                     case 8:
-                        _b.trys.push([8, , 11, 12]);
+                        _c.trys.push([8, , 11, 12]);
                         if (!(zip_1_1 && !zip_1_1.done && (_a = zip_1.return))) return [3, 10];
                         return [4, _a.call(zip_1)];
                     case 9:
-                        _b.sent();
-                        _b.label = 10;
+                        _c.sent();
+                        _c.label = 10;
                     case 10: return [3, 12];
                     case 11:
                         if (e_1) throw e_1.error;
                         return [7];
                     case 12: return [7];
-                    case 13: return [3, 15];
+                    case 13:
+                        for (i in dest.uploadModelExpectingBaseStructure) {
+                            if (!zipContainFiles.includes(dest.uploadModelExpectingBaseStructure[i])) {
+                                throw new errors_1.FileStructureError("missing required base file/folder [" + dest.uploadModelExpectingBaseStructure[i] + "]");
+                            }
+                        }
+                        return [3, 15];
                     case 14:
-                        e_2 = _b.sent();
+                        e_3 = _c.sent();
+                        if (e_3.name === 'FileStructureError') {
+                            throw e_3;
+                        }
                         clearUpload();
                         throw new errors_1.FileFormatError("provided file is not a zip file");
-                    case 15: return [2, fileID];
+                    case 15:
+                        zip = fs.createReadStream(tempFilePath).pipe(unzipper.Parse({ forceStream: true }));
+                        ignoreFiles = ['.placeholder', '.DS_Store'];
+                        _c.label = 16;
+                    case 16:
+                        _c.trys.push([16, 21, 22, 27]);
+                        zip_2 = __asyncValues(zip);
+                        _c.label = 17;
+                    case 17: return [4, zip_2.next()];
+                    case 18:
+                        if (!(zip_2_1 = _c.sent(), !zip_2_1.done)) return [3, 20];
+                        entry = zip_2_1.value;
+                        filePath = entry.path;
+                        type = entry.type;
+                        f = filePath.split('/');
+                        fileName = f.pop();
+                        baseFile = f[1];
+                        fileDir = f.slice(1).join('/');
+                        if (baseFile != undefined) {
+                            if (dest.uploadModelExpectingBaseStructure.includes(baseFile)) {
+                                if (!fs.existsSync(dir + '/' + fileDir)) {
+                                    fs.promises.mkdir(dir + '/' + fileDir, { recursive: true });
+                                }
+                                if (type === 'File' && !ignoreFiles.includes(fileName)) {
+                                    entry.pipe(fs.createWriteStream(dir + '/' + fileDir + '/' + fileName));
+                                }
+                            }
+                            else {
+                                entry.autodrain();
+                            }
+                        }
+                        else {
+                            if (dest.uploadModelExpectingBaseStructure.includes(fileName)) {
+                                if (type === 'File' && !ignoreFiles.includes(fileName)) {
+                                    entry.pipe(fs.createWriteStream(dir + '/' + fileName));
+                                }
+                            }
+                        }
+                        _c.label = 19;
+                    case 19: return [3, 17];
+                    case 20: return [3, 27];
+                    case 21:
+                        e_2_1 = _c.sent();
+                        e_2 = { error: e_2_1 };
+                        return [3, 27];
+                    case 22:
+                        _c.trys.push([22, , 25, 26]);
+                        if (!(zip_2_1 && !zip_2_1.done && (_b = zip_2.return))) return [3, 24];
+                        return [4, _b.call(zip_2)];
+                    case 23:
+                        _c.sent();
+                        _c.label = 24;
+                    case 24: return [3, 26];
+                    case 25:
+                        if (e_2) throw e_2.error;
+                        return [7];
+                    case 26: return [7];
+                    case 27: return [2, fileID];
                 }
             });
         });

@@ -15,12 +15,12 @@ export default {
                 }
             },
             useUploadedModel: true,
-            uploadModelExpectingFolderEntries: {
-                'installTestCases_local.sh': 'File',
-                'data': 'Directory',
-                'output': 'Directory',
-                'settings': 'Directory'
-            }
+            uploadModelExpectingBaseStructure: [
+                'installTestCases_local.sh',
+                'data',
+                'output',
+                'settings'
+            ]
         },
         // examples
         examplePrivateAccountService: {
