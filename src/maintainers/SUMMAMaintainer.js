@@ -59,15 +59,16 @@ var SUMMAMaintainer = (function (_super) {
     };
     SUMMAMaintainer.prototype.onInit = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var machine, node, walltime, params;
+            var machine, node, walltime, username, params;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         machine = this.manifest.payload.machine === undefined ? 'keeling' : this.manifest.payload.machine;
                         node = this.manifest.payload.node === undefined ? 16 : this.manifest.payload.node;
                         walltime = this.manifest.payload.walltime === undefined ? 1 : this.manifest.payload.walltime;
+                        username = machine === 'keeling' ? 'cigi-gisolve' : 'cybergis';
                         return [4, this.runPython('SUMMA/init.py', [
-                                'cigi-gisolve',
+                                username,
                                 __dirname + '/../../key/cigi-gisolve.key',
                                 __dirname + '/../../data',
                                 'upload/' + this.manifest.uid + '/' + this.manifest.file,
