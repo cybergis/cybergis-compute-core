@@ -78,6 +78,8 @@ var SUMMAMaintainer = (function (_super) {
                             ])];
                     case 1:
                         params = _a.sent();
+                        this.machine = machine;
+                        this.username = username;
                         this.remote_id = params['remote_id'];
                         this.remote_slurm_out_file_path = params['remote_slurm_out_file_path'];
                         this.remote_model_folder_path = params['remote_model_folder_path'];
@@ -92,8 +94,8 @@ var SUMMAMaintainer = (function (_super) {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4, this.runPython('SUMMA/maintain.py', [
-                            'keeling',
-                            'cigi-gisolve',
+                            this.machine,
+                            this.username,
                             __dirname + '/../../key/cigi-gisolve.key',
                             this.remote_id,
                             this.remote_slurm_out_file_path,

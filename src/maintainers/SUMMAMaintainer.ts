@@ -9,6 +9,10 @@ class SUMMAMaintainer extends BaseMaintainer {
 
     private local_job_folder_path
 
+    private machine
+
+    private username
+
     define() {
         this.allowedEnv = {}
     }
@@ -29,6 +33,8 @@ class SUMMAMaintainer extends BaseMaintainer {
             walltime
         ])
 
+        this.machine = machine
+        this.username = username
         this.remote_id = params['remote_id']
         this.remote_slurm_out_file_path = params['remote_slurm_out_file_path']
         this.remote_model_folder_path = params['remote_model_folder_path']
@@ -37,8 +43,8 @@ class SUMMAMaintainer extends BaseMaintainer {
 
     async onMaintain() {
         await this.runPython('SUMMA/maintain.py', [
-            'keeling',
-            'cigi-gisolve',
+            this.machine,
+            this.username,
             __dirname + '/../../key/cigi-gisolve.key',
             this.remote_id,
             this.remote_slurm_out_file_path,
