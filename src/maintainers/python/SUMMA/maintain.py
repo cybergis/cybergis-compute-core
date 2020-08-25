@@ -8,7 +8,7 @@ remote_id = str(sys.argv[4])
 remote_slurm_out_file_path = str(sys.argv[5])
 remote_model_folder_path = str(sys.argv[6])
 local_job_folder_path = str(sys.argv[7])
-s = SummaSupervisorToHPC({machine: machine}, username, key_path)
+s = SummaSupervisorToHPC({"machine": machine}, username, key_path)
 
 s = s.connect()
 
