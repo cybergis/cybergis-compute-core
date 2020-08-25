@@ -16,6 +16,7 @@ export default {
             },
             useUploadedModel: true,
             uploadModelExpectingBaseStructure: [
+                'summa_options.json',
                 'installTestCases_local.sh',
                 'data',
                 'output',
