@@ -9,27 +9,31 @@ const unzipper = require('unzipper')
 
 class File {
     clearTmpFiles() {
-        var tmpDir = __dirname + '/data/tmp'
+        var tmpDir = __dirname + '/../data/tmp'
         setInterval(function () {
-            fs.readdir(tmpDir, function (err, files) {
-                files.forEach(function (file, index) {
-                    if (file != '.gitkeep') {
-                        fs.stat(path.join(tmpDir, file), function (err, stat) {
-                            var endTime, now;
-                            if (err) {
-                                return console.error(err)
-                            }
-                            now = new Date().getTime()
-                            endTime = new Date(stat.ctime).getTime() + 3600000
-                            if (now > endTime) {
-                                return rimraf(path.join(tmpDir, file), function (err) {
-                                    //
-                                })
-                            }
-                        })
-                    }
+            try {
+                fs.readdir(tmpDir, function (err, files) {
+                    files.forEach(function (file, index) {
+                        if (file != '.gitkeep') {
+                            fs.stat(path.join(tmpDir, file), function (err, stat) {
+                                var endTime, now;
+                                if (err) {
+                                    return console.error(err)
+                                }
+                                now = new Date().getTime()
+                                endTime = new Date(stat.ctime).getTime() + 3600000
+                                if (now > endTime) {
+                                    return rimraf(path.join(tmpDir, file), function (err) {
+                                        //
+                                    })
+                                }
+                            })
+                        }
+                    })
                 })
-            })
+            } catch {
+                //
+            }
         }, 60 * 60 * 1000)
     }
 
