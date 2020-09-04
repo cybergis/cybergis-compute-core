@@ -178,7 +178,14 @@ var Supervisor = (function () {
     };
     Supervisor.prototype.status = function (uid, jobID) {
         if (jobID === void 0) { jobID = null; }
-        return this.emitter.status(uid, jobID);
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4, this.emitter.status(uid, jobID)];
+                    case 1: return [2, _a.sent()];
+                }
+            });
+        });
     };
     Supervisor.prototype.getDownloadDir = function (jobID) {
         return __awaiter(this, void 0, void 0, function () {

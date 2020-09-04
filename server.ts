@@ -323,7 +323,7 @@ app.get('/supervisor/:jobID', async function (req, res) {
         return
     }
 
-    res.json(supervisor.status(manifest.uid, req.params.jobID))
+    res.json(await supervisor.status(manifest.uid, req.params.jobID))
 })
 
 app.get('/supervisor', async function (req, res) {
@@ -350,7 +350,7 @@ app.get('/supervisor', async function (req, res) {
         return
     }
 
-    res.json(supervisor.status(manifest.uid))
+    res.json(await supervisor.status(manifest.uid))
 })
 
 app.listen(config.serverPort, () => console.log('supervisor server is up, listening to port: ' + config.serverPort))

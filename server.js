@@ -371,9 +371,9 @@ app.get('/supervisor/download/:jobID', function (req, res) {
 });
 app.get('/supervisor/:jobID', function (req, res) {
     return __awaiter(this, void 0, void 0, function () {
-        var aT, errors, manifest, e_7;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var aT, errors, manifest, e_7, _a, _b;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
                 case 0:
                     aT = req.body;
                     errors = requestErrors(validator.validate(aT, schemas['accessToken']));
@@ -385,15 +385,15 @@ app.get('/supervisor/:jobID', function (req, res) {
                         res.status(402);
                         return [2];
                     }
-                    _a.label = 1;
+                    _c.label = 1;
                 case 1:
-                    _a.trys.push([1, 3, , 4]);
+                    _c.trys.push([1, 3, , 4]);
                     return [4, guard.validateAccessToken(aT)];
                 case 2:
-                    manifest = _a.sent();
+                    manifest = _c.sent();
                     return [3, 4];
                 case 3:
-                    e_7 = _a.sent();
+                    e_7 = _c.sent();
                     res.json({
                         error: "invalid access token",
                         messages: [e_7.toString()]
@@ -401,7 +401,10 @@ app.get('/supervisor/:jobID', function (req, res) {
                     res.status(401);
                     return [2];
                 case 4:
-                    res.json(supervisor.status(manifest.uid, req.params.jobID));
+                    _b = (_a = res).json;
+                    return [4, supervisor.status(manifest.uid, req.params.jobID)];
+                case 5:
+                    _b.apply(_a, [_c.sent()]);
                     return [2];
             }
         });
@@ -409,9 +412,9 @@ app.get('/supervisor/:jobID', function (req, res) {
 });
 app.get('/supervisor', function (req, res) {
     return __awaiter(this, void 0, void 0, function () {
-        var aT, errors, manifest, e_8;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var aT, errors, manifest, e_8, _a, _b;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
                 case 0:
                     aT = req.body;
                     errors = requestErrors(validator.validate(aT, schemas['accessToken']));
@@ -423,15 +426,15 @@ app.get('/supervisor', function (req, res) {
                         res.status(402);
                         return [2];
                     }
-                    _a.label = 1;
+                    _c.label = 1;
                 case 1:
-                    _a.trys.push([1, 3, , 4]);
+                    _c.trys.push([1, 3, , 4]);
                     return [4, guard.validateAccessToken(aT)];
                 case 2:
-                    manifest = _a.sent();
+                    manifest = _c.sent();
                     return [3, 4];
                 case 3:
-                    e_8 = _a.sent();
+                    e_8 = _c.sent();
                     res.json({
                         error: "invalid access token",
                         messages: [e_8.toString()]
@@ -439,7 +442,10 @@ app.get('/supervisor', function (req, res) {
                     res.status(401);
                     return [2];
                 case 4:
-                    res.json(supervisor.status(manifest.uid));
+                    _b = (_a = res).json;
+                    return [4, supervisor.status(manifest.uid)];
+                case 5:
+                    _b.apply(_a, [_c.sent()]);
                     return [2];
             }
         });

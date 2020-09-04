@@ -107,8 +107,8 @@ class Supervisor {
         return manifest
     }
 
-    status(uid: number, jobID: string = null) {
-        return this.emitter.status(uid, jobID)
+    async status(uid: number, jobID: string = null) {
+        return await this.emitter.status(uid, jobID)
     }
 
     async getDownloadDir(jobID: string): Promise<string> {

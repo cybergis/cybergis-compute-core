@@ -19,15 +19,7 @@ class SparkMaintainer extends BaseMaintainer {
 
     async onMaintain() {
         var pipeline = [
-            'python3 ' + path.join(this.workspacePath, 'index.py'),
-            (prev, self) => {
-                console.log(prev)
-                self.emitEvent('JOB_CUSTOM_EVENT', 'emit a custom event...')
-                if (prev.out == '\n') {
-                    throw new Error('error')
-                }
-                return ''
-            }
+            'python3 ' + path.join(this.workspacePath, 'index.py')
         ]
 
         await this.runBash(pipeline, {})

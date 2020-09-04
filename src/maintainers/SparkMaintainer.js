@@ -84,15 +84,7 @@ var SparkMaintainer = (function (_super) {
                 switch (_a.label) {
                     case 0:
                         pipeline = [
-                            'python3 ' + path.join(this.workspacePath, 'index.py'),
-                            function (prev, self) {
-                                console.log(prev);
-                                self.emitEvent('JOB_CUSTOM_EVENT', 'emit a custom event...');
-                                if (prev.out == '\n') {
-                                    throw new Error('error');
-                                }
-                                return '';
-                            }
+                            'python3 ' + path.join(this.workspacePath, 'index.py')
                         ];
                         return [4, this.runBash(pipeline, {})];
                     case 1:
