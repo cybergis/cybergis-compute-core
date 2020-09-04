@@ -249,7 +249,7 @@ app.post('/supervisor/upload', async function (req, res) {
     }
 
     try {
-        var fileID = await file.upload(manifest.uid, req.files.file.tempFilePath)
+        var fileID = await file.store(manifest.uid, manifest.dest, req.files.file.tempFilePath)
         res.json({
             file: fileID
         })

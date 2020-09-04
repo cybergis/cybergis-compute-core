@@ -12,7 +12,7 @@ class ExampleMaintainer extends BaseMaintainer {
         var pipeline = [
             'ls'
         ]
-        var out = await this.connect(pipeline, {})
+        var out = await this.runBash(pipeline, {})
         if (out.length > 0) {
             // condition when job is initialized
             // if job fail, please do not emit JOB_INITIALIZED event
@@ -36,7 +36,7 @@ class ExampleMaintainer extends BaseMaintainer {
             },
             'echo $A'
         ]
-        var out = await this.connect(pipeline, {})
+        var out = await this.runBash(pipeline, {})
         if (out.length > 0) {
             // ending condition
             this.emitEvent('JOB_ENDED', 'job [' + this.manifest.id + '] finished')

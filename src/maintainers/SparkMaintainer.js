@@ -49,71 +49,60 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var BaseMaintainer_1 = require("./BaseMaintainer");
-var ExampleMaintainer = (function (_super) {
-    __extends(ExampleMaintainer, _super);
-    function ExampleMaintainer() {
+var path = require('path');
+var SparkMaintainer = (function (_super) {
+    __extends(SparkMaintainer, _super);
+    function SparkMaintainer() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    ExampleMaintainer.prototype.define = function () {
-        this.allowedEnv = {
-            A: 'number',
-            B: 'string'
-        };
+    SparkMaintainer.prototype.define = function () {
+        this.allowedEnv = {};
     };
-    ExampleMaintainer.prototype.onInit = function () {
+    SparkMaintainer.prototype.onInit = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var pipeline, out;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var _a, _b;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
-                        pipeline = [
-                            'ls'
-                        ];
-                        return [4, this.runBash(pipeline, {})];
-                    case 1:
-                        out = _a.sent();
-                        if (out.length > 0) {
-                            this.emitEvent('JOB_INITIALIZED', 'job [' + this.manifest.id + '] is initialized, waiting for job completion');
-                        }
+                        this.injectRuntimeFlagsToFile('index.py', 'python');
+                        _a = this;
+                        _b = this.upload;
+                        return [4, this.getRemoteHomePath()];
+                    case 1: return [4, _b.apply(this, [_c.sent()])];
+                    case 2:
+                        _a.workspacePath = _c.sent();
+                        this.emitEvent('JOB_INITIALIZED', 'job [' + this.manifest.id + '] is initialized, waiting for job completion');
                         return [2];
                 }
             });
         });
     };
-    ExampleMaintainer.prototype.onMaintain = function () {
+    SparkMaintainer.prototype.onMaintain = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var pipeline, out;
+            var pipeline;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         pipeline = [
-                            'ls',
-                            'echo $A',
-                            'echo $B',
-                            'echo $C',
+                            'python3 ' + path.join(this.workspacePath, 'index.py'),
                             function (prev, self) {
+                                console.log(prev);
                                 self.emitEvent('JOB_CUSTOM_EVENT', 'emit a custom event...');
                                 if (prev.out == '\n') {
                                     throw new Error('error');
                                 }
                                 return '';
-                            },
-                            'echo $A'
+                            }
                         ];
                         return [4, this.runBash(pipeline, {})];
                     case 1:
-                        out = _a.sent();
-                        if (out.length > 0) {
-                            this.emitEvent('JOB_ENDED', 'job [' + this.manifest.id + '] finished');
-                        }
-                        else {
-                            this.emitEvent('JOB_FAILED', 'job [' + this.manifest.id + '] failed');
-                        }
+                        _a.sent();
+                        this.registerDownloadDir(this.workspacePath);
                         return [2];
                 }
             });
         });
     };
-    return ExampleMaintainer;
+    return SparkMaintainer;
 }(BaseMaintainer_1.default));
-exports.default = ExampleMaintainer;
+exports.default = SparkMaintainer;

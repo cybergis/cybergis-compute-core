@@ -300,7 +300,7 @@ app.post('/supervisor/upload', function (req, res) {
                     return [2];
                 case 4:
                     _a.trys.push([4, 6, , 7]);
-                    return [4, file.upload(manifest.uid, req.files.file.tempFilePath)];
+                    return [4, file.store(manifest.uid, manifest.dest, req.files.file.tempFilePath)];
                 case 5:
                     fileID = _a.sent();
                     res.json({

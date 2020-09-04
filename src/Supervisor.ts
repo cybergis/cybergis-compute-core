@@ -91,7 +91,7 @@ class Supervisor {
     async add(manifest: manifest) {
         const dest = constant.destinationMap[manifest.dest]
 
-        if (dest.useUploadedModel) {
+        if (dest.useUploadedFile) {
             if (manifest.file != undefined) {
                 if (!fs.existsSync(__dirname + '/../data/upload/' + manifest.uid + '/' + manifest.file)) {
                     throw new Error('file [' + manifest.file + '] not exists')

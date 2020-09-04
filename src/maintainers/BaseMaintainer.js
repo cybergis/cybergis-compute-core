@@ -37,7 +37,10 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var Helper_1 = require("../Helper");
 var SSH_1 = require("../SSH");
+var File_1 = require("../File");
 var config = require('../../config.json');
+var path = require('path');
+var fs = require('fs');
 var spawn = require('child-process-async').spawn;
 var BaseMaintainer = (function () {
     function BaseMaintainer(manifest) {
@@ -48,7 +51,9 @@ var BaseMaintainer = (function () {
         this.manifest = null;
         this.events = [];
         this.logs = [];
+        this.uploadedFiles = [];
         this.env = {};
+        this.file = new File_1.default();
         this.lifeCycleState = {
             initCounter: 0,
             initThresholdInCount: 3,
@@ -57,6 +62,7 @@ var BaseMaintainer = (function () {
         };
         this.downloadDir = undefined;
         this.allowedEnv = undefined;
+        this.removeFileAfterJobFinished = true;
         this.define();
         if (this.allowedEnv === undefined) {
             manifest.env = {};
@@ -79,6 +85,7 @@ var BaseMaintainer = (function () {
         this.env = env;
         this.rawManifest = manifest;
         this.manifest = Helper_1.default.hideCredFromManifest(manifest);
+        this.SSH = new SSH_1.default(this.rawManifest.dest, this.rawManifest.cred.usr, this.rawManifest.cred.pwd, this);
     }
     BaseMaintainer.prototype.define = function () {
     };
@@ -93,6 +100,23 @@ var BaseMaintainer = (function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 return [2];
+            });
+        });
+    };
+    BaseMaintainer.prototype.runBash = function (pipeline, options) {
+        if (options === void 0) { options = {}; }
+        return __awaiter(this, void 0, void 0, function () {
+            var out;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4, this.SSH.connect(this.env)];
+                    case 1:
+                        _a.sent();
+                        return [4, this.SSH.exec(pipeline, options)];
+                    case 2:
+                        out = _a.sent();
+                        return [2, out];
+                }
             });
         });
     };
@@ -162,11 +186,103 @@ var BaseMaintainer = (function () {
             });
         });
     };
+    BaseMaintainer.prototype.upload = function (destinationRootPath, fileNameValidation) {
+        if (fileNameValidation === void 0) { fileNameValidation = null; }
+        return __awaiter(this, void 0, void 0, function () {
+            var sourcePath, destinationPath, uploadResult, uploadCounter;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        sourcePath = __dirname + '/../../data/upload/' + this.rawManifest.uid + '/' + this.rawManifest.file;
+                        if (!fs.existsSync(sourcePath)) {
+                            throw new Error('file path ' + sourcePath + ' does not exist');
+                        }
+                        return [4, this.SSH.connect(this.env)];
+                    case 1:
+                        _a.sent();
+                        destinationPath = path.join(destinationRootPath, this.rawManifest.file);
+                        return [4, this.SSH.putDirectory(sourcePath, destinationPath)];
+                    case 2:
+                        uploadResult = _a.sent();
+                        uploadCounter = 1;
+                        _a.label = 3;
+                    case 3:
+                        if (!(uploadResult.failed.length > 0 && uploadCounter <= 3)) return [3, 5];
+                        return [4, this.SSH.putDirectory(sourcePath, destinationPath)];
+                    case 4:
+                        uploadResult = _a.sent();
+                        uploadCounter += 1;
+                        return [3, 3];
+                    case 5:
+                        if (uploadResult.failed.length > 0) {
+                            throw new Error('upload failed after three times of attempt. Failed files: ' + JSON.stringify(uploadResult.failed));
+                        }
+                        this.emitEvent('FILES_UPLOADED', 'files uploaded to destination');
+                        this.uploadedFiles.push(destinationPath);
+                        return [2, destinationPath];
+                }
+            });
+        });
+    };
+    BaseMaintainer.prototype.removeFile = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var i, file;
+            return __generator(this, function (_a) {
+                for (i in this.uploadedFiles) {
+                    file = this.uploadedFiles[i];
+                    this.runBash([
+                        'rm -rf ' + file
+                    ]);
+                }
+                return [2];
+            });
+        });
+    };
+    BaseMaintainer.prototype.getRemoteHomePath = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4, this.SSH.connect(this.env)];
+                    case 1:
+                        _a.sent();
+                        return [4, this.SSH.getRemoteHomePath()];
+                    case 2: return [2, _a.sent()];
+                }
+            });
+        });
+    };
+    BaseMaintainer.prototype.injectRuntimeFlagsToFile = function (filePath, lang) {
+        var supportedLangs = ['python'];
+        lang = lang.toLowerCase();
+        if (!supportedLangs.includes(lang)) {
+            throw new Error('language not supported');
+        }
+        var sourcePath = __dirname + '/../../data/upload/' + this.rawManifest.uid + '/' + this.rawManifest.file;
+        if (!fs.existsSync(sourcePath)) {
+            throw new Error('file path ' + sourcePath + ' does not exist');
+        }
+        filePath = path.join(sourcePath, filePath);
+        if (!fs.existsSync(filePath)) {
+            throw new Error('file path ' + filePath + ' does not exist');
+        }
+        var flags = {
+            end: '@flag=[JOB_ENDED:job [' + this.manifest.id + '] finished]'
+        };
+        for (var i in flags) {
+            if (lang == 'python') {
+                flags[i] = 'print("' + flags[i] + '")';
+            }
+        }
+        fs.appendFileSync(filePath, "\n" + flags.end);
+    };
     BaseMaintainer.prototype.registerDownloadDir = function (dir) {
         this.downloadDir = dir;
     };
     BaseMaintainer.prototype.emitEvent = function (type, message) {
         if (type === 'JOB_ENDED' || type === 'JOB_FAILED') {
+            if (this.removeFileAfterJobFinished) {
+                this.removeFile();
+            }
             this.isEnd = true;
         }
         if (type === 'JOB_INITIALIZED') {
@@ -177,11 +293,11 @@ var BaseMaintainer = (function () {
             message: message
         });
     };
-    BaseMaintainer.prototype.getJobID = function () {
-        return this.manifest.id;
-    };
     BaseMaintainer.prototype.emitLog = function (message) {
         this.logs.push(message);
+    };
+    BaseMaintainer.prototype.getJobID = function () {
+        return this.manifest.id;
     };
     BaseMaintainer.prototype.init = function () {
         return __awaiter(this, void 0, void 0, function () {
@@ -227,51 +343,6 @@ var BaseMaintainer = (function () {
                         this._lock = false;
                         _a.label = 4;
                     case 4: return [2];
-                }
-            });
-        });
-    };
-    BaseMaintainer.prototype.connect = function (commands, options) {
-        if (options === void 0) { options = {}; }
-        return __awaiter(this, void 0, void 0, function () {
-            var ssh, out;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        ssh = new SSH_1.default(this.rawManifest.dest, this.rawManifest.cred.usr, this.rawManifest.cred.pwd);
-                        return [4, ssh.connect(this.env)];
-                    case 1:
-                        _a.sent();
-                        return [4, ssh.exec(commands, options, this)];
-                    case 2:
-                        out = _a.sent();
-                        return [2, out];
-                }
-            });
-        });
-    };
-    BaseMaintainer.prototype.upload = function (from, to, isDirectory, fileNameValidation) {
-        if (isDirectory === void 0) { isDirectory = false; }
-        if (fileNameValidation === void 0) { fileNameValidation = null; }
-        return __awaiter(this, void 0, void 0, function () {
-            var ssh, out;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        ssh = new SSH_1.default(this.rawManifest.dest, this.rawManifest.cred.usr, this.rawManifest.cred.pwd);
-                        return [4, ssh.connect(this.env)];
-                    case 1:
-                        _a.sent();
-                        if (!isDirectory) return [3, 3];
-                        return [4, ssh.putDirectory(from, to, fileNameValidation)];
-                    case 2:
-                        out = _a.sent();
-                        return [2, out];
-                    case 3: return [4, ssh.putFile(from, to)];
-                    case 4:
-                        _a.sent();
-                        _a.label = 5;
-                    case 5: return [2];
                 }
             });
         });

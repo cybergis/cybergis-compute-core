@@ -1,5 +1,6 @@
 import { options } from './types'
 import constant from './constant'
+import BaseMaintainer from './maintainers/BaseMaintainer'
 const NodeSSH = require('node-ssh')
 
 class SSH {
@@ -23,10 +24,13 @@ class SSH {
 
     private env = ''
 
-    constructor(destination: string, user: string, password: string = null) {
+    private maintainer
+
+    constructor(destination: string, user: string, password: string = null, maintainer: BaseMaintainer = null) {
         this.SSH = new NodeSSH()
         this.user = user
         this.password = password
+        this.maintainer = maintainer
 
         var server = constant.destinationMap[destination]
 
@@ -51,6 +55,10 @@ class SSH {
     }
 
     async connect(env = {}) {
+        if (this.loggedIn) {
+            return
+        }
+
         try {
             if (this.isCommunityAccount) {
                 await this.SSH.connect({
@@ -70,6 +78,10 @@ class SSH {
             }
             this.loggedIn = true
 
+            if (this.maintainer != null) {
+                this.maintainer.emitEvent('SSH_CONNECTION', 'successfully connected to server [' + this.ip + ':' + this.port + ']')
+            }
+
             var envCmd = 'source /etc/profile;'
             for (var i in env) {
                 var v = env[i]
@@ -78,12 +90,17 @@ class SSH {
 
             this.env = envCmd
         } catch (e) {
-            console.log(e)
+            if (this.maintainer != null) {
+                this.maintainer.emitEvent('SSH_CONNECTION_ERROR', 'connection to server [' + this.ip + ':' + this.port + '] failed with error: ' + e)
+            }
             this.loggedIn = false
         }
     }
 
     async stop() {
+        if (this.maintainer != null) {
+            this.maintainer.emitEvent('SSH_DISCONNECTION', 'disconnected with server [' + this.ip + ':' + this.port + ']')
+        }
         await this.SSH.dispose()
     }
 
@@ -97,34 +114,69 @@ class SSH {
         var lastOut = {
             stage: 0,
             cmd: null,
-            out: null,
-            error: null,
+            stdout: null,
+            stderr: null,
+            executionFailure: null,
+            flags: [],
             isFirstCmd: true,
-            isFail: false
         }
 
         var nextOut = {
             stage: null,
             cmd: null,
-            out: null,
-            error: null,
+            stdout: null,
+            stderr: null,
+            executionFailure: null,
+            flags: [],
             isFirstCmd: false,
-            isFail: false
         }
+
+        var maintainer = this.maintainer
 
         var opt = Object.assign({
             onStdout(out) {
-                if (nextOut.out === null) {
-                    nextOut.out = out.toString()
+                var stdout = out.toString()
+                if (nextOut.stdout === null) {
+                    nextOut.stdout = stdout
                 } else {
-                    nextOut.out += out.toString()
+                    nextOut.stdout += stdout
+                }
+
+                if (maintainer != null) {
+                    maintainer.emitLog(stdout)
+                }
+
+                var parsedStdout = stdout.split('@')
+                for (var i in parsedStdout) {
+                    var f = parsedStdout[i].match(/flag=\[[\s\S]*\]/g)
+                    if (f != null) {
+                        f.forEach((v, i) => {
+                            v = v.replace('flag=[', '')
+                            v = v.replace(/]$/g, '')
+                            var e = v.split(':')
+
+                            nextOut.flags.push({
+                                type: e[0],
+                                message: e[1]
+                            })
+
+                            if (maintainer != null) {
+                                maintainer.emitEvent(e[0], e[1])
+                            }
+                        })
+                    }
                 }
             },
             onStderr(out) {
-                if (nextOut.error === null) {
-                    nextOut.error = out.toString()
+                var stderr = out.toString()
+                if (nextOut.stderr === null) {
+                    nextOut.stderr = stderr
                 } else {
-                    nextOut.error += out.toString()
+                    nextOut.stderr += stderr
+                }
+
+                if (maintainer != null) {
+                    maintainer.emitLog(stderr)
                 }
             }
         }, options)
@@ -141,8 +193,10 @@ class SSH {
                 try {
                     cmd = command(lastOut, context)
                 } catch (e) {
-                    nextOut.error = e
-                    nextOut.isFail = true
+                    nextOut.executionFailure = e
+                    if (this.maintainer != null) {
+                        this.maintainer.emitEvent('SSH_EXECUTION_ERROR', e)
+                    }
                     out.push(nextOut)
                     break
                 }
@@ -151,15 +205,15 @@ class SSH {
             nextOut.cmd = cmd
             await this.SSH.execCommand(this.env + cmd, opt)
             lastOut = nextOut
-            delete nextOut.isFirstCmd
             out.push(nextOut)
             nextOut = {
                 stage: null,
                 cmd: null,
-                out: null,
-                error: null,
+                stdout: null,
+                stderr: null,
+                executionFailure: null,
+                flags: [],
                 isFirstCmd: false,
-                isFail: false
             }
         }
 
@@ -172,6 +226,11 @@ class SSH {
         } catch (e) {
             throw new Error('unable to put file: ' + e.toString())
         }
+    }
+
+    async getRemoteHomePath() {
+        var out = await this.SSH.execCommand(this.env + 'cd ~;pwd;')
+        return out['stdout']
     }
 
     async putDirectory(from: string, to: string, validate = null) {

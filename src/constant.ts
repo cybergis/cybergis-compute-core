@@ -14,32 +14,30 @@ export default {
                     passphrase: null
                 }
             },
-            useUploadedModel: true,
-            uploadModelExpectingBaseStructure: [
-                'summa_options.json',
-                'installTestCases_local.sh',
-                'data',
-                'output',
-                'settings'
-            ]
+            useUploadedFile: true,
+            uploadFileConfig: {
+                ignore: [],
+                mustHave: [
+                    'summa_options.json',
+                    'installTestCases_local.sh',
+                    'data',
+                    'output',
+                    'settings'
+                ],
+                ignoreEverythingExceptMustHave: true
+            }
         },
-        // examples
-        examplePrivateAccountService: {
-            ip: "keeling.earth.illinois.edu",
-            port: 22,
-            maintainer: 'SUMMAMaintainer',
+        spark: {
+            ip: "hadoop01.cigi.illinois.edu",
+            port: 50022,
+            maintainer: 'SparkMaintainer',
             jobPoolCapacity: 5,
-            isCommunityAccount: false
-        },
-        exampleCommunityAccountUsingLocalKey: {
-            ip: "keeling.earth.illinois.edu",
-            port: 22,
-            maintainer: 'SUMMAMaintainer',
-            jobPoolCapacity: 5,
-            isCommunityAccount: true,
-            communityAccountSSH: {
-                user: 'cigi-gisolve',
-                useLocalKeys: true
+            isCommunityAccount: false,
+            useUploadedFile: true,
+            uploadFileConfig: {
+                mustHave: [
+                    'index.py'
+                ]
             }
         }
     },

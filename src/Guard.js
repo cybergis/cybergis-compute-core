@@ -239,6 +239,7 @@ var Guard = (function () {
                                 delete manifest.aT;
                                 manifest.cred = cache.cred;
                                 manifest.uid = cache.uid;
+                                manifest.dest = cache.dest;
                                 return [2, manifest];
                             }
                         }
@@ -265,11 +266,13 @@ var Guard = (function () {
                                 }
                                 this.authenticatedAccessTokenCache[date][rawAT.hash] = {
                                     cred: secretToken.cred,
-                                    uid: secretToken.uid
+                                    uid: secretToken.uid,
+                                    dest: secretToken.dest
                                 };
                                 delete manifest.aT;
                                 manifest.cred = secretToken.cred;
                                 manifest.uid = secretToken.uid;
+                                manifest.dest = secretToken.dest;
                                 return [2, manifest];
                             }
                         }

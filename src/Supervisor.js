@@ -156,7 +156,7 @@ var Supervisor = (function () {
                 switch (_a.label) {
                     case 0:
                         dest = constant_1.default.destinationMap[manifest.dest];
-                        if (dest.useUploadedModel) {
+                        if (dest.useUploadedFile) {
                             if (manifest.file != undefined) {
                                 if (!fs.existsSync(__dirname + '/../data/upload/' + manifest.uid + '/' + manifest.file)) {
                                     throw new Error('file [' + manifest.file + '] not exists');

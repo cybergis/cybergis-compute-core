@@ -6,6 +6,7 @@ const fs = require('fs')
 const path = require("path")
 const rimraf = require("rimraf")
 const unzipper = require('unzipper')
+const archiver = require('archiver')
 
 class File {
     clearTmpFiles() {
@@ -37,15 +38,28 @@ class File {
         }, 60 * 60 * 1000)
     }
 
-    async upload(uid, tempFilePath: string,): Promise<string> {
+    async store(uid, destName: string, tempFilePath: string,): Promise<string> {
         var fileID = this._generateFileID()
 
         const userDir = __dirname + '/../data/upload/' + uid
         const dir = userDir + '/' + fileID
-        const dest = constant.destinationMap['summa']
+        const dest = constant.destinationMap[destName]
+        const uploadFileConfig = {
+            ignore: ['.placeholder', '.DS_Store'],
+            mustHave: [],
+            ignoreEverythingExceptMustHave: false
+        }
 
-        const clearUpload = () => {
-            // fs.rmdir(dir, { recursive: true })
+        if (dest.uploadFileConfig.ignore != undefined) {
+            uploadFileConfig.ignore.concat(dest.uploadFileConfig.ignore)
+        }
+
+        if (dest.uploadFileConfig.mustHave != undefined) {
+            uploadFileConfig.mustHave = dest.uploadFileConfig.mustHave
+        }
+
+        if (dest.uploadFileConfig.ignoreEverythingExceptMustHave != undefined) {
+            uploadFileConfig.ignoreEverythingExceptMustHave = dest.uploadFileConfig.ignoreEverythingExceptMustHave
         }
 
         if (!fs.existsSync(userDir)) {
@@ -65,27 +79,24 @@ class File {
                 entry.autodrain()
                 const fileName = entry.path
                 const baseFile = fileName.split('/')[1]
-                if (dest.uploadModelExpectingBaseStructure.includes(baseFile)) {
+                if (uploadFileConfig.mustHave.includes(baseFile)) {
                     zipContainFiles.push(baseFile)
                 }
             }
 
-            for (var i in dest.uploadModelExpectingBaseStructure) {
-                if (!zipContainFiles.includes(dest.uploadModelExpectingBaseStructure[i])) {
-                    throw new FileStructureError("missing required base file/folder [" + dest.uploadModelExpectingBaseStructure[i] + "]")
+            for (var i in uploadFileConfig.mustHave) {
+                if (!zipContainFiles.includes(uploadFileConfig.mustHave[i])) {
+                    throw new FileStructureError("missing required base file/folder [" + uploadFileConfig.mustHave[i] + "]")
                 }
             }
         } catch (e) {
             if (e.name === 'FileStructureError') {
                 throw e
             }
-            clearUpload()
             throw new FileFormatError("provided file is not a zip file")
         }
 
         zip = fs.createReadStream(tempFilePath).pipe(unzipper.Parse({ forceStream: true }))
-
-        const ignoreFiles = ['.placeholder', '.DS_Store']
 
         for await (const entry of zip) {
             const filePath = entry.path
@@ -95,28 +106,71 @@ class File {
             const baseFile = f[1]
             const fileDir = f.slice(1).join('/')
 
-            if (baseFile != undefined) {
-                if (dest.uploadModelExpectingBaseStructure.includes(baseFile)) {
-                    if (!fs.existsSync(dir + '/' + fileDir)) {
-                        fs.promises.mkdir(dir + '/' + fileDir, { recursive: true })
-                    }
-
-                    if (type === 'File' && !ignoreFiles.includes(fileName)) {
-                        entry.pipe(fs.createWriteStream(dir + '/' + fileDir + '/' + fileName))
-                    }
-                } else {
-                    entry.autodrain()
-                }
-            } else {
-                if (dest.uploadModelExpectingBaseStructure.includes(fileName)) {
-                    if (type === 'File' && !ignoreFiles.includes(fileName)) {
-                        entry.pipe(fs.createWriteStream(dir + '/' + fileName))
-                    }
+            const writeFile = function () {
+                if (type === 'File' && !uploadFileConfig.ignore.includes(fileName)) {
+                    entry.pipe(fs.createWriteStream(dir + '/' + fileDir + '/' + fileName))
                 }
             }
-    }
+
+            const createDir = function () {
+                if (!fs.existsSync(dir + '/' + fileDir)) {
+                    fs.promises.mkdir(dir + '/' + fileDir, { recursive: true })
+                }
+            }
+
+            if (baseFile != undefined) {
+                if (uploadFileConfig.ignoreEverythingExceptMustHave) {
+                    if (uploadFileConfig.mustHave.includes(baseFile)) {
+                        createDir()
+                        writeFile()
+                    } else {
+                        entry.autodrain()
+                    }
+                } else {
+                    createDir()
+                    writeFile()
+                }
+            } else {
+                if (uploadFileConfig.ignoreEverythingExceptMustHave) {
+                    if (uploadFileConfig.mustHave.includes(fileName)) {
+                        writeFile()
+                    } else {
+                        entry.autodrain()
+                    }
+                } else {
+                    writeFile()
+                }
+            }
+        }
 
         return fileID
+    }
+
+    async zip(uid, fileID: string): Promise<string> {
+        const sourceDir = __dirname + '/../data/upload/' + uid + '/' + fileID
+
+        if (!fs.existsSync(sourceDir) || uid == '' || fileID == '') {
+            throw new Error('zip source directory not found')
+        }
+
+        if (fs.existsSync(sourceDir + '.zip')) {
+            return sourceDir + '.zip'
+        }
+
+        var output = fs.createWriteStream(sourceDir + '.zip')
+        var archive = archiver('zip', {
+            zlib: { level: 9 }
+        })
+        await new Promise((resolve, reject) => {
+            archive.pipe(output)
+            archive.directory(sourceDir, false)
+            archive.finalize()
+            output.on('close', function () {
+                resolve('')
+            })
+        })
+
+        return sourceDir + '.zip'
     }
 
     private _generateFileID(): string {
