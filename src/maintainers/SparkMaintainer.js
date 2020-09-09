@@ -90,6 +90,7 @@ var SparkMaintainer = (function (_super) {
                     case 1:
                         _a.sent();
                         this.registerDownloadDir(this.workspacePath);
+                        this.emitEvent('JOB_ENDED', 'job [' + this.manifest.id + '] is complete');
                         return [2];
                 }
             });

@@ -226,7 +226,7 @@ class BaseMaintainer {
 
         var flags = {
             // only end for now
-            end: '@flag=[JOB_ENDED:job [' + this.manifest.id + '] finished]'
+            end: '@flag=[SCRIPT_ENDED:script ' + filePath + ' job [' + this.manifest.id + '] finished]'
         }
 
         for (var i in flags) {

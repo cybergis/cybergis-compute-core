@@ -272,7 +272,6 @@ app.get('/supervisor/destination', function (req, res) {
             delete d.communityAccountSSH;
             out[i] = d;
         }
-        console.log(out);
         return out;
     };
     res.json({

@@ -24,6 +24,7 @@ class SparkMaintainer extends BaseMaintainer {
 
         await this.runBash(pipeline, {})
         this.registerDownloadDir(this.workspacePath)
+        this.emitEvent('JOB_ENDED', 'job [' + this.manifest.id + '] is complete')
     }
 }
 

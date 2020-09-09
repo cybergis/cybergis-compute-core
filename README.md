@@ -137,6 +137,52 @@ response BODY:
 }
 ```
 
+#### GET /supervisor/destination
+request BODY:
+```JavaScript
+{}
+```
+
+response BODY:
+```JavaScript
+{
+    "destinations": {
+        "summa": {
+            "ip": "keeling.earth.illinois.edu",
+            "port": 22,
+            "maintainer": "SUMMAMaintainer",
+            "jobPoolCapacity": 5,
+            "isCommunityAccount": true,
+            "useUploadedFile": true,
+            "uploadFileConfig": {
+                "ignore": [],
+                "mustHave": [
+                    "summa_options.json",
+                    "installTestCases_local.sh",
+                    "data",
+                    "output",
+                    "settings"
+                ],
+                "ignoreEverythingExceptMustHave": true
+            }
+        },
+        "spark": {
+            "ip": "hadoop01.cigi.illinois.edu",
+            "port": 50022,
+            "maintainer": "SparkMaintainer",
+            "jobPoolCapacity": 5,
+            "isCommunityAccount": false,
+            "useUploadedFile": true,
+            "uploadFileConfig": {
+                "mustHave": [
+                    "index.py"
+                ]
+            }
+        }
+    }
+}
+```
+
 #### /supervisor/:id (ex. /supervisor/1597266236HDAL)
 request BODY:
 ```JavaScript
@@ -167,7 +213,7 @@ response BODY:
 ```
 
 ## General Development Guidelines
-#### Development Environment Setup
+### Development Environment Setup
  - The project uses TypeScript. Please install `tsc` command for compiling TypeScript to JavaScript.
 ```bash
 npm install -g typescript
@@ -177,7 +223,7 @@ npm install -g typescript
 tsc
 ```
 
-#### Add Service
+### Add Service
 Service is defined in `src/constant.ts`. There are three types:
 
 - private account services:
@@ -226,7 +272,30 @@ serviceName: {
 }
 ```
 
-#### Define Maintainer Class
+### User Upload File
+If you want users to upload their own file, you can enable file upload functionality by setting `useUploadedFile` option in `src/constant.ts` to `true`.
+```JavaScript
+{
+    ...,
+    useUploadedFile: true,
+    uploadFileConfig: {
+        // files/folder to ignore
+        ignore: [],
+        // must have files
+        mustHave: [
+            'summa_options.json',
+            'installTestCases_local.sh',
+            'data',
+            'output',
+            'settings'
+        ],
+        // if you wish to ignore all files except must-have ones, enable this option
+        ignoreEverythingExceptMustHave: true
+    }
+}
+```
+
+### Define Maintainer Class
 
 Add a new **Maintainer** class under `./src/maintainers` which extends the `BaseMaintainer` class
 ```JavaScript
@@ -265,7 +334,7 @@ The lifecycle of a **Maintainer** class is defined as the following:
           - `print('@log=[example log msg]')`: emit a log to `Maintainer`
           - `print('@event=[EVENT_NAME:event message]')`: emit an event to `Maintainer`
           - `print('@var=[NAME:value]')`: define an output of the `runPython()` class.
-    - `await this.connect(cmdPipeline: Array<any>, ?options: options)`: *[async]* execute BASH commands in sequence on remote terminal
+    - `await this.runBash(cmdPipeline: Array<any>, ?options: options)`: *[async]* execute BASH commands in sequence on remote terminal
       - **cmdPipeline**: an array of strings or anonymous functions
         - string: a command to execute (ex. `echo $A`)
         - anonymous function: a function that receives 
@@ -277,9 +346,11 @@ The lifecycle of a **Maintainer** class is defined as the following:
             encoding?: BufferEncoding
         }
         ```
+    - `this.registerDownloadDir(dir: string)`: set the download file path on the remote server
+    - `this.injectRuntimeFlagsToFile(filePath: string, lang: string)`: inject stdout flags when running user's custom scripts to indicate runtime status (ex. SCRIPT_ENDED)
 
 Python **Maintainer** Example
-- ExampleMaintainer.ts
+- SUMMAMaintainer.ts
 ```JavaScript
 import BaseMaintainer from './BaseMaintainer'
 
@@ -326,56 +397,37 @@ SSH **Maintainer** Example
 
 ```JavaScript
 import BaseMaintainer from './BaseMaintainer'
+const path = require('path')
 
-class ExampleMaintainer extends BaseMaintainer {
+class SparkMaintainer extends BaseMaintainer {
+
+    private workspacePath
+
     define() {
         this.allowedEnv = {
-            A: 'number',
-            B: 'string'
+            //
         }
     }
 
     async onInit() {
-        var pipeline = [
-            'ls'
-        ]
-        var out = await this.connect(pipeline, {})
-        if (out.length > 0) {
-            // condition when job is initialized
-            // if job fail, please do not emit JOB_INITIALIZED event
-            // failed initialization can be rebooted
-            this.emitEvent('JOB_INITIALIZED', 'job [' + this.manifest.id + '] is initialized, waiting for job completion')
-        }
+        this.injectRuntimeFlagsToFile('index.py', 'python')
+        this.workspacePath = await this.upload(await this.getRemoteHomePath())
+        this.emitEvent('JOB_INITIALIZED', 'job [' + this.manifest.id + '] is initialized, waiting for job completion')
     }
 
     async onMaintain() {
         var pipeline = [
-            'ls',
-            'echo $A',
-            'echo $B',
-            'echo $C',
-            (prev, self) => {
-                self.emitEvent('JOB_CUSTOM_EVENT', 'emit a custom event...')
-                if (prev.out == '\n') {
-                    throw new Error('error')
-                }
-                return ''
-            },
-            'echo $A'
+            'python3 ' + path.join(this.workspacePath, 'index.py')
         ]
-        var out = await this.connect(pipeline, {})
-        if (out.length > 0) {
-            // ending condition
-            this.emitEvent('JOB_ENDED', 'job [' + this.manifest.id + '] finished')
-        } else {
-            // failing condition
-            this.emitEvent('JOB_FAILED', 'job [' + this.manifest.id + '] failed')
-        }
+
+        await this.runBash(pipeline, {})
+        this.registerDownloadDir(this.workspacePath)
+        this.emitEvent('JOB_ENDED', 'job [' + this.manifest.id + '] is complete')
     }
 }
 
-export default ExampleMaintainer
+export default SparkMaintainer
 ```
 
 ## Future Roadmap
-- Spark/YARN submission
+- <del>Spark/YARN submission</del>

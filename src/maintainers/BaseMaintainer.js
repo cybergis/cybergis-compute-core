@@ -266,7 +266,7 @@ var BaseMaintainer = (function () {
             throw new Error('file path ' + filePath + ' does not exist');
         }
         var flags = {
-            end: '@flag=[JOB_ENDED:job [' + this.manifest.id + '] finished]'
+            end: '@flag=[SCRIPT_ENDED:script ' + filePath + ' job [' + this.manifest.id + '] finished]'
         };
         for (var i in flags) {
             if (lang == 'python') {
