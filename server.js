@@ -264,6 +264,21 @@ app.post('/supervisor', function (req, res) {
         });
     });
 });
+app.get('/supervisor/destination', function (req, res) {
+    var parseDestination = function (dest) {
+        var out = {};
+        for (var i in dest) {
+            var d = JSON.parse(JSON.stringify(dest[i]));
+            delete d.communityAccountSSH;
+            out[i] = d;
+        }
+        console.log(out);
+        return out;
+    };
+    res.json({
+        destinations: parseDestination(constant_1.default.destinationMap)
+    });
+});
 app.post('/supervisor/upload', function (req, res) {
     return __awaiter(this, void 0, void 0, function () {
         var aT, errors, manifest, e_4, fileID, e_5;

@@ -3,7 +3,6 @@ import Supervisor from './src/Supervisor'
 import File from './src/File'
 import Helper from './src/Helper'
 import constant from './src/constant'
-import { FileFormatError, FileStructureError } from './src/errors'
 const bodyParser = require('body-parser')
 const config = require('./config.json')
 const Validator = require('jsonschema').Validator;
@@ -218,6 +217,24 @@ app.post('/supervisor', async function (req, res) {
     }
     manifest = Helper.hideCredFromManifest(manifest)
     res.json(manifest)
+})
+
+app.get('/supervisor/destination', function (req, res) {
+    var parseDestination = (dest) => {
+        var out = {}
+
+        for (var i in dest) {
+            var d = JSON.parse(JSON.stringify(dest[i]))
+            delete d.communityAccountSSH
+            out[i] = d
+        }
+
+        return out
+    }
+
+    res.json({
+        destinations: parseDestination(constant.destinationMap)
+    })
 })
 
 app.post('/supervisor/upload', async function (req, res) {
