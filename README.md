@@ -8,6 +8,7 @@ HPC job submitting and maintaining framework with Restful API
 - [General Development Guidelines](https://github.com/cybergis/job-supervisor#general-development-guidelines)
   - [Development Environment Setup](https://github.com/cybergis/job-supervisor#development-environment-setup)
   - [Add Service](https://github.com/cybergis/job-supervisor#add-service)
+  - [User Upload File](https://github.com/cybergis/job-supervisor#user-upload-file)
   - [Define Maintainer Class](https://github.com/cybergis/job-supervisor#define-maintainer-class)
 - [Future Roadmap](https://github.com/cybergis/job-supervisor#future-roadmap)
 
