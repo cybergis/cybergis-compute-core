@@ -37,6 +37,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var constant_1 = require("./constant");
 var NodeSSH = require('node-ssh');
+var path = require('path');
 var SSH = (function () {
     function SSH(destination, user, password, maintainer) {
         if (password === void 0) { password = null; }
@@ -168,7 +169,7 @@ var SSH = (function () {
                             stderr: null,
                             executionFailure: null,
                             flags: [],
-                            isFirstCmd: false,
+                            isFirstCmd: true,
                         };
                         maintainer = this.maintainer;
                         opt = Object.assign({
@@ -179,9 +180,6 @@ var SSH = (function () {
                                 }
                                 else {
                                     nextOut.stdout += stdout;
-                                }
-                                if (maintainer != null) {
-                                    maintainer.emitLog(stdout);
                                 }
                                 var parsedStdout = stdout.split('@');
                                 for (var i in parsedStdout) {
@@ -198,8 +196,13 @@ var SSH = (function () {
                                             if (maintainer != null) {
                                                 maintainer.emitEvent(e[0], e[1]);
                                             }
+                                            var flag = '@flag=[' + e[0] + ':' + e[1] + ']';
+                                            stdout = stdout.replace(flag, '');
                                         });
                                     }
+                                }
+                                if (maintainer != null) {
+                                    maintainer.emitLog(stdout);
                                 }
                             },
                             onStderr: function (out) {
@@ -265,25 +268,6 @@ var SSH = (function () {
             });
         });
     };
-    SSH.prototype.putFile = function (from, to) {
-        return __awaiter(this, void 0, void 0, function () {
-            var e_2;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        return [4, this.SSH.putFile(from, to)];
-                    case 1:
-                        _a.sent();
-                        return [3, 3];
-                    case 2:
-                        e_2 = _a.sent();
-                        throw new Error('unable to put file: ' + e_2.toString());
-                    case 3: return [2];
-                }
-            });
-        });
-    };
     SSH.prototype.getRemoteHomePath = function () {
         return __awaiter(this, void 0, void 0, function () {
             var out;
@@ -300,7 +284,7 @@ var SSH = (function () {
     SSH.prototype.putDirectory = function (from, to, validate) {
         if (validate === void 0) { validate = null; }
         return __awaiter(this, void 0, void 0, function () {
-            var out, opts, e_3;
+            var out, opts, e_2;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -329,9 +313,81 @@ var SSH = (function () {
                         _a.sent();
                         return [2, out];
                     case 2:
-                        e_3 = _a.sent();
-                        throw new Error('unable to put directory: ' + e_3.toString());
+                        e_2 = _a.sent();
+                        throw new Error('unable to put directory: ' + e_2.toString());
                     case 3: return [2];
+                }
+            });
+        });
+    };
+    SSH.prototype.putFile = function (from, to) {
+        return __awaiter(this, void 0, void 0, function () {
+            var e_3;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4, this.SSH.putFile(from, to)];
+                    case 1:
+                        _a.sent();
+                        return [3, 3];
+                    case 2:
+                        e_3 = _a.sent();
+                        throw new Error('unable to put file: ' + e_3.toString());
+                    case 3: return [2];
+                }
+            });
+        });
+    };
+    SSH.prototype.getFile = function (from, to) {
+        return __awaiter(this, void 0, void 0, function () {
+            var e_4;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4, this.SSH.getFile(to, from)];
+                    case 1:
+                        _a.sent();
+                        return [3, 3];
+                    case 2:
+                        e_4 = _a.sent();
+                        throw new Error('unable to get directory zipped: ' + e_4.toString());
+                    case 3: return [2];
+                }
+            });
+        });
+    };
+    SSH.prototype.getDirectoryZipped = function (from, to, customFileName) {
+        if (customFileName === void 0) { customFileName = null; }
+        return __awaiter(this, void 0, void 0, function () {
+            var cwd, name, tarFilename, e_5;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 3, , 4]);
+                        if (from[from.length - 1] == '/') {
+                            from = from.slice(0, -1);
+                        }
+                        if (to[to.length - 1] == '/') {
+                            to = to.slice(0, -1);
+                        }
+                        cwd = path.dirname(from);
+                        name = path.basename(from);
+                        tarFilename = from.split('/').pop() + '.tar';
+                        return [4, this.exec(['tar -czf ' + tarFilename + ' ./' + name + '/'], {
+                                cwd: cwd
+                            })];
+                    case 1:
+                        _a.sent();
+                        return [4, this.SSH.getFile(to + '/' + (customFileName != null ? customFileName : tarFilename), from + '.tar')];
+                    case 2:
+                        _a.sent();
+                        return [3, 4];
+                    case 3:
+                        e_5 = _a.sent();
+                        throw new Error('unable to get file: ' + e_5.toString());
+                    case 4: return [2];
                 }
             });
         });

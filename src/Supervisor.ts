@@ -69,8 +69,8 @@ class Supervisor {
 
                         if (job.maintainer.isEnd || jobThrowError) {
                             jobPool.splice(i, 1)
-                            if (job.maintainer.downloadDir != undefined) {
-                                self.downloadPools[job.maintainer.getJobID()] = job.maintainer.downloadDir
+                            if (job.maintainer.downloadedPath != undefined) {
+                                self.downloadPools[job.maintainer.getJobID()] = job.maintainer.downloadedPath
                             }
                             i--
                         }
@@ -117,13 +117,12 @@ class Supervisor {
             if (this.downloadPools[jobID] != undefined) {
                 var self = this
                 await new Promise((resolve, reject) => {
-                    var stream = fs.createWriteStream(dir)
+                    var stream = fs.createWriteStream(zipFilePath)
                     var archive = archiver('zip')
                     archive.pipe(stream)
-                    archive.directory(self.downloadPools[jobID], false)
+                    archive.directory(filePath, false)
                     archive.finalize()
                     archive.on('error', function (err) {
-                        console.log('la')
                         reject(err)
                     })
                     stream.on('end', function () {
@@ -133,13 +132,11 @@ class Supervisor {
                         resolve('')
                     })
                 })
-                return dir
-            } else {
-                return null
+                filePath = zipFilePath
             }
-        } else {
-            return dir
         }
+
+        return filePath
     }
 
     private _generateJobID(): string {

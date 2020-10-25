@@ -18,8 +18,7 @@ if status == "C" or status == "UNKNOWN":
     s.download(
         remote_model_folder_path, remote_slurm_out_file_path, local_job_folder_path
     )
-    print('@download=[' + local_job_folder_path + ']')
+    print('@custom_downloaded_path=[' + local_job_folder_path + ']')
     print("@event=[JOB_ENDED:SUMMA job with remote_id " + remote_id + " completed]")
 elif status == "ERROR":
     print("@event=[JOB_FAILED:SUMMA job with remote_id " + remote_id + " failed]")
-

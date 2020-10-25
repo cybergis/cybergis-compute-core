@@ -79,17 +79,21 @@ var SparkMaintainer = (function (_super) {
     };
     SparkMaintainer.prototype.onMaintain = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var pipeline;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var pipeline, _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         pipeline = [
                             'python3 ' + path.join(this.workspacePath, 'index.py')
                         ];
                         return [4, this.runBash(pipeline, {})];
                     case 1:
-                        _a.sent();
-                        this.registerDownloadDir(this.workspacePath);
+                        _b.sent();
+                        _a = this.download;
+                        return [4, this.getRemoteHomePath()];
+                    case 2: return [4, _a.apply(this, [_b.sent()])];
+                    case 3:
+                        _b.sent();
                         this.emitEvent('JOB_ENDED', 'job [' + this.manifest.id + '] is complete');
                         return [2];
                 }

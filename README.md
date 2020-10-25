@@ -347,7 +347,9 @@ The lifecycle of a **Maintainer** class is defined as the following:
             encoding?: BufferEncoding
         }
         ```
-    - `this.registerDownloadDir(dir: string)`: set the download file path on the remote server
+    - `await this.upload(destinationRootPath: string)`: upload file user uploaded files to remote server
+    - `await this.download(sourceRootPath: string)`: download file from remote server
+    - `this.registerCustomDownloadedPath(sourceRootPath: string)`: register downloaded file path
     - `this.injectRuntimeFlagsToFile(filePath: string, lang: string)`: inject stdout flags when running user's custom scripts to indicate runtime status (ex. SCRIPT_ENDED)
 
 Python **Maintainer** Example
@@ -422,7 +424,7 @@ class SparkMaintainer extends BaseMaintainer {
         ]
 
         await this.runBash(pipeline, {})
-        this.registerDownloadDir(this.workspacePath)
+        await this.download(await this.getRemoteHomePath())
         this.emitEvent('JOB_ENDED', 'job [' + this.manifest.id + '] is complete')
     }
 }

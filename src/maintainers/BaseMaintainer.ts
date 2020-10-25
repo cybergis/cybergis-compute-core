@@ -10,41 +10,42 @@ const { spawn } = require('child-process-async')
 class BaseMaintainer {
     private _lock = false
 
-    // states
-
+    /** flags **/
     public isInit = false
 
     public isEnd = false
 
-    // storage
-    private rawManifest: manifest = null
-
-    public manifest = null
-
+    /** data & states **/
     protected events = []
 
     protected logs = []
 
-    protected uploadedFiles = []
+    protected uploadedPath = undefined
 
-    protected env = {}
-
-    protected file = new File()
+    public downloadedPath = undefined
 
     protected lifeCycleState = {
         initCounter: 0,
         initThresholdInCount: 3,
-        maintainAt: null,
+        createdAt: null,
         maintainThresholdInHours: 0.0001
     }
 
-    public downloadDir: string = undefined
+    /** classes **/
+    protected file = new File()
+
+    public SSH: SSH
+
+    /** configs **/
+    protected env = {}
+
+    private rawManifest: manifest = null
+
+    public manifest = null // secure manifest with no credentials
 
     public allowedEnv = undefined
 
     public removeFileAfterJobFinished = true
-
-    public SSH
 
     constructor(manifest: manifest) {
         this.define()
@@ -75,6 +76,7 @@ class BaseMaintainer {
         this.SSH = new SSH(this.rawManifest.dest, this.rawManifest.cred.usr, this.rawManifest.cred.pwd, this)
     }
 
+    /** lifecycle interfaces **/
     define() {
         // implement it in children class
     }
@@ -87,8 +89,8 @@ class BaseMaintainer {
         // implement it in children class
     }
 
-    // executers
 
+    /** executors **/
     async runBash(pipeline: Array<any>, options: options = {}) {
         await this.SSH.connect(this.env)
         var out = await this.SSH.exec(pipeline, options)
@@ -145,9 +147,9 @@ class BaseMaintainer {
                 var download = o.match(/download=\[[\s\S]*\]/g)
                 if (download != null) {
                     download.forEach((v, i) => {
-                        v = v.replace('download=[', '')
+                        v = v.replace('custom_downloaded_path=[', '')
                         v = v.replace(/]$/g, '')
-                        self.registerDownloadDir(v)
+                        self.registerCustomDownloadedPath(v)
                     })
                 }
             }
@@ -162,7 +164,8 @@ class BaseMaintainer {
         return out
     }
 
-    async upload(destinationRootPath: string, fileNameValidation = null) {
+    /** file operations **/
+    async upload(destinationRootPath: string) {
         var sourcePath = __dirname + '/../../data/upload/' + this.rawManifest.uid + '/' + this.rawManifest.file
 
         if (!fs.existsSync(sourcePath)) {
@@ -180,25 +183,56 @@ class BaseMaintainer {
         }
 
         if (uploadResult.failed.length > 0) {
+            this.emitEvent('FILES_UPLOAD_FAIL', 'upload failed after three times of attempt.')
             throw new Error('upload failed after three times of attempt. Failed files: ' + JSON.stringify(uploadResult.failed))
         }
 
-        this.emitEvent('FILES_UPLOADED', 'files uploaded to destination')
+        this.emitEvent('FILES_UPLOADED', 'files uploaded to destination.')
 
-        this.uploadedFiles.push(destinationPath)
+        this.uploadedPath = destinationPath
 
         return destinationPath
     }
 
-    async removeFile() {
-        for (var i in this.uploadedFiles) {
-            var file = this.uploadedFiles[i]
-            this.runBash([
-                'rm -rf ' + file
-            ])
+    async download(sourceRootPath: string) {
+        var destinationPath = __dirname + '/../../data/download/'
+        var fileName = this.rawManifest.id + '.tar'
+
+        await this.SSH.connect(this.env)
+
+        var sourcePath = path.join(sourceRootPath, this.rawManifest.file)
+
+        await this.SSH.getDirectoryZipped(sourcePath, destinationPath, fileName)
+
+        var uploadCounter = 1
+        var tarFilePath = path.join(destinationPath, fileName)
+        while (!fs.existsSync(tarFilePath) && uploadCounter <= 3) {
+            await this.SSH.getDirectoryZipped(sourcePath, fileName)
+        }
+
+        if (!fs.existsSync(tarFilePath)) {
+            this.emitEvent('FILES_DOWNLOAD_FAIL', 'download failed after three times of attempt.')
+            throw new Error('download failed after three times of attempt.')
+        }
+
+        this.emitEvent('FILES_DOWNLOADED', 'files downloaded to from destination.')
+
+        this.downloadedPath = tarFilePath
+
+        return tarFilePath
+    }
+
+    registerCustomDownloadedPath(downloadedPath: string) {
+        this.downloadedPath = downloadedPath
+    }
+
+    async removeUploadedFile() {
+        if (this.uploadedPath != undefined) {
+            this.runBash(['rm -rf ' + this.uploadedPath])
         }
     }
 
+    /** helpers **/
     async getRemoteHomePath(): Promise<string> {
         await this.SSH.connect(this.env)
         return await this.SSH.getRemoteHomePath()
@@ -238,18 +272,11 @@ class BaseMaintainer {
         fs.appendFileSync(filePath, "\n" + flags.end)
     }
 
-    // registers 
-
-    registerDownloadDir(dir: string) {
-        this.downloadDir = dir
-    }
-
-    // emitters
-
+    /** emitters **/
     emitEvent(type: string, message: string) {
         if (type === 'JOB_ENDED' || type === 'JOB_FAILED') {
             if (this.removeFileAfterJobFinished) {
-                this.removeFile()
+                this.removeUploadedFile()
             }
             this.isEnd = true
         }
@@ -268,14 +295,13 @@ class BaseMaintainer {
         this.logs.push(message)
     }
 
-    // getters
 
+    /** getters **/
     getJobID() {
         return this.manifest.id
     }
 
-    // supervisor interfaces
-
+    /** supervisor interfaces **/
     async init() {
         if (!this._lock) {
             this._lock = true
@@ -295,11 +321,11 @@ class BaseMaintainer {
         if (!this._lock) {
             this._lock = true
 
-            if (this.lifeCycleState.maintainAt === null) {
-                this.lifeCycleState.maintainAt = Date.now()
+            if (this.lifeCycleState.createdAt === null) {
+                this.lifeCycleState.createdAt = Date.now()
             }
 
-            if (((this.lifeCycleState.maintainAt - Date.now()) / (1000 * 60 * 60)) >= this.lifeCycleState.maintainThresholdInHours) {
+            if (((this.lifeCycleState.createdAt - Date.now()) / (1000 * 60 * 60)) >= this.lifeCycleState.maintainThresholdInHours) {
                 this.emitEvent('JOB_FAILED', 'maintain time exceeds ' + this.lifeCycleState.maintainThresholdInHours + ' hours')
             } else {
                 await this.onMaintain()

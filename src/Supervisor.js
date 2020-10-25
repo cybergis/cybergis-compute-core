@@ -114,8 +114,8 @@ var Supervisor = (function () {
                             }
                             if (job.maintainer.isEnd || jobThrowError) {
                                 jobPool.splice(i, 1);
-                                if (job.maintainer.downloadDir != undefined) {
-                                    self.downloadPools[job.maintainer.getJobID()] = job.maintainer.downloadDir;
+                                if (job.maintainer.downloadedPath != undefined) {
+                                    self.downloadPools[job.maintainer.getJobID()] = job.maintainer.downloadedPath;
                                 }
                                 i--;
                             }
@@ -189,22 +189,24 @@ var Supervisor = (function () {
     };
     Supervisor.prototype.getDownloadDir = function (jobID) {
         return __awaiter(this, void 0, void 0, function () {
-            var dir, self;
+            var filePath, zipFilePath;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        dir = __dirname + '/../data/download/' + jobID + '.zip';
-                        if (!!fs.existsSync(dir)) return [3, 4];
-                        if (!(this.downloadPools[jobID] != undefined)) return [3, 2];
-                        self = this;
+                        filePath = this.downloadPools[jobID];
+                        if (filePath == undefined) {
+                            return [2, null];
+                        }
+                        if (!fs.lstatSync(filePath).isDirectory()) return [3, 2];
+                        zipFilePath = __dirname + '/../data/download/' + jobID + '.zip';
+                        if (!!fs.existsSync(filePath)) return [3, 2];
                         return [4, new Promise(function (resolve, reject) {
-                                var stream = fs.createWriteStream(dir);
+                                var stream = fs.createWriteStream(zipFilePath);
                                 var archive = archiver('zip');
                                 archive.pipe(stream);
-                                archive.directory(self.downloadPools[jobID], false);
+                                archive.directory(filePath, false);
                                 archive.finalize();
                                 archive.on('error', function (err) {
-                                    console.log('la');
                                     reject(err);
                                 });
                                 stream.on('end', function () {
@@ -216,11 +218,9 @@ var Supervisor = (function () {
                             })];
                     case 1:
                         _a.sent();
-                        return [2, dir];
-                    case 2: return [2, null];
-                    case 3: return [3, 5];
-                    case 4: return [2, dir];
-                    case 5: return [2];
+                        filePath = zipFilePath;
+                        _a.label = 2;
+                    case 2: return [2, filePath];
                 }
             });
         });

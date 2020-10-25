@@ -2,6 +2,7 @@ import { options } from './types'
 import constant from './constant'
 import BaseMaintainer from './maintainers/BaseMaintainer'
 const NodeSSH = require('node-ssh')
+const path = require('path')
 
 class SSH {
     private SSH
@@ -128,7 +129,7 @@ class SSH {
             stderr: null,
             executionFailure: null,
             flags: [],
-            isFirstCmd: false,
+            isFirstCmd: true,
         }
 
         var maintainer = this.maintainer
@@ -140,10 +141,6 @@ class SSH {
                     nextOut.stdout = stdout
                 } else {
                     nextOut.stdout += stdout
-                }
-
-                if (maintainer != null) {
-                    maintainer.emitLog(stdout)
                 }
 
                 var parsedStdout = stdout.split('@')
@@ -163,8 +160,15 @@ class SSH {
                             if (maintainer != null) {
                                 maintainer.emitEvent(e[0], e[1])
                             }
+
+                            var flag = '@flag=[' + e[0] + ':' + e[1] + ']'
+                            stdout = stdout.replace(flag, '')
                         })
                     }
+                }
+
+                if (maintainer != null) {
+                    maintainer.emitLog(stdout)
                 }
             },
             onStderr(out) {
@@ -220,14 +224,6 @@ class SSH {
         return out
     }
 
-    async putFile(from: string, to: string) {
-        try {
-            await this.SSH.putFile(from, to)
-        } catch (e) {
-            throw new Error('unable to put file: ' + e.toString())
-        }
-    }
-
     async getRemoteHomePath() {
         var out = await this.SSH.execCommand(this.env + 'cd ~;pwd;')
         return out['stdout']
@@ -261,6 +257,46 @@ class SSH {
             return out
         } catch (e) {
             throw new Error('unable to put directory: ' + e.toString())
+        }
+    }
+
+    async putFile(from: string, to: string) {
+        try {
+            await this.SSH.putFile(from, to)
+        } catch (e) {
+            throw new Error('unable to put file: ' + e.toString())
+        }
+    }
+
+    async getFile(from: string, to: string) {
+        try {
+            await this.SSH.getFile(to, from)
+        } catch (e) {
+            throw new Error('unable to get directory zipped: ' + e.toString())
+        }
+    }
+
+    async getDirectoryZipped(from: string, to: string, customFileName: string = null) {
+        try {
+            if (from[from.length - 1] == '/') {
+                from = from.slice(0, -1)
+            }
+
+            if (to[to.length - 1] == '/') {
+                to = to.slice(0, -1)
+            }
+
+            var cwd = path.dirname(from)
+            var name = path.basename(from)
+            var tarFilename = from.split('/').pop() + '.tar'
+
+            await this.exec(['tar -czf ' + tarFilename + ' ./' + name + '/'], {
+                cwd: cwd
+            })
+
+            await this.SSH.getFile(to + '/' + (customFileName != null ? customFileName : tarFilename), from + '.tar')
+        } catch (e) {
+            throw new Error('unable to get file: ' + e.toString())
         }
     }
 }

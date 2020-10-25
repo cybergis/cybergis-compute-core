@@ -47,20 +47,20 @@ var BaseMaintainer = (function () {
         this._lock = false;
         this.isInit = false;
         this.isEnd = false;
-        this.rawManifest = null;
-        this.manifest = null;
         this.events = [];
         this.logs = [];
-        this.uploadedFiles = [];
-        this.env = {};
-        this.file = new File_1.default();
+        this.uploadedPath = undefined;
+        this.downloadedPath = undefined;
         this.lifeCycleState = {
             initCounter: 0,
             initThresholdInCount: 3,
-            maintainAt: null,
+            createdAt: null,
             maintainThresholdInHours: 0.0001
         };
-        this.downloadDir = undefined;
+        this.file = new File_1.default();
+        this.env = {};
+        this.rawManifest = null;
+        this.manifest = null;
         this.allowedEnv = undefined;
         this.removeFileAfterJobFinished = true;
         this.define();
@@ -168,9 +168,9 @@ var BaseMaintainer = (function () {
                                 var download = o.match(/download=\[[\s\S]*\]/g);
                                 if (download != null) {
                                     download.forEach(function (v, i) {
-                                        v = v.replace('download=[', '');
+                                        v = v.replace('custom_downloaded_path=[', '');
                                         v = v.replace(/]$/g, '');
-                                        self.registerDownloadDir(v);
+                                        self.registerCustomDownloadedPath(v);
                                     });
                                 }
                             }
@@ -186,8 +186,7 @@ var BaseMaintainer = (function () {
             });
         });
     };
-    BaseMaintainer.prototype.upload = function (destinationRootPath, fileNameValidation) {
-        if (fileNameValidation === void 0) { fileNameValidation = null; }
+    BaseMaintainer.prototype.upload = function (destinationRootPath) {
         return __awaiter(this, void 0, void 0, function () {
             var sourcePath, destinationPath, uploadResult, uploadCounter;
             return __generator(this, function (_a) {
@@ -215,24 +214,60 @@ var BaseMaintainer = (function () {
                         return [3, 3];
                     case 5:
                         if (uploadResult.failed.length > 0) {
+                            this.emitEvent('FILES_UPLOAD_FAIL', 'upload failed after three times of attempt.');
                             throw new Error('upload failed after three times of attempt. Failed files: ' + JSON.stringify(uploadResult.failed));
                         }
-                        this.emitEvent('FILES_UPLOADED', 'files uploaded to destination');
-                        this.uploadedFiles.push(destinationPath);
+                        this.emitEvent('FILES_UPLOADED', 'files uploaded to destination.');
+                        this.uploadedPath = destinationPath;
                         return [2, destinationPath];
                 }
             });
         });
     };
-    BaseMaintainer.prototype.removeFile = function () {
+    BaseMaintainer.prototype.download = function (sourceRootPath) {
         return __awaiter(this, void 0, void 0, function () {
-            var i, file;
+            var destinationPath, fileName, sourcePath, uploadCounter, tarFilePath;
             return __generator(this, function (_a) {
-                for (i in this.uploadedFiles) {
-                    file = this.uploadedFiles[i];
-                    this.runBash([
-                        'rm -rf ' + file
-                    ]);
+                switch (_a.label) {
+                    case 0:
+                        destinationPath = __dirname + '/../../data/download/';
+                        fileName = this.rawManifest.id + '.tar';
+                        return [4, this.SSH.connect(this.env)];
+                    case 1:
+                        _a.sent();
+                        sourcePath = path.join(sourceRootPath, this.rawManifest.file);
+                        return [4, this.SSH.getDirectoryZipped(sourcePath, destinationPath, fileName)];
+                    case 2:
+                        _a.sent();
+                        uploadCounter = 1;
+                        tarFilePath = path.join(destinationPath, fileName);
+                        _a.label = 3;
+                    case 3:
+                        if (!(!fs.existsSync(tarFilePath) && uploadCounter <= 3)) return [3, 5];
+                        return [4, this.SSH.getDirectoryZipped(sourcePath, fileName)];
+                    case 4:
+                        _a.sent();
+                        return [3, 3];
+                    case 5:
+                        if (!fs.existsSync(tarFilePath)) {
+                            this.emitEvent('FILES_DOWNLOAD_FAIL', 'download failed after three times of attempt.');
+                            throw new Error('download failed after three times of attempt.');
+                        }
+                        this.emitEvent('FILES_DOWNLOADED', 'files downloaded to from destination.');
+                        this.downloadedPath = tarFilePath;
+                        return [2, tarFilePath];
+                }
+            });
+        });
+    };
+    BaseMaintainer.prototype.registerCustomDownloadedPath = function (downloadedPath) {
+        this.downloadedPath = downloadedPath;
+    };
+    BaseMaintainer.prototype.removeUploadedFile = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                if (this.uploadedPath != undefined) {
+                    this.runBash(['rm -rf ' + this.uploadedPath]);
                 }
                 return [2];
             });
@@ -275,13 +310,10 @@ var BaseMaintainer = (function () {
         }
         fs.appendFileSync(filePath, "\n" + flags.end);
     };
-    BaseMaintainer.prototype.registerDownloadDir = function (dir) {
-        this.downloadDir = dir;
-    };
     BaseMaintainer.prototype.emitEvent = function (type, message) {
         if (type === 'JOB_ENDED' || type === 'JOB_FAILED') {
             if (this.removeFileAfterJobFinished) {
-                this.removeFile();
+                this.removeUploadedFile();
             }
             this.isEnd = true;
         }
@@ -329,10 +361,10 @@ var BaseMaintainer = (function () {
                     case 0:
                         if (!!this._lock) return [3, 4];
                         this._lock = true;
-                        if (this.lifeCycleState.maintainAt === null) {
-                            this.lifeCycleState.maintainAt = Date.now();
+                        if (this.lifeCycleState.createdAt === null) {
+                            this.lifeCycleState.createdAt = Date.now();
                         }
-                        if (!(((this.lifeCycleState.maintainAt - Date.now()) / (1000 * 60 * 60)) >= this.lifeCycleState.maintainThresholdInHours)) return [3, 1];
+                        if (!(((this.lifeCycleState.createdAt - Date.now()) / (1000 * 60 * 60)) >= this.lifeCycleState.maintainThresholdInHours)) return [3, 1];
                         this.emitEvent('JOB_FAILED', 'maintain time exceeds ' + this.lifeCycleState.maintainThresholdInHours + ' hours');
                         return [3, 3];
                     case 1: return [4, this.onMaintain()];
