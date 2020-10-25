@@ -112,10 +112,15 @@ class Supervisor {
     }
 
     async getDownloadDir(jobID: string): Promise<string> {
-        var dir = __dirname + '/../data/download/' + jobID + '.zip'
-        if (!fs.existsSync(dir)) {
-            if (this.downloadPools[jobID] != undefined) {
-                var self = this
+        var filePath = this.downloadPools[jobID]
+
+        if (filePath == undefined) {
+            return null
+        }
+
+        if (fs.lstatSync(filePath).isDirectory()) {
+            var zipFilePath = __dirname + '/../data/download/' + jobID + '.zip'
+            if (!fs.existsSync(filePath)) {
                 await new Promise((resolve, reject) => {
                     var stream = fs.createWriteStream(zipFilePath)
                     var archive = archiver('zip')

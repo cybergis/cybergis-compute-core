@@ -165,7 +165,7 @@ var BaseMaintainer = (function () {
                                         out[e[0]] = e[1];
                                     });
                                 }
-                                var download = o.match(/download=\[[\s\S]*\]/g);
+                                var download = o.match(/custom_downloaded_path=\[[\s\S]*\]/g);
                                 if (download != null) {
                                     download.forEach(function (v, i) {
                                         v = v.replace('custom_downloaded_path=[', '');
