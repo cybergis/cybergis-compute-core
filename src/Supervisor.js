@@ -197,9 +197,10 @@ var Supervisor = (function () {
                         if (filePath == undefined) {
                             return [2, null];
                         }
-                        if (!fs.lstatSync(filePath).isDirectory()) return [3, 2];
+                        if (!fs.lstatSync(filePath).isDirectory()) return [3, 3];
                         zipFilePath = __dirname + '/../data/download/' + jobID + '.zip';
-                        if (!!fs.existsSync(filePath)) return [3, 2];
+                        if (!!fs.existsSync(zipFilePath)) return [3, 2];
+                        console.log(filePath);
                         return [4, new Promise(function (resolve, reject) {
                                 var stream = fs.createWriteStream(zipFilePath);
                                 var archive = archiver('zip');
@@ -218,9 +219,11 @@ var Supervisor = (function () {
                             })];
                     case 1:
                         _a.sent();
-                        filePath = zipFilePath;
                         _a.label = 2;
-                    case 2: return [2, filePath];
+                    case 2:
+                        filePath = zipFilePath;
+                        _a.label = 3;
+                    case 3: return [2, filePath];
                 }
             });
         });

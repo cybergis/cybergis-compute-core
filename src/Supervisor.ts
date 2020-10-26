@@ -12,7 +12,7 @@ class Supervisor {
 
     private jobPools = {}
 
-    private downloadPools = {}
+    public downloadPools = {}
 
     private queues = {}
 
@@ -120,7 +120,8 @@ class Supervisor {
 
         if (fs.lstatSync(filePath).isDirectory()) {
             var zipFilePath = __dirname + '/../data/download/' + jobID + '.zip'
-            if (!fs.existsSync(filePath)) {
+            if (!fs.existsSync(zipFilePath)) {
+                console.log(filePath)
                 await new Promise((resolve, reject) => {
                     var stream = fs.createWriteStream(zipFilePath)
                     var archive = archiver('zip')
@@ -137,8 +138,8 @@ class Supervisor {
                         resolve('')
                     })
                 })
-                filePath = zipFilePath
             }
+            filePath = zipFilePath
         }
 
         return filePath
