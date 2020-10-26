@@ -121,7 +121,6 @@ class Supervisor {
         if (fs.lstatSync(filePath).isDirectory()) {
             var zipFilePath = __dirname + '/../data/download/' + jobID + '.zip'
             if (!fs.existsSync(zipFilePath)) {
-                console.log(filePath)
                 await new Promise((resolve, reject) => {
                     var stream = fs.createWriteStream(zipFilePath)
                     var archive = archiver('zip')

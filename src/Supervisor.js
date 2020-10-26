@@ -200,7 +200,6 @@ var Supervisor = (function () {
                         if (!fs.lstatSync(filePath).isDirectory()) return [3, 3];
                         zipFilePath = __dirname + '/../data/download/' + jobID + '.zip';
                         if (!!fs.existsSync(zipFilePath)) return [3, 2];
-                        console.log(filePath);
                         return [4, new Promise(function (resolve, reject) {
                                 var stream = fs.createWriteStream(zipFilePath);
                                 var archive = archiver('zip');
