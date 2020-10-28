@@ -95,8 +95,8 @@ else {
         var ports = [443, 22];
         for (var i in ports) {
             var port = ports[i];
-            iptablesRules.push('INPUT - i eth0 - p tcp - m tcp--dport ' + port + ' - j ACCEPT');
-            iptablesRules.push('INPUT - p tcp - m tcp--dport ' + port + ' - j ACCEPT');
+            iptablesRules.push('INPUT - i eth0 - p tcp - m tcp --dport ' + port + ' - j ACCEPT');
+            iptablesRules.push('INPUT - p tcp - m tcp --dport ' + port + ' - j ACCEPT');
         }
         Helper_1.default.setupFirewallRules(iptablesRules, 'linux');
     }
