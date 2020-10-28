@@ -72,16 +72,32 @@ file.clearTmpFiles();
 if (!config.isTesting) {
     if (process.platform == "linux") {
         var iptablesRules = [];
-        var ips = [443, 22];
-        for (var i in ips) {
-            var ip = ips[i];
+        var ports = [443, 22];
+        for (var i in ports) {
+            var port = ports[i];
             for (var j in config.clientIPs) {
                 var clientIP = config.clientIPs[j];
-                iptablesRules.push('INPUT -p tcp -s ' + clientIP + ' --dport ' + ip + ' -j ACCEPT');
+                iptablesRules.push('INPUT -p tcp -s ' + clientIP + ' --dport ' + port + ' -j ACCEPT');
             }
-            iptablesRules.push('INPUT -p tcp --dport ' + ip + ' -j DROP');
+            iptablesRules.push('INPUT -p tcp --dport ' + port + ' -j DROP');
         }
         Helper_1.default.setupFirewallRules(iptablesRules, 'linux');
+    }
+    Helper_1.default.onExit(function () {
+        if (process.platform == "linux") {
+            Helper_1.default.teardownFirewallRules(iptablesRules, 'linux');
+        }
+    });
+}
+else {
+    if (process.platform == "linux") {
+        var iptablesRules = [];
+        var ports = [443, 22];
+        for (var i in ports) {
+            var port = ports[i];
+            iptablesRules.push('INPUT - i eth0 - p tcp - m tcp--dport ' + port + ' - j ACCEPT');
+            iptablesRules.push('INPUT - p tcp - m tcp--dport ' + port + ' - j ACCEPT');
+        }
     }
     Helper_1.default.onExit(function () {
         if (process.platform == "linux") {

@@ -40,18 +40,35 @@ file.clearTmpFiles()
 if (!config.isTesting) {
     if (process.platform == "linux") {
         var iptablesRules = []
-        var ips = [443, 22]
+        var ports = [443, 22]
 
-        for (var i in ips) {
-            var ip = ips[i]
+        for (var i in ports) {
+            var port = ports[i]
             for (var j in config.clientIPs) {
                 var clientIP = config.clientIPs[j]
-                iptablesRules.push('INPUT -p tcp -s ' + clientIP + ' --dport ' + ip + ' -j ACCEPT')
+                iptablesRules.push('INPUT -p tcp -s ' + clientIP + ' --dport ' + port + ' -j ACCEPT')
             }
-            iptablesRules.push('INPUT -p tcp --dport ' + ip + ' -j DROP')
+            iptablesRules.push('INPUT -p tcp --dport ' + port + ' -j DROP')
         }
 
         Helper.setupFirewallRules(iptablesRules, 'linux')
+    }
+
+    Helper.onExit(function () {
+        if (process.platform == "linux") {
+            Helper.teardownFirewallRules(iptablesRules, 'linux')
+        }
+    })
+} else {
+    if (process.platform == "linux") {
+        var iptablesRules = []
+        var ports = [443, 22]
+
+        for (var i in ports) {
+            var port = ports[i]
+            iptablesRules.push('INPUT - i eth0 - p tcp - m tcp--dport ' + port + ' - j ACCEPT')
+            iptablesRules.push('INPUT - p tcp - m tcp--dport ' + port + ' - j ACCEPT')
+        }
     }
 
     Helper.onExit(function () {
