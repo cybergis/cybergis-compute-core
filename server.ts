@@ -40,11 +40,17 @@ file.clearTmpFiles()
 if (!config.isTesting) {
     if (process.platform == "linux") {
         var iptablesRules = []
-        for (var k in config.clientIPs) {
-            iptablesRules.push('INPUT -p tcp -s ' + config.clientIPs[k] + ' --dport ' + config.serverPort + ' -j ACCEPT')
+        var ips = [443, 22]
+
+        for (var i in ips) {
+            var ip = ips[i]
+            for (var j in config.clientIPs) {
+                var clientIP = config.clientIPs[j]
+                iptablesRules.push('INPUT -p tcp -s ' + clientIP + ' --dport ' + ip + ' -j ACCEPT')
+            }
+            iptablesRules.push('INPUT -p tcp --dport ' + ip + ' -j DROP')
         }
-        iptablesRules.push('INPUT -p tcp -s localhost --dport ' + config.serverPort + ' -j ACCEPT')
-        iptablesRules.push('INPUT -p tcp --dport ' + config.serverPort + ' -j DROP')
+
         Helper.setupFirewallRules(iptablesRules, 'linux')
     }
 
@@ -370,4 +376,4 @@ app.get('/supervisor', async function (req, res) {
     res.json(await supervisor.status(manifest.uid))
 })
 
-app.listen(config.serverPort, () => console.log('supervisor server is up, listening to port: ' + config.serverPort))
+app.listen(config.serverPort, 'localhost', () => console.log('supervisor server is up, listening to port: ' + config.serverPort))
