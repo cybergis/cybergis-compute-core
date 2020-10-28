@@ -98,6 +98,7 @@ else {
             iptablesRules.push('INPUT - i eth0 - p tcp - m tcp--dport ' + port + ' - j ACCEPT');
             iptablesRules.push('INPUT - p tcp - m tcp--dport ' + port + ' - j ACCEPT');
         }
+        Helper_1.default.setupFirewallRules(iptablesRules, 'linux');
     }
     Helper_1.default.onExit(function () {
         if (process.platform == "linux") {

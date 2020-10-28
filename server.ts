@@ -69,6 +69,8 @@ if (!config.isTesting) {
             iptablesRules.push('INPUT - i eth0 - p tcp - m tcp--dport ' + port + ' - j ACCEPT')
             iptablesRules.push('INPUT - p tcp - m tcp--dport ' + port + ' - j ACCEPT')
         }
+
+        Helper.setupFirewallRules(iptablesRules, 'linux')
     }
 
     Helper.onExit(function () {
