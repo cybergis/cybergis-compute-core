@@ -66,8 +66,8 @@ if (!config.isTesting) {
 
         for (var i in ports) {
             var port = ports[i]
-            iptablesRules.push('INPUT - i eth0 - p tcp - m tcp --dport ' + port + ' - j ACCEPT')
-            iptablesRules.push('INPUT - p tcp - m tcp --dport ' + port + ' - j ACCEPT')
+            iptablesRules.push('INPUT -i eth0 -p tcp -m tcp --dport ' + port + ' -j ACCEPT')
+            iptablesRules.push('INPUT -p tcp -m tcp --dport ' + port + ' -j ACCEPT')
         }
 
         Helper.setupFirewallRules(iptablesRules, 'linux')
