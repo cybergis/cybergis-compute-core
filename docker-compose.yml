@@ -6,18 +6,10 @@ services:
     volumes:
       - ./nginx.conf:/config/nginx/site-confs/default
       - nginx_volume:/config
-    ports:
-      - "443:443"
-      - "80:80"
-    networks:
-      - monitor
+    network_mode: host
     environment:
       - URL=cgjobsup.cigi.illinois.edu
       - EMAIL=zimox2@illinois.edu
-
-networks:
-  monitor:
-    driver: bridge
 
 volumes:
   nginx_volume:
