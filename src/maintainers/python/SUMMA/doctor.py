@@ -1,12 +1,12 @@
 import subprocess
 import os
-import importlib
+from importlib import util
 
 print('🚩Python/SUMMA')
 print('trying to import python dependencies...')
 
 def checkPythonPkg(pkg):
-    loader = importlib.util.find_spec(pkg)
+    loader = util.find_spec(pkg)
     if loader is None:
         print('❌ python pkg ' + pkg + ' not found!')
 
