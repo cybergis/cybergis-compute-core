@@ -39,6 +39,28 @@ export default {
                     'index.py'
                 ]
             }
+        },
+        wrfhydro: {
+            ip: "keeling.earth.illinois.edu",
+            port: 22,
+            maintainer: 'WRFHydroMaintainer',
+            jobPoolCapacity: 5,
+            isCommunityAccount: true,
+            communityAccountSSH: {
+                user: 'cigi-gisolve',
+                useLocalKeys: false,
+                key: {
+                    privateKeyPath: __dirname + '/../key/cigi-gisolve.key',
+                    passphrase: null
+                }
+            },
+            useUploadedFile: true,
+            uploadFileConfig: {
+                ignore: [],
+                mustHave: [
+                ],
+                ignoreEverythingExceptMustHave: false
+            }
         }
     },
     doctorScripts: {
