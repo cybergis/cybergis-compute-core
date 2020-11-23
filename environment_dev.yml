@@ -1,0 +1,14 @@
+name: jobdev
+channels:
+  - default
+  - conda-forge
+dependencies:
+  - python=3.7
+  - nodejs=10.*
+  - redis
+  - cartopy
+  - notebook
+  - typescript
+  - pip:
+    - git+https://github.com/UW-Hydro/pysumma.git
+    - git+https://github.com/cybergis/job-supervisor-python-sdk.git

@@ -1,6 +1,6 @@
 import BaseMaintainer from './BaseMaintainer'
 
-class WRFHydroMaintainer extends BaseMaintainer {
+class HelloWorldMaintainer extends BaseMaintainer {
     private remote_id
 
     private remote_slurm_out_file_path
@@ -24,7 +24,7 @@ class WRFHydroMaintainer extends BaseMaintainer {
         var username = machine === 'keeling' ? 'cigi-gisolve' : 'cybergis'
         var file_manager_rel_path = this.manifest.payload.file_manager_rel_path
 
-        var params = await this.runPython('WRFHydro/init.py', [
+        var params = await this.runPython('HelloWorld/init.py', [
             username,
             __dirname + '/../../key/cigi-gisolve.key',
             __dirname + '/../../data',
@@ -43,7 +43,7 @@ class WRFHydroMaintainer extends BaseMaintainer {
     }
 
     async onMaintain() {
-        await this.runPython('WRFHydro/maintain.py', [
+        await this.runPython('HelloWorld/maintain.py', [
             this.machine,
             this.username,
             __dirname + '/../../key/cigi-gisolve.key',
@@ -54,4 +54,4 @@ class WRFHydroMaintainer extends BaseMaintainer {
     }
 }
 
-export default WRFHydroMaintainer
+export default HelloWorldMaintainer

@@ -62,6 +62,29 @@ exports.default = {
                 mustHave: [],
                 ignoreEverythingExceptMustHave: false
             }
+        },
+        helloworld: {
+            ip: "keeling.earth.illinois.edu",
+            port: 22,
+            maintainer: 'HelloWorldMaintainer',
+            jobPoolCapacity: 5,
+            isCommunityAccount: true,
+            communityAccountSSH: {
+                user: 'cigi-gisolve',
+                useLocalKeys: false,
+                key: {
+                    privateKeyPath: __dirname + '/../key/cigi-gisolve.key',
+                    passphrase: null
+                }
+            },
+            useUploadedFile: true,
+            uploadFileConfig: {
+                ignore: [],
+                mustHave: [
+                    "in.txt"
+                ],
+                ignoreEverythingExceptMustHave: false
+            }
         }
     },
     doctorScripts: {
