@@ -13,10 +13,11 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -59,7 +60,7 @@ var SUMMAMaintainer = (function (_super) {
     };
     SUMMAMaintainer.prototype.onInit = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var machine, node, walltime, username, params;
+            var machine, node, walltime, username, file_manager_rel_path, params;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -67,6 +68,7 @@ var SUMMAMaintainer = (function (_super) {
                         node = this.manifest.payload.node === undefined ? 16 : this.manifest.payload.node;
                         walltime = this.manifest.payload.walltime === undefined ? 1 : this.manifest.payload.walltime;
                         username = machine === 'keeling' ? 'cigi-gisolve' : 'cybergis';
+                        file_manager_rel_path = this.manifest.payload.file_manager_rel_path;
                         return [4, this.runPython('SUMMA/init.py', [
                                 username,
                                 __dirname + '/../../key/cigi-gisolve.key',
@@ -74,14 +76,14 @@ var SUMMAMaintainer = (function (_super) {
                                 'upload/' + this.manifest.uid + '/' + this.manifest.file,
                                 machine,
                                 node,
-                                walltime
+                                walltime,
+                                file_manager_rel_path
                             ])];
                     case 1:
                         params = _a.sent();
                         this.machine = machine;
                         this.username = username;
                         this.remote_id = params['remote_id'];
-                        this.remote_slurm_out_file_path = params['remote_slurm_out_file_path'];
                         this.remote_model_folder_path = params['remote_model_folder_path'];
                         this.local_job_folder_path = params['local_job_folder_path'];
                         return [2];
@@ -98,7 +100,6 @@ var SUMMAMaintainer = (function (_super) {
                             this.username,
                             __dirname + '/../../key/cigi-gisolve.key',
                             this.remote_id,
-                            this.remote_slurm_out_file_path,
                             this.remote_model_folder_path,
                             this.local_job_folder_path
                         ])];

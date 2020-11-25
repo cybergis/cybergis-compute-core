@@ -22,6 +22,7 @@ class SUMMAMaintainer extends BaseMaintainer {
         var node = this.manifest.payload.node === undefined ? 16 : this.manifest.payload.node
         var walltime = this.manifest.payload.walltime === undefined ? 1 : this.manifest.payload.walltime
         var username = machine === 'keeling' ? 'cigi-gisolve' : 'cybergis'
+        var file_manager_rel_path = this.manifest.payload.file_manager_rel_path
 
         var params = await this.runPython('SUMMA/init.py', [
             username,
@@ -30,13 +31,13 @@ class SUMMAMaintainer extends BaseMaintainer {
             'upload/' + this.manifest.uid + '/' + this.manifest.file,
             machine,
             node,
-            walltime
+            walltime,
+            file_manager_rel_path
         ])
 
         this.machine = machine
         this.username = username
         this.remote_id = params['remote_id']
-        this.remote_slurm_out_file_path = params['remote_slurm_out_file_path']
         this.remote_model_folder_path = params['remote_model_folder_path']
         this.local_job_folder_path = params['local_job_folder_path']
     }
@@ -47,7 +48,6 @@ class SUMMAMaintainer extends BaseMaintainer {
             this.username,
             __dirname + '/../../key/cigi-gisolve.key',
             this.remote_id,
-            this.remote_slurm_out_file_path,
             this.remote_model_folder_path,
             this.local_job_folder_path
         ])

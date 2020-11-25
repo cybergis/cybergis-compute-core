@@ -50,15 +50,15 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var BaseMaintainer_1 = require("./BaseMaintainer");
-var WRFHydroMaintainer = (function (_super) {
-    __extends(WRFHydroMaintainer, _super);
-    function WRFHydroMaintainer() {
+var HelloWorldMaintainer = (function (_super) {
+    __extends(HelloWorldMaintainer, _super);
+    function HelloWorldMaintainer() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    WRFHydroMaintainer.prototype.define = function () {
+    HelloWorldMaintainer.prototype.define = function () {
         this.allowedEnv = {};
     };
-    WRFHydroMaintainer.prototype.onInit = function () {
+    HelloWorldMaintainer.prototype.onInit = function () {
         return __awaiter(this, void 0, void 0, function () {
             var machine, node, walltime, username, file_manager_rel_path, params;
             return __generator(this, function (_a) {
@@ -69,7 +69,7 @@ var WRFHydroMaintainer = (function (_super) {
                         walltime = this.manifest.payload.walltime === undefined ? 1 : this.manifest.payload.walltime;
                         username = machine === 'keeling' ? 'cigi-gisolve' : 'cybergis';
                         file_manager_rel_path = this.manifest.payload.file_manager_rel_path;
-                        return [4, this.runPython('WRFHydro/init.py', [
+                        return [4, this.runPython('HelloWorld/init.py', [
                                 username,
                                 __dirname + '/../../key/cigi-gisolve.key',
                                 __dirname + '/../../data',
@@ -91,11 +91,11 @@ var WRFHydroMaintainer = (function (_super) {
             });
         });
     };
-    WRFHydroMaintainer.prototype.onMaintain = function () {
+    HelloWorldMaintainer.prototype.onMaintain = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4, this.runPython('WRFHydro/maintain.py', [
+                    case 0: return [4, this.runPython('HelloWorld/maintain.py', [
                             this.machine,
                             this.username,
                             __dirname + '/../../key/cigi-gisolve.key',
@@ -110,6 +110,6 @@ var WRFHydroMaintainer = (function (_super) {
             });
         });
     };
-    return WRFHydroMaintainer;
+    return HelloWorldMaintainer;
 }(BaseMaintainer_1.default));
-exports.default = WRFHydroMaintainer;
+exports.default = HelloWorldMaintainer;
