@@ -22,7 +22,6 @@ class WRFHydroMaintainer extends BaseMaintainer {
         var node = this.manifest.payload.node === undefined ? 16 : this.manifest.payload.node;
         var walltime = this.manifest.payload.walltime === undefined ? 1 : this.manifest.payload.walltime;
         var username = machine === 'keeling' ? 'cigi-gisolve' : 'cybergis';
-        var file_manager_rel_path = this.manifest.payload.file_manager_rel_path;
         var jobid = this.getJobID();
 
         var params = await this.runPython('WRFHydro/init.py', [
@@ -33,7 +32,6 @@ class WRFHydroMaintainer extends BaseMaintainer {
             machine,
             node,
             walltime,
-            file_manager_rel_path,
             jobid
         ]);
 
