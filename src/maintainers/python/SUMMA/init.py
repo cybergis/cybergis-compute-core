@@ -12,6 +12,7 @@ machine = str(sys.argv[5])
 node = str(sys.argv[6])
 walltime = str(sys.argv[7])
 file_manager_rel_path = str(sys.argv[8])
+jobid = str(sys.argv[9])
 
 # Init
 workspace_dir = os.path.join(base_dir, "SUMMA")
@@ -34,6 +35,7 @@ params["workspace_dir"] = workspace_dir
 params["machine"] = machine
 params["node"] = node
 params["walltime"] = walltime
+params["jobid"] = jobid
 
 s = SummaSupervisorToHPC(params, username, key_path)
 
