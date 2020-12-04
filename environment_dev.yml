@@ -1,4 +1,4 @@
-name: jobdev
+name: jobsupdev
 channels:
   - conda-forge
 dependencies:

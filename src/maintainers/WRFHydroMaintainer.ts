@@ -18,11 +18,11 @@ class WRFHydroMaintainer extends BaseMaintainer {
     }
 
     async onInit() {
-        var machine = this.manifest.payload.machine === undefined ? 'keeling' : this.manifest.payload.machine
-        var node = this.manifest.payload.node === undefined ? 16 : this.manifest.payload.node
-        var walltime = this.manifest.payload.walltime === undefined ? 1 : this.manifest.payload.walltime
-        var username = machine === 'keeling' ? 'cigi-gisolve' : 'cybergis'
-        var file_manager_rel_path = this.manifest.payload.file_manager_rel_path
+        var machine = this.manifest.payload.machine === undefined ? 'keeling' : this.manifest.payload.machine;
+        var node = this.manifest.payload.node === undefined ? 16 : this.manifest.payload.node;
+        var walltime = this.manifest.payload.walltime === undefined ? 1 : this.manifest.payload.walltime;
+        var username = machine === 'keeling' ? 'cigi-gisolve' : 'cybergis';
+        var jobid = this.getJobID();
 
         var params = await this.runPython('WRFHydro/init.py', [
             username,
@@ -32,14 +32,14 @@ class WRFHydroMaintainer extends BaseMaintainer {
             machine,
             node,
             walltime,
-            file_manager_rel_path
-        ])
+            jobid
+        ]);
 
-        this.machine = machine
-        this.username = username
-        this.remote_id = params['remote_id']
-        this.remote_job_folder_path = params['remote_job_folder_path']
-        this.local_job_folder_path = params['local_job_folder_path']
+        this.machine = machine;
+        this.username = username;
+        this.remote_id = params['remote_id'];
+        this.remote_job_folder_path = params['remote_job_folder_path'];
+        this.local_job_folder_path = params['local_job_folder_path'];
     }
 
     async onMaintain() {

@@ -10,6 +10,7 @@ file_dir = str(sys.argv[4])  # upload/uid/file folder
 machine = str(sys.argv[5])
 node = str(sys.argv[6])
 walltime = str(sys.argv[7])
+jobid = str(sys.argv[8])
 
 # Init
 workspace_dir = os.path.join(base_dir, "WRFHydro")  # data/WRFHydro
@@ -23,6 +24,7 @@ params["workspace_dir"] = workspace_dir
 params["machine"] = machine
 params["node"] = node
 params["walltime"] = walltime
+params["jobid"] = jobid
 
 s = WRFHydroSupervisorToHPC(params, username, key_path)
 

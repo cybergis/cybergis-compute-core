@@ -60,7 +60,7 @@ var HelloWorldMaintainer = (function (_super) {
     };
     HelloWorldMaintainer.prototype.onInit = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var machine, node, walltime, username, file_manager_rel_path, params;
+            var machine, node, walltime, username, jobid, params;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -68,7 +68,7 @@ var HelloWorldMaintainer = (function (_super) {
                         node = this.manifest.payload.node === undefined ? 16 : this.manifest.payload.node;
                         walltime = this.manifest.payload.walltime === undefined ? 1 : this.manifest.payload.walltime;
                         username = machine === 'keeling' ? 'cigi-gisolve' : 'cybergis';
-                        file_manager_rel_path = this.manifest.payload.file_manager_rel_path;
+                        jobid = this.getJobID();
                         return [4, this.runPython('HelloWorld/init.py', [
                                 username,
                                 __dirname + '/../../key/cigi-gisolve.key',
@@ -77,7 +77,7 @@ var HelloWorldMaintainer = (function (_super) {
                                 machine,
                                 node,
                                 walltime,
-                                file_manager_rel_path
+                                jobid
                             ])];
                     case 1:
                         params = _a.sent();
