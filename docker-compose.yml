@@ -6,6 +6,12 @@ services:
     volumes:
       - ./nginx.conf:/config/nginx/site-confs/default
       - nginx_volume:/config
+    # network_mode is 'host' to allow nginx running inside container to 
+    # access job sub node.js server running on host
+    # Must manually open 80 and 443 on host firewall
+    # Otherwise cert cannot be renewed automatically (Drew 01/01/2020)
+    # ufw allow 80
+    # ufw allow 443 
     network_mode: host
     environment:
       - URL=cgjobsup.cigi.illinois.edu
