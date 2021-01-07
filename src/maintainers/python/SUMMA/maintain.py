@@ -16,7 +16,7 @@ status = s.job_status(remote_id)
 
 if status == "C" or status == "UNKNOWN":
     s.download(
-        remote_model_folder_path, local_job_folder_path
+        os.path.join(remote_model_folder_path, "output"), local_job_folder_path
     )
     print('@custom_downloaded_path=[' + os.path.join(local_job_folder_path, "output") + ']')
     print("@event=[JOB_ENDED:SUMMA job with remote_id " + remote_id + " completed]")

@@ -84,8 +84,8 @@ var HelloWorldMaintainer = (function (_super) {
                         this.machine = machine;
                         this.username = username;
                         this.remote_id = params['remote_id'];
-                        this.remote_job_folder_path = params['remote_job_folder_path'];
                         this.local_job_folder_path = params['local_job_folder_path'];
+                        this.remote_model_folder_path = params['remote_model_folder_path'];
                         return [2];
                 }
             });
@@ -100,8 +100,8 @@ var HelloWorldMaintainer = (function (_super) {
                             this.username,
                             __dirname + '/../../key/cigi-gisolve.key',
                             this.remote_id,
-                            this.remote_job_folder_path,
-                            this.local_job_folder_path
+                            this.local_job_folder_path,
+                            this.remote_model_folder_path
                         ])];
                     case 1:
                         _a.sent();
