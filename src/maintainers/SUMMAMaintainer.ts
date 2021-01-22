@@ -24,6 +24,7 @@ class SUMMAMaintainer extends BaseMaintainer {
         var username = machine === 'keeling' ? 'cigi-gisolve' : 'cybergis';
         var file_manager_rel_path = this.manifest.payload.file_manager_rel_path;
         var jobid = this.getJobID();
+        var partition = this.manifest.payload.partition === undefined ? undefined : this.manifest.payload.partition;
 
         var params = await this.runPython('SUMMA/init.py', [
             username,
@@ -34,7 +35,8 @@ class SUMMAMaintainer extends BaseMaintainer {
             node,
             walltime,
             file_manager_rel_path,
-            jobid
+            jobid,
+            partition,
         ]);
 
         this.machine = machine;

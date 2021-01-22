@@ -23,7 +23,7 @@ params["model_source_folder_path"] = model_source_folder_path
 params["workspace_dir"] = workspace_dir
 params["machine"] = machine
 params["node"] = node
-params["walltime"] = walltime
+params["walltime_hour"] = walltime
 params["jobid"] = jobid
 
 s = HelloWorldSupervisorToHPC(params, username, key_path)
