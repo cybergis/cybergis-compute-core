@@ -11,6 +11,7 @@ machine = str(sys.argv[5])
 node = str(sys.argv[6])
 walltime = str(sys.argv[7])
 jobid = str(sys.argv[8])
+partition = str(sys.argv[9])
 
 # Init
 workspace_dir = os.path.join(base_dir, "WRFHydro")  # data/WRFHydro
@@ -23,8 +24,9 @@ params["model_source_folder_path"] = model_source_folder_path
 params["workspace_dir"] = workspace_dir
 params["machine"] = machine
 params["node"] = node
-params["walltime"] = walltime
+params["walltime_hour"] = walltime
 params["jobid"] = jobid
+params["partition"] = partition
 
 s = WRFHydroSupervisorToHPC(params, username, key_path)
 

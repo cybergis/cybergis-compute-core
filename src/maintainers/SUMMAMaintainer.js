@@ -60,7 +60,7 @@ var SUMMAMaintainer = (function (_super) {
     };
     SUMMAMaintainer.prototype.onInit = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var machine, node, walltime, username, file_manager_rel_path, jobid, params;
+            var machine, node, walltime, username, file_manager_rel_path, jobid, partition, params;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -70,6 +70,7 @@ var SUMMAMaintainer = (function (_super) {
                         username = machine === 'keeling' ? 'cigi-gisolve' : 'cybergis';
                         file_manager_rel_path = this.manifest.payload.file_manager_rel_path;
                         jobid = this.getJobID();
+                        partition = this.manifest.payload.partition === undefined ? undefined : this.manifest.payload.partition;
                         return [4, this.runPython('SUMMA/init.py', [
                                 username,
                                 __dirname + '/../../key/cigi-gisolve.key',
@@ -79,7 +80,8 @@ var SUMMAMaintainer = (function (_super) {
                                 node,
                                 walltime,
                                 file_manager_rel_path,
-                                jobid
+                                jobid,
+                                partition,
                             ])];
                     case 1:
                         params = _a.sent();
