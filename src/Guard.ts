@@ -7,14 +7,16 @@ const config = require('../config.json')
 const { promisify } = require("util")
 
 class SecretTokens {
-    private indexName = 'sT'
+    private setIndex = 'sT'
 
     private redis = {
         push: null,
         keys: null,
         getValue: null,
         length: null,
-        setValue: null
+        setValue: null,
+        delValue: null,
+        remove: null
     }
 
     private isConnected = false
@@ -25,13 +27,37 @@ class SecretTokens {
 
     async add(sT: string, data: any) {
         await this.connect()
-        await this.redis.push(this.indexName, sT)
+        await this.redis.push(this.setIndex, sT)
         await this.redis.setValue(sT, JSON.stringify(data))
     }
 
     async getAll() {
         await this.connect()
-        return await this.redis.keys(this.indexName)
+        return await this.redis.keys(this.setIndex)
+    }
+
+    async getManifestBtUid(uid: string = null) {
+        var out = [];
+
+        var sets = await this.getAll();
+        for (var i in sets) {
+            var sT = sets[i];
+            var manifest = await this.getManifestByST(sT)
+            if (uid != null) {
+                if (manifest.uid === uid) {
+                    return manifest
+                }
+            } else {
+                out.push(manifest)
+            }
+        }
+
+        return out
+    }
+
+    async revoke(sT) {
+        await this.redis.delValue(sT)
+        await this.redis.remove(this.setIndex, sT);
     }
 
     async getManifestByST(sT: string) {
@@ -57,9 +83,11 @@ class SecretTokens {
             }
 
             this.redis.push = promisify(client.sadd).bind(client)
+            this.redis.remove = promisify(client.srem).bind(client)
             this.redis.keys = promisify(client.smembers).bind(client)
             this.redis.getValue = promisify(client.get).bind(client)
             this.redis.setValue = promisify(client.set).bind(client)
+            this.redis.delValue = promisify(client.del).bind(client)
             this.redis.length = promisify(client.scard).bind(client)
             this.isConnected = true
         }
@@ -151,7 +179,7 @@ class Guard {
             var sT = keys[i]
             var secretToken = await this.secretTokens.getManifestByST(sT)
             if (secretToken.dest === manifest.dest || manifest.dest === undefined) {
-                var hash: string = this.jat.init(rawAT.alg, secretToken.sT).hash(rawAT.payload.encoded)
+                var hash = this.jat.init(rawAT.alg, secretToken.sT).hash(rawAT.payload.encoded)
                 if (hash == rawAT.hash) {
                     if (this.authenticatedAccessTokenCache[date] === undefined) {
                         this.authenticatedAccessTokenCache[date] = {}
@@ -192,3 +220,4 @@ class Guard {
 }
 
 export default Guard
+export { SecretTokens, Guard }

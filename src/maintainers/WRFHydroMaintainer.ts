@@ -3,9 +3,7 @@ import BaseMaintainer from './BaseMaintainer'
 class WRFHydroMaintainer extends BaseMaintainer {
     private remote_id
 
-    private remote_slurm_out_file_path
-
-    private remote_model_folder_path
+    private remote_job_folder_path
 
     private local_job_folder_path
 

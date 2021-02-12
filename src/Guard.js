@@ -43,13 +43,15 @@ var config = require('../config.json');
 var promisify = require("util").promisify;
 var SecretTokens = (function () {
     function SecretTokens() {
-        this.indexName = 'sT';
+        this.setIndex = 'sT';
         this.redis = {
             push: null,
             keys: null,
             getValue: null,
             length: null,
-            setValue: null
+            setValue: null,
+            delValue: null,
+            remove: null
         };
         this.isConnected = false;
     }
@@ -60,7 +62,7 @@ var SecretTokens = (function () {
                     case 0: return [4, this.connect()];
                     case 1:
                         _a.sent();
-                        return [4, this.redis.push(this.indexName, sT)];
+                        return [4, this.redis.push(this.setIndex, sT)];
                     case 2:
                         _a.sent();
                         return [4, this.redis.setValue(sT, JSON.stringify(data))];
@@ -78,8 +80,63 @@ var SecretTokens = (function () {
                     case 0: return [4, this.connect()];
                     case 1:
                         _a.sent();
-                        return [4, this.redis.keys(this.indexName)];
+                        return [4, this.redis.keys(this.setIndex)];
                     case 2: return [2, _a.sent()];
+                }
+            });
+        });
+    };
+    SecretTokens.prototype.getManifestBtUid = function (uid) {
+        if (uid === void 0) { uid = null; }
+        return __awaiter(this, void 0, void 0, function () {
+            var out, sets, _a, _b, _i, i, sT, manifest;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
+                    case 0:
+                        out = [];
+                        return [4, this.getAll()];
+                    case 1:
+                        sets = _c.sent();
+                        _a = [];
+                        for (_b in sets)
+                            _a.push(_b);
+                        _i = 0;
+                        _c.label = 2;
+                    case 2:
+                        if (!(_i < _a.length)) return [3, 5];
+                        i = _a[_i];
+                        sT = sets[i];
+                        return [4, this.getManifestByST(sT)];
+                    case 3:
+                        manifest = _c.sent();
+                        if (uid != null) {
+                            if (manifest.uid === uid) {
+                                return [2, manifest];
+                            }
+                        }
+                        else {
+                            out.push(manifest);
+                        }
+                        _c.label = 4;
+                    case 4:
+                        _i++;
+                        return [3, 2];
+                    case 5: return [2, out];
+                }
+            });
+        });
+    };
+    SecretTokens.prototype.revoke = function (sT) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4, this.redis.delValue(sT)];
+                    case 1:
+                        _a.sent();
+                        return [4, this.redis.remove(this.setIndex, sT)];
+                    case 2:
+                        _a.sent();
+                        return [2];
                 }
             });
         });
@@ -131,9 +188,11 @@ var SecretTokens = (function () {
                         _a.label = 2;
                     case 2:
                         this.redis.push = promisify(client.sadd).bind(client);
+                        this.redis.remove = promisify(client.srem).bind(client);
                         this.redis.keys = promisify(client.smembers).bind(client);
                         this.redis.getValue = promisify(client.get).bind(client);
                         this.redis.setValue = promisify(client.set).bind(client);
+                        this.redis.delValue = promisify(client.del).bind(client);
                         this.redis.length = promisify(client.scard).bind(client);
                         this.isConnected = true;
                         _a.label = 3;
@@ -144,6 +203,7 @@ var SecretTokens = (function () {
     };
     return SecretTokens;
 }());
+exports.SecretTokens = SecretTokens;
 var Guard = (function () {
     function Guard() {
         this.jat = new JAT_1.default();
@@ -307,4 +367,5 @@ var Guard = (function () {
     };
     return Guard;
 }());
+exports.Guard = Guard;
 exports.default = Guard;

@@ -213,6 +213,18 @@ response BODY:
 }
 ```
 
+## Command Line Tools
+1. Revoke a secretToken
+```bash
+node cli.js revoke <sT>
+```
+
+2. Get user information (include secretToken) using uid
+```bash
+node cli.js check-user <uid>
+```
+
+
 ## General Development Guidelines
 ### Development Environment Setup
  - The project uses TypeScript. Please install `tsc` command for compiling TypeScript to JavaScript.

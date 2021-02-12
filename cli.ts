@@ -1,4 +1,5 @@
 import { Command } from 'commander'
+import { SecretTokens } from './src/Guard'
 var npmPkg = require('./package.json')
 
 // CLI interfaces
@@ -47,7 +48,6 @@ cmd.command('serve')
     })
 
 cmd.command('background <operation>')
-    .description('config file helper')
     .option('-i, --index <index>', '[operation=stop] input is the first item in the row when running list operation (ex. [0])')
     .action((operation: string, cmd) => {
         var forever = require('forever')
@@ -79,6 +79,18 @@ cmd.command('background <operation>')
                 console.error('<operation> invalid operation, only support [revoke/generate/display]')
                 break
         }
+    })
+
+cmd.command('revoke <sT>')
+    .action(async (sT: string) => {
+        var secretTokens = new SecretTokens()
+        await secretTokens.revoke(sT)
+    })
+
+cmd.command('check-user <uid>')
+    .action(async (uid: string) => {
+        var secretTokens = new SecretTokens()
+        console.log(await secretTokens.getManifestBtUid(uid))
     })
 
 cmd.parse(process.argv)
