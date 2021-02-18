@@ -1,9 +1,10 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -94,8 +95,8 @@ var Emitter = (function () {
         });
     };
     Emitter.prototype.status = function (uid, jobID) {
-        if (jobID === void 0) { jobID = null; }
         var jobID, jobID;
+        if (jobID === void 0) { jobID = null; }
         return __awaiter(this, void 0, void 0, function () {
             var usrLogs, usrEvents, logIndex, eventIndex, _a, _b, _i, i, logs, i, _c, _d, _e, i, events, i, events, logs, i, i;
             return __generator(this, function (_f) {

@@ -63,6 +63,31 @@ exports.default = {
                 ignoreEverythingExceptMustHave: false
             }
         },
+        rhessys: {
+            ip: "keeling.earth.illinois.edu",
+            port: 22,
+            maintainer: 'RHESSysMaintainer',
+            jobPoolCapacity: 5,
+            isCommunityAccount: true,
+            communityAccountSSH: {
+                user: 'cigi-gisolve',
+                useLocalKeys: false,
+                key: {
+                    privateKeyPath: __dirname + '/../key/cigi-gisolve.key',
+                    passphrase: null
+                }
+            },
+            useUploadedFile: true,
+            uploadFileConfig: {
+                ignore: [],
+                mustHave: [
+                    'rhessys_options.json',
+                    'installTestCases_local.sh',
+                    'model'
+                ],
+                ignoreEverythingExceptMustHave: true
+            }
+        },
         helloworld: {
             ip: "keeling.earth.illinois.edu",
             port: 22,
