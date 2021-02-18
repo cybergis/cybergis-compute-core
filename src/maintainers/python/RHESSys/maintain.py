@@ -1,6 +1,6 @@
 import sys
 import os
-from cybergis import SummaSupervisorToHPC
+from cybergis import RHESSysSupervisorToHPC
 
 machine = str(sys.argv[1])
 username = str(sys.argv[2])
@@ -8,7 +8,7 @@ key_path = str(sys.argv[3])
 remote_id = str(sys.argv[4])
 remote_model_folder_path = str(sys.argv[5])
 local_job_folder_path = str(sys.argv[6])
-s = SummaSupervisorToHPC({"machine": machine}, username, key_path)
+s = RHESSysSupervisorToHPC({"machine": machine}, username, key_path)
 
 s = s.connect()
 
