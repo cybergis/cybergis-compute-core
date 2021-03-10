@@ -141,7 +141,6 @@ var Queue = (function () {
                         client = new redis.createClient({
                             host: config.redis.host,
                             port: config.redis.port,
-                            no_ready_check: true,
                         });
                         if (!(config.redis.password != null && config.redis.password != undefined)) return [3, 2];
                         redisAuth = promisify(client.auth).bind(client);
