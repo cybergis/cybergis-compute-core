@@ -4,6 +4,7 @@
         "passphrase": "passphrase"
     },
     "serverPort": 3000,
+    "serverIP": "0.0.0.0",
     "clientIPs": [
         "0.0.0.0"
     ],

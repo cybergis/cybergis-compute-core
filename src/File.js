@@ -1,10 +1,9 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -82,9 +81,8 @@ var File = (function () {
         }, 60 * 60 * 1000);
     };
     File.prototype.store = function (uid, destName, tempFilePath) {
-        var e_1, _a, e_2, _b;
         return __awaiter(this, void 0, void 0, function () {
-            var fileID, userDir, dir, dest, uploadFileConfig, zipContainFiles, zip, zip_1, zip_1_1, entry, fileName, baseFile, e_1_1, i, e_3, zip_2, zip_2_1, entry, filePath, type, f, fileName, baseFile, fileDir, writeFile, createDir, e_2_1;
+            var e_1, _a, e_2, _b, fileID, userDir, dir, dest, uploadFileConfig, zipContainFiles, zip, zip_1, zip_1_1, entry, fileName, baseFile, e_1_1, i, e_3, zip_2, zip_2_1, entry, filePath, type, f, fileName, baseFile, fileDir, writeFile, createDir, e_2_1;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:

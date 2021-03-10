@@ -395,4 +395,4 @@ app.get('/supervisor', async function (req, res) {
     res.json(await supervisor.status(manifest.uid))
 })
 
-app.listen(config.serverPort, 'localhost', () => console.log('supervisor server is up, listening to port: ' + config.serverPort))
+app.listen(config.serverPort, config.serverIP, () => console.log('supervisor server is up, listening to port: ' + config.serverPort))

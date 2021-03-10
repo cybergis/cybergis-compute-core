@@ -49,7 +49,8 @@ class Queue {
         if (!this.isConnected) {
             var client = new redis.createClient({
                 host: config.redis.host,
-                port: config.redis.port
+                port: config.redis.port,
+                no_ready_check: true,
             })
 
             if (config.redis.password != null && config.redis.password != undefined) {

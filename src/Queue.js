@@ -1,10 +1,9 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -141,7 +140,8 @@ var Queue = (function () {
                         if (!!this.isConnected) return [3, 3];
                         client = new redis.createClient({
                             host: config.redis.host,
-                            port: config.redis.port
+                            port: config.redis.port,
+                            no_ready_check: true,
                         });
                         if (!(config.redis.password != null && config.redis.password != undefined)) return [3, 2];
                         redisAuth = promisify(client.auth).bind(client);

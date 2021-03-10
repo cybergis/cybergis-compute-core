@@ -8,6 +8,7 @@ const fs = require('fs')
 const { spawn } = require('child-process-async')
 
 class BaseMaintainer {
+    /** mutex **/
     private _lock = false
 
     /** flags **/
