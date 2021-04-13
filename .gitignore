@@ -136,3 +136,4 @@ data/upload/*
 
 data/tmp/*
 !data/tmp/.gitkeep
+*.js

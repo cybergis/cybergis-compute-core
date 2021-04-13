@@ -16,6 +16,41 @@ class BaseMaintainer {
 
     public isEnd = false
 
+    public isPaused = false
+
+    /** data & states **/
+    protected logs = []
+
+    
+    /** emitters **/
+    emitEvent(type: string, message: string) {
+        if (type === 'JOB_ENDED' || type === 'JOB_FAILED') {
+            if (this.removeFileAfterJobFinished) {
+                this.removeUploadedFile()
+            }
+            this.isEnd = true
+        }
+
+        if (type === 'JOB_INITIALIZED') {
+            this.isInit = true
+        }
+
+        this.events.push({
+            type: type,
+            message: message
+        })
+    }
+}
+
+class BaseMaintainerBkup {
+    /** mutex **/
+    private _lock = false
+
+    /** flags **/
+    public isInit = false
+
+    public isEnd = false
+
     /** data & states **/
     protected events = []
 
