@@ -1,0 +1,258 @@
+import Helper from "./Helper"
+import { FileStructureError, FileNotExistError, NotImplementedError } from './errors'
+import * as fs from 'fs'
+import * as path from 'path'
+import { config } from '../configs/config'
+const rimraf = require("rimraf")
+const unzipper = require('unzipper')
+const archiver = require('archiver')
+
+type fileConfig = {
+    ignore?: Array<string>,
+    must_have?: Array<string>,
+    ignore_everything_except_must_have?: boolean
+}
+
+type fileTypes = 'local'
+
+export class FileSystem {
+    createClearLocalCacheProcess() {
+        var cachePath = config.local_file_system.cache_path
+        setInterval(function () {
+            try {
+                fs.readdir(cachePath, function (err, files) {
+                    files.forEach(function (file, index) {
+                        if (file != '.gitkeep') {
+                            fs.stat(path.join(cachePath, file), function (err, stat) {
+                                var endTime, now;
+                                if (err) return console.error(err)
+                                now = new Date().getTime()
+                                endTime = new Date(stat.ctime).getTime() + 3600000
+                                if (now > endTime) return rimraf(path.join(cachePath, file), (err) => {})
+                            })
+                        }
+                    })
+                })
+            } catch {}
+        }, 60 * 60 * 1000)
+    }
+
+    getFileByURL(url: string): BaseFile {
+        var u = url.split('://')
+        return this.getFile(u[0], u[1])
+    }
+
+    getFile(type: string, id: string): BaseFile {
+        if (type == 'local') {
+            return new LocalFile(id)
+        }
+    }
+
+    getLocalFile(id: string): LocalFile {
+        return new LocalFile(id)
+    }
+
+    getLocalFileByURL(url: string): LocalFile {
+        var u = url.split('://')
+        if (u[0] == 'local') return this.getLocalFile(u[1])
+    }
+
+    createLocalFile(providedFileConfig: fileConfig = {}): LocalFile {
+        var id = this._generateID()
+        var filePath = path.join(config.local_file_system.root_path, id)
+
+        while (fs.existsSync(filePath)) {
+            id = this._generateID()
+            filePath = path.join(config.local_file_system.root_path, id)
+        }
+
+        fs.mkdirSync(filePath)
+        if (providedFileConfig != {}) {
+            var infoJSON: string = JSON.stringify({maintainer: providedFileConfig})
+            fs.writeFileSync(path.join(filePath, '.file_config.json'), infoJSON)
+        }
+        return new LocalFile(id)
+    }
+
+    private _generateID(): string {
+        return Math.round((new Date()).getTime() / 1000) + Helper.randomStr(4)
+    }
+}
+
+export class BaseFile {
+    public type: fileTypes
+
+    constructor(type: fileTypes) {
+        this.type = type
+    }
+
+    validate() {
+        throw new NotImplementedError('validate not implemented')
+    }
+}
+
+export class LocalFile extends BaseFile {
+    public id: string
+
+    public path: string
+
+    public config: fileConfig
+
+    constructor(id: string) {
+        super('local')
+
+        const filePath = path.join(config.local_file_system.root_path, id)
+        if (!fs.existsSync(filePath)) throw new FileNotExistError(`file ID ${id} not exist`)
+
+        this.id = id
+        this.path = filePath
+        this.config = this._getConfig()
+    }
+
+    isZipped(): boolean {
+        return fs.existsSync(this.path + '.zip')
+    }
+
+    getURL() {
+        return `${this.type}://${this.id}`
+    }
+
+    validate() {
+        const files = fs.readdirSync(this.path)
+        var mustHaveFiles = []
+
+        for (var i in files) {
+            var file = files[i]
+            if (this.config.ignore.includes(file)) throw new FileStructureError(`file [${file}] not being ignore`)
+            if (this.config.must_have.includes(file)) mustHaveFiles.push(file)
+        }
+
+        for (var i in this.config.must_have) {
+            var mustHave = this.config.must_have[i]
+            if (!mustHaveFiles.includes(mustHave)) throw new FileStructureError(`file [${file}] must be included`)   
+        }
+    }
+
+    async getZip(): Promise<string> {
+        if (this.isZipped()) return this.path + '.zip'
+        var output = fs.createWriteStream(this.path + '.zip')
+        var archive = archiver('zip', { zlib: { level: 9 } })
+
+        await new Promise((resolve, reject) => {
+            output.on('open', (fd) => { 
+                archive.pipe(output)
+                archive.directory(this.path, false)
+                archive.finalize()
+             })
+            archive.on('error', (err) => { reject(err) })
+            output.on('close', () => { resolve(null) })
+            output.on('end', () => { resolve(null) })
+        })
+
+        return this.path + '.zip'
+    }
+
+    removeZip() {
+        if (this.isZipped()) fs.unlinkSync(this.path + '.zip')
+    }
+
+    async putFromZip(zipFilePath: string) {
+        var zip = fs.createReadStream(zipFilePath).pipe(unzipper.Parse({ forceStream: true }))
+
+        this.removeZip()
+
+        for await (const entry of zip) {
+            const entryPath = entry.path
+            const entryName = path.basename(entryPath)
+            const entryRoot = entryPath.split('/')[0]
+            const entryParentPath = path.dirname(entryPath)
+            const type = entry.type
+            const that = this
+
+            const writeFile = () => {
+                if (type === 'File' && !that.config.ignore.includes(entryName)) {
+                    var stream = fs.createWriteStream(path.join(that.path, entryParentPath, entryName), { flags: 'wx' })
+                    stream.on('open', (fd) => { entry.pipe(stream) })
+                }
+            }
+
+            const createDir = () => {
+                if (!fs.existsSync(path.join(that.path, entryParentPath))) {
+                    fs.promises.mkdir(path.join(that.path, entryParentPath), { recursive: true })
+                }
+            }
+
+            if (entryRoot != undefined) {
+                if (this.config.ignore.includes(entryRoot)) {
+                    entry.autodrain()
+                } else if (this.config.ignore_everything_except_must_have) {
+                    if (this.config.must_have.includes(entryRoot)) {
+                        createDir(); writeFile()
+                    } else {
+                        entry.autodrain()
+                    }
+                } else {
+                    createDir()
+                    writeFile()
+                }
+            } else {
+                if (this.config.ignore.includes(entryRoot)) {
+                    entry.autodrain()
+                } else if (this.config.ignore_everything_except_must_have) {
+                    if (this.config.must_have.includes(entryName)) {
+                        writeFile()
+                    } else {
+                        entry.autodrain()
+                    }
+                } else {
+                    writeFile()
+                }
+            }
+        }
+    }
+
+    putFromTemplate(template: string, replacements: any, filePath: string) {
+        const fileName = path.basename(filePath)
+        filePath = path.join(this.path, filePath)
+        const fileParentPath = path.dirname(filePath)
+        if (this.config.ignore_everything_except_must_have && !this.config.must_have.includes(fileName)) return
+        if (!this.config.ignore_everything_except_must_have && this.config.ignore.includes(fileName)) return
+
+        this.removeZip()
+        if (!fs.existsSync(fileParentPath)) fs.mkdirSync(fileParentPath)
+
+        for (var key in replacements) {
+            var value = replacements[key]
+            template.replace(`{${key}}`, value)
+        }
+
+        fs.writeFileSync(filePath, template)
+        this.chmod(filePath, '755')
+    }
+
+    private _getConfig(): fileConfig  {
+        const fileConfig = {
+            ignore: ['.placeholder', '.DS_Store'],
+            must_have: [],
+            ignore_everything_except_must_have: false
+        }
+
+        var configPath = path.join(this.path, '.file_config.json')
+        if (fs.existsSync(configPath)) {
+            var providedFileConfig = require(configPath)
+            if (providedFileConfig != undefined) {
+                if (providedFileConfig.ignore != undefined) fileConfig.ignore.concat(providedFileConfig.ignore)
+                if (providedFileConfig.must_have != undefined) fileConfig.must_have = providedFileConfig.must_have
+                if (providedFileConfig.ignore_everything_except_must_have != undefined) {
+                    fileConfig.ignore_everything_except_must_have = providedFileConfig.ignore_everything_except_must_have
+                }
+            }
+        }
+
+        return fileConfig
+    }
+
+    chmod(filePath: string, mode: string) {
+        fs.chmodSync(path.join(this.path, filePath), mode)
+    }
+}

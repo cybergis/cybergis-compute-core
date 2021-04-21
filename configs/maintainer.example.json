@@ -1,0 +1,21 @@
+{
+    "SUMMA": {
+        "hpc": ["keeling_community"],
+        "job_pool_capacity": 5,
+        "executable_file": {
+            "from_user_upload": true,
+            "file_config": {
+                "ignore": [],
+                "must_have": [
+                    "summa_options.json",
+                    "installTestCases_local.sh",
+                    "data",
+                    "output",
+                    "settings"
+                ],
+                "ignore_everything_except_must_have": true
+            }
+        },
+        "maintainer": "SUMMAMaintainer"
+    }
+}

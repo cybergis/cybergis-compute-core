@@ -11,3 +11,24 @@ export class FileStructureError extends Error {
         this.name = "FileStructureError"
     }
 }
+
+export class FileNotExistError extends Error {
+    constructor(message) {
+        super(message)
+        this.name = "FileNotExistError"
+    }
+}
+
+export class NotImplementedError extends Error {
+    constructor(message) {
+        super(message)
+        this.name = "NotImplementedError"
+    }
+}
+
+export class ConnectorError extends Error {
+    constructor(message) {
+        super(message)
+        this.name = "ConnectorError"
+    }
+}

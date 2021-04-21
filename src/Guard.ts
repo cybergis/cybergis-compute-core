@@ -1,9 +1,9 @@
 import JAT from './JAT'
 import Helper from './Helper'
-import { manifest, aT } from './types'
-import SSH from './SSH'
+import { manifest } from './types'
+import { config, hpcConfigMap } from '../configs/config'
+const NodeSSH = require('node-ssh')
 const redis = require('redis')
-const config = require('../config.json')
 const { promisify } = require("util")
 
 class SecretTokens {
@@ -20,10 +20,6 @@ class SecretTokens {
     }
 
     private isConnected = false
-
-    constructor() {
-        //
-    }
 
     async add(sT: string, data: any) {
         await this.connect()
@@ -57,7 +53,7 @@ class SecretTokens {
 
     async revoke(sT) {
         await this.redis.delValue(sT)
-        await this.redis.remove(this.setIndex, sT);
+        await this.redis.remove(this.setIndex, sT)
     }
 
     async getManifestByST(sT: string) {
@@ -101,16 +97,26 @@ class Guard {
 
     private secretTokens = new SecretTokens()
 
-    async issueSecretTokenForPrivateAccount(destination: string, user: string, password: string): Promise<string> {
-        this._clearCache()
-        var ssh = new SSH(destination, user, password)
-        await ssh.connect()
-        var isValid = ssh.isConnected()
-        await ssh.stop()
+    private ssh = new NodeSSH()
 
-        if (!isValid) {
-            throw new Error('unable to check credentials with ' + destination)
-        }
+    async issueJobSecretTokenForPrivateAccount(hpcName: string, maintainerName: string, user: string, password: string) {
+        this._clearCache()
+
+        var hpc = hpcConfigMap[hpcName]
+        var isValid = false
+
+        try {
+            await this.ssh.connect({
+                host: hpc.ip,
+                port: hpc.port,
+                user: user,
+                password: password
+            })
+            await this.ssh.dispose()
+            isValid = true
+        } catch (e) {}
+
+        if (!isValid) throw new Error(`unable to check credentials with ${hpcName}`)
 
         var secretToken = Helper.randomStr(45)
 
@@ -118,20 +124,22 @@ class Guard {
             secretToken = Helper.randomStr(45)
         }
 
-        await this.secretTokens.add(secretToken, {
+        var manifest: manifest = {
             cred: {
                 usr: user,
                 pwd: password
             },
-            dest: destination,
+            hpc: hpcName,
+            maintainer: maintainerName,
             sT: secretToken,
-            uid: this._generateUserID()
-        })
-
-        return secretToken
+            id: this._generateJobID()
+        }
+        await this.secretTokens.add(secretToken, manifest)
+        delete manifest.cred
+        return manifest
     }
 
-    async issueSecretTokenForCommunityAccount(destination: string, user: string) {
+    async issueJobSecretTokenForCommunityAccount(hpcName: string, maintainerName: string, user: string) {
         this._clearCache()
 
         var secretToken = Helper.randomStr(45)
@@ -140,28 +148,27 @@ class Guard {
             secretToken = Helper.randomStr(45)
         }
 
-        await this.secretTokens.add(secretToken, {
+        var manifest: manifest = {
             cred: {
                 usr: user,
                 pwd: null
             },
-            dest: destination,
+            hpc: hpcName,
+            maintainer: maintainerName,
             sT: secretToken,
-            uid: this._generateUserID()
-        })
-
-        return secretToken
+            id: this._generateJobID()
+        }
+        await this.secretTokens.add(secretToken, manifest)
+        delete manifest.cred
+        return manifest
     }
 
-    async validateAccessToken(manifest: manifest | aT): Promise<manifest | aT> {
+    async validateJobAccessToken(manifest): Promise<manifest> {
         this._clearCache()
 
         var rawAT = this.jat.parseAccessToken(manifest.aT)
         var date = this.jat.getDate()
-
-        if (rawAT.payload.decoded.date != date) {
-            throw new Error('invalid accessToken provided')
-        }
+        if (rawAT.payload.decoded.date != date) throw new Error('invalid accessToken provided')
 
         if (this.authenticatedAccessTokenCache[date] != undefined) {
             var cache = this.authenticatedAccessTokenCache[date][rawAT.hash]
@@ -169,7 +176,9 @@ class Guard {
                 delete manifest.aT
                 manifest.cred = cache.cred
                 manifest.uid = cache.uid
-                manifest.dest = cache.dest
+                manifest.hpc = cache.hpc
+                manifest.maintainer = cache.maintainer
+                manifest.id = cache.id
                 return manifest
             }
         }
@@ -178,31 +187,29 @@ class Guard {
         for (var i in keys) {
             var sT = keys[i]
             var secretToken = await this.secretTokens.getManifestByST(sT)
-            if (secretToken.dest === manifest.dest || manifest.dest === undefined) {
-                var hash = this.jat.init(rawAT.alg, secretToken.sT).hash(rawAT.payload.encoded)
-                if (hash == rawAT.hash) {
-                    if (this.authenticatedAccessTokenCache[date] === undefined) {
-                        this.authenticatedAccessTokenCache[date] = {}
-                    }
-                    this.authenticatedAccessTokenCache[date][rawAT.hash] = {
-                        cred: secretToken.cred,
-                        uid: secretToken.uid,
-                        dest: secretToken.dest
-                    }
-                    delete manifest.aT
-                    manifest.cred = secretToken.cred
-                    manifest.uid = secretToken.uid
-                    manifest.dest = secretToken.dest
-                    return manifest
+            var hash = this.jat.init(rawAT.alg, secretToken.sT).hash(rawAT.payload.encoded)
+            if (hash == rawAT.hash) {
+                if (this.authenticatedAccessTokenCache[date] === undefined) {
+                    this.authenticatedAccessTokenCache[date] = {}
                 }
+                this.authenticatedAccessTokenCache[date][rawAT.hash] = {
+                    cred: secretToken.cred,
+                    uid: secretToken.uid,
+                    hpc: secretToken.hpc,
+                    maintainer: secretToken.maintainer,
+                    id: secretToken.id
+                }
+                delete manifest.aT
+                manifest.cred = secretToken.cred
+                manifest.uid = secretToken.uid
+                manifest.hpc = secretToken.hpc
+                manifest.maintainer = secretToken.maintainer
+                manifest.id = secretToken.id
+                return manifest
             }
         }
 
         throw new Error('invalid accessToken provided')
-    }
-
-    revokeSecretToken(secretToken: string) {
-        delete this.secretTokens[secretToken]
     }
 
     private async _clearCache() {
@@ -214,7 +221,7 @@ class Guard {
         }
     }
 
-    private _generateUserID(): string {
+    private _generateJobID(): string {
         return Math.round((new Date()).getTime() / 1000) + Helper.randomStr(4)
     }
 }

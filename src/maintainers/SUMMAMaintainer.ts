@@ -1,61 +1,137 @@
+import SlurmConnector from '../connectors/SlurmConnector'
 import BaseMaintainer from './BaseMaintainer'
+import { LocalFile } from '../FileSystem'
 
-class SUMMAMaintainer extends BaseMaintainer {
-    private remote_id
+export default class ExampleMaintainer extends BaseMaintainer {
 
-    private remote_slurm_out_file_path
+    public connector: SlurmConnector
 
-    private remote_model_folder_path
+    public download_file: LocalFile
 
-    private local_job_folder_path
+    private entry_script_template = `
+import json
+import os
+import numpy as np
+from mpi4py import MPI
+import subprocess
+import pysumma as ps
 
-    private machine
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.Get_size()
+hostname = MPI.Get_processor_name()
 
-    private username
+print("{}/{}: {}".format(rank, size, hostname))
+
+job_folder_path = "$singularity_job_folder_path"
+instance = "$model_folder_name"
+instance_path = os.path.join(job_folder_path, instance)
+json_path = os.path.join(job_folder_path, instance, "summa_options.json")
+
+workers_folder_name = "workers"
+workers_folder_path = os.path.join(job_folder_path, workers_folder_name)
+
+if rank == 0:
+    os.system("mkdir -p {}".format(workers_folder_path))
+comm.Barrier()
+
+try:
+    with open(json_path) as f:
+        options_dict = json.load(f)
+except:
+    options_dict = {}
+options_list = [(k,v) for k,v in options_dict.items()]
+options_list.sort()
+groups = np.array_split(options_list, size)
+config_pair_list = groups[rank].tolist()
+
+# copy instance folder to workers folder
+new_instance_path = os.path.join(workers_folder_path, instance + "_{}".format(rank))
+os.system("cp -rf {} {}".format(instance_path, new_instance_path))
+# sync: make every rank finishes copying
+subprocess.run(
+    ["./installTestCases_local.sh"], cwd=new_instance_path,
+)
+comm.Barrier()
+
+# file manager path
+file_manager = os.path.join(new_instance_path, 'settings/summa_fileManager_riparianAspenSimpleResistance.txt')
+print(file_manager)
+executable = "/code/bin/summa.exe"
+
+s = ps.Simulation(executable, file_manager)
+# fix setting_path to point to this worker
+s.manager["settingsPath"].value = s.manager["settingsPath"].value.replace(instance_path, new_instance_path) 
+s.manager["outputPath"].value = os.path.join(instance_path, "output/")
+
+# Dont not use this as it rewrites every files including those in original folder -- Race condition
+#s._write_configuration()
+
+# Instead, only rewrite filemanager
+s.manager.write()
+
+if len(config_pair_list) == 0:
+    config_pair_list = [("_test", {})]
+for config_pair in config_pair_list:
+
+    try:
+        name = config_pair[0]
+        config = config_pair[1]
+        print(name)
+        print(config)
+        print(type(config))
+        
+        # create a new Simulation obj each time to avoid potential overwriting issue or race condition
+        ss = ps.Simulation(executable, file_manager, False)
+        ss.initialize()
+        ss.apply_config(config)
+        ss.run('local', run_suffix=name)
+        print(ss.stdout)
+    except Exception as ex:
+        print("Error in ({}/{}) {}: {}".format(rank, size, name, str(config)))
+        print(ex)
+
+comm.Barrier()
+print("Done in {}/{} ".format(rank, size))`
+
+    private entry_script_file_name = 'run_summa.py'
+
+    private image_path = '/home/cybergis/SUMMA_IMAGE/pysumma_ensemble.img_summa3'
 
     define() {
-        this.allowedEnv = {}
+        // define connector
+        this.connector = this.getSlurmConnector()
     }
 
     async onInit() {
-        var machine = this.manifest.payload.machine === undefined ? 'keeling' : this.manifest.payload.machine;
-        var node = this.manifest.payload.node === undefined ? 16 : this.manifest.payload.node;
-        var walltime = this.manifest.payload.walltime === undefined ? 1 : this.manifest.payload.walltime;
-        var username = machine === 'keeling' ? 'cigi-gisolve' : 'cybergis';
-        var file_manager_rel_path = this.manifest.payload.file_manager_rel_path;
-        var jobid = this.getJobID();
-        var partition = this.manifest.payload.partition === undefined ? undefined : this.manifest.payload.partition;
-
-        var params = await this.runPython('SUMMA/init.py', [
-            username,
-            __dirname + '/../../key/cigi-gisolve.key',
-            __dirname + '/../../data',
-            'upload/' + this.manifest.uid + '/' + this.manifest.file,
-            machine,
-            node,
-            walltime,
-            file_manager_rel_path,
-            jobid,
-            partition,
-        ]);
-
-        this.machine = machine;
-        this.username = username;
-        this.remote_id = params['remote_id'];
-        this.remote_model_folder_path = params['remote_model_folder_path'];
-        this.local_job_folder_path = params['local_job_folder_path'];
+        this.executable_file.chmod('installTestCases_local.sh', '755')
+        this.executable_file.putFromTemplate(this.entry_script_template, {}, this.entry_script_file_name)
+        this.connector.prepare(this.image_path, `python ${this.entry_script_file_name}`, this.manifest.slurm)
+        await this.connector.submit()
     }
 
     async onMaintain() {
-        await this.runPython('SUMMA/maintain.py', [
-            this.machine,
-            this.username,
-            __dirname + '/../../key/cigi-gisolve.key',
-            this.remote_id,
-            this.remote_model_folder_path,
-            this.local_job_folder_path
-        ])
+        var status = await this.connector.getStatus()
+        if (status == 'C' || status == 'UNKNOWN') {
+            // ending condition
+            this.download_file = this.fileSystem.createLocalFile()
+            this.connector.download(this.connector.getExecutableFilePath(), this.download_file)
+            this.emitEvent('JOB_ENDED', 'job [' + this.manifest.id + '] finished')
+        } else if (status == 'ERROR') {
+            // failing condition
+            this.emitEvent('JOB_FAILED', 'job [' + this.manifest.id + '] failed')
+        }
+    }
+
+    async onPause() {
+        await this.connector.pause()
+    }
+
+    async onResume() {
+        await this.connector.resume()
+    }
+
+    async onCancel() {
+        await this.connector.cancel()
     }
 }
-
-export default SUMMAMaintainer

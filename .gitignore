@@ -1,5 +1,4 @@
 # Logs
-logs
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -105,11 +104,10 @@ dist
 
 .DS_Store
 
-config/*
+configs/*
 
-!config/cluster.example.json
-!config/config.example.json
-!config/secret-token.example.json
+!configs/*.example.json
+!configs/*.ts
 
 log/*
 !log/.gitkeep
@@ -132,8 +130,16 @@ data/download/*
 !data/download/.gitkeep
 
 data/upload/*
+data/root/*
 !data/upload/.gitkeep
 
 data/tmp/*
 !data/tmp/.gitkeep
 *.js
+
+build
+
+keys/*
+!keys/.gitkeep
+
+production

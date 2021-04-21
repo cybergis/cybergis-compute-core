@@ -1,19 +1,35 @@
+import BaseConnector from '../connectors/BaseConnector'
 import BaseMaintainer from './BaseMaintainer'
 
-class ExampleMaintainer extends BaseMaintainer {
+export default class ExampleMaintainer extends BaseMaintainer {
+
+    public connector: BaseConnector
+
     define() {
-        this.allowedEnv = {
-            A: 'number',
-            B: 'string'
+        // define environment params
+        this.envParamDefault = {
+            A: 'default_value'
         }
+
+        this.envParamValidators = {
+            A: (val) => this.validator.isAlpha(val)
+        }
+
+        // define connector
+        this.connector = this.getBaseConnector()
     }
 
     async onInit() {
-        var pipeline = [
-            'ls'
-        ]
-        var out = await this.runBash(pipeline, {})
-        if (out.length > 0) {
+        var commands = ['cd ..', 'ls']
+        var result = await this.connector.exec(commands, {
+            cwd: '~'
+        })
+
+        if (result.stderr.length != null) {
+            this.emitEvent('JOB_FAILED', 'job [' + this.manifest.id + '] failed')
+        }
+
+        if (result.stdout.length != null) {
             // condition when job is initialized
             // if job fail, please do not emit JOB_INITIALIZED event
             // failed initialization can be rebooted
@@ -22,22 +38,8 @@ class ExampleMaintainer extends BaseMaintainer {
     }
 
     async onMaintain() {
-        var pipeline = [
-            'ls',
-            'echo $A',
-            'echo $B',
-            'echo $C',
-            (prev, self) => {
-                self.emitEvent('JOB_CUSTOM_EVENT', 'emit a custom event...')
-                if (prev.out == '\n') {
-                    throw new Error('error')
-                }
-                return ''
-            },
-            'echo $A'
-        ]
-        var out = await this.runBash(pipeline, {})
-        if (out.length > 0) {
+        var out = await this.connector.homeDirectory()
+        if (out != null) {
             // ending condition
             this.emitEvent('JOB_ENDED', 'job [' + this.manifest.id + '] finished')
         } else {
@@ -46,5 +48,3 @@ class ExampleMaintainer extends BaseMaintainer {
         }
     }
 }
-
-export default ExampleMaintainer

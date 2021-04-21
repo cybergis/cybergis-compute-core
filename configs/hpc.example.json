@@ -1,0 +1,23 @@
+{
+    "keeling_community": {
+        "ip": "keeling.earth.illinois.edu",
+        "port": 22,
+        "is_community_account": true,
+        "community_login": {
+            "user": "cigi-gisolve",
+            "use_local_key": false,
+            "external_key": {
+                "private_key_path": "cigi-gisolve.key",
+                "passphrase": null
+            }
+        },
+        "connector": "SlurmConnector",
+        "root_path": "/tmp"
+    },
+    "hadoop": {
+        "ip": "hadoop01.cigi.illinois.edu",
+        "port": 50022,
+        "is_community_account": false,
+        "connector": "SlurmConnector"
+    }
+}

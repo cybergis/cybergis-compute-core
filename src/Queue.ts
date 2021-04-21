@@ -1,6 +1,6 @@
 import { manifest } from './types'
+import { config } from '../configs/config'
 const redis = require('redis')
-const config = require('../config.json')
 const { promisify } = require("util")
 
 class Queue {
@@ -25,22 +25,22 @@ class Queue {
         await this.redis.push([this.name, itemString])
     }
 
-    async shift() {
+    async shift(): Promise<manifest> {
         await this.connect()
         return JSON.parse(await this.redis.shift(this.name))
     }
 
-    async isEmpty() {
+    async isEmpty(): Promise<boolean> {
         await this.connect()
         return await this.redis.length(this.name) === 0
     }
 
-    async peak() {
+    async peak(): Promise<manifest> {
         await this.connect()
         return await this.isEmpty() ? undefined : JSON.parse(await this.redis.peak(this.name, 0, 0))
     }
 
-    async length() {
+    async length(): Promise<number> {
         await this.connect()
         return await this.redis.length(this.name)
     }

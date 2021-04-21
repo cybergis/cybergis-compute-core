@@ -1,152 +1,80 @@
 import Guard from './src/Guard'
 import Supervisor from './src/Supervisor'
-import File from './src/File'
+import { FileSystem, LocalFile } from './src/FileSystem'
 import Helper from './src/Helper'
-import constant from './src/constant'
+import { hpcConfig, maintainerConfig } from './src/types'
+import { config, hpcConfigMap, maintainerConfigMap } from './configs/config'
+import express = require('express')
 const bodyParser = require('body-parser')
-const config = require('./config.json')
 const Validator = require('jsonschema').Validator;
-const express = require('express')
-const requestIp = require('request-ip')
 const fileUpload = require('express-fileupload')
-
-const tmpDir = __dirname + '/data/tmp'
+const morgan = require('morgan')
 
 const app = express()
 app.use(bodyParser.json())
+app.use(morgan('combined'))
 app.use(bodyParser.urlencoded({ extended: true }))
-app.use(requestIp.mw({ attributeName: 'ip' }))
 app.use(fileUpload({
-    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+    limits: { fileSize: config.local_file_system.limit_in_mb * 1024 * 1024 }, // 50MB
     useTempFiles: true,
     abortOnLimit: true,
-    tempFileDir: tmpDir,
+    tempFileDir: config.local_file_system.cache_path,
     safeFileNames: true,
     limitHandler: (req, res, next) => {
-        res.json({
-            error: "file too large"
-        })
+        res.json({ error: "file too large" })
         res.status(402)
     }
 }))
 
 const guard = new Guard()
 const supervisor = new Supervisor()
-const file = new File()
+const fileSystem = new FileSystem()
 const validator = new Validator()
 
-file.clearTmpFiles()
-
-if (!config.isTesting) {
-    if (process.platform == "linux") {
-        var iptablesRules = []
-        var ports = [443, 22]
-
-        for (var i in ports) {
-            var port = ports[i]
-            for (var j in config.clientIPs) {
-                var clientIP = config.clientIPs[j]
-                iptablesRules.push('INPUT -p tcp -s ' + clientIP + ' --dport ' + port + ' -j ACCEPT')
-            }
-            iptablesRules.push('INPUT -p tcp --dport ' + port + ' -j DROP')
-        }
-
-        Helper.setupFirewallRules(iptablesRules, 'linux')
-    }
-
-    Helper.onExit(function () {
-        if (process.platform == "linux") {
-            Helper.teardownFirewallRules(iptablesRules, 'linux')
-        }
-    })
-} else {
-    if (process.platform == "linux") {
-        var iptablesRules = []
-        var ports = [443, 22]
-
-        for (var i in ports) {
-            var port = ports[i]
-            iptablesRules.push('INPUT -i eth0 -p tcp -m tcp --dport ' + port + ' -j ACCEPT')
-            iptablesRules.push('INPUT -p tcp -m tcp --dport ' + port + ' -j ACCEPT')
-        }
-
-        Helper.setupFirewallRules(iptablesRules, 'linux')
-    }
-
-    Helper.onExit(function () {
-        if (process.platform == "linux") {
-            Helper.teardownFirewallRules(iptablesRules, 'linux')
-        }
-    })
-}
+fileSystem.createClearLocalCacheProcess()
 
 var schemas = {
     manifest: {
         type: 'object',
         properties: {
-            aT: {
-                type: 'string'
-            },
-            dest: {
-                type: 'string'
-            },
-            env: {
-                type: 'object'
-            },
-            file: {
-                type: 'string'
-            },
-            payload: {
-                type: 'object'
-            }
+            aT: { type: 'string' },
+            env: { type: 'object' },
+            app: { type: 'object' },
+            file: { type: 'string' }
         },
-        required: ['aT', 'dest']
+        required: ['aT']
     },
-    credentials: {
+
+    jobCredentials: {
         type: 'object',
         properties: {
-            destination: {
-                type: 'string'
-            },
-            user: {
-                type: 'string'
-            },
-            password: {
-                type: 'string'
-            }
+            hpc: { type: 'string' },
+            maintainer: { type: 'string' },
+            user: { type: 'string' },
+            password: { type: 'string' }
         },
-        required: ['destination']
+        required: ['maintainer', 'hpc', 'maintainer']
     },
-    accessToken: {
+
+    jobAccessToken: {
         type: 'object',
         properties: {
-            aT: {
-                type: 'string'
-            }
+            aT: { type: 'string' }
         },
         required: ['aT']
     }
 }
 
 function requestErrors(v) {
-    if (v.valid) {
-        return []
-    }
-
+    if (v.valid) return []
     var errors = []
-
-    for (var i in v.errors) {
-        errors.push(v.errors[i].message)
-    }
-
+    for (var i in v.errors) errors.push(v.errors[i].message)
     return errors
 }
 
 function setDefaultValues(data, defaults) {
     for (var k in defaults) {
-        if (data[k] == undefined) {
-            data[k] = defaults[k]
-        }
+        if (data[k] == undefined) data[k] = defaults[k]
     }
     return data
 }
@@ -157,242 +85,186 @@ app.get('/', (req, res) => {
 })
 
 // guard
-app.post('/guard/secretToken', async function (req, res) {
+app.post('/auth/job', async function (req, res) {
     var cred = req.body
-    var errors = requestErrors(validator.validate(cred, schemas['credentials']))
+    var errors = requestErrors(validator.validate(cred, schemas.jobCredentials))
 
     if (errors.length > 0) {
-        res.json({
-            error: "invalid input",
-            messages: errors
-        })
+        res.json({ error: "invalid input", messages: errors })
         res.status(402)
         return
     }
 
-    var server = constant.destinationMap[cred.destination]
+    var hpc = hpcConfigMap[cred.hpc]
+    var maintainer = maintainerConfigMap[cred.maintainer]
 
-    if (server === undefined) {
-        res.json({
-            error: "unrecognized destination " + cred.destination,
-            message: ''
-        })
+    if (hpc === undefined) {
+        res.json({ error: "unrecognized hpc " + cred.hpc, message: null })
+        res.status(401)
+        return
+    }
+
+    if (maintainer === undefined) {
+        res.json({ error: "unrecognized maintainer " + cred.maintainer, message: null })
         res.status(401)
         return
     }
 
     try {
-        if (server.isCommunityAccount) {
-            var sT = await guard.issueSecretTokenForCommunityAccount(cred.destination, server.communityAccountSSH.user)
+        if (hpc.is_community_account) {
+            var manifest = await guard.issueJobSecretTokenForCommunityAccount(cred.hpc, cred.maintainer, hpc.community_login.user)
         } else {
-            var sT = await guard.issueSecretTokenForPrivateAccount(cred.destination, cred.user, cred.password)
+            var manifest = await guard.issueJobSecretTokenForPrivateAccount(cred.hpc, cred.maintainer, cred.user, cred.password)
         }
     } catch (e) {
-        res.json({
-            error: "invalid credentials",
-            messages: [e.toString()]
-        })
+        res.json({ error: "invalid credentials", messages: [e.toString()] })
         res.status(401)
         return
     }
 
-    res.json({
-        secretToken: sT
-    })
+    res.json(manifest)
 })
 
 // supervisor
-app.post('/supervisor', async function (req, res) {
+app.post('/job', async function (req, res) {
     var manifest = req.body
-    var errors = requestErrors(validator.validate(manifest, schemas['manifest']))
+    var errors = requestErrors(validator.validate(manifest, schemas.manifest))
 
     if (errors.length > 0) {
-        res.json({
-            error: "invalid input",
-            messages: errors
-        })
+        res.json({ error: "invalid input", messages: errors })
         res.status(402)
         return
     }
 
-    manifest = setDefaultValues(manifest, {
-        env: {},
-        payload: {}
-    })
+    manifest = setDefaultValues(manifest, { env: {}, payload: {} })
 
     try {
-        manifest = await guard.validateAccessToken(manifest)
+        manifest = await guard.validateJobAccessToken(manifest)
     } catch (e) {
-        res.json({
-            error: "invalid access token",
-            messages: [e.toString()]
-        })
+        res.json({ error: "invalid access token", messages: [e.toString()] })
         res.status(401)
         return
     }
 
     try {
-        manifest = await supervisor.add(manifest)
+        manifest = await supervisor.pushJobToQueue(manifest)
     } catch (e) {
-        res.json({
-            error: e.toString()
-        })
+        res.json({ error: e.toString() })
         res.status(402)
         return
     }
+
     manifest = Helper.hideCredFromManifest(manifest)
     res.json(manifest)
 })
 
-app.get('/supervisor/destination', function (req, res) {
-    var parseDestination = (dest) => {
+app.get('/hpc', function (req, res) {
+    var parseHPC = (dest: {[key: string]: hpcConfig}) => {
         var out = {}
-
         for (var i in dest) {
-            var d = JSON.parse(JSON.stringify(dest[i]))
-            delete d.communityAccountSSH
+            var d: hpcConfig = JSON.parse(JSON.stringify(dest[i])) // hard copy
+            delete d.community_login
             out[i] = d
         }
-
         return out
     }
 
-    res.json({
-        destinations: parseDestination(constant.destinationMap)
-    })
+    res.json({ hpc: parseHPC(hpcConfigMap) })
 })
 
-app.post('/supervisor/upload', async function (req, res) {
-    if (res.statusCode == 402) {
-        return
+app.get('/maintainer', function (req, res) {
+    var parseMaintainer = (dest: {[key: string]: maintainerConfig}) => {
+        var out = {}
+        for (var i in dest) {
+            var d: maintainerConfig = JSON.parse(JSON.stringify(dest[i])) // hard copy
+            out[i] = d
+        }
+        return out
     }
 
+    res.json({ hpc: parseMaintainer(maintainerConfigMap) })
+})
+
+app.post('/job/upload', async function (req: any, res) {
+    if (res.statusCode == 402) return
+
     var aT = req.body
-    var errors = requestErrors(validator.validate(aT, schemas['accessToken']))
+    var errors = requestErrors(validator.validate(aT, schemas.jobAccessToken))
 
     if (errors.length > 0) {
-        res.json({
-            error: "invalid input",
-            messages: errors
-        })
+        res.json({ error: "invalid input", messages: errors })
         res.status(402)
         return
     }
 
     try {
-        var manifest = await guard.validateAccessToken(aT)
+        var manifest = await guard.validateJobAccessToken(aT)
     } catch (e) {
-        res.json({
-            error: "invalid access token",
-            messages: [e.toString()]
-        })
+        res.json({ error: "invalid access token", messages: [e.toString()] })
         res.status(401)
         return
     }
 
     try {
-        var fileID = await file.store(manifest.uid, manifest.dest, req.files.file.tempFilePath)
-        res.json({
-            file: fileID
-        })
+        var maintainerConfig = maintainerConfigMap[manifest.maintainer]
+        if (maintainerConfig.executable_file.from_user_upload) {
+            var fileConfig = maintainerConfig.executable_file.file_config
+            var file: LocalFile = await fileSystem.createLocalFile(fileConfig)
+            await file.putFromZip(req.files.file.tempFilePath)
+        }
+        res.json({ file: file.getURL() })
     } catch (e) {
-        console.log(e)
-        res.json({
-            error: e.toString()
-        })
+        res.json({ error: e.toString() })
         res.status(402)
         return
     }
 })
 
-app.get('/supervisor/download/:jobID', async function (req, res) {
+app.get('/job/download', async function (req, res) {
     var aT = req.body
-    var errors = requestErrors(validator.validate(aT, schemas['accessToken']))
+    var errors = requestErrors(validator.validate(aT, schemas.jobAccessToken))
 
     if (errors.length > 0) {
-        res.json({
-            error: "invalid input",
-            messages: errors
-        })
+        res.json({ error: "invalid input", messages: errors })
         res.status(402)
         return
     }
 
     try {
-        await guard.validateAccessToken(aT)
+        await guard.validateJobAccessToken(aT)
     } catch (e) {
-        res.json({
-            error: "invalid access token",
-            messages: [e.toString()]
-        })
+        res.json({ error: "invalid access token", messages: [e.toString()] })
         res.status(401)
         return
     }
 
     var jobID = req.params.jobID
-    var dir = await supervisor.getDownloadDir(jobID)
+    var file = supervisor.getJobDownload(jobID)
+    if (file != undefined)res.json({ error: `job id ${jobID} does not have a download file` })
 
-    if (dir != null) {
-        res.download(dir)
-    } else {
-        res.json({
-            error: "job id " + jobID + " does not have a download file"
-        })
-    }
+    var fileZipPath = await file.getZip()
+    res.download(fileZipPath)
 })
 
-app.get('/supervisor/:jobID', async function (req, res) {
+app.get('/job/status', async function (req, res) {
     var aT = req.body
-    var errors = requestErrors(validator.validate(aT, schemas['accessToken']))
+    var errors = requestErrors(validator.validate(aT, schemas.jobAccessToken))
 
     if (errors.length > 0) {
-        res.json({
-            error: "invalid input",
-            messages: errors
-        })
+        res.json({ error: "invalid input", messages: errors })
         res.status(402)
         return
     }
 
     try {
-        var manifest = await guard.validateAccessToken(aT)
+        var manifest = await guard.validateJobAccessToken(aT)
     } catch (e) {
-        res.json({
-            error: "invalid access token",
-            messages: [e.toString()]
-        })
+        res.json({ error: "invalid access token", messages: [e.toString()] })
         res.status(401)
         return
     }
 
-    res.json(await supervisor.status(manifest.uid, req.params.jobID))
+    res.json(await supervisor.getJobStatus(manifest.uid, req.params.jobID))
 })
 
-app.get('/supervisor', async function (req, res) {
-    var aT = req.body
-    var errors = requestErrors(validator.validate(aT, schemas['accessToken']))
-
-    if (errors.length > 0) {
-        res.json({
-            error: "invalid input",
-            messages: errors
-        })
-        res.status(402)
-        return
-    }
-
-    try {
-        var manifest = await guard.validateAccessToken(aT)
-    } catch (e) {
-        res.json({
-            error: "invalid access token",
-            messages: [e.toString()]
-        })
-        res.status(401)
-        return
-    }
-
-    res.json(await supervisor.status(manifest.uid))
-})
-
-app.listen(config.serverPort, config.serverIP, () => console.log('supervisor server is up, listening to port: ' + config.serverPort))
+app.listen(config.server_port, config.server_ip, () => console.log('supervisor server is up, listening to port: ' + config.server_port))

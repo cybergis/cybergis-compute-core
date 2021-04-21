@@ -10,10 +10,6 @@ class JAT {
 
     private algorithmName = null
 
-    constructor() {
-        //
-    }
-
     init(algorithm: string, secretToken: string): this {
         try {
             this.algorithm = require('crypto-js/' + algorithm)

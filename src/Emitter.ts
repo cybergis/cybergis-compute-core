@@ -1,12 +1,8 @@
+import { config } from '../configs/config'
 const redis = require('redis')
-const config = require('../config.json')
 const { promisify } = require("util")
 
 class Emitter {
-    private events = {}
-
-    private logs = {}
-
     private isConnected = false
 
     private redis = {

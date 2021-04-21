@@ -1,326 +1,123 @@
 import Helper from "../Helper"
-import SSH from "../SSH"
-import { manifest, options } from "../types"
-import File from '../File'
-const config = require('../../config.json')
-const path = require('path')
-const fs = require('fs')
-const { spawn } = require('child-process-async')
+import { manifest, maintainerConfig, event } from "../types"
+import { BaseFile, LocalFile, FileSystem } from '../FileSystem'
+import BaseConnector from '../connectors/BaseConnector'
+import SlurmConnector from '../connectors/SlurmConnector'
+import validator from 'validator'
+import { NotImplementedError } from '../errors'
+import { hpcConfigMap, maintainerConfigMap } from '../../configs/config'
 
 class BaseMaintainer {
+    /** packages **/
+    public validator = validator // https://github.com/validatorjs/validator.js
+
+    /** config **/
+    private rawManifest: manifest = undefined
+
+    public manifest: manifest = undefined // secure manifest with no credentials
+
+    public config: maintainerConfig = undefined
+
+    public id: string = undefined
+
+    public fileSystem: FileSystem = undefined
+
     /** mutex **/
     private _lock = false
 
-    /** flags **/
+    /** states **/
     public isInit = false
 
     public isEnd = false
 
     public isPaused = false
 
-    /** data & states **/
-    protected logs = []
-
-    
-    /** emitters **/
-    emitEvent(type: string, message: string) {
-        if (type === 'JOB_ENDED' || type === 'JOB_FAILED') {
-            if (this.removeFileAfterJobFinished) {
-                this.removeUploadedFile()
-            }
-            this.isEnd = true
-        }
-
-        if (type === 'JOB_INITIALIZED') {
-            this.isInit = true
-        }
-
-        this.events.push({
-            type: type,
-            message: message
-        })
-    }
-}
-
-class BaseMaintainerBkup {
-    /** mutex **/
-    private _lock = false
-
-    /** flags **/
-    public isInit = false
-
-    public isEnd = false
-
-    /** data & states **/
-    protected events = []
-
-    protected logs = []
-
-    protected uploadedPath = undefined
-
-    public downloadedPath = undefined
-
     protected lifeCycleState = {
         initCounter: 0,
-        initThresholdInCount: 3,
         createdAt: null,
-        maintainThresholdInHours: 0.0001
     }
 
-    /** classes **/
-    protected file = new File()
+    /** parameters **/
+    public initRetry = 3
 
-    public SSH: SSH
+    public maintainThresholdInHours = 0.1
 
-    /** configs **/
-    protected env = {}
+    public envParamValidators: {[keys: string]: (val: string) => boolean} = undefined
 
-    private rawManifest: manifest = null
+    public envParamDefault: {[keys: string]: string} = {}
 
-    public manifest = null // secure manifest with no credentials
+    public envParam: {[keys: string]: string} = {}
 
-    public allowedEnv = undefined
+    public appParamValidators = undefined
+ 
+    public appParam: {[keys: string]: string} = {}
 
-    public removeFileAfterJobFinished = true
-
+    /** constructor **/
     constructor(manifest: manifest) {
-        this.define()
+        this.onDefine()
 
-        if (this.allowedEnv === undefined) {
-            manifest.env = {}
-        }
-
-        var env = {}
-
-        for (var i in this.allowedEnv) {
+        for (var i in this.envParamValidators) {
             var val = manifest.env[i]
             if (val != undefined) {
-                var type = this.allowedEnv[i]
-                if (Array.isArray(type)) {
-                    if (type.includes(val)) {
-                        env[i] = val
-                    }
-                } else if (typeof val === type) {
-                    env[i] = val
-                }
+                if (this.envParamValidators[i](val)) this.envParam[i] = val
             }
         }
-
-        this.env = env
+        const fileSystem = new FileSystem()
+        const maintainerConfig = maintainerConfigMap[manifest.maintainer]
+        if (maintainerConfig.executable_file.from_user_upload) {
+            this.executable_file = fileSystem.getLocalFileByURL(manifest.file)
+        }
+        this.fileSystem = fileSystem
         this.rawManifest = manifest
         this.manifest = Helper.hideCredFromManifest(manifest)
-        this.SSH = new SSH(this.rawManifest.dest, this.rawManifest.cred.usr, this.rawManifest.cred.pwd, this)
+        this.config = maintainerConfig
+        this.id = manifest.id
     }
 
+    /** HPC connectors **/
+    public connector: BaseConnector | SlurmConnector = undefined
+
+    /** files **/
+    public data_file: BaseFile = undefined
+
+    public download_file: LocalFile = undefined
+
+    public executable_file: LocalFile = undefined
+
+    /** data **/
+    protected logs: Array<string> = []
+
+    protected events: Array<event> = []
+
     /** lifecycle interfaces **/
-    define() {
-        // implement it in children class
+    onDefine() {
+        throw new NotImplementedError("onDefine not implemented")
     }
 
     async onInit() {
-        // implement it in children class
+        throw new NotImplementedError("onInit not implemented")
     }
 
     async onMaintain() {
-        // implement it in children class
+        throw new NotImplementedError("onMaintain not implemented")
     }
 
-
-    /** executors **/
-    async runBash(pipeline: Array<any>, options: options = {}) {
-        await this.SSH.connect(this.env)
-        var out = await this.SSH.exec(pipeline, options)
-        return out
+    async onPause() {
+        throw new NotImplementedError("onPause not implemented")
     }
 
-    async runPython(file: string, args = []) {
-        args.unshift(`${__dirname}/python/${file}`)
-        const child = spawn('python3', args)
-
-        var out = {}
-        var self = this
-
-        child.stdout.on('data', function (result) {
-            var stdout = Buffer.from(result, 'utf-8').toString()
-
-            if (config.isTesting) {
-                console.log(stdout)
-            }
-
-            var parsedStdout = stdout.split('@')
-
-            for (var i in parsedStdout) {
-                var o = parsedStdout[i]
-                var log = o.match(/log=\[[\s\S]*\]/g)
-                if (log != null) {
-                    log.forEach((v, i) => {
-                        v = v.replace('log=[', '')
-                        v = v.replace(/]$/g, '')
-                        self.emitLog(v)
-                    })
-                }
-
-                var event = o.match(/event=\[[\s\S]*:[\s\S]*\]/g)
-                if (event != null) {
-                    event.forEach((v, i) => {
-                        v = v.replace('event=[', '')
-                        v = v.replace(/]$/g, '')
-                        var e = v.split(':')
-                        self.emitEvent(e[0], e[1])
-                    })
-                }
-
-                var variable = o.match(/var=\[[\s\S]*:[\s\S]*\]/g)
-                if (variable != null) {
-                    variable.forEach((v, i) => {
-                        v = v.replace('var=[', '')
-                        v = v.replace(/]$/g, '')
-                        var e = v.split(':')
-                        out[e[0]] = e[1]
-                    })
-                }
-
-                var download = o.match(/custom_downloaded_path=\[[\s\S]*\]/g)
-                if (download != null) {
-                    download.forEach((v, i) => {
-                        v = v.replace('custom_downloaded_path=[', '')
-                        v = v.replace(/]$/g, '')
-                        self.registerCustomDownloadedPath(v)
-                    })
-                }
-            }
-        })
-
-        const { stdout, stderr, exitCode } = await child
-
-        if (config.isTesting) {
-            console.log(stderr.toString())
-        }
-
-        return out
+    async onResume() {
+        throw new NotImplementedError("onResume not implemented")
     }
 
-    /** file operations **/
-    async upload(destinationRootPath: string) {
-        var sourcePath = __dirname + '/../../data/upload/' + this.rawManifest.uid + '/' + this.rawManifest.file
-
-        if (!fs.existsSync(sourcePath)) {
-            throw new Error('file path ' + sourcePath + ' does not exist')
-        }
-
-        await this.SSH.connect(this.env)
-        var destinationPath = path.join(destinationRootPath, this.rawManifest.file)
-        var uploadResult = await this.SSH.putDirectory(sourcePath, destinationPath)
-        var uploadCounter = 1
-        while (uploadResult.failed.length > 0 && uploadCounter <= 3) {
-            // re-upload three times
-            uploadResult = await this.SSH.putDirectory(sourcePath, destinationPath)
-            uploadCounter += 1
-        }
-
-        if (uploadResult.failed.length > 0) {
-            this.emitEvent('FILES_UPLOAD_FAIL', 'upload failed after three times of attempt.')
-            throw new Error('upload failed after three times of attempt. Failed files: ' + JSON.stringify(uploadResult.failed))
-        }
-
-        this.emitEvent('FILES_UPLOADED', 'files uploaded to destination.')
-
-        this.uploadedPath = destinationPath
-
-        return destinationPath
-    }
-
-    async download(sourceRootPath: string) {
-        var destinationPath = __dirname + '/../../data/download/'
-        var fileName = this.rawManifest.id + '.tar'
-
-        await this.SSH.connect(this.env)
-
-        var sourcePath = path.join(sourceRootPath, this.rawManifest.file)
-
-        await this.SSH.getDirectoryZipped(sourcePath, destinationPath, fileName)
-
-        var uploadCounter = 1
-        var tarFilePath = path.join(destinationPath, fileName)
-        while (!fs.existsSync(tarFilePath) && uploadCounter <= 3) {
-            await this.SSH.getDirectoryZipped(sourcePath, fileName)
-        }
-
-        if (!fs.existsSync(tarFilePath)) {
-            this.emitEvent('FILES_DOWNLOAD_FAIL', 'download failed after three times of attempt.')
-            throw new Error('download failed after three times of attempt.')
-        }
-
-        this.emitEvent('FILES_DOWNLOADED', 'files downloaded to from destination.')
-
-        this.downloadedPath = tarFilePath
-
-        return tarFilePath
-    }
-
-    registerCustomDownloadedPath(downloadedPath: string) {
-        this.downloadedPath = downloadedPath
-    }
-
-    async removeUploadedFile() {
-        if (this.uploadedPath != undefined) {
-            this.runBash(['rm -rf ' + this.uploadedPath])
-        }
-    }
-
-    /** helpers **/
-    async getRemoteHomePath(): Promise<string> {
-        await this.SSH.connect(this.env)
-        return await this.SSH.getRemoteHomePath()
-    }
-
-    injectRuntimeFlagsToFile(filePath: string, lang: string) {
-        var supportedLangs = ['python']
-        lang = lang.toLowerCase()
-
-        if (!supportedLangs.includes(lang)) {
-            throw new Error('language not supported')
-        }
-
-        var sourcePath = __dirname + '/../../data/upload/' + this.rawManifest.uid + '/' + this.rawManifest.file
-
-        if (!fs.existsSync(sourcePath)) {
-            throw new Error('file path ' + sourcePath + ' does not exist')
-        }
-
-        filePath = path.join(sourcePath, filePath)
-
-        if (!fs.existsSync(filePath)) {
-            throw new Error('file path ' + filePath + ' does not exist')
-        }
-
-        var flags = {
-            // only end for now
-            end: '@flag=[SCRIPT_ENDED:script ' + filePath + ' job [' + this.manifest.id + '] finished]'
-        }
-
-        for (var i in flags) {
-            if (lang == 'python') {
-                flags[i] = 'print("' + flags[i] + '")'
-            }
-        }
-        
-        fs.appendFileSync(filePath, "\n" + flags.end)
+    async onCancel() {
+        throw new NotImplementedError("onCancel not implemented")
     }
 
     /** emitters **/
     emitEvent(type: string, message: string) {
-        if (type === 'JOB_ENDED' || type === 'JOB_FAILED') {
-            if (this.removeFileAfterJobFinished) {
-                this.removeUploadedFile()
-            }
-            this.isEnd = true
-        }
-
-        if (type === 'JOB_INITIALIZED') {
-            this.isInit = true
-        }
-
+        if (type === 'JOB_INITIALIZED') this.isInit = true
+        if (type === 'JOB_ENDED' || type === 'JOB_FAILED') this.isEnd = true
         this.events.push({
             type: type,
             message: message
@@ -331,44 +128,46 @@ class BaseMaintainerBkup {
         this.logs.push(message)
     }
 
-
-    /** getters **/
-    getJobID() {
-        return this.manifest.id
-    }
-
     /** supervisor interfaces **/
     async init() {
-        if (!this._lock) {
-            this._lock = true
+        if (!this._lock) return
+        this._lock = true
 
-            if (this.lifeCycleState.initCounter >= this.lifeCycleState.initThresholdInCount) {
-                this.emitEvent('JOB_FAILED', 'initialization counter exceeds ' + this.lifeCycleState.initThresholdInCount + ' counts')
-            } else {
-                await this.onInit()
-                this.lifeCycleState.initCounter++
-            }
-
-            this._lock = false
+        if (this.lifeCycleState.initCounter >= this.initRetry) {
+            this.emitEvent('JOB_FAILED', 'initialization counter exceeds ' + this.initRetry + ' counts')
+        } else {
+            await this.connector.connect()
+            await this.onInit()
+            await this.connector.disconnect()
+            this.lifeCycleState.initCounter++
         }
+
+        this._lock = false
     }
 
     async maintain() {
-        if (!this._lock) {
-            this._lock = true
+        if (!this._lock) return
+        this._lock = true
 
-            if (this.lifeCycleState.createdAt === null) {
-                this.lifeCycleState.createdAt = Date.now()
-            }
-
-            if (((this.lifeCycleState.createdAt - Date.now()) / (1000 * 60 * 60)) >= this.lifeCycleState.maintainThresholdInHours) {
-                this.emitEvent('JOB_FAILED', 'maintain time exceeds ' + this.lifeCycleState.maintainThresholdInHours + ' hours')
-            } else {
-                await this.onMaintain()
-            }
-
-            this._lock = false
+        if (this.lifeCycleState.createdAt === null) {
+            this.lifeCycleState.createdAt = Date.now()
         }
+
+        if (((this.lifeCycleState.createdAt - Date.now()) / (1000 * 60 * 60)) >= this.maintainThresholdInHours) {
+            this.emitEvent('JOB_FAILED', 'maintain time exceeds ' + this.maintainThresholdInHours + ' hours')
+        } else {
+            await this.connector.connect()
+            await this.onMaintain()
+            await this.connector.disconnect()
+        }
+
+        this._lock = false
+    }
+
+    dumpLogs() {
+        var logs = this.logs
+        this.logs = []
+        return logs
     }
 
     dumpEvents() {
@@ -377,10 +176,35 @@ class BaseMaintainerBkup {
         return events
     }
 
-    dumpLogs() {
-        var logs = this.logs
-        this.logs = []
-        return logs
+
+    public getSlurmConnector(): SlurmConnector {
+        var hpc = this.manifest.hpc
+        if (hpc == undefined) hpc = this.config.default_hpc
+        var hpcConfig = hpcConfigMap[hpc]
+
+        if (hpcConfig == undefined) {
+            throw new Error("cannot find hpc with name [" + hpc + "]")
+        }
+        if (hpcConfig.connector == 'SlurmConnector') {
+            return new SlurmConnector(this.manifest, hpcConfig, this)
+        }
+
+        throw new Error("cannot find hpc with name [" + hpc + "]")
+    }
+
+    public getBaseConnector(): BaseConnector {
+        var hpc = this.manifest.hpc
+        if (hpc == undefined) hpc = this.config.default_hpc
+        var hpcConfig = hpcConfigMap[hpc]
+
+        if (hpcConfig == undefined) {
+            throw new Error("cannot find hpc with name [" + hpc + "]")
+        }
+        if (hpcConfig.connector == 'BaseConnector') {
+            return new BaseConnector(this.manifest, hpcConfig, this)
+        }
+
+        throw new Error("cannot find hpc with name [" + hpc + "]")
     }
 }
 

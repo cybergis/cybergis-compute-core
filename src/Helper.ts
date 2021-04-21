@@ -1,4 +1,4 @@
-import { manifest, aT } from './types'
+import { manifest } from './types'
 const { execSync } = require('child_process')
 
 var Helper = {
@@ -10,7 +10,7 @@ var Helper = {
         return Buffer.from(target).toString('base64')
     },
 
-    hideCredFromManifest(manifest: manifest | aT): any {
+    hideCredFromManifest(manifest: manifest): any {
         var out = {}
 
         for (var i in manifest) {

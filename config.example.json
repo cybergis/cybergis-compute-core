@@ -1,17 +1,26 @@
 {
-    "localSSHKey": {
-        "privateKeyPath": "/dir/to/privatekey",
-        "passphrase": "passphrase"
+    "local_key": {
+        "private_key_path": "/dir/to/privatekey",
+        "passphrase": null
     },
-    "serverPort": 3000,
-    "serverIP": "0.0.0.0",
-    "clientIPs": [
-        "0.0.0.0"
-    ],
-    "isTesting": true,
+    "server_port": 3000,
+    "server_ip": "0.0.0.0",
     "redis": {
         "host": "0.0.0.0",
         "port": 6379,
         "password": null
-    }
+    },
+    "mysql": {
+        "host": "0.0.0.0",
+        "port": 3306,
+        "database": "job_supervisor",
+        "username": "username",
+        "password": "password"
+    },
+    "local_file_system": {
+        "limit_in_mb": 100,
+        "cache_path": "/dir/to/tmp",
+        "root_path": "/dir/to/upload"
+    },
+    "worker_time_period_in_seconds": 1
 }
