@@ -13,6 +13,7 @@ class Emitter {
     }
 
     async registerEvents(uid: number, jobID: string, type: string, message: string) {
+        if (config.is_testing) console.log(type, message)
         await this.connect()
         await this.redis.indexPush('event_' + uid, 'event_' + uid + '_' + jobID)
         await this.redis.push(['event_' + uid + '_' + jobID, JSON.stringify({
@@ -23,6 +24,7 @@ class Emitter {
     }
 
     async registerLogs(uid: number, jobID: string, message: string) {
+        if (config.is_testing) console.log(message)
         await this.connect()
         await this.redis.indexPush('log_' + uid, 'log_' + uid + '_' + jobID)
         await this.redis.push(['log_' + uid + '_' + jobID, JSON.stringify({

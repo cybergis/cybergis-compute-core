@@ -15,7 +15,7 @@ app.use(bodyParser.json())
 app.use(morgan('combined'))
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(fileUpload({
-    limits: { fileSize: config.local_file_system.limit_in_mb * 1024 * 1024 }, // 50MB
+    limits: { fileSize: config.local_file_system.limit_in_mb * 1024 * 1024 },
     useTempFiles: true,
     abortOnLimit: true,
     tempFileDir: config.local_file_system.cache_path,
@@ -48,12 +48,11 @@ var schemas = {
     jobCredentials: {
         type: 'object',
         properties: {
-            hpc: { type: 'string' },
-            maintainer: { type: 'string' },
+            dest: { type: 'string' },
             user: { type: 'string' },
             password: { type: 'string' }
         },
-        required: ['maintainer', 'hpc', 'maintainer']
+        required: ['dest']
     },
 
     jobAccessToken: {
@@ -95,26 +94,28 @@ app.post('/auth/job', async function (req, res) {
         return
     }
 
-    var hpc = hpcConfigMap[cred.hpc]
-    var maintainer = maintainerConfigMap[cred.maintainer]
+    // dest format: maintainer@hpc
+    var dest = cred.dest.split('@')
+    var maintainerName = dest[0]
+    var maintainer = maintainerConfigMap[dest[0]]
+    var hpcName = dest[1] == undefined ? maintainer.default_hpc : dest[1]
+    var hpc = hpcConfigMap[hpcName]
 
     if (hpc === undefined) {
-        res.json({ error: "unrecognized hpc " + cred.hpc, message: null })
-        res.status(401)
+        res.json({ error: "unrecognized hpc", message: null }); res.status(401)
         return
     }
 
     if (maintainer === undefined) {
-        res.json({ error: "unrecognized maintainer " + cred.maintainer, message: null })
-        res.status(401)
+        res.json({ error: "unrecognized maintainer", message: null }); res.status(401)
         return
     }
 
     try {
         if (hpc.is_community_account) {
-            var manifest = await guard.issueJobSecretTokenForCommunityAccount(cred.hpc, cred.maintainer, hpc.community_login.user)
+            var manifest = await guard.issueJobSecretTokenForCommunityAccount(hpcName, maintainerName, hpc.community_login.user)
         } else {
-            var manifest = await guard.issueJobSecretTokenForPrivateAccount(cred.hpc, cred.maintainer, cred.user, cred.password)
+            var manifest = await guard.issueJobSecretTokenForPrivateAccount(hpcName, maintainerName, cred.user, cred.password)
         }
     } catch (e) {
         res.json({ error: "invalid credentials", messages: [e.toString()] })

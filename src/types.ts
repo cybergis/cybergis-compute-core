@@ -31,6 +31,7 @@ export interface manifest {
     },
     uid?: number,
     id?: string,
+    dest?: string,
     maintainer?: string,
     _maintainer?: BaseMaintainer,
     hpc?: string,
@@ -88,6 +89,7 @@ export interface config {
     mysql: mysql;
     local_file_system: localFileSystem;
     worker_time_period_in_seconds: number;
+    is_testing: boolean
 }
 
 export interface externalKey {

@@ -22,5 +22,6 @@
         "cache_path": "/dir/to/tmp",
         "root_path": "/dir/to/upload"
     },
-    "worker_time_period_in_seconds": 1
+    "worker_time_period_in_seconds": 1,
+    "is_testing": true
 }

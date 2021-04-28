@@ -33,7 +33,7 @@ export default class ExampleMaintainer extends BaseMaintainer {
             // condition when job is initialized
             // if job fail, please do not emit JOB_INITIALIZED event
             // failed initialization can be rebooted
-            this.emitEvent('JOB_INITIALIZED', 'job [' + this.manifest.id + '] is initialized, waiting for job completion')
+            this.emitEvent('JOB_INIT', 'job [' + this.manifest.id + '] is initialized, waiting for job completion')
         }
     }
 

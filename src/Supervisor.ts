@@ -40,9 +40,13 @@ class Supervisor {
                         var job = jobPool[i]
 
                         if (job._maintainer.isInit) {
-                            try { await job._maintainer.maintain() } catch { continue }
+                            try { await job._maintainer.maintain() } catch (e) {
+                                if (config.is_testing) console.error(e.toString()); continue
+                            }
                         } else {
-                            try { await job._maintainer.init() } catch { continue }
+                            try { await job._maintainer.init() } catch (e) { 
+                                if (config.is_testing) console.error(e.toString()); continue
+                            }
                         }
 
                         var events = job._maintainer.dumpEvents()
@@ -68,8 +72,8 @@ class Supervisor {
                 while (jobPool.length < self.jobPoolCapacities[service] && !await self.queues[service].isEmpty()) {
                     var job = await self.queues[service].shift()
                     var maintainer = require(`./maintainers/${maintainerConfigMap[job.maintainer].maintainer}`).default // typescript compilation hack
-                    job.maintainer = new maintainer(job)
-                    jobPool.push(job)
+                    job._maintainer = new maintainer(job)
+                    self.jobPools[service].push(job)
                     self.emitter.registerEvents(job.uid, job.id, 'JOB_REGISTERED', `job [${job.id}] is registered with the supervisor, waiting for initialization`)
                 }
             }

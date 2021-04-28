@@ -10,7 +10,7 @@ var Helper = {
         return Buffer.from(target).toString('base64')
     },
 
-    hideCredFromManifest(manifest: manifest): any {
+    hideCredFromManifest(manifest: manifest): manifest {
         var out = {}
 
         for (var i in manifest) {

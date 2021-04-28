@@ -2,7 +2,7 @@ import SlurmConnector from '../connectors/SlurmConnector'
 import BaseMaintainer from './BaseMaintainer'
 import { LocalFile } from '../FileSystem'
 
-export default class ExampleMaintainer extends BaseMaintainer {
+export default class SUMMAMaintainer extends BaseMaintainer {
 
     public connector: SlurmConnector
 
@@ -98,7 +98,7 @@ print("Done in {}/{} ".format(rank, size))`
 
     private image_path = '/home/cybergis/SUMMA_IMAGE/pysumma_ensemble.img_summa3'
 
-    define() {
+    onDefine() {
         // define connector
         this.connector = this.getSlurmConnector()
     }
@@ -108,6 +108,7 @@ print("Done in {}/{} ".format(rank, size))`
         this.executable_file.putFromTemplate(this.entry_script_template, {}, this.entry_script_file_name)
         this.connector.prepare(this.image_path, `python ${this.entry_script_file_name}`, this.manifest.slurm)
         await this.connector.submit()
+        this.emitEvent('JOB_INIT', 'job [' + this.manifest.id + '] is initialized, waiting for job completion')
     }
 
     async onMaintain() {

@@ -32,17 +32,18 @@ class BaseConnector {
         }
 
         if (hpcConfig.is_community_account) {
-            this.sshConfig.user = hpcConfig.community_login.user
+            this.sshConfig.username = hpcConfig.community_login.user
             if (hpcConfig.community_login.use_local_key) {
                 this.sshConfig.privateKey = config.local_key.private_key_path
-                this.sshConfig.passphrase = config.local_key.passphrase
+                if (config.local_key.passphrase) this.sshConfig.passphrase = config.local_key.passphrase
             } else {
                 this.sshConfig.privateKey = hpcConfig.community_login.external_key.private_key_path
-                this.sshConfig.passphrase = hpcConfig.community_login.external_key.passphrase
+                if (hpcConfig.community_login.external_key.passphrase)
+                    this.sshConfig.passphrase = hpcConfig.community_login.external_key.passphrase
             }
         } else {
             // need support for user upload keys
-            this.sshConfig.user = manifest.cred.usr
+            this.sshConfig.username = manifest.cred.usr
             this.sshConfig.password = manifest.cred.pwd
         }
 
@@ -56,7 +57,7 @@ class BaseConnector {
         try {
             await this.ssh.connect(this.sshConfig)
             this.isLoggedIn = true
-            if (this.maintainer != null) this.maintainer.emitEvent('SSH_CONNECTION', 'successfully connected to server [' + this.sshConfig.ip + ':' + this.sshConfig.port + ']')
+            if (this.maintainer != null) this.maintainer.emitEvent('SSH_CONNECTION', 'successfully connected to server [' + this.sshConfig.host + ':' + this.sshConfig.port + ']')
 
             // generate env bash cmd
             var envCmd = 'source /etc/profile;'
@@ -66,13 +67,13 @@ class BaseConnector {
             }
             this.envCmd = envCmd
         } catch (e) {
-            if (this.maintainer != null) this.maintainer.emitEvent('SSH_CONNECTION_ERROR', 'connection to server [' + this.sshConfig.ip + ':' + this.sshConfig.port + '] failed with error: ' + e)
+            if (this.maintainer != null) this.maintainer.emitEvent('SSH_CONNECTION_ERROR', 'connection to server [' + this.sshConfig.host + ':' + this.sshConfig.port + '] failed with error: ' + e)
             this.isLoggedIn = false
         }
     }
 
     async disconnect() {
-        if (this.maintainer != null) this.maintainer.emitEvent('SSH_DISCONNECTION', 'disconnected with server [' + this.sshConfig.ip + ':' + this.sshConfig.port + ']')
+        if (this.maintainer != null) this.maintainer.emitEvent('SSH_DISCONNECTION', 'disconnected with server [' + this.sshConfig.host + ':' + this.sshConfig.port + ']')
         await this.ssh.dispose()
     }
 
@@ -113,7 +114,7 @@ class BaseConnector {
         }, options)
 
         for (var i in commands) {
-            var command = commands[i]
+            var command = commands[i].trim()
             if (this.maintainer != null && !mute) this.maintainer.emitEvent('SSH_RUN', 'running command [' + command + ']')
             await this.ssh.execCommand(this.envCmd + command, opt)
             if (out.stderr != null && !continueOnError) break // behavior similar to &&
@@ -183,7 +184,7 @@ class BaseConnector {
 
     async zip(from: string, to: string) {
         if (this.maintainer != null) this.maintainer.emitEvent('SSH_ZIP', `zipping ${from} to ${to}`)
-        var out = await this.exec(`zip -j -r ${to} ${path.basename(from)}`, {
+        var out = await this.exec(`zip -q -j -r ${to} ${path.basename(from)}`, {
             cwd: path.dirname(from)
         })
         return out.stdout
@@ -191,7 +192,7 @@ class BaseConnector {
 
     async unzip(from: string, to: string) {
         if (this.maintainer != null) this.maintainer.emitEvent('SSH_UNZIP', `unzipping ${from} to ${to}`)
-        var out = await this.exec(`unzip -o ${from} -d ${to}`)
+        var out = await this.exec(`unzip -o -q ${from} -d ${to}`)
         return out.stdout  
     }
 

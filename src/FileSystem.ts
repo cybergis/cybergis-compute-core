@@ -171,14 +171,14 @@ export class LocalFile extends BaseFile {
 
             const writeFile = () => {
                 if (type === 'File' && !that.config.ignore.includes(entryName)) {
-                    var stream = fs.createWriteStream(path.join(that.path, entryParentPath, entryName), { flags: 'wx' })
+                    var stream = fs.createWriteStream(path.join(that.path, entryParentPath, entryName), { flags: 'wx', encoding: 'utf-8', mode: 0o755 })
                     stream.on('open', (fd) => { entry.pipe(stream) })
                 }
             }
 
-            const createDir = () => {
+            const createDir = async () => {
                 if (!fs.existsSync(path.join(that.path, entryParentPath))) {
-                    fs.promises.mkdir(path.join(that.path, entryParentPath), { recursive: true })
+                    await fs.promises.mkdir(path.join(that.path, entryParentPath), { recursive: true })
                 }
             }
 
@@ -187,25 +187,24 @@ export class LocalFile extends BaseFile {
                     entry.autodrain()
                 } else if (this.config.ignore_everything_except_must_have) {
                     if (this.config.must_have.includes(entryRoot)) {
-                        createDir(); writeFile()
+                        await createDir(); writeFile()
                     } else {
                         entry.autodrain()
                     }
                 } else {
-                    createDir()
-                    writeFile()
+                    await createDir(); writeFile()
                 }
             } else {
                 if (this.config.ignore.includes(entryRoot)) {
                     entry.autodrain()
                 } else if (this.config.ignore_everything_except_must_have) {
                     if (this.config.must_have.includes(entryName)) {
-                        writeFile()
+                        await createDir(); writeFile()
                     } else {
                         entry.autodrain()
                     }
                 } else {
-                    writeFile()
+                    await createDir(); writeFile()
                 }
             }
         }
@@ -226,8 +225,9 @@ export class LocalFile extends BaseFile {
             template.replace(`{${key}}`, value)
         }
 
-        fs.writeFileSync(filePath, template)
-        this.chmod(filePath, '755')
+        fs.writeFileSync(filePath, template, {
+            mode: 0o755
+        })
     }
 
     private _getConfig(): fileConfig  {

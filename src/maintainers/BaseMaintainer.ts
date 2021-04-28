@@ -54,8 +54,6 @@ class BaseMaintainer {
 
     /** constructor **/
     constructor(manifest: manifest) {
-        this.onDefine()
-
         for (var i in this.envParamValidators) {
             var val = manifest.env[i]
             if (val != undefined) {
@@ -72,6 +70,7 @@ class BaseMaintainer {
         this.manifest = Helper.hideCredFromManifest(manifest)
         this.config = maintainerConfig
         this.id = manifest.id
+        this.onDefine()
     }
 
     /** HPC connectors **/
@@ -116,7 +115,7 @@ class BaseMaintainer {
 
     /** emitters **/
     emitEvent(type: string, message: string) {
-        if (type === 'JOB_INITIALIZED') this.isInit = true
+        if (type === 'JOB_INIT') this.isInit = true
         if (type === 'JOB_ENDED' || type === 'JOB_FAILED') this.isEnd = true
         this.events.push({
             type: type,
@@ -130,7 +129,7 @@ class BaseMaintainer {
 
     /** supervisor interfaces **/
     async init() {
-        if (!this._lock) return
+        if (this._lock) return
         this._lock = true
 
         if (this.lifeCycleState.initCounter >= this.initRetry) {
@@ -146,7 +145,7 @@ class BaseMaintainer {
     }
 
     async maintain() {
-        if (!this._lock) return
+        if (this._lock) return
         this._lock = true
 
         if (this.lifeCycleState.createdAt === null) {
@@ -178,7 +177,7 @@ class BaseMaintainer {
 
 
     public getSlurmConnector(): SlurmConnector {
-        var hpc = this.manifest.hpc
+        var hpc = this.rawManifest.hpc
         if (hpc == undefined) hpc = this.config.default_hpc
         var hpcConfig = hpcConfigMap[hpc]
 
@@ -186,7 +185,7 @@ class BaseMaintainer {
             throw new Error("cannot find hpc with name [" + hpc + "]")
         }
         if (hpcConfig.connector == 'SlurmConnector') {
-            return new SlurmConnector(this.manifest, hpcConfig, this)
+            return new SlurmConnector(this.rawManifest, hpcConfig, this)
         }
 
         throw new Error("cannot find hpc with name [" + hpc + "]")
