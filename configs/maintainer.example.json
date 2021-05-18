@@ -17,5 +17,13 @@
             }
         },
         "maintainer": "SUMMAMaintainer"
+    },
+    "hello_world_singularity": {
+        "hpc": ["keeling_community"],
+        "job_pool_capacity": 5,
+        "executable_file": {
+            "from_user_upload": false
+        },
+        "maintainer": "HelloWorldSingularityMaintainer"
     }
 }

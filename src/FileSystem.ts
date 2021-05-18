@@ -68,7 +68,7 @@ export class FileSystem {
 
         fs.mkdirSync(filePath)
         if (providedFileConfig != {}) {
-            var infoJSON: string = JSON.stringify({maintainer: providedFileConfig})
+            var infoJSON: string = JSON.stringify({config: providedFileConfig})
             fs.writeFileSync(path.join(filePath, '.file_config.json'), infoJSON)
         }
         return new LocalFile(id)
@@ -123,7 +123,6 @@ export class LocalFile extends BaseFile {
 
         for (var i in files) {
             var file = files[i]
-            if (this.config.ignore.includes(file)) throw new FileStructureError(`file [${file}] not being ignore`)
             if (this.config.must_have.includes(file)) mustHaveFiles.push(file)
         }
 
@@ -153,13 +152,14 @@ export class LocalFile extends BaseFile {
     }
 
     removeZip() {
-        if (this.isZipped()) fs.unlinkSync(this.path + '.zip')
+        if (this.isZipped()) {
+            if (Helper.fileModifiedDate(this.path) > Helper.fileModifiedDate(this.path + '.zip'))
+                fs.unlinkSync(this.path + '.zip')
+        }
     }
 
     async putFromZip(zipFilePath: string) {
         var zip = fs.createReadStream(zipFilePath).pipe(unzipper.Parse({ forceStream: true }))
-
-        this.removeZip()
 
         for await (const entry of zip) {
             const entryPath = entry.path
@@ -208,31 +208,37 @@ export class LocalFile extends BaseFile {
                 }
             }
         }
+
+        this.removeZip()
     }
 
     putFromTemplate(template: string, replacements: any, filePath: string) {
+        for (var key in replacements) {
+            var value = replacements[key]
+            template = template.replace(`{{${key}}}`, value)
+        }
+        this.putFromString(template, filePath)
+    }
+
+    putFromString(content: string, filePath: string) {
         const fileName = path.basename(filePath)
         filePath = path.join(this.path, filePath)
         const fileParentPath = path.dirname(filePath)
         if (this.config.ignore_everything_except_must_have && !this.config.must_have.includes(fileName)) return
         if (!this.config.ignore_everything_except_must_have && this.config.ignore.includes(fileName)) return
 
-        this.removeZip()
         if (!fs.existsSync(fileParentPath)) fs.mkdirSync(fileParentPath)
 
-        for (var key in replacements) {
-            var value = replacements[key]
-            template.replace(`{${key}}`, value)
-        }
-
-        fs.writeFileSync(filePath, template, {
+        fs.writeFileSync(filePath, content, {
             mode: 0o755
         })
+
+        this.removeZip()
     }
 
     private _getConfig(): fileConfig  {
         const fileConfig = {
-            ignore: ['.placeholder', '.DS_Store'],
+            ignore: ['.placeholder', '.DS_Store', '.file_config.json'],
             must_have: [],
             ignore_everything_except_must_have: false
         }

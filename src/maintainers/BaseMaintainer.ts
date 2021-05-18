@@ -5,7 +5,8 @@ import BaseConnector from '../connectors/BaseConnector'
 import SlurmConnector from '../connectors/SlurmConnector'
 import validator from 'validator'
 import { NotImplementedError } from '../errors'
-import { hpcConfigMap, maintainerConfigMap } from '../../configs/config'
+import { config, hpcConfigMap, maintainerConfigMap } from '../../configs/config'
+import SingularityConnector from "../connectors/SingularityConnector"
 
 class BaseMaintainer {
     /** packages **/
@@ -62,8 +63,12 @@ class BaseMaintainer {
         }
         const fileSystem = new FileSystem()
         const maintainerConfig = maintainerConfigMap[manifest.maintainer]
-        if (maintainerConfig.executable_file.from_user_upload) {
-            this.executable_file = fileSystem.getLocalFileByURL(manifest.file)
+        if (maintainerConfig.executable_file) {
+            if (maintainerConfig.executable_file.from_user_upload) {
+                this.executableFile = fileSystem.getLocalFileByURL(manifest.file)
+            } else {
+                this.executableFile = fileSystem.createLocalFile()
+            }
         }
         this.fileSystem = fileSystem
         this.rawManifest = manifest
@@ -77,11 +82,11 @@ class BaseMaintainer {
     public connector: BaseConnector | SlurmConnector = undefined
 
     /** files **/
-    public data_file: BaseFile = undefined
+    public dataFile: BaseFile = undefined
 
-    public download_file: LocalFile = undefined
+    public downloadFile: LocalFile = undefined
 
-    public executable_file: LocalFile = undefined
+    public executableFile: LocalFile = undefined
 
     /** data **/
     protected logs: Array<string> = []
@@ -155,9 +160,13 @@ class BaseMaintainer {
         if (((this.lifeCycleState.createdAt - Date.now()) / (1000 * 60 * 60)) >= this.maintainThresholdInHours) {
             this.emitEvent('JOB_FAILED', 'maintain time exceeds ' + this.maintainThresholdInHours + ' hours')
         } else {
-            await this.connector.connect()
-            await this.onMaintain()
-            await this.connector.disconnect()
+            try {
+                await this.connector.connect()
+                await this.onMaintain()
+                await this.connector.disconnect()
+            } catch (e) {
+                if (config.is_testing) console.error(e.toString()) // ignore error
+            }
         }
 
         this._lock = false
@@ -180,30 +189,30 @@ class BaseMaintainer {
         var hpc = this.rawManifest.hpc
         if (hpc == undefined) hpc = this.config.default_hpc
         var hpcConfig = hpcConfigMap[hpc]
-
         if (hpcConfig == undefined) {
             throw new Error("cannot find hpc with name [" + hpc + "]")
         }
-        if (hpcConfig.connector == 'SlurmConnector') {
-            return new SlurmConnector(this.rawManifest, hpcConfig, this)
-        }
+        return new SlurmConnector(this.rawManifest, hpcConfig, this)
+    }
 
-        throw new Error("cannot find hpc with name [" + hpc + "]")
+    public getSingularityConnector(): SingularityConnector {
+        var hpc = this.rawManifest.hpc
+        if (hpc == undefined) hpc = this.config.default_hpc
+        var hpcConfig = hpcConfigMap[hpc]
+        if (hpcConfig == undefined) {
+            throw new Error("cannot find hpc with name [" + hpc + "]")
+        }
+        return new SingularityConnector(this.rawManifest, hpcConfig, this)
     }
 
     public getBaseConnector(): BaseConnector {
         var hpc = this.manifest.hpc
         if (hpc == undefined) hpc = this.config.default_hpc
         var hpcConfig = hpcConfigMap[hpc]
-
         if (hpcConfig == undefined) {
             throw new Error("cannot find hpc with name [" + hpc + "]")
         }
-        if (hpcConfig.connector == 'BaseConnector') {
-            return new BaseConnector(this.manifest, hpcConfig, this)
-        }
-
-        throw new Error("cannot find hpc with name [" + hpc + "]")
+        return new BaseConnector(this.manifest, hpcConfig, this)
     }
 }
 

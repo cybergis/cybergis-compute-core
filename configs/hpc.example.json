@@ -11,8 +11,7 @@
                 "passphrase": null
             }
         },
-        "connector": "SlurmConnector",
-        "root_path": "/tmp"
+        "root_path": "/data/keeling/a/cigi-gisolve/scratch/dev"
     },
     "hadoop": {
         "ip": "hadoop01.cigi.illinois.edu",

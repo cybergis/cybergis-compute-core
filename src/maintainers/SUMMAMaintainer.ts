@@ -1,12 +1,12 @@
-import SlurmConnector from '../connectors/SlurmConnector'
+import SingularityConnector from '../connectors/SingularityConnector'
 import BaseMaintainer from './BaseMaintainer'
 import { LocalFile } from '../FileSystem'
 
 export default class SUMMAMaintainer extends BaseMaintainer {
 
-    public connector: SlurmConnector
+    public connector: SingularityConnector
 
-    public download_file: LocalFile
+    public downloadFile: LocalFile
 
     private entry_script_template = `
 import json
@@ -96,31 +96,41 @@ print("Done in {}/{} ".format(rank, size))`
 
     private entry_script_file_name = 'run_summa.py'
 
-    private image_path = '/home/cybergis/SUMMA_IMAGE/pysumma_ensemble.img_summa3'
+    private image_path = '/data/keeling/a/cigi-gisolve/simages/pysumma_ensemble.img_summa3'
 
     onDefine() {
         // define connector
-        this.connector = this.getSlurmConnector()
+        this.connector = this.getSingularityConnector()
     }
 
     async onInit() {
-        this.executable_file.chmod('installTestCases_local.sh', '755')
-        this.executable_file.putFromTemplate(this.entry_script_template, {}, this.entry_script_file_name)
-        this.connector.prepare(this.image_path, `python ${this.entry_script_file_name}`, this.manifest.slurm)
-        await this.connector.submit()
-        this.emitEvent('JOB_INIT', 'job [' + this.manifest.id + '] is initialized, waiting for job completion')
+        try {
+            this.executableFile.chmod('installTestCases_local.sh', '755')
+            this.executableFile.putFromTemplate(this.entry_script_template, {}, this.entry_script_file_name)
+            // executables are always mounted to /job_id
+            this.connector.execCommandWithinImage(this.image_path, `python /${this.id}/${this.entry_script_file_name}`, this.manifest.slurm)
+            await this.connector.submit()
+            this.emitEvent('JOB_INIT', 'job [' + this.manifest.id + '] is initialized, waiting for job completion')
+        } catch (e) {
+            this.emitEvent('JOB_RETRY', 'job [' + this.manifest.id + '] encountered system error ' + e.toString())
+        }
     }
 
     async onMaintain() {
-        var status = await this.connector.getStatus()
-        if (status == 'C' || status == 'UNKNOWN') {
-            // ending condition
-            this.download_file = this.fileSystem.createLocalFile()
-            this.connector.download(this.connector.getExecutableFilePath(), this.download_file)
-            this.emitEvent('JOB_ENDED', 'job [' + this.manifest.id + '] finished')
-        } else if (status == 'ERROR') {
-            // failing condition
-            this.emitEvent('JOB_FAILED', 'job [' + this.manifest.id + '] failed')
+        try {
+            var status = await this.connector.getStatus()
+            if (status == 'C' || status == 'UNKNOWN') {
+                // ending condition
+                await this.connector.getSlurmOutput()
+                this.downloadFile = this.fileSystem.createLocalFile()
+                await this.connector.download(this.connector.getRemoteExecutableFilePath(), this.downloadFile)
+                this.emitEvent('JOB_ENDED', 'job [' + this.manifest.id + '] finished')
+            } else if (status == 'ERROR') {
+                // failing condition
+                this.emitEvent('JOB_FAILED', 'job [' + this.manifest.id + '] failed')
+            }
+        } catch (e) {
+            this.emitEvent('JOB_RETRY', 'job [' + this.manifest.id + '] encountered system error ' + e.toString())
         }
     }
 

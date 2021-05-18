@@ -108,7 +108,6 @@ export interface hpcConfig {
     port: number;
     is_community_account: boolean;
     community_login: communityLogin;
-    connector: string;
     root_path: string;
 }
 

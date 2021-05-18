@@ -61,8 +61,8 @@ class Supervisor {
 
                         if (job._maintainer.isEnd) {
                             jobPool.splice(i, 1)
-                            if (job._maintainer.download_file != undefined) {
-                                self.downloadPool[job._maintainer.id] = job._maintainer.download_file
+                            if (job._maintainer.downloadFile != undefined) {
+                                self.downloadPool[job._maintainer.id] = job._maintainer.downloadFile
                             }
                             i--
                         }
