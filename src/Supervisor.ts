@@ -3,7 +3,7 @@ import Emitter from "./Emitter"
 import Helper from "./Helper"
 import { manifest } from './types'
 import { config, maintainerConfigMap } from '../configs/config'
-import { FileSystem, LocalFile } from './FileSystem'
+import { FileSystem, LocalFolder } from './FileSystem'
 
 class Supervisor {
 
@@ -11,7 +11,7 @@ class Supervisor {
 
     private jobPools: {[keys: string]: manifest[]} = {}
 
-    public downloadPool: {[keys: string]: LocalFile } = {}
+    public downloadPool: {[keys: string]: LocalFolder } = {}
 
     private queues: {[keys: string]: Queue} = {}
 
@@ -91,7 +91,7 @@ class Supervisor {
         return await this.emitter.status(uid, jobID)
     }
 
-    getJobDownload(jobID: string): LocalFile {
+    getJobDownload(jobID: string): LocalFolder {
         return this.downloadPool[jobID]
     }
 

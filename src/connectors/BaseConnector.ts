@@ -2,7 +2,7 @@ import { manifest, options, hpcConfig } from "../types"
 import { ConnectorError } from '../errors'
 import { config } from '../../configs/config'
 import BaseMaintainer from '../maintainers/BaseMaintainer'
-import { LocalFile } from '../FileSystem'
+import { LocalFolder } from '../FileSystem'
 import * as path from 'path'
 import NodeSSH = require('node-ssh')
 
@@ -124,7 +124,7 @@ class BaseConnector {
     }
 
     /** file operators **/
-    async download(from: string, to: LocalFile) {
+    async download(from: string, to: LocalFolder) {
         if (to == undefined) throw new ConnectorError('please init input file first')
         var fromZipFilePath = from.endsWith('.zip') ? from : `${from}.zip`
         var toZipFilePath = `${to.path}.zip`
@@ -143,7 +143,7 @@ class BaseConnector {
 
     }
 
-    async upload(from: LocalFile, to: string) {
+    async upload(from: LocalFolder, to: string) {
         if (from == undefined) throw new ConnectorError('please init input file first')
         var fromZipFilePath = await this.maintainer.executableFile.getZip()
         var toZipFilePath = to.endsWith('.zip') ? to : `${to}.zip`

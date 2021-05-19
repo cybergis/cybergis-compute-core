@@ -1,12 +1,12 @@
 import SingularityConnector from '../connectors/SingularityConnector'
 import BaseMaintainer from './BaseMaintainer'
-import { LocalFile } from '../FileSystem'
+import { LocalFolder } from '../FileSystem'
 
 export default class HelloWorldSingularityMaintainer extends BaseMaintainer {
 
     public connector: SingularityConnector
 
-    public downloadFile: LocalFile
+    public downloadFile: LocalFolder
 
     private entry_script_template = `
 import time

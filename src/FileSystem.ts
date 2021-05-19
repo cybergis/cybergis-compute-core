@@ -37,27 +37,27 @@ export class FileSystem {
         }, 60 * 60 * 1000)
     }
 
-    getFileByURL(url: string): BaseFile {
+    getFileByURL(url: string): BaseFolder {
         var u = url.split('://')
         return this.getFile(u[0], u[1])
     }
 
-    getFile(type: string, id: string): BaseFile {
+    getFile(type: string, id: string): BaseFolder {
         if (type == 'local') {
-            return new LocalFile(id)
+            return new LocalFolder(id)
         }
     }
 
-    getLocalFile(id: string): LocalFile {
-        return new LocalFile(id)
+    getLocalFolder(id: string): LocalFolder {
+        return new LocalFolder(id)
     }
 
-    getLocalFileByURL(url: string): LocalFile {
+    getLocalFolderByURL(url: string): LocalFolder {
         var u = url.split('://')
-        if (u[0] == 'local') return this.getLocalFile(u[1])
+        if (u[0] == 'local') return this.getLocalFolder(u[1])
     }
 
-    createLocalFile(providedFileConfig: fileConfig = {}): LocalFile {
+    createLocalFolder(providedFileConfig: fileConfig = {}): LocalFolder {
         var id = this._generateID()
         var filePath = path.join(config.local_file_system.root_path, id)
 
@@ -71,7 +71,7 @@ export class FileSystem {
             var infoJSON: string = JSON.stringify({config: providedFileConfig})
             fs.writeFileSync(path.join(filePath, '.file_config.json'), infoJSON)
         }
-        return new LocalFile(id)
+        return new LocalFolder(id)
     }
 
     private _generateID(): string {
@@ -79,7 +79,7 @@ export class FileSystem {
     }
 }
 
-export class BaseFile {
+export class BaseFolder {
     public type: fileTypes
 
     constructor(type: fileTypes) {
@@ -91,7 +91,7 @@ export class BaseFile {
     }
 }
 
-export class LocalFile extends BaseFile {
+export class LocalFolder extends BaseFolder {
     public id: string
 
     public path: string
@@ -101,11 +101,11 @@ export class LocalFile extends BaseFile {
     constructor(id: string) {
         super('local')
 
-        const filePath = path.join(config.local_file_system.root_path, id)
-        if (!fs.existsSync(filePath)) throw new FileNotExistError(`file ID ${id} not exist`)
+        const folderPath = path.join(config.local_file_system.root_path, id)
+        if (!fs.existsSync(folderPath)) throw new FileNotExistError(`file ID ${id} not exist`)
 
         this.id = id
-        this.path = filePath
+        this.path = folderPath
         this.config = this._getConfig()
     }
 

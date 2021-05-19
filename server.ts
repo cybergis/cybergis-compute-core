@@ -1,6 +1,6 @@
 import Guard from './src/Guard'
 import Supervisor from './src/Supervisor'
-import { FileSystem, LocalFile } from './src/FileSystem'
+import { FileSystem, LocalFolder } from './src/FileSystem'
 import Helper from './src/Helper'
 import { hpcConfig, maintainerConfig } from './src/types'
 import { config, hpcConfigMap, maintainerConfigMap } from './configs/config'
@@ -210,7 +210,7 @@ app.post('/job/upload', async function (req: any, res) {
         var maintainerConfig = maintainerConfigMap[manifest.maintainer]
         if (maintainerConfig.executable_file.from_user_upload) {
             var fileConfig = maintainerConfig.executable_file.file_config
-            var file: LocalFile = await fileSystem.createLocalFile(fileConfig)
+            var file: LocalFolder = await fileSystem.createLocalFolder(fileConfig)
             await file.putFromZip(req.files.file.tempFilePath)
         }
         res.json({ file: file.getURL() })

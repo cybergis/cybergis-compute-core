@@ -1,12 +1,12 @@
 import SingularityConnector from '../connectors/SingularityConnector'
 import BaseMaintainer from './BaseMaintainer'
-import { LocalFile } from '../FileSystem'
+import { LocalFolder } from '../FileSystem'
 
 export default class SUMMAMaintainer extends BaseMaintainer {
 
     public connector: SingularityConnector
 
-    public downloadFile: LocalFile
+    public downloadFile: LocalFolder
 
     private entry_script_template = `
 import json
@@ -122,7 +122,7 @@ print("Done in {}/{} ".format(rank, size))`
             if (status == 'C' || status == 'UNKNOWN') {
                 // ending condition
                 await this.connector.getSlurmOutput()
-                this.downloadFile = this.fileSystem.createLocalFile()
+                this.downloadFile = this.fileSystem.createLocalFolder()
                 await this.connector.download(this.connector.getRemoteExecutableFilePath(), this.downloadFile)
                 this.emitEvent('JOB_ENDED', 'job [' + this.manifest.id + '] finished')
             } else if (status == 'ERROR') {

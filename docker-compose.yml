@@ -12,24 +12,27 @@ services:
     # Otherwise cert cannot be renewed automatically (Drew 01/01/2020)
     # ufw allow 80
     # ufw allow 443 
-    restart: always
-    network_mode: host
+    restart: on-failure
+    ports:
+      - "80:80"
+      - "443:443"
     environment:
       - URL=cgjobsup.cigi.illinois.edu
       - EMAIL=zimox2@illinois.edu
 
   redis:
-    image: redis:5
-    restart: always
+    image: redis:alpine
+    restart: on-failure
     volumes:
-    - redis-data:/data
+      - ./data/redis:/data:rw
 
   job_supervisor:
-    image: node:10-slim-npm-alpine-node
-    restart: always
+    image: zimoxiao/job_supervisor:v0.0.1
+    restart: on-failure
     volumes:
-    - ./:/job_supervisor
+    - ./:/job_supervisor:rw
+    ports:
+      - "3000:3000"
 
 volumes:
   nginx_volume:
-  redis-data:

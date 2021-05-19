@@ -1,6 +1,6 @@
 import Helper from "../Helper"
 import { manifest, maintainerConfig, event } from "../types"
-import { BaseFile, LocalFile, FileSystem } from '../FileSystem'
+import { BaseFolder, LocalFolder, FileSystem } from '../FileSystem'
 import BaseConnector from '../connectors/BaseConnector'
 import SlurmConnector from '../connectors/SlurmConnector'
 import validator from 'validator'
@@ -65,9 +65,9 @@ class BaseMaintainer {
         const maintainerConfig = maintainerConfigMap[manifest.maintainer]
         if (maintainerConfig.executable_file) {
             if (maintainerConfig.executable_file.from_user_upload) {
-                this.executableFile = fileSystem.getLocalFileByURL(manifest.file)
+                this.executableFile = fileSystem.getLocalFolderByURL(manifest.file)
             } else {
-                this.executableFile = fileSystem.createLocalFile()
+                this.executableFile = fileSystem.createLocalFolder()
             }
         }
         this.fileSystem = fileSystem
@@ -82,11 +82,11 @@ class BaseMaintainer {
     public connector: BaseConnector | SlurmConnector = undefined
 
     /** files **/
-    public dataFile: BaseFile = undefined
+    public dataFile: BaseFolder = undefined
 
-    public downloadFile: LocalFile = undefined
+    public downloadFile: LocalFolder = undefined
 
-    public executableFile: LocalFile = undefined
+    public executableFile: LocalFolder = undefined
 
     /** data **/
     protected logs: Array<string> = []

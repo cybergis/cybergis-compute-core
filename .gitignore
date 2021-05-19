@@ -120,26 +120,18 @@ log/*
 
 config.json
 
-data/SUMMA/*
-!data/SUMMA/.gitkeep
-!data/SUMMA/model
-data/SUMMA/model/*
-!data/SUMMA/model/.gitkeep
-
-data/download/*
-!data/download/.gitkeep
-
-data/upload/*
-data/root/*
-!data/upload/.gitkeep
-
-data/tmp/*
-!data/tmp/.gitkeep
-*.js
-
 build
 
 keys/*
 !keys/.gitkeep
 
 production
+
+data/*
+!data/redis
+data/redis/*
+!data/*/.gitkeep
+
+script/redis.conf
+
+dump.rdb
