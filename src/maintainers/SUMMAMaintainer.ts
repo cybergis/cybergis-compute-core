@@ -6,7 +6,7 @@ export default class SUMMAMaintainer extends BaseMaintainer {
 
     public connector: SingularityConnector
 
-    public downloadFile: LocalFolder
+    public resultFolder: LocalFolder
 
     private entry_script_template = `
 import json
@@ -105,10 +105,10 @@ print("Done in {}/{} ".format(rank, size))`
 
     async onInit() {
         try {
-            this.executableFile.chmod('installTestCases_local.sh', '755')
-            this.executableFile.putFromTemplate(this.entry_script_template, {}, this.entry_script_file_name)
+            this.executableFolder.chmod('installTestCases_local.sh', '755')
+            this.executableFolder.putFileFromTemplate(this.entry_script_template, {}, this.entry_script_file_name)
             // executables are always mounted to /job_id
-            this.connector.execCommandWithinImage(this.image_path, `python /${this.id}/${this.entry_script_file_name}`, this.manifest.slurm)
+            this.connector.execCommandWithinImage(this.image_path, `python ${this.connector.getRemoteExecutableFolderPath(this.entry_script_file_name)}`, this.manifest.slurm)
             await this.connector.submit()
             this.emitEvent('JOB_INIT', 'job [' + this.manifest.id + '] is initialized, waiting for job completion')
         } catch (e) {
@@ -122,8 +122,8 @@ print("Done in {}/{} ".format(rank, size))`
             if (status == 'C' || status == 'UNKNOWN') {
                 // ending condition
                 await this.connector.getSlurmOutput()
-                this.downloadFile = this.fileSystem.createLocalFolder()
-                await this.connector.download(this.connector.getRemoteExecutableFilePath(), this.downloadFile)
+                this.resultFolder = this.fileSystem.createLocalFolder()
+                await this.connector.download(this.connector.getRemoteExecutableFolderPath(), this.resultFolder)
                 this.emitEvent('JOB_ENDED', 'job [' + this.manifest.id + '] finished')
             } else if (status == 'ERROR') {
                 // failing condition

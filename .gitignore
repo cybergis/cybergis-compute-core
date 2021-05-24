@@ -127,11 +127,15 @@ keys/*
 
 production
 
-data/*
-!data/redis
 data/redis/*
-!data/*/.gitkeep
+!data/redis/.gitkeep
+data/root/*
+!data/root/.gitkeep
+data/tmp/*
+!data/tmp/.gitkeep
 
 script/redis.conf
 
 dump.rdb
+
+!data/tmp/.gitkeep

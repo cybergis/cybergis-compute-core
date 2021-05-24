@@ -1,7 +1,7 @@
 import BaseConnector from '../connectors/BaseConnector'
 import BaseMaintainer from './BaseMaintainer'
 
-export default class ExampleMaintainer extends BaseMaintainer {
+export default class HelloWorldBasicMaintainer extends BaseMaintainer {
 
     public connector: BaseConnector
 

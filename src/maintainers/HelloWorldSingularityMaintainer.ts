@@ -6,7 +6,7 @@ export default class HelloWorldSingularityMaintainer extends BaseMaintainer {
 
     public connector: SingularityConnector
 
-    public downloadFile: LocalFolder
+    public resultFolder: LocalFolder
 
     private entry_script_template = `
 import time
@@ -27,9 +27,8 @@ print("job complete!")
     async onInit() {
         try {
             var replacements = {content: "hello world"}
-            this.executableFile.putFromTemplate(this.entry_script_template, replacements, this.entry_script_file_name)
-            // executables are always mounted to /job_id
-            this.connector.execCommandWithinImage(this.image_path, `python /${this.id}/${this.entry_script_file_name}`, this.manifest.slurm)
+            this.executableFolder.putFileFromTemplate(this.entry_script_template, replacements, this.entry_script_file_name)
+            this.connector.execCommandWithinImage(this.image_path, `python ${this.connector.getContainerExecutableFolderPath('./main.py')}`, this.manifest.slurm)
             await this.connector.submit()
             this.emitEvent('JOB_INIT', 'job [' + this.manifest.id + '] is initialized, waiting for job completion')
         } catch (e) {
@@ -43,7 +42,7 @@ print("job complete!")
             if (status == 'C' || status == 'UNKNOWN') {
                 await this.connector.getSlurmOutput()
                 // ending condition
-                await this.connector.rm(this.connector.getRemoteExecutableFilePath()) // clear executable files
+                await this.connector.rm(this.connector.getRemoteExecutableFolderPath()) // clear executable files
                 this.emitEvent('JOB_ENDED', 'job [' + this.manifest.id + '] finished')
             } else if (status == 'ERROR') {
                 // failing condition

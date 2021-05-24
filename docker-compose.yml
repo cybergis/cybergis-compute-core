@@ -20,19 +20,22 @@ services:
       - URL=cgjobsup.cigi.illinois.edu
       - EMAIL=zimox2@illinois.edu
 
-  redis:
-    image: redis:alpine
-    restart: on-failure
-    volumes:
-      - ./data/redis:/data:rw
-
   job_supervisor:
     image: zimoxiao/job_supervisor:v0.0.1
     restart: on-failure
     volumes:
     - ./:/job_supervisor:rw
+    privileged: true
     ports:
       - "3000:3000"
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=0
+    environment:
+      OPENCONNECT_PASSWORD: ${OPENCONNECT_PASSWORD}
+      OPENCONNECT_USER: ${OPENCONNECT_USER}
+      OPENCONNECT_AUTHGROUP: ${OPENCONNECT_AUTHGROUP}
+      OPENCONNECT_URL: ${OPENCONNECT_URL}
+      OPENCONNECT_MFA_CODE: ${OPENCONNECT_MFA_CODE}
 
 volumes:
   nginx_volume:

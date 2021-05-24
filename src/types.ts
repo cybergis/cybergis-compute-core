@@ -1,4 +1,7 @@
 import BaseMaintainer from './maintainers/BaseMaintainer'
+import { ConnectConfig } from 'ssh2';
+import { Prompt } from 'ssh2-streams';
+import NodeSSH = require('node-ssh')
 
 export interface rawAccessToken {
     alg: string,
@@ -117,7 +120,7 @@ export interface fileConfig {
     ignore_everything_except_must_have: boolean;
 }
 
-export interface executableFile {
+export interface executableFolder {
     from_user_upload: boolean;
     file_config: fileConfig;
 }
@@ -126,11 +129,23 @@ export interface maintainerConfig {
     hpc: string[];
     default_hpc: string;
     job_pool_capacity: number;
-    executable_file: executableFile;
+    executable_folder: executableFolder;
     maintainer: string;
 }
 
 export interface event {
     type: string
     message: string
+}
+
+export declare type SSHConfig = ConnectConfig & {
+    password?: string
+    privateKey?: string
+    tryKeyboard?: boolean
+    onKeyboardInteractive?: (name: string, instructions: string, lang: string, prompts: Prompt[], finish: (responses: string[]) => void) => void
+}
+
+export interface SSH {
+    connection: NodeSSH
+    config: SSHConfig
 }

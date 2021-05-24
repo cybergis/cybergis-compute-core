@@ -126,7 +126,70 @@ app.post('/auth/job', async function (req, res) {
     res.json(manifest)
 })
 
-// supervisor
+// list info
+app.get('/hpc', function (req, res) {
+    var parseHPC = (dest: {[key: string]: hpcConfig}) => {
+        var out = {}
+        for (var i in dest) {
+            var d: hpcConfig = JSON.parse(JSON.stringify(dest[i])) // hard copy
+            delete d.community_login
+            delete d.root_path
+            out[i] = d
+        }
+        return out
+    }
+    res.json({ hpc: parseHPC(hpcConfigMap) })
+})
+
+app.get('/maintainer', function (req, res) {
+    var parseMaintainer = (dest: {[key: string]: maintainerConfig}) => {
+        var out = {}
+        for (var i in dest) {
+            var d: maintainerConfig = JSON.parse(JSON.stringify(dest[i])) // hard copy
+            out[i] = d
+        }
+        return out
+    }
+    res.json({ maintainer: parseMaintainer(maintainerConfigMap) })
+})
+
+// file
+app.post('/file/upload', async function (req: any, res) {
+    if (res.statusCode == 402) return
+
+    var aT = req.body
+    var errors = requestErrors(validator.validate(aT, schemas.jobAccessToken))
+
+    if (errors.length > 0) {
+        res.json({ error: "invalid input", messages: errors })
+        res.status(402)
+        return
+    }
+
+    try {
+        var manifest = await guard.validateJobAccessToken(aT)
+    } catch (e) {
+        res.json({ error: "invalid access token", messages: [e.toString()] })
+        res.status(401)
+        return
+    }
+
+    try {
+        var maintainerConfig = maintainerConfigMap[manifest.maintainer]
+        if (maintainerConfig.executable_folder.from_user_upload) {
+            var fileConfig = maintainerConfig.executable_folder.file_config
+            var file: LocalFolder = await fileSystem.createLocalFolder(fileConfig)
+            await file.putFileFromZip(req.files.file.tempFilePath)
+        }
+        res.json({ file: file.getURL() })
+    } catch (e) {
+        res.json({ error: e.toString() })
+        res.status(402)
+        return
+    }
+})
+
+// job
 app.post('/job', async function (req, res) {
     var manifest = req.body
     var errors = requestErrors(validator.validate(manifest, schemas.manifest))
@@ -159,69 +222,7 @@ app.post('/job', async function (req, res) {
     res.json(manifest)
 })
 
-app.get('/hpc', function (req, res) {
-    var parseHPC = (dest: {[key: string]: hpcConfig}) => {
-        var out = {}
-        for (var i in dest) {
-            var d: hpcConfig = JSON.parse(JSON.stringify(dest[i])) // hard copy
-            delete d.community_login
-            out[i] = d
-        }
-        return out
-    }
-
-    res.json({ hpc: parseHPC(hpcConfigMap) })
-})
-
-app.get('/maintainer', function (req, res) {
-    var parseMaintainer = (dest: {[key: string]: maintainerConfig}) => {
-        var out = {}
-        for (var i in dest) {
-            var d: maintainerConfig = JSON.parse(JSON.stringify(dest[i])) // hard copy
-            out[i] = d
-        }
-        return out
-    }
-
-    res.json({ hpc: parseMaintainer(maintainerConfigMap) })
-})
-
-app.post('/job/upload', async function (req: any, res) {
-    if (res.statusCode == 402) return
-
-    var aT = req.body
-    var errors = requestErrors(validator.validate(aT, schemas.jobAccessToken))
-
-    if (errors.length > 0) {
-        res.json({ error: "invalid input", messages: errors })
-        res.status(402)
-        return
-    }
-
-    try {
-        var manifest = await guard.validateJobAccessToken(aT)
-    } catch (e) {
-        res.json({ error: "invalid access token", messages: [e.toString()] })
-        res.status(401)
-        return
-    }
-
-    try {
-        var maintainerConfig = maintainerConfigMap[manifest.maintainer]
-        if (maintainerConfig.executable_file.from_user_upload) {
-            var fileConfig = maintainerConfig.executable_file.file_config
-            var file: LocalFolder = await fileSystem.createLocalFolder(fileConfig)
-            await file.putFromZip(req.files.file.tempFilePath)
-        }
-        res.json({ file: file.getURL() })
-    } catch (e) {
-        res.json({ error: e.toString() })
-        res.status(402)
-        return
-    }
-})
-
-app.get('/job/download', async function (req, res) {
+app.get('/job/:jobID/result/download', async function (req, res) {
     var aT = req.body
     var errors = requestErrors(validator.validate(aT, schemas.jobAccessToken))
 
@@ -247,7 +248,7 @@ app.get('/job/download', async function (req, res) {
     res.download(fileZipPath)
 })
 
-app.get('/job/status', async function (req, res) {
+app.get('/job/:jobID/status', async function (req, res) {
     var aT = req.body
     var errors = requestErrors(validator.validate(aT, schemas.jobAccessToken))
 

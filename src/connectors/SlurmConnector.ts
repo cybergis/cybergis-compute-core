@@ -2,17 +2,22 @@ import { ConnectorError } from '../errors'
 import BaseConnector from './BaseConnector'
 import { slurm } from '../types'
 import * as path from 'path'
+import { config } from '../../configs/config'
 
 class SlurmConnector extends BaseConnector {
 
-    public job_executable_file_path: string = path.join(this.config.root_path, this.maintainer.id)
+    public remote_executable_folder_path: string = path.join(this.config.root_path, this.maintainer.id, 'executable')
 
-    public job_slurm_id: string
+    public remote_data_folder_path: string = path.join(this.config.root_path, this.maintainer.id, 'data')
+
+    public remote_result_folder_path: string = path.join(this.config.root_path, this.maintainer.id, 'result')
+
+    public slurm_id: string
 
     public modules: Array<string> = []
 
     registerModules(modules: Array<string>) {
-        this.modules.concat(modules)
+        this.modules = this.modules.concat(modules)
     }
 
     prepare(cmd: string, config: slurm) {
@@ -40,39 +45,42 @@ class SlurmConnector extends BaseConnector {
 #SBATCH --cpus-per-task=${config.cpu_per_task}
 #SBATCH --mem-per-cpu=${config.memory_per_cpu}
 #SBATCH --time=${walltime}
-#SBATCH --error=${path.join(this.job_executable_file_path, "slurm.stdout")}
-#SBATCH --output=${path.join(this.job_executable_file_path, "slurm.stdout")}
+#SBATCH --error=${path.join(this.remote_result_folder_path, "slurm.stdout")}
+#SBATCH --output=${path.join(this.remote_result_folder_path, "slurm.stdout")}
 
 ${modules}
 ${cmd}`
-        this.maintainer.executableFile.putFromString(template, 'job.sbatch')
+        this.maintainer.executableFolder.putFileFromString(template, 'job.sbatch')
     }
 
     async submit() {
         if (this.maintainer != null) this.maintainer.emitEvent('SLURM_UPLOAD', `uploading executable files`)
-        await this.upload(this.maintainer.executableFile, this.job_executable_file_path)
+        await this.upload(this.maintainer.executableFolder, this.remote_executable_folder_path)
+
+        if (this.maintainer != null) this.maintainer.emitEvent('SLURM_MKDIR_RESULT', `creating result folder`)
+        await this.mkdir(this.remote_result_folder_path)
 
         if (this.maintainer != null) this.maintainer.emitEvent('SLURM_SUBMIT', `submitting slurm job`)
         var sbatchResult = (await this.exec(`sbatch job.sbatch`, {
-            cwd: this.job_executable_file_path
+            cwd: this.remote_executable_folder_path
         })).stdout
 
         if (sbatchResult.includes('ERROR') || sbatchResult.includes('WARN')) {
             if (this.maintainer != null) this.maintainer.emitEvent('SLURM_SUBMIT_ERROR', 'cannot submit job ' + this.maintainer.id + ': ' + sbatchResult)
             throw new ConnectorError('cannot submit job ' + this.maintainer.id + ': ' + sbatchResult)
         }
-        this.job_slurm_id = sbatchResult.split(/[ ]+/).pop().trim()
+        this.slurm_id = sbatchResult.split(/[ ]+/).pop().trim()
     }
 
     // Job id              Name             Username        Time Use S Queue          
     // ------------------- ---------------- --------------- -------- - ---------------
     // 3142249             singularity      cigi-gisolve    00:00:00 R node           
-    async getStatus(mute = false) {
+    async getStatus(mute = true) {
         try {
-            var statusResult = (await this.exec(`qstat ${this.job_slurm_id}`, {}, mute)).stdout
+            var statusResult = (await this.exec(`qstat ${this.slurm_id}`, {}, mute)).stdout
             if (statusResult == null) return 'UNKNOWN'
             var r = statusResult.split(/[ |\n]+/)
-            var i = r.indexOf(this.job_slurm_id)
+            var i = r.indexOf(this.slurm_id)
             return r[i + 4]
         } catch (e) {
             if (this.maintainer != null && !mute) this.maintainer.emitEvent('SLURM_GET_STATUS_ERROR', 'cannot parse status result ' + statusResult)
@@ -81,24 +89,35 @@ ${cmd}`
     }
 
     async cancel() {
-        await this.exec(`scancel ${this.job_slurm_id}`)
+        await this.exec(`scancel ${this.slurm_id}`)
     }
 
     async pause() {
-        await this.exec(`scontrol suspend ${this.job_slurm_id}`)
+        await this.exec(`scontrol suspend ${this.slurm_id}`)
     }
 
     async resume() {
-        await this.exec(`scontrol resume ${this.job_slurm_id}`)
+        await this.exec(`scontrol resume ${this.slurm_id}`)
     }
 
     async getSlurmOutput() {
-        var out = await this.cat(path.join(this.job_executable_file_path, "slurm.stdout"))
+        var out = await this.cat(path.join(this.remote_result_folder_path, "slurm.stdout"), {}, true)
         if (this.maintainer != null && out != null) this.maintainer.emitLog(out)
     }
 
-    getRemoteExecutableFilePath(): string {
-        return this.job_executable_file_path
+    getRemoteExecutableFolderPath(providedPath: string = null): string {
+        if (providedPath) return path.join(this.remote_executable_folder_path, providedPath)
+        else return this.remote_executable_folder_path
+    }
+
+    getRemoteDataFolderPath(providedPath: string = null): string {
+        if (providedPath) return path.join(this.remote_data_folder_path, providedPath)
+        else return this.remote_data_folder_path
+    }
+
+    getRemoteResultFolderPath(providedPath: string = null): string {
+        if (providedPath) return path.join(this.remote_result_folder_path, providedPath)
+        else return this.remote_result_folder_path
     }
 }
 

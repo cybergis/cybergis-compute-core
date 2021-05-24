@@ -158,7 +158,7 @@ export class LocalFolder extends BaseFolder {
         }
     }
 
-    async putFromZip(zipFilePath: string) {
+    async putFileFromZip(zipFilePath: string) {
         var zip = fs.createReadStream(zipFilePath).pipe(unzipper.Parse({ forceStream: true }))
 
         for await (const entry of zip) {
@@ -212,28 +212,33 @@ export class LocalFolder extends BaseFolder {
         this.removeZip()
     }
 
-    putFromTemplate(template: string, replacements: any, filePath: string) {
+    putFileFromTemplate(template: string, replacements: any, filePath: string) {
         for (var key in replacements) {
             var value = replacements[key]
             template = template.replace(`{{${key}}}`, value)
         }
-        this.putFromString(template, filePath)
+        this.putFileFromString(template, filePath)
     }
 
-    putFromString(content: string, filePath: string) {
+    putFileFromString(content: string, filePath: string) {
         const fileName = path.basename(filePath)
         filePath = path.join(this.path, filePath)
         const fileParentPath = path.dirname(filePath)
         if (this.config.ignore_everything_except_must_have && !this.config.must_have.includes(fileName)) return
         if (!this.config.ignore_everything_except_must_have && this.config.ignore.includes(fileName)) return
 
-        if (!fs.existsSync(fileParentPath)) fs.mkdirSync(fileParentPath)
+        if (!fs.existsSync(fileParentPath)) fs.mkdirSync(fileParentPath, { recursive: true })
 
         fs.writeFileSync(filePath, content, {
             mode: 0o755
         })
 
         this.removeZip()
+    }
+
+    putFolder(folderPath: string) {
+        folderPath = path.join(this.path, folderPath)
+        if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true })
     }
 
     private _getConfig(): fileConfig  {

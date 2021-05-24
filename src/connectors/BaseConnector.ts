@@ -1,79 +1,48 @@
-import { manifest, options, hpcConfig } from "../types"
+import { manifest, options, hpcConfig, SSH } from "../types"
 import { ConnectorError } from '../errors'
-import { config } from '../../configs/config'
 import BaseMaintainer from '../maintainers/BaseMaintainer'
 import { LocalFolder } from '../FileSystem'
 import * as path from 'path'
-import NodeSSH = require('node-ssh')
+import { config } from "../../configs/config"
 
 class BaseConnector {
-    public ssh: NodeSSH
-
-    public jobID: string
-
+    /** parent pointer **/
     public maintainer: BaseMaintainer
 
-    public config: hpcConfig
+    /** properties **/
+    public jobID: string
 
-    protected sshConfig
+    public hpcName: string
+
+    /** config **/
+    public config: hpcConfig
 
     protected envCmd = '#!/bin/bash\n'
 
-    constructor(manifest: manifest, hpcConfig: hpcConfig, maintainer: BaseMaintainer = null) {
-        this.ssh = new NodeSSH()
+    constructor(manifest: manifest, hpcConfig: hpcConfig, maintainer: BaseMaintainer, env: {[keys: string]: any} = {}) {
         this.jobID = manifest.id
+        this.hpcName = manifest.hpc
         this.config = hpcConfig
-
-        this.sshConfig = {
-            host: hpcConfig.ip,
-            port: hpcConfig.port
-        }
-
-        if (hpcConfig.is_community_account) {
-            this.sshConfig.username = hpcConfig.community_login.user
-            if (hpcConfig.community_login.use_local_key) {
-                this.sshConfig.privateKey = config.local_key.private_key_path
-                if (config.local_key.passphrase) this.sshConfig.passphrase = config.local_key.passphrase
-            } else {
-                this.sshConfig.privateKey = hpcConfig.community_login.external_key.private_key_path
-                if (hpcConfig.community_login.external_key.passphrase)
-                    this.sshConfig.passphrase = hpcConfig.community_login.external_key.passphrase
-            }
-        } else {
-            // need support for user upload keys
-            this.sshConfig.username = manifest.cred.usr
-            this.sshConfig.password = manifest.cred.pwd
-        }
-
         this.maintainer = maintainer
+
+        var envCmd = 'source /etc/profile;'
+        for (var i in env) {
+            var v = env[i]
+            envCmd += `export ${i}=${v};\n`
+        }
+        this.envCmd = envCmd
     }
 
     /** actions **/
-    async connect(env = {}) {
-        if (this.ssh.isConnected()) return
-
-        try {
-            await this.ssh.connect(this.sshConfig)
-            if (this.maintainer != null) this.maintainer.emitEvent('SSH_CONNECTION', 'successfully connected to server [' + this.sshConfig.host + ':' + this.sshConfig.port + ']')
-
-            // generate env bash cmd
-            var envCmd = 'source /etc/profile;'
-            for (var i in env) {
-                var v = env[i]
-                envCmd += `export ${i}=${v};\n`
-            }
-            this.envCmd = envCmd
-        } catch (e) {
-            if (this.maintainer != null) this.maintainer.emitEvent('SSH_CONNECTION_ERROR', 'connection to server [' + this.sshConfig.host + ':' + this.sshConfig.port + '] failed with error: ' + e)
+    ssh(): SSH {
+        if (this.config.is_community_account) {
+            return this.maintainer.supervisor.jobSSHPool[this.hpcName]
+        } else {
+            return this.maintainer.supervisor.jobSSHPool[this.jobID]
         }
     }
 
-    async disconnect() {
-        if (this.maintainer != null) this.maintainer.emitEvent('SSH_DISCONNECTION', 'disconnected with server [' + this.sshConfig.host + ':' + this.sshConfig.port + ']')
-        await this.ssh.dispose()
-    }
-
-    async exec(commands: string | Array<string>, options: options = {}, continueOnError = false, mute = false) {
+    async exec(commands: string | Array<string>, options: options = {}, mute = false, continueOnError = false) {
         type out = {
             stdout: string | null
             stderr: string | null
@@ -99,14 +68,14 @@ class BaseConnector {
                 if (out.stdout != null) out.stdout = o
                     else out.stdout += o
 
-                if (maintainer != null) maintainer.emitLog(o)
+                if (maintainer != null || !mute) maintainer.emitLog(o)
             },
             onStderr(o) {
                 o = o.toString()
                 if (out.stderr != null) out.stderr = o
                     else out.stderr += o
 
-                if (maintainer != null) {
+                if (maintainer != null || !mute) {
                     maintainer.emitLog(o)
                     maintainer.emitEvent('SSH_STDERR', o)
                 }
@@ -115,8 +84,8 @@ class BaseConnector {
 
         for (var i in commands) {
             var command = commands[i].trim()
-            if (this.maintainer != null && !mute) this.maintainer.emitEvent('SSH_RUN', 'running command [' + command + ']')
-            await this.ssh.execCommand(this.envCmd + command, opt)
+            if (this.maintainer != null && (config.is_testing || !mute)) this.maintainer.emitEvent('SSH_RUN', 'running command [' + command + ']')
+            await this.ssh().connection.execCommand(this.envCmd + command, opt)
             if (out.stderr != null && !continueOnError) break // behavior similar to &&
         }
 
@@ -124,37 +93,37 @@ class BaseConnector {
     }
 
     /** file operators **/
-    async download(from: string, to: LocalFolder) {
+    async download(from: string, to: LocalFolder, mute = false) {
         if (to == undefined) throw new ConnectorError('please init input file first')
         var fromZipFilePath = from.endsWith('.zip') ? from : `${from}.zip`
         var toZipFilePath = `${to.path}.zip`
         await this.zip(from, fromZipFilePath)
 
         try {
-            if (this.maintainer != null) this.maintainer.emitEvent('SSH_SCP_DOWNLOAD', `get file from ${from} to ${to.path}`)
-            await this.ssh.getFile(toZipFilePath, fromZipFilePath)
+            if (this.maintainer != null && (config.is_testing || !mute)) this.maintainer.emitEvent('SSH_SCP_DOWNLOAD', `get file from ${from} to ${to.path}`)
+            await this.ssh().connection.getFile(toZipFilePath, fromZipFilePath)
             await this.rm(fromZipFilePath)
-            await to.putFromZip(toZipFilePath)
+            await to.putFileFromZip(toZipFilePath)
         } catch (e) {
             var error = `unable to get file from ${from} to ${to.path}: ` + e.toString()
-            if (this.maintainer != null) this.maintainer.emitEvent('SSH_SCP_DOWNLOAD_ERROR', error)
+            if (this.maintainer != null && (config.is_testing || !mute)) this.maintainer.emitEvent('SSH_SCP_DOWNLOAD_ERROR', error)
             throw new ConnectorError(error)
         }
 
     }
 
-    async upload(from: LocalFolder, to: string) {
+    async upload(from: LocalFolder, to: string, mute = false) {
         if (from == undefined) throw new ConnectorError('please init input file first')
-        var fromZipFilePath = await this.maintainer.executableFile.getZip()
+        var fromZipFilePath = await this.maintainer.executableFolder.getZip()
         var toZipFilePath = to.endsWith('.zip') ? to : `${to}.zip`
         var toFilePath = to.endsWith('.zip') ? to.replace('.zip', '') : to
 
         try {
-            if (this.maintainer != null) this.maintainer.emitEvent('SSH_SCP_UPLOAD', `put file from ${from.path} to ${to}`)
-            await this.ssh.putFile(fromZipFilePath, toZipFilePath)
+            if (this.maintainer != null && (config.is_testing || !mute)) this.maintainer.emitEvent('SSH_SCP_UPLOAD', `put file from ${from.path} to ${to}`)
+            await this.ssh().connection.putFile(fromZipFilePath, toZipFilePath)
         } catch (e) {
             var error = `unable to put file from ${fromZipFilePath} to ${toZipFilePath}: ` + e.toString()
-            if (this.maintainer != null) this.maintainer.emitEvent('SSH_SCP_UPLOAD_ERROR', error)
+            if (this.maintainer != null && (config.is_testing || !mute)) this.maintainer.emitEvent('SSH_SCP_UPLOAD_ERROR', error)
             throw new ConnectorError(error)
         }
 
@@ -165,69 +134,75 @@ class BaseConnector {
     /** helpers **/
 
     // getters
-    async homeDirectory(options: options = {}) {
-        var out = await this.exec('cd ~;pwd;', options)
+    async homeDirectory(options: options = {}, mute = false) {
+        var out = await this.exec('cd ~;pwd;', options, mute)
         return out.stdout
     }
 
-    async whoami(options: options = {}) {
-        var out = await this.exec('whoami;', options)
+    async whoami(options: options = {}, mute = false) {
+        var out = await this.exec('whoami;', options, mute)
         return out.stdout
     }
 
-    async pwd(path: string = undefined, options: options = {}) {
+    async pwd(path: string = undefined, options: options = {}, mute = false) {
         var cmd = 'pwd;'
         if (path) cmd  = 'cd ' + path + ';' + cmd
-        var out = await this.exec(cmd, options)
+        var out = await this.exec(cmd, options, mute)
         return out.stdout
     }
 
-    async ls(path: string = undefined, options: options = {}) {
+    async ls(path: string = undefined, options: options = {}, mute = false) {
         var cmd = 'ls;'
         if (path) cmd  = 'cd ' + path + ';' + cmd
-        var out = await this.exec(cmd, options)
+        var out = await this.exec(cmd, options, mute)
         return out.stdout
     }
 
-    async cat(path: string, options: options = {}) {
+    async cat(path: string, options: options = {}, mute = false) {
         var cmd = 'cat ' + path
-        var out = await this.exec(cmd, options)
+        var out = await this.exec(cmd, options, mute)
         return out.stdout
     }
 
     // file operators
-    async rm(path: string, options: options = {}) {
-        if (this.maintainer != null) this.maintainer.emitEvent('SSH_RM', `removing ${path}`)
-        var out = await this.exec(`rm -rf ${path};`, options)
-        return out.stdout    
-    }
-
-    async zip(from: string, to: string, options: options = {}) {
-        if (this.maintainer != null) this.maintainer.emitEvent('SSH_ZIP', `zipping ${from} to ${to}`)
-        var out = await this.exec(`zip -q -j -r ${to} . ${path.basename(from)}`, Object.assign({
-            cwd: from
-        }, options))
+    async rm(path: string, options: options = {}, mute = false) {
+        if (this.maintainer != null && (config.is_testing || !mute)) this.maintainer.emitEvent('SSH_RM', `removing ${path}`)
+        var out = await this.exec(`rm -rf ${path};`, options, true)
         return out.stdout
     }
 
-    async unzip(from: string, to: string, options: options = {}) {
-        if (this.maintainer != null) this.maintainer.emitEvent('SSH_UNZIP', `unzipping ${from} to ${to}`)
-        var out = await this.exec(`unzip -o -q ${from} -d ${to}`, options)
+    async mkdir(path: string, options: options = {}, mute = false) {
+        if (this.maintainer != null && (config.is_testing || !mute)) this.maintainer.emitEvent('SSH_MKDIR', `removing ${path}`)
+        var out = await this.exec(`mkdir -p ${path};`, options, true)
+        return out.stdout
+    }
+
+    async zip(from: string, to: string, options: options = {}, mute = false) {
+        if (this.maintainer != null && (config.is_testing || !mute)) this.maintainer.emitEvent('SSH_ZIP', `zipping ${from} to ${to}`)
+        var out = await this.exec(`zip -q -j -r ${to} . ${path.basename(from)}`, Object.assign({
+            cwd: from
+        }, options), true)
+        return out.stdout
+    }
+
+    async unzip(from: string, to: string, options: options = {}, mute = false) {
+        if (this.maintainer != null && (config.is_testing || !mute)) this.maintainer.emitEvent('SSH_UNZIP', `unzipping ${from} to ${to}`)
+        var out = await this.exec(`unzip -o -q ${from} -d ${to}`, options, true)
         return out.stdout  
     }
 
-    async tar(from: string, to: string, options: options = {}) {
-        if (this.maintainer != null) this.maintainer.emitEvent('SSH_TAR', `taring ${from} to ${to}`)
+    async tar(from: string, to: string, options: options = {}, mute = false) {
+        if (this.maintainer != null && (config.is_testing || !mute)) this.maintainer.emitEvent('SSH_TAR', `taring ${from} to ${to}`)
         to = to.endsWith('.tar') ? to : to + '.tar'
         var out = await this.exec(`tar cf ${to} *`, Object.assign({
             cwd: from
-        }, options))
+        }, options), true)
         return out.stdout
     }
 
-    async untar(from: string, to: string, options: options = {}) {
-        if (this.maintainer != null) this.maintainer.emitEvent('SSH_UNTAR', `untaring ${from} to ${to}`)
-        var out = await this.exec(`tar -C ${to} -xvf ${from}`, options)
+    async untar(from: string, to: string, options: options = {}, mute = false) {
+        if (this.maintainer != null && (config.is_testing || !mute)) this.maintainer.emitEvent('SSH_UNTAR', `untaring ${from} to ${to}`)
+        var out = await this.exec(`tar -C ${to} -xvf ${from}`, options, true)
         return out.stdout
     }
 }

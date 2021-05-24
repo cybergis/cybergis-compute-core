@@ -2,7 +2,7 @@
     "SUMMA": {
         "hpc": ["keeling_community"],
         "job_pool_capacity": 5,
-        "executable_file": {
+        "executable_folder": {
             "from_user_upload": true,
             "file_config": {
                 "ignore": [],
@@ -21,9 +21,17 @@
     "hello_world_singularity": {
         "hpc": ["keeling_community"],
         "job_pool_capacity": 5,
-        "executable_file": {
+        "executable_folder": {
             "from_user_upload": false
         },
         "maintainer": "HelloWorldSingularityMaintainer"
+    },
+    "spatial_access": {
+        "hpc": ["keeling_community"],
+        "job_pool_capacity": 5,
+        "maintainer": "SpatialAccessMaintainer",
+        "executable_folder": {
+            "from_user_upload": false
+        }
     }
 }

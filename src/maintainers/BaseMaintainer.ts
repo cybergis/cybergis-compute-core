@@ -7,8 +7,12 @@ import validator from 'validator'
 import { NotImplementedError } from '../errors'
 import { config, hpcConfigMap, maintainerConfigMap } from '../../configs/config'
 import SingularityConnector from "../connectors/SingularityConnector"
+import Supervisor from '../Supervisor'
 
 class BaseMaintainer {
+    /** parent pointer **/
+    public supervisor: Supervisor
+
     /** packages **/
     public validator = validator // https://github.com/validatorjs/validator.js
 
@@ -54,7 +58,7 @@ class BaseMaintainer {
     public appParam: {[keys: string]: string} = {}
 
     /** constructor **/
-    constructor(manifest: manifest) {
+    constructor(manifest: manifest, supervisor: Supervisor) {
         for (var i in this.envParamValidators) {
             var val = manifest.env[i]
             if (val != undefined) {
@@ -63,13 +67,12 @@ class BaseMaintainer {
         }
         const fileSystem = new FileSystem()
         const maintainerConfig = maintainerConfigMap[manifest.maintainer]
-        if (maintainerConfig.executable_file) {
-            if (maintainerConfig.executable_file.from_user_upload) {
-                this.executableFile = fileSystem.getLocalFolderByURL(manifest.file)
-            } else {
-                this.executableFile = fileSystem.createLocalFolder()
-            }
+        if (maintainerConfig.executable_folder.from_user_upload) {
+            this.executableFolder = fileSystem.getLocalFolderByURL(manifest.file)
+        } else {
+            this.executableFolder = fileSystem.createLocalFolder()
         }
+        this.supervisor = supervisor
         this.fileSystem = fileSystem
         this.rawManifest = manifest
         this.manifest = Helper.hideCredFromManifest(manifest)
@@ -82,11 +85,11 @@ class BaseMaintainer {
     public connector: BaseConnector | SlurmConnector = undefined
 
     /** files **/
-    public dataFile: BaseFolder = undefined
+    public dataFolder: BaseFolder = undefined
 
-    public downloadFile: LocalFolder = undefined
+    public resultFolder: LocalFolder = undefined
 
-    public executableFile: LocalFolder = undefined
+    public executableFolder: LocalFolder = undefined
 
     /** data **/
     protected logs: Array<string> = []
@@ -140,9 +143,7 @@ class BaseMaintainer {
         if (this.lifeCycleState.initCounter >= this.initRetry) {
             this.emitEvent('JOB_FAILED', 'initialization counter exceeds ' + this.initRetry + ' counts')
         } else {
-            await this.connector.connect()
             await this.onInit()
-            await this.connector.disconnect()
             this.lifeCycleState.initCounter++
         }
 
@@ -161,9 +162,7 @@ class BaseMaintainer {
             this.emitEvent('JOB_FAILED', 'maintain time exceeds ' + this.maintainThresholdInHours + ' hours')
         } else {
             try {
-                await this.connector.connect()
                 await this.onMaintain()
-                await this.connector.disconnect()
             } catch (e) {
                 if (config.is_testing) console.error(e.toString()) // ignore error
             }

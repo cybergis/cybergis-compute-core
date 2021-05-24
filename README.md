@@ -62,9 +62,6 @@ v2 is in development. For future features and roadmap, please refer to [CyberGIS
      - `local_key`
        - `private_key_path`
        - `passphrase` (if required)
-     - `local_file_system`
-       - `cache_path`
-       - `root_path`
    - configs/hpc.json
      - `external_key`
        - `private_key_path`
@@ -75,6 +72,16 @@ v2 is in development. For future features and roadmap, please refer to [CyberGIS
     ./script/development-start.sh
     ```
     > ⚠️ use Ctrl+C to exit
+
+5. If you are outside the University network, use AnyConnect options to start the development server
+    ```bash
+    ./script/development-start.sh -l vpn.cites.illinois.edu -u NetID -p "password" -g 5_SplitTunnel_NoPrivate
+    ```
+
+6. Stop all running containers
+    ```bash
+    ./script/stop.sh
+    ```
 
 ***
 
@@ -120,7 +127,7 @@ v2 is in development. For future features and roadmap, please refer to [CyberGIS
         "SUMMA": {
             "hpc": ["keeling_community"],
             "job_pool_capacity": 5,
-            "executable_file": {
+            "executable_folder": {
                 "from_user_upload": true,
                 "file_config": {
                     "ignore": [],
@@ -145,7 +152,7 @@ v2 is in development. For future features and roadmap, please refer to [CyberGIS
         "hello_world_singularity": {
             "hpc": ["keeling_community"],
             "job_pool_capacity": 5,
-            "executable_file": {
+            "executable_folder": {
                 "from_user_upload": false
             },
             "maintainer": "HelloWorldSingularityMaintainer"

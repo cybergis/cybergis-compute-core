@@ -6,7 +6,7 @@
     "server_port": 3000,
     "server_ip": "0.0.0.0",
     "redis": {
-        "host": "redis",
+        "host": "127.0.0.1",
         "port": 6379,
         "password": null
     },
@@ -19,9 +19,9 @@
     },
     "local_file_system": {
         "limit_in_mb": 100,
-        "cache_path": "/dir/to/tmp",
-        "root_path": "/dir/to/upload"
+        "cache_path": "/job_supervisor/data/tmp",
+        "root_path": "/job_supervisor/data/root"
     },
-    "worker_time_period_in_seconds": 1,
+    "worker_time_period_in_seconds": 3,
     "is_testing": true
 }
