@@ -9,6 +9,8 @@ class Supervisor {
 
     private jobPoolCapacities: {[keys: string]: number } = {}
 
+    private jobCommunitySSHCounters: {[keys: string]: number } = {}
+
     private jobPools: {[keys: string]: manifest[]} = {}
 
     public jobSSHPool: {[keys: string]: SSH} = {}
@@ -40,6 +42,8 @@ class Supervisor {
         for (var hpcName in hpcConfigMap) {
             var hpcConfig = hpcConfigMap[hpcName]
             if (!hpcConfig.is_community_account) continue
+
+            this.jobCommunitySSHCounters[hpcName] = 0
 
             var sshConfig: SSHConfig = {
                 host: hpcConfig.ip,
@@ -108,7 +112,12 @@ class Supervisor {
                     if (job._maintainer.isEnd) {
                         jobPool.splice(i, 1)
 
-                        if (!job._maintainer.connector.config.is_community_account) {
+                        if (job._maintainer.connector.config.is_community_account) {
+                            self.jobCommunitySSHCounters[job.hpc]--
+                            if (self.jobCommunitySSHCounters[job.hpc] === 0) {
+                                if (ssh.connection.isConnected()) await ssh.connection.dispose()
+                            }
+                        } else {
                             if (ssh.connection.isConnected()) await ssh.connection.dispose()
                             delete self.jobSSHPool[job.id]
                         }
@@ -125,7 +134,9 @@ class Supervisor {
                     var maintainer = require(`./maintainers/${maintainerConfigMap[job.maintainer].maintainer}`).default // typescript compilation hack
                     job._maintainer = new maintainer(job, self)
                     self.jobPools[service].push(job)
-                    if (!job._maintainer.connector.config.is_community_account) {
+                    if (job._maintainer.connector.config.is_community_account) {
+                        self.jobCommunitySSHCounters[job.hpc]++
+                    } else {
                         self.jobSSHPool[job.id] = {
                             connection: new NodeSSH(),
                             config: {
