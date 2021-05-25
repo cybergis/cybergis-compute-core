@@ -7,7 +7,7 @@
             "user": "cigi-gisolve",
             "use_local_key": false,
             "external_key": {
-                "private_key_path": "cigi-gisolve.key",
+                "private_key_path": "/job_supervisor/keys/cigi-gisolve.key",
                 "passphrase": null
             }
         },
@@ -16,7 +16,6 @@
     "hadoop": {
         "ip": "hadoop01.cigi.illinois.edu",
         "port": 50022,
-        "is_community_account": false,
-        "connector": "SlurmConnector"
+        "is_community_account": false
     }
 }
