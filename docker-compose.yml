@@ -27,7 +27,7 @@ services:
     - ./:/job_supervisor:rw
     privileged: true
     ports:
-      - "3000:3000"
+      - "3030:3030"
     sysctls:
       - net.ipv6.conf.all.disable_ipv6=0
     environment:

@@ -3,7 +3,7 @@
         "private_key_path": "/dir/to/privatekey",
         "passphrase": null
     },
-    "server_port": 3000,
+    "server_port": 3030,
     "server_ip": "0.0.0.0",
     "redis": {
         "host": "127.0.0.1",
