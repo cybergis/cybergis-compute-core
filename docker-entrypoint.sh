@@ -1,6 +1,4 @@
-#!/bin/sh
-
-cd /job_supervisor/data/redis && redis-server --daemonize yes
+#!/usr/bin/dumb-init /bin/sh
 
 # Start openconnect
 if [[ ! -z "${OPENCONNECT_USER}" ]]; then
@@ -16,4 +14,5 @@ if [[ ! -z "${OPENCONNECT_USER}" ]]; then
   fi
 fi
 
+redis-server /job_supervisor/redis.conf --daemonize yes
 node /job_supervisor/production/server.js

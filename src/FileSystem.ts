@@ -55,6 +55,7 @@ export class FileSystem {
     getLocalFolderByURL(url: string): LocalFolder {
         var u = url.split('://')
         if (u[0] == 'local') return this.getLocalFolder(u[1])
+        throw new FileNotExistError(`invalid local file url [${url}]`)
     }
 
     createLocalFolder(providedFileConfig: fileConfig = {}): LocalFolder {
