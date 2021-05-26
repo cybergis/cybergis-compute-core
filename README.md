@@ -6,41 +6,8 @@ v2 is in development. For future features and roadmap, please refer to [CyberGIS
 
 ***
 
-## Production Server Setup
+## Server Setup
 0. Requirements
-    - NodeJS & npm
-    - Docker & Docker Compose
-
-1. Initialize
-    ```bash
-    git clone https://github.com/cybergis/job-supervisor.git
-    cd job-supervisor
-    # run init script
-    ./script/init.sh
-    ```
-
-2. Configure the following options
-   - config.json
-     - `local_key`
-       - `private_key_path`
-       - `passphrase` (if required)
-     - `local_file_system`
-       - `cache_path`
-       - `root_path`
-   - configs/hpc.json
-     - `external_key`
-       - `private_key_path`
-       - `passphrase` (if required)
-
-3. Run production server
-    ```bash
-    ./script/production-start.sh
-    ```
-
-***
-
-##  Development Setup
-0. System requirements
     - NodeJS & npm
     - Docker & Docker Compose
 
@@ -67,18 +34,22 @@ v2 is in development. For future features and roadmap, please refer to [CyberGIS
        - `private_key_path`
        - `passphrase` (if required)
 
-4. Run development server
+4. Run server
     ```bash
-    ./script/development-start.sh
-    ```
-    > ⚠️ use Ctrl+C to exit
+    # for production server only
+    ./script/production-start.sh
 
-5. If you are outside the University network, use AnyConnect options to start the development server
-    ```bash
+    # for development
+    # - run in foreground with log output
+    ./script/development-start.sh
+    # - run in background, add -b background failing
+    ./script/development-start.sh -b
+    # - some HPC requires university network
+    # - to connect to a University VPN, add the AnyConnect options
     ./script/development-start.sh -l vpn.cites.illinois.edu -u NetID -p "password" -g 5_SplitTunnel_NoPrivate
     ```
 
-6. Stop all running containers
+5. Stop all running containers
     ```bash
     ./script/stop.sh
     ```
