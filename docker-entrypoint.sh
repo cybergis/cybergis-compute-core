@@ -14,5 +14,13 @@ if [[ ! -z "${OPENCONNECT_USER}" ]]; then
   fi
 fi
 
+# install necessary packages
+npm install -g typescript
+cd /job_supervisor && npm install
+
+# compile TypeScript
+cd /job_supervisor && npm run build
+
+# run server
 redis-server /job_supervisor/redis.conf --daemonize yes
 node /job_supervisor/production/server.js

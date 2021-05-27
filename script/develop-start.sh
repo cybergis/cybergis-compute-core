@@ -15,9 +15,6 @@ while getopts 'u:p:g:l:hb' flag; do
   esac
 done
 
-echo "compiling TypeScript..."
-npm run build
-
 echo "running job-supervisor..."
 if [[ ! -z "${RUN_IN_BACKGROUND}" ]]; then
   docker-compose -f ./docker-compose.yml up -d --remove-orphans job_supervisor

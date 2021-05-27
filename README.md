@@ -8,15 +8,9 @@ v2 is in development. For future features and roadmap, please refer to [CyberGIS
 
 ## Server Setup
 0. Requirements
-    - NodeJS & npm
     - Docker & Docker Compose
 
-1. Install TypeScript
-    ```bash
-    npm install -g typescript
-    ```
-
-2. Initialize
+1. Initialize
     ```bash
     git clone https://github.com/cybergis/job-supervisor.git
     cd job-supervisor
@@ -24,7 +18,7 @@ v2 is in development. For future features and roadmap, please refer to [CyberGIS
     ./script/init.sh
     ```
 
-3. Configure the following options
+2. Configure the following options
    - config.json
      - `local_key`
        - `private_key_path`
@@ -34,7 +28,7 @@ v2 is in development. For future features and roadmap, please refer to [CyberGIS
        - `private_key_path`
        - `passphrase` (if required)
 
-4. Run server
+3. Run server
     ```bash
     # for production server only
     ./script/production-start.sh
@@ -49,7 +43,7 @@ v2 is in development. For future features and roadmap, please refer to [CyberGIS
     ./script/development-start.sh -l vpn.cites.illinois.edu -u NetID -p "password" -g 5_SplitTunnel_NoPrivate
     ```
 
-5. Stop all running containers
+4. Stop all running containers
     ```bash
     ./script/stop.sh
     ```
