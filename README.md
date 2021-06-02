@@ -320,14 +320,18 @@ async onMaintain() {
 
 6. The full hello world maintainer is at [HelloWorldSingularityMaintainer](https://github.com/cybergis/job-supervisor/blob/v2/src/maintainers/HelloWorldSingularityMaintainer.ts)
 
+***
+
 ### Community Contributed Application Design
 **goal**: develop a Git project framework for community developers to read user input (data and parameters) and interact with maintainer. App developers only need to rewrite their existing code to make it work on HPC with job supervisor. Only one generic maintainer is needed.
 
 **components**
+
 	- param.json: an input file that contains
 		1. Executable/data/resulte folders
 		2. Job information
 		3. Parameters
+
 	- app.json: information about the application
 		- app name
 		- accepted params
@@ -339,6 +343,8 @@ async onMaintain() {
 	- preprocess: a script that runs in single thread before the main process
 	- main process: runs in MPI
 	- pose process: a script that runs in single thread after the main process
+
+***
 
 ### Timeline
 - MPI - Slurm processing
