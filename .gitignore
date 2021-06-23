@@ -139,4 +139,3 @@ script/redis.conf
 dump.rdb
 
 !data/tmp/.gitkeep
-package-lock.json
