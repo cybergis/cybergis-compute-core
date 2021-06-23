@@ -2,49 +2,32 @@ import Helper from "./Helper"
 import { rawAccessToken } from './types'
 
 class JAT {
-    private accessTokenCache = {}
-
     private secretToken = null
 
     private algorithm = null
 
+    private id
+
     private algorithmName = null
 
-    init(algorithm: string, secretToken: string): this {
+    private algorithms: {[keys: string]: any} = {}
+
+    init(algorithm: string, id: string, secretToken: string): this {
         try {
-            this.algorithm = require('crypto-js/' + algorithm)
+            if (!this.algorithms[algorithm]) this.algorithms[algorithm] = require('crypto-js/' + algorithm)
         } catch {
             throw Error('encryption algorithm not supported by crypto-js package, please refer to https://github.com/brix/crypto-js')
         }
+        this.algorithm = this.algorithms[algorithm]
         this.algorithmName = algorithm
         this.secretToken = secretToken
-        this.accessTokenCache = {}
+        this.id = id
         return this
-    }
-
-    getAccessToken(): string {
-        this._checkInit()
-
-        var date = this._date()
-        var accessToken = this.accessTokenCache[date]
-
-        if (accessToken == undefined) {
-            var payload = this._encodeJSON({
-                date: date
-            })
-            var alg = this._encodeStr(this.algorithmName)
-            var hash = this.hash(payload)
-            accessToken = alg + '.' + payload + '.' + hash
-            this.accessTokenCache[date] = accessToken
-            this._clearCache()
-        }
-
-        return accessToken
     }
 
     parseAccessToken(accessToken: string): rawAccessToken {
         var aT = accessToken.split('.')
-        if (aT.length != 3) {
+        if (aT.length != 4) {
             throw Error('invalid accessToken')
         }
 
@@ -54,29 +37,22 @@ class JAT {
                 encoded: aT[1],
                 decoded: this._decodeJSON(aT[1])
             },
-            hash: aT[2]
+            id: this._decodeStr(aT[2]),
+            hash: aT[3],
         }
     }
 
     hash(payload: string): string {
-        return this.algorithm(this.secretToken + payload).toString()
+        this._checkInit()
+        return this.algorithm(this.secretToken + this.id + payload).toString()
     }
 
     getDate(): number {
         return this._date()
     }
 
-    private async _clearCache() {
-        var date = this._date()
-        for (var i in this.accessTokenCache) {
-            if (parseInt(i) < date) {
-                delete this.accessTokenCache[i]
-            }
-        }
-    }
-
     private _date(): number {
-        // trust for an accessToken is established in the confine of an hour
+        // trust accessToken for an hour
         var current = new Date()
 
         var y = current.getUTCFullYear()
@@ -91,16 +67,8 @@ class JAT {
         return parseInt(y + mStr + dStr + hStr)
     }
 
-    private _encodeJSON(target): string {
-        return Helper.atob(JSON.stringify(target))
-    }
-
     private _decodeJSON(target: string) {
         return JSON.parse(Helper.btoa(target))
-    }
-
-    private _encodeStr(target: string): string {
-        return Helper.atob(target)
     }
 
     private _decodeStr(target: string): string {
@@ -108,7 +76,7 @@ class JAT {
     }
 
     private _checkInit() {
-        if (this.algorithm == null || this.secretToken == null || this.algorithmName == null) {
+        if (!this.algorithm || !this.secretToken || !this.algorithmName || !this.id) {
             throw Error('please init object before getting accessToken')
         }
     }

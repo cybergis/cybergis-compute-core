@@ -1,106 +1,61 @@
+import DB from './DB'
 import { config } from '../configs/config'
-const redis = require('redis')
-const { promisify } = require("util")
+import { Event } from './models/Event'
+import { Log } from './models/Log'
+import { Job } from './models/Job'
 
 class Emitter {
-    private isConnected = false
+    private db = new DB()
 
-    private redis = {
-        push: null,
-        fetch: null,
-        indexFetch: null,
-        indexPush: null
-    }
+    async registerEvents(job: Job, type: string, message: string) {
+        if (config.is_testing) console.log(`${job.id}: [event]`, type, message)
+        var connection = await this.db.connect()
+        var eventRepo = connection.getRepository(Event)
+        var jobRepo = connection.getRepository(Job)
 
-    async registerEvents(uid: number, jobID: string, type: string, message: string) {
-        if (config.is_testing) console.log('[event]', type, message)
-        await this.connect()
-        await this.redis.indexPush('event_' + uid, 'event_' + uid + '_' + jobID)
-        await this.redis.push(['event_' + uid + '_' + jobID, JSON.stringify({
-            type: type,
-            message: message,
-            at: new Date()
-        })])
-    }
-
-    async registerLogs(uid: number, jobID: string, message: string) {
-        if (config.is_testing) console.log('[log]',message)
-        await this.connect()
-        await this.redis.indexPush('log_' + uid, 'log_' + uid + '_' + jobID)
-        await this.redis.push(['log_' + uid + '_' + jobID, JSON.stringify({
-            message: message,
-            at: new Date()
-        })])
-    }
-
-    async status(uid: number, jobID = null) {
-        await this.connect()
-
-        if (jobID === null) {
-            var usrLogs = {}
-            var usrEvents = {}
-            var logIndex = await this.redis.indexFetch('log_' + uid)
-            var eventIndex = await this.redis.indexFetch('event_' + uid)
-
-            for (var i in logIndex) {
-                var jobID = logIndex[i].replace('log_' + uid + '_', '')
-                var logs = await this.redis.fetch(logIndex[i], 0, -1)
-                for (var i in logs) {
-                    logs[i] = JSON.parse(logs[i])
-                }
-                usrLogs[jobID] = logs
-            }
-
-            for (var i in eventIndex) {
-                var jobID = eventIndex[i].replace('event_' + uid + '_', '')
-                var events = await this.redis.fetch(eventIndex[i], 0, -1)
-                for (var i in events) {
-                    events[i] = JSON.parse(events[i])
-                }
-                usrEvents[jobID] = events
-            }
-
-            return {
-                events: usrEvents,
-                logs: usrLogs
-            }
-        } else {
-            var events = await this.redis.fetch('event_' + uid + '_' + jobID, 0, -1)
-            var logs = await this.redis.fetch('log_' + uid + '_' + jobID, 0, -1)
-
-            for (var i in events) {
-                events[i] = JSON.parse(events[i])
-            }
-
-            for (var i in logs) {
-                logs[i] = JSON.parse(logs[i])
-            }
-
-            return {
-                events: events,
-                logs: logs
-            }
+        var updateJob = false
+        if (type === 'JOB_INIT') {
+            updateJob = true
+            job.initializedAt = new Date()
+        } else if (type == 'JOB_ENDED' || type === 'JOB_FAILED') {
+            updateJob = true
+            job.finishedAt = new Date()
+            job.isFailed = type === 'JOB_FAILED'
         }
+        if (updateJob) jobRepo.save(job)
+
+        var event: Event = new Event()
+        event.jobId = job.id
+        event.type = type
+        event.message = message
+        await eventRepo.save(event)
     }
 
-    private async connect() {
-        if (!this.isConnected) {
-            var client = new redis.createClient({
-                host: config.redis.host,
-                port: config.redis.port
-            })
+    async registerLogs(job: Job, message: string) {
+        if (config.is_testing) console.log(`${job.id}: [log]`, message)
+        var connection = await this.db.connect()
+        var logRepo = connection.getRepository(Log)
 
-            if (config.redis.password != null && config.redis.password != undefined) {
-                var redisAuth = promisify(client.auth).bind(client)
-                await redisAuth(config.redis.password)
-            }
+        var log: Log = new Log()
+        log.jobId = job.id
+        log.message = message
+        await logRepo.save(log)
+    }
 
-            this.redis.push = promisify(client.rpush).bind(client)
-            this.redis.fetch = promisify(client.lrange).bind(client)
-            this.redis.indexPush = promisify(client.sadd).bind(client)
-            this.redis.indexFetch = promisify(client.smembers).bind(client)
-            this.isConnected = true
-        }
+    async getEvents(jobId: string): Promise<Event[]> {
+        var connection = await this.db.connect()
+        return await connection.createQueryBuilder(Event, 'event')
+            .where('event.jobId = :jobId', { jobId: jobId })
+            .orderBy('event.createdAt', 'DESC')
+            .getMany()
+    }
+
+    async getLogs(jobId: string): Promise<Log[]> {
+        var connection = await this.db.connect()
+        return await connection.createQueryBuilder(Log, 'log')
+            .where('log.jobId = :jobId', { jobId: jobId })
+            .orderBy('log.createdAt', 'DESC')
+            .getMany()
     }
 }
 

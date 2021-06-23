@@ -1,29 +1,48 @@
-CREATE TABLE `job` (
-	`session_id` bigint (20) unsigned NOT NULL,
-	`job_id` bigint (20) unsigned NOT NULL,
-	`created_at` datetime DEFAULT NOW(),
-	`ended_at` datetime DEFAULT NOW(),
-	`updated_at` datetime DEFAULT NOW(),
-	`deleted_at` datetime DEFAULT NULL,
-	`is_crashed` TINYINT (1) NOT NULL,
-	`file` varchar (256) NOT NULL,
-	`destination` varchar (256) NOT NULL,
-	`env` varchar(256) unsigned NOT NULL,
-    KEY `idx_fk_session_id` (`session_id`),
-    KEY `idx_is_crashed` (`is_crashed`),
-    KEY `idx_destination` (`destination`),
-    UNIQUE KEY `uniq_job_id` (`job_id`),
-	PRIMARY KEY (`job_id`)) ENGINE = InnoDB AUTO_INCREMENT = 4 DEFAULT CHARSET = utf8mb4;
+DROP TABLE IF EXISTS `jobs`;
+CREATE TABLE `jobs` (
+  `id` varchar(255) NOT NULL,
+  `userId` varchar(255) DEFAULT NULL,
+  `secretToken` varchar(255) NOT NULL,
+  `maintainer` varchar(255) NOT NULL,
+  `hpc` varchar(255) NOT NULL,
+  `executableFolder` varchar(255) DEFAULT NULL,
+  `dataFolder` varchar(255) DEFAULT NULL,
+  `resultFolder` varchar(255) DEFAULT NULL,
+  `param` text NOT NULL,
+  `env` text NOT NULL,
+  `slurm` text,
+  `credentialId` varchar(255) DEFAULT NULL,
+  `createdAt` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `deletedAt` timestamp NULL DEFAULT NULL,
+  `initializedAt` timestamp NULL DEFAULT NULL,
+  `finishedAt` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE `session` (
-	`session_id` bigint (20) unsigned NOT NULL,
-	`created_at` datetime DEFAULT NOW(),
-	`updated_at` datetime DEFAULT NOW(),
-	`deleted_at` datetime DEFAULT NULL,
-	`email` varchar (256) NOT NULL,
-	`secret_token` varchar (256) NOT NULL,
-    KEY `idx_fk_session_id` (`session_id`),
-    KEY `idx_is_crashed` (`is_crashed`),
-    KEY `idx_destination` (`destination`),
-    UNIQUE KEY `uniq_job_id` (`job_id`),
-	PRIMARY KEY (`job_id`)) ENGINE = InnoDB AUTO_INCREMENT = 4 DEFAULT CHARSET = utf8mb4;
+DROP TABLE IF EXISTS `logs`;
+CREATE TABLE `logs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `jobId` varchar(255) NOT NULL,
+  `message` varchar(255) NOT NULL,
+  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `deletedAt` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FK_16c9f776ef091dad5e68ca4e37e` (`jobId`),
+  CONSTRAINT `FK_16c9f776ef091dad5e68ca4e37e` FOREIGN KEY (`jobId`) REFERENCES `jobs` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+DROP TABLE IF EXISTS `events`;
+CREATE TABLE `events` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `jobId` varchar(255) NOT NULL,
+  `type` varchar(255) NOT NULL,
+  `message` varchar(255) NOT NULL,
+  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `deletedAt` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FK_88cd839d619ba5c30cc393560c5` (`jobId`),
+  CONSTRAINT `FK_88cd839d619ba5c30cc393560c5` FOREIGN KEY (`jobId`) REFERENCES `jobs` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

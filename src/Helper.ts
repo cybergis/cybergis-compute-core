@@ -1,4 +1,4 @@
-import { manifest } from './types'
+import { Job } from "./models/Job"
 import * as fs from 'fs'
 
 var Helper = {
@@ -10,15 +10,25 @@ var Helper = {
         return Buffer.from(target).toString('base64')
     },
 
-    hideCredFromManifest(manifest: manifest): manifest {
+    job2object(job: Job, exclude = []): Object {
         var out = {}
+        var include = ['id', 'userId', 'secretToken', 'maintainer', 'hpc', 'executableFolder', 'dataFolder', 'resultFolder', 'param', 'env', 'slurm', 'createdAt', 'updatedAt', 'deletedAt', 'initializedAt', 'finishedAt', 'isFailed']
 
-        for (var i in manifest) {
-            if (i != 'cred') {
-                out[i] = manifest[i]
+        for (var i in job) {
+            if (!exclude.includes(i) && include.includes(i)) {
+                out[i] = job[i]
             }
         }
 
+        return out
+    },
+
+    prepareDataForDB(data, properties) {
+        var out = {}
+        for (var i in properties) {
+            var property = properties[i]
+            if (data[property]) out[property] = data[property]
+        }
         return out
     },
 

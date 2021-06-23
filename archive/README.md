@@ -427,7 +427,7 @@ class SparkMaintainer extends BaseMaintainer {
     async onInit() {
         this.injectRuntimeFlagsToFile('index.py', 'python')
         this.workspacePath = await this.upload(await this.getRemoteHomePath())
-        this.emitEvent('JOB_INITIALIZED', 'job [' + this.manifest.id + '] is initialized, waiting for job completion')
+        this.emitEvent('JOB_INITIALIZED', 'job [' + this.id + '] is initialized, waiting for job completion')
     }
 
     async onMaintain() {
@@ -437,7 +437,7 @@ class SparkMaintainer extends BaseMaintainer {
 
         await this.runBash(pipeline, {})
         await this.download(await this.getRemoteHomePath())
-        this.emitEvent('JOB_ENDED', 'job [' + this.manifest.id + '] is complete')
+        this.emitEvent('JOB_ENDED', 'job [' + this.id + '] is complete')
     }
 }
 

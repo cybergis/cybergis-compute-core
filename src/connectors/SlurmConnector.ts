@@ -2,7 +2,6 @@ import { ConnectorError } from '../errors'
 import BaseConnector from './BaseConnector'
 import { slurm } from '../types'
 import * as path from 'path'
-import { config } from '../../configs/config'
 
 class SlurmConnector extends BaseConnector {
 
@@ -15,6 +14,8 @@ class SlurmConnector extends BaseConnector {
     public slurm_id: string
 
     public modules: Array<string> = []
+
+    public template: string
 
     registerModules(modules: Array<string>) {
         this.modules = this.modules.concat(modules)
@@ -38,7 +39,7 @@ class SlurmConnector extends BaseConnector {
         }
 
         // https://researchcomputing.princeton.edu/support/knowledge-base/slurm
-        var template = `#!/bin/bash
+        this.template = `#!/bin/bash
 #SBATCH --job-name=${this.jobID}
 #SBATCH --nodes=${config.num_of_node}
 #SBATCH --ntasks=${config.num_of_task}
@@ -50,12 +51,12 @@ class SlurmConnector extends BaseConnector {
 
 ${modules}
 ${cmd}`
-        this.maintainer.executableFolder.putFileFromString(template, 'job.sbatch')
     }
 
     async submit() {
         if (this.maintainer != null) this.maintainer.emitEvent('SLURM_UPLOAD', `uploading executable files`)
         await this.upload(this.maintainer.executableFolder, this.remote_executable_folder_path)
+        await this.createFile(this.template, path.join(this.remote_executable_folder_path, 'job.sbatch'))
 
         if (this.maintainer != null) this.maintainer.emitEvent('SLURM_MKDIR_RESULT', `creating result folder`)
         await this.mkdir(this.remote_result_folder_path)

@@ -1,6 +1,7 @@
 import Queue from "./Queue"
 import Emitter from "./Emitter"
-import { manifest, SSH, SSHConfig, hpcConfig } from './types'
+import { Job } from "./models/Job"
+import { SSH, SSHConfig, hpcConfig } from './types'
 import { config, maintainerConfigMap, hpcConfigMap } from '../configs/config'
 import { FileSystem, LocalFolder } from './FileSystem'
 import NodeSSH = require('node-ssh')
@@ -11,7 +12,7 @@ class Supervisor {
 
     private jobCommunitySSHCounters: {[keys: string]: number } = {}
 
-    private jobPools: {[keys: string]: manifest[]} = {}
+    private jobPools: {[keys: string]: Job[]} = {}
 
     public jobSSHPool: {[keys: string]: SSH} = {}
 
@@ -81,7 +82,7 @@ class Supervisor {
                     var job = jobPool[i]
                     var ssh: SSH
 
-                    if (job._maintainer.connector.config.is_community_account) {
+                    if (job.maintainerInstance.connector.config.is_community_account) {
                         ssh = self.jobSSHPool[job.hpc]
                     } else {
                         ssh = self.jobSSHPool[job.id]
@@ -90,29 +91,29 @@ class Supervisor {
                     try {
                         if (!ssh.connection.isConnected()) await ssh.connection.connect(ssh.config)
                         await ssh.connection.execCommand('echo') // test connection
-                        if (job._maintainer.isInit) {
-                            await job._maintainer.maintain()
+                        if (job.maintainerInstance.isInit) {
+                            await job.maintainerInstance.maintain()
                         } else {
-                            await job._maintainer.init()
+                            await job.maintainerInstance.init()
                         }
                     } catch (e) { 
                         if (config.is_testing) console.error(e.stack); continue
                     }
 
-                    var events = job._maintainer.dumpEvents()
-                    var logs = job._maintainer.dumpLogs()
+                    var events = job.maintainerInstance.dumpEvents()
+                    var logs = job.maintainerInstance.dumpLogs()
 
                     for (var j in events) {
                         var event = events[j]
-                        self.emitter.registerEvents(job.uid, job._maintainer.id, event.type, event.message)
+                        self.emitter.registerEvents(job, event.type, event.message)
                     }
 
-                    for (var j in logs) self.emitter.registerLogs(job.uid, job._maintainer.id, logs[j])
+                    for (var j in logs) self.emitter.registerLogs(job, logs[j])
 
-                    if (job._maintainer.isEnd) {
+                    if (job.maintainerInstance.isEnd) {
                         jobPool.splice(i, 1)
 
-                        if (job._maintainer.connector.config.is_community_account) {
+                        if (job.maintainerInstance.connector.config.is_community_account) {
                             self.jobCommunitySSHCounters[job.hpc]--
                             if (self.jobCommunitySSHCounters[job.hpc] === 0) {
                                 if (ssh.connection.isConnected()) await ssh.connection.dispose()
@@ -121,10 +122,6 @@ class Supervisor {
                             if (ssh.connection.isConnected()) await ssh.connection.dispose()
                             delete self.jobSSHPool[job.id]
                         }
-
-                        if (job._maintainer.resultFolder != undefined) {
-                            self.downloadPool[job._maintainer.id] = job._maintainer.resultFolder
-                        }
                         i--
                     }
                 }
@@ -132,9 +129,9 @@ class Supervisor {
                 while (jobPool.length < self.jobPoolCapacities[service] && !await self.queues[service].isEmpty()) {
                     var job = await self.queues[service].shift()
                     var maintainer = require(`./maintainers/${maintainerConfigMap[job.maintainer].maintainer}`).default // typescript compilation hack
-                    job._maintainer = new maintainer(job, self)
+                    job.maintainerInstance = new maintainer(job, self)
                     self.jobPools[service].push(job)
-                    if (job._maintainer.connector.config.is_community_account) {
+                    if (job.maintainerInstance.connector.config.is_community_account) {
                         self.jobCommunitySSHCounters[job.hpc]++
                     } else {
                         self.jobSSHPool[job.id] = {
@@ -142,41 +139,30 @@ class Supervisor {
                             config: {
                                 host: hpcConfig.ip,
                                 port: hpcConfig.port,
-                                username: job.cred.usr,
-                                password: job.cred.pwd,
+                                username: job.credential.user,
+                                password: job.credential.password,
                                 readyTimeout: 1000
                             }
                         }
                     }
-                    self.emitter.registerEvents(job.uid, job.id, 'JOB_REGISTERED', `job [${job.id}] is registered with the supervisor, waiting for initialization`)
+                    self.emitter.registerEvents(job, 'JOB_REGISTERED', `job [${job.id}] is registered with the supervisor, waiting for initialization`)
                 }
             }
         }, this.workerTimePeriodInSeconds * 1000)
     }
 
-    async pushJobToQueue(manifest: manifest) {
-        this._validateMaintainerExecutableFolder(manifest)
-        await this.queues[manifest.maintainer].push(manifest)
-        this.emitter.registerEvents(manifest.uid, manifest.id, 'JOB_QUEUED', 'job [' + manifest.id + '] is queued, waiting for registration')
-        return manifest
+    async pushJobToQueue(job: Job) {
+        this._validateMaintainerExecutableFolder(job)
+        await this.queues[job.maintainer].push(job)
+        this.emitter.registerEvents(job, 'JOB_QUEUED', 'job [' + job.id + '] is queued, waiting for registration')
     }
 
-    async getJobStatus(uid: number, jobID: string = null) {
-        return await this.emitter.status(uid, jobID)
-    }
-
-    getJobDownload(jobID: string): LocalFolder {
-        return this.downloadPool[jobID]
-    }
-
-    private _validateMaintainerExecutableFolder(manifest: manifest) {
+    private _validateMaintainerExecutableFolder(job: Job) {
         const fileSystem = new FileSystem()
-        const maintainerConfig = maintainerConfigMap[manifest.maintainer]
-        if (maintainerConfig.executable_folder.from_user_upload) {
-            if (manifest.file == undefined) throw new Error('no file provided')
-            var file = fileSystem.getFileByURL(manifest.file)
-            if (file == undefined) throw new Error('cannot find file [' + manifest.file + ']')
-            if (file.type != 'local') throw new Error('execution file only support file type local')
+        const maintainerConfig = maintainerConfigMap[job.maintainer]
+        if (maintainerConfig.executable_folder.from_user) {
+            if (job.executableFolder == undefined) throw new Error('no file provided')
+            var file = fileSystem.getFolderByURL(job.executableFolder, maintainerConfig.executable_folder.allowed_protocol)
             file.validate()
         }
     }

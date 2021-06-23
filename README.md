@@ -36,17 +36,17 @@ v2 is in development. For future features and roadmap, please refer to [CyberGIS
 
 3. Run server
     ```bash
-    # for production server only
-    ./script/production-start.sh
-
     # for development
     # - run in foreground with log output
-    ./script/development-start.sh
+    ./script/develop-start.sh
     # - run in background, add -b background failing
-    ./script/development-start.sh -b
+    ./script/develop-start.sh -b
     # - some HPC requires university network
     # - to connect to a University VPN, add the AnyConnect options
-    ./script/development-start.sh -l vpn.cites.illinois.edu -u NetID -p "password" -g 5_SplitTunnel_NoPrivate
+    ./script/develop-start.sh -l vpn.cites.illinois.edu -u NetID -p "password" -g 5_SplitTunnel_NoPrivate
+
+    # for production server only
+    ./script/production-start.sh
     ```
 
 4. Stop all running containers
@@ -99,7 +99,7 @@ v2 is in development. For future features and roadmap, please refer to [CyberGIS
             "hpc": ["keeling_community"],
             "job_pool_capacity": 5,
             "executable_folder": {
-                "from_user_upload": true,
+                "from_user": true,
                 "file_config": {
                     "ignore": [],
                     "must_have": [
@@ -124,7 +124,7 @@ v2 is in development. For future features and roadmap, please refer to [CyberGIS
             "hpc": ["keeling_community"],
             "job_pool_capacity": 5,
             "executable_folder": {
-                "from_user_upload": false
+                "from_user": false
             },
             "maintainer": "HelloWorldSingularityMaintainer"
         }
@@ -271,13 +271,13 @@ onDefine() {
          // create file name main.py
          this.executableFolder.putFileFromTemplate(this.entry_script_template, replacements, 'main.py')
          // execute the python script
-         this.connector.execCommandWithinImage(this.image_path, `python ${this.connector.getContainerExecutableFolderPath('./main.py')}`, this.manifest.slurm)
+         this.connector.execCommandWithinImage(this.image_path, `python ${this.connector.getContainerExecutableFolderPath('./main.py')}`, this.slurm)
          // submit job
          await this.connector.submit()
          // emit event
-         this.emitEvent('JOB_INIT', 'job [' + this.manifest.id + '] is initialized, waiting for job completion')
+         this.emitEvent('JOB_INIT', 'job [' + this.id + '] is initialized, waiting for job completion')
      } catch (e) {
-         this.emitEvent('JOB_RETRY', 'job [' + this.manifest.id + '] encountered system error ' + e.toString())
+         this.emitEvent('JOB_RETRY', 'job [' + this.id + '] encountered system error ' + e.toString())
      }
  }
 ```
@@ -292,13 +292,13 @@ async onMaintain() {
           await this.connector.getSlurmOutput()
           // ending condition
           await this.connector.rm(this.connector.getRemoteExecutableFolderPath()) // clear executable files
-          this.emitEvent('JOB_ENDED', 'job [' + this.manifest.id + '] finished')
+          this.emitEvent('JOB_ENDED', 'job [' + this.id + '] finished')
       } else if (status == 'ERROR') {
           // failing condition
-          this.emitEvent('JOB_FAILED', 'job [' + this.manifest.id + '] failed')
+          this.emitEvent('JOB_FAILED', 'job [' + this.id + '] failed')
       }
   } catch (e) {
-      this.emitEvent('JOB_RETRY', 'job [' + this.manifest.id + '] encountered system error ' + e.toString())
+      this.emitEvent('JOB_RETRY', 'job [' + this.id + '] encountered system error ' + e.toString())
   }
 }
 ```
@@ -311,7 +311,7 @@ async onMaintain() {
         "hpc": ["keeling_community"],
         "job_pool_capacity": 5,
         "executable_folder": {
-            "from_user_upload": false
+            "from_user": false
         },
         "maintainer": "HelloWorldSingularityMaintainer"
     }

@@ -26,14 +26,14 @@ export default class HelloWorldBasicMaintainer extends BaseMaintainer {
         })
 
         if (result.stderr.length != null) {
-            this.emitEvent('JOB_FAILED', 'job [' + this.manifest.id + '] failed')
+            this.emitEvent('JOB_FAILED', 'job [' + this.id + '] failed')
         }
 
         if (result.stdout.length != null) {
             // condition when job is initialized
             // if job fail, please do not emit JOB_INITIALIZED event
             // failed initialization can be rebooted
-            this.emitEvent('JOB_INIT', 'job [' + this.manifest.id + '] is initialized, waiting for job completion')
+            this.emitEvent('JOB_INIT', 'job [' + this.id + '] is initialized, waiting for job completion')
         }
     }
 
@@ -41,10 +41,10 @@ export default class HelloWorldBasicMaintainer extends BaseMaintainer {
         var out = await this.connector.homeDirectory()
         if (out != null) {
             // ending condition
-            this.emitEvent('JOB_ENDED', 'job [' + this.manifest.id + '] finished')
+            this.emitEvent('JOB_ENDED', 'job [' + this.id + '] finished')
         } else {
             // failing condition
-            this.emitEvent('JOB_FAILED', 'job [' + this.manifest.id + '] failed')
+            this.emitEvent('JOB_FAILED', 'job [' + this.id + '] failed')
         }
     }
 }

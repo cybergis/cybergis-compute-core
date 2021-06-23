@@ -5,6 +5,8 @@ import Helper from './src/Helper'
 import { hpcConfig, maintainerConfig } from './src/types'
 import { config, hpcConfigMap, maintainerConfigMap } from './configs/config'
 import express = require('express')
+import { Job } from './src/models/Job'
+import DB from './src/DB'
 const bodyParser = require('body-parser')
 const Validator = require('jsonschema').Validator;
 const fileUpload = require('express-fileupload')
@@ -30,37 +32,42 @@ const guard = new Guard()
 const supervisor = new Supervisor()
 const fileSystem = new FileSystem()
 const validator = new Validator()
+const db = new DB()
 
 fileSystem.createClearLocalCacheProcess()
 
 var schemas = {
-    manifest: {
+    updateJob: {
         type: 'object',
         properties: {
-            aT: { type: 'string' },
+            accessToken: { type: 'string' },
+            param: { type: 'object' },
             env: { type: 'object' },
-            app: { type: 'object' },
-            file: { type: 'string' }
+            slurm: { type: 'object' },
+            executableFolder: { type: 'string' },
+            dataFolder: { type: 'string' },
+            resultFolder: { type: 'string' },
         },
-        required: ['aT']
+        required: ['accessToken']
     },
 
-    jobCredentials: {
+    createJob: {
         type: 'object',
         properties: {
-            dest: { type: 'string' },
+            maintainer: { type: 'string' },
+            hpc: { type: 'string' },
             user: { type: 'string' },
             password: { type: 'string' }
         },
-        required: ['dest']
+        required: ['maintainer']
     },
 
-    jobAccessToken: {
+    getJob: {
         type: 'object',
         properties: {
-            aT: { type: 'string' }
+            accessToken: { type: 'string' }
         },
-        required: ['aT']
+        required: ['accessToken']
     }
 }
 
@@ -81,49 +88,6 @@ function setDefaultValues(data, defaults) {
 // index
 app.get('/', (req, res) => {
     res.json({ message: 'hello world' })
-})
-
-// guard
-app.post('/auth/job', async function (req, res) {
-    var cred = req.body
-    var errors = requestErrors(validator.validate(cred, schemas.jobCredentials))
-
-    if (errors.length > 0) {
-        res.json({ error: "invalid input", messages: errors })
-        res.status(402)
-        return
-    }
-
-    // dest format: maintainer@hpc
-    var dest = cred.dest.split('@')
-    var maintainerName = dest[0]
-    var maintainer = maintainerConfigMap[dest[0]]
-    var hpcName = dest[1] == undefined ? maintainer.default_hpc : dest[1]
-    var hpc = hpcConfigMap[hpcName]
-
-    if (hpc === undefined) {
-        res.json({ error: "unrecognized hpc", message: null }); res.status(401)
-        return
-    }
-
-    if (maintainer === undefined) {
-        res.json({ error: "unrecognized maintainer", message: null }); res.status(401)
-        return
-    }
-
-    try {
-        if (hpc.is_community_account) {
-            var manifest = await guard.issueJobSecretTokenForCommunityAccount(hpcName, maintainerName, hpc.community_login.user)
-        } else {
-            var manifest = await guard.issueJobSecretTokenForPrivateAccount(hpcName, maintainerName, cred.user, cred.password)
-        }
-    } catch (e) {
-        res.json({ error: "invalid credentials", messages: [e.toString()] })
-        res.status(401)
-        return
-    }
-
-    res.json(manifest)
 })
 
 // list info
@@ -154,11 +118,11 @@ app.get('/maintainer', function (req, res) {
 })
 
 // file
-app.post('/file/upload', async function (req: any, res) {
+app.post('/file', async function (req: any, res) {
     if (res.statusCode == 402) return
 
     var aT = req.body
-    var errors = requestErrors(validator.validate(aT, schemas.jobAccessToken))
+    var errors = requestErrors(validator.validate(aT, schemas.getJob))
 
     if (errors.length > 0) {
         res.json({ error: "invalid input", messages: errors })
@@ -167,7 +131,7 @@ app.post('/file/upload', async function (req: any, res) {
     }
 
     try {
-        var manifest = await guard.validateJobAccessToken(aT)
+        var job = await guard.validateJobAccessToken(aT)
     } catch (e) {
         res.json({ error: "invalid access token", messages: [e.toString()] })
         res.status(401)
@@ -175,8 +139,8 @@ app.post('/file/upload', async function (req: any, res) {
     }
 
     try {
-        var maintainerConfig = maintainerConfigMap[manifest.maintainer]
-        if (maintainerConfig.executable_folder.from_user_upload) {
+        var maintainerConfig = maintainerConfigMap[job.maintainer]
+        if (maintainerConfig.executable_folder.from_user) {
             var fileConfig = maintainerConfig.executable_folder.file_config
             var file: LocalFolder = await fileSystem.createLocalFolder(fileConfig)
             await file.putFileFromZip(req.files.file.tempFilePath)
@@ -191,8 +155,8 @@ app.post('/file/upload', async function (req: any, res) {
 
 // job
 app.post('/job', async function (req, res) {
-    var manifest = req.body
-    var errors = requestErrors(validator.validate(manifest, schemas.manifest))
+    var body = req.body
+    var errors = requestErrors(validator.validate(body, schemas.createJob))
 
     if (errors.length > 0) {
         res.json({ error: "invalid input", messages: errors })
@@ -200,57 +164,86 @@ app.post('/job', async function (req, res) {
         return
     }
 
-    manifest = setDefaultValues(manifest, { env: {}, payload: {} })
+    var maintainerName = body.maintainer
+    var maintainer = maintainerConfigMap[maintainerName]
+    if (maintainer === undefined) {
+        res.json({ error: "unrecognized maintainer", message: null }); res.status(401)
+        return
+    }
 
-    try {
-        manifest = await guard.validateJobAccessToken(manifest)
-    } catch (e) {
-        res.json({ error: "invalid access token", messages: [e.toString()] })
-        res.status(401)
+    var hpcName = body.hpc ? body.hpc : maintainer.default_hpc
+    var hpc = hpcConfigMap[hpcName]
+    if (hpc === undefined) {
+        res.json({ error: "unrecognized hpc", message: null }); res.status(401)
         return
     }
 
     try {
-        manifest = await supervisor.pushJobToQueue(manifest)
+        if (hpc.is_community_account) {
+            await guard.validateCommunityAccount()
+        } else {
+            await guard.validatePrivateAccount(hpcName, body.user, body.password)
+        }
     } catch (e) {
-        res.json({ error: e.toString() })
-        res.status(402)
+        res.json({ error: "invalid credentials", messages: [e.toString()] }); res.status(401)
         return
     }
 
-    manifest = Helper.hideCredFromManifest(manifest)
-    res.json(manifest)
+    var connection = await db.connect()
+    var jobRepo = connection.getRepository(Job)
+
+    var job: Job = new Job()
+    job.id = guard.generateID()
+    job.userId = null
+    job.secretToken = await guard.issueJobSecretToken()
+    job.maintainer = maintainerName
+    job.hpc = hpcName
+    job.param = {}
+    job.env = {}
+    if (!hpc.is_community_account) job.credentialId = await guard.registerCredential(body.user, body.password)
+    await jobRepo.save(job)
+
+    res.json(job)
 })
 
-app.get('/job/:jobID/result/download', async function (req, res) {
-    var aT = req.body
-    var errors = requestErrors(validator.validate(aT, schemas.jobAccessToken))
+app.put('/job/:jobId', async function (req, res) {
+    var body = req.body
+    var errors = requestErrors(validator.validate(body, schemas.updateJob))
 
     if (errors.length > 0) {
-        res.json({ error: "invalid input", messages: errors })
-        res.status(402)
+        res.json({ error: "invalid input", messages: errors }); res.status(402)
         return
     }
 
     try {
-        await guard.validateJobAccessToken(aT)
+        var job = await guard.validateJobAccessToken(body.accessToken)
     } catch (e) {
-        res.json({ error: "invalid access token", messages: [e.toString()] })
-        res.status(401)
+        res.json({ error: "invalid access token", messages: [e.toString()] }); res.status(401)
         return
     }
 
-    var jobID = req.params.jobID
-    var file = supervisor.getJobDownload(jobID)
-    if (file != undefined)res.json({ error: `job id ${jobID} does not have a download file` })
+    try {
+        var connection = await db.connect()
+        await connection.createQueryBuilder()
+            .update(Job)
+            .where('id = :id', { id:  req.params.jobId })
+            .set(Helper.prepareDataForDB(body, ['param', 'env', 'slurm', 'executableFolder', 'dataFolder', 'resultFolder']))
+            .execute()
 
-    var fileZipPath = await file.getZip()
-    res.download(fileZipPath)
+        var jobRepo = connection.getRepository(Job)
+        var job =  await jobRepo.findOne(job.id)
+    } catch (e) {
+        res.json({ error: e.toString() }); res.status(402)
+        return
+    }
+
+    guard.updateJobAccessTokenCache(body.accessToken, job)
+    res.json(Helper.job2object(job))
 })
 
-app.get('/job/:jobID/status', async function (req, res) {
-    var aT = req.body
-    var errors = requestErrors(validator.validate(aT, schemas.jobAccessToken))
+app.post('/job/:jobId/submit', async function (req, res) {
+    var body = req.body
+    var errors = requestErrors(validator.validate(body, schemas.getJob))
 
     if (errors.length > 0) {
         res.json({ error: "invalid input", messages: errors })
@@ -259,14 +252,78 @@ app.get('/job/:jobID/status', async function (req, res) {
     }
 
     try {
-        var manifest = await guard.validateJobAccessToken(aT)
+        var job = await guard.validateJobAccessToken(body.accessToken)
     } catch (e) {
         res.json({ error: "invalid access token", messages: [e.toString()] })
         res.status(401)
         return
     }
 
-    res.json(await supervisor.getJobStatus(manifest.uid, req.params.jobID))
+    try {
+        await supervisor.pushJobToQueue(job)
+    } catch (e) {
+        res.json({ error: e.toString() }); res.status(402)
+        return
+    }
+
+    res.json(Helper.job2object(job))
+})
+
+app.get('/job/:jobId/events', async function (req, res) {
+    var body = req.body
+    var errors = requestErrors(validator.validate(body, schemas.getJob))
+
+    if (errors.length > 0) {
+        res.json({ error: "invalid input", messages: errors }); res.status(402)
+        return
+    }
+
+    try {
+        var job = await guard.validateJobAccessToken(body.accessToken, true)
+    } catch (e) {
+        res.json({ error: "invalid access token", messages: [e.toString()] }); res.status(401)
+        return
+    }
+
+    res.json(job.events)
+})
+
+app.get('/job/:jobId/logs', async function (req, res) {
+    var body = req.body
+    var errors = requestErrors(validator.validate(body, schemas.getJob))
+
+    if (errors.length > 0) {
+        res.json({ error: "invalid input", messages: errors }); res.status(402)
+        return
+    }
+
+    try {
+        var job = await guard.validateJobAccessToken(body.accessToken, true)
+    } catch (e) {
+        res.json({ error: "invalid access token", messages: [e.toString()] }); res.status(401)
+        return
+    }
+
+    res.json(job.logs)
+})
+
+app.get('/job/:jobId', async function (req, res) {
+    var body = req.body
+    var errors = requestErrors(validator.validate(body, schemas.getJob))
+
+    if (errors.length > 0) {
+        res.json({ error: "invalid input", messages: errors }); res.status(402)
+        return
+    }
+
+    try {
+        var job = await guard.validateJobAccessToken(body.accessToken, true)
+    } catch (e) {
+        res.json({ error: "invalid access token", messages: [e.toString()] }); res.status(401)
+        return
+    }
+
+    res.json(Helper.job2object(job))
 })
 
 app.listen(config.server_port, config.server_ip, () => console.log('supervisor server is up, listening to port: ' + config.server_port))

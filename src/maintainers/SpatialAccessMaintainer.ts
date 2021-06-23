@@ -8,6 +8,8 @@ export default class SpatialAccessMaintainer extends BaseMaintainer {
 
     public resultFolder: LocalFolder
 
+    public executableFolder: LocalFolder
+
     private entry_script_template = `
 import itertools, os, sys, time, warnings
 import geopandas as gpd
@@ -240,11 +242,11 @@ output_map(result, pop_data, hospitals, RESOURCE, RESULTS_FOLDER)
             this.connector.registerContainerVolumeBinds({
                 "/data/keeling/a/michels9/COVID-19AccessibilityNotebook/Data": this.connector.getContainerDataFolderPath()
             })
-            this.connector.execCommandWithinImage(this.image_path, `python ${this.connector.getContainerExecutableFolderPath(this.entry_script_file_name)}`, this.manifest.slurm)
+            this.connector.execCommandWithinImage(this.image_path, `python ${this.connector.getContainerExecutableFolderPath(this.entry_script_file_name)}`, this.slurm)
             await this.connector.submit()
-            this.emitEvent('JOB_INIT', 'job [' + this.manifest.id + '] is initialized, waiting for job completion')
+            this.emitEvent('JOB_INIT', 'job [' + this.id + '] is initialized, waiting for job completion')
         } catch (e) {
-            this.emitEvent('JOB_RETRY', 'job [' + this.manifest.id + '] encountered system error ' + e.toString())
+            this.emitEvent('JOB_RETRY', 'job [' + this.id + '] encountered system error ' + e.toString())
         }
     }
 
@@ -257,13 +259,13 @@ output_map(result, pop_data, hospitals, RESOURCE, RESULTS_FOLDER)
                 // ending condition
                 await this.connector.rm(this.connector.getRemoteExecutableFolderPath()) // clear executable files
                 await this.connector.download(this.connector.getRemoteExecutableFolderPath(), this.resultFolder)
-                this.emitEvent('JOB_ENDED', 'job [' + this.manifest.id + '] finished')
+                this.emitEvent('JOB_ENDED', 'job [' + this.id + '] finished')
             } else if (status == 'ERROR') {
                 // failing condition
-                this.emitEvent('JOB_FAILED', 'job [' + this.manifest.id + '] failed')
+                this.emitEvent('JOB_FAILED', 'job [' + this.id + '] failed')
             }
         } catch (e) {
-            this.emitEvent('JOB_RETRY', 'job [' + this.manifest.id + '] encountered system error ' + e.toString())
+            this.emitEvent('JOB_RETRY', 'job [' + this.id + '] encountered system error ' + e.toString())
         }
     }
 

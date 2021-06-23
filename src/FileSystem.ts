@@ -2,7 +2,9 @@ import Helper from "./Helper"
 import { FileStructureError, FileNotExistError, NotImplementedError } from './errors'
 import * as fs from 'fs'
 import * as path from 'path'
-import { config } from '../configs/config'
+import { gitConfig, executableManifest } from './types'
+import { config, gitConfigMap } from '../configs/config'
+import * as Git from "nodegit"
 const rimraf = require("rimraf")
 const unzipper = require('unzipper')
 const archiver = require('archiver')
@@ -13,7 +15,7 @@ type fileConfig = {
     ignore_everything_except_must_have?: boolean
 }
 
-type fileTypes = 'local'
+type fileTypes = 'local' | 'git'
 
 export class FileSystem {
     createClearLocalCacheProcess() {
@@ -21,12 +23,13 @@ export class FileSystem {
         setInterval(function () {
             try {
                 fs.readdir(cachePath, function (err, files) {
+                    if (!files) return // hack
                     files.forEach(function (file, index) {
                         if (file != '.gitkeep') {
                             fs.stat(path.join(cachePath, file), function (err, stat) {
                                 var endTime, now;
                                 if (err) return console.error(err)
-                                now = new Date().getTime()
+                                now = () => 'CURRENT_TIMESTAMP'
                                 endTime = new Date(stat.ctime).getTime() + 3600000
                                 if (now > endTime) return rimraf(path.join(cachePath, file), (err) => {})
                             })
@@ -37,25 +40,30 @@ export class FileSystem {
         }, 60 * 60 * 1000)
     }
 
-    getFileByURL(url: string): BaseFolder {
+    getFolderByURL(url: string, onlyAllow: string | Array<string> = null): BaseFolder {
         var u = url.split('://')
-        return this.getFile(u[0], u[1])
+        if (onlyAllow) {
+            if (typeof onlyAllow == 'string') {
+                if (u[0] != onlyAllow) throw new Error(`file protocol ${u[0]} is not allowed`)
+            } else {
+                if (!onlyAllow.includes(u[0])) throw new Error(`file protocol ${u[0]} is not allowed`)
+            }
+        }
+        return this.getFolder(u[0], u[1])
     }
 
-    getFile(type: string, id: string): BaseFolder {
-        if (type == 'local') {
-            return new LocalFolder(id)
-        }
+    getFolder(type: string, id: string): BaseFolder {
+        if (type == 'local') return new LocalFolder(id)
+        if (type == 'git') return new GitFolder(id)
+        throw new Error(`cannot find file ${type}://${id}`)
     }
 
     getLocalFolder(id: string): LocalFolder {
         return new LocalFolder(id)
     }
 
-    getLocalFolderByURL(url: string): LocalFolder {
-        var u = url.split('://')
-        if (u[0] == 'local') return this.getLocalFolder(u[1])
-        throw new FileNotExistError(`invalid local file url [${url}]`)
+    getGitFolder(id: string): GitFolder {
+        return new GitFolder(id)
     }
 
     createLocalFolder(providedFileConfig: fileConfig = {}): LocalFolder {
@@ -83,12 +91,83 @@ export class FileSystem {
 export class BaseFolder {
     public type: fileTypes
 
+    public url: string
+
+    public path: string
+
     constructor(type: fileTypes) {
         this.type = type
     }
 
     validate() {
-        throw new NotImplementedError('validate not implemented')
+        // empty interface
+    }
+
+    getURL() {
+        return this.url
+    }
+
+    isZipped(): boolean {
+        return fs.existsSync(this.path + '.zip')
+    }
+
+    async getZip(): Promise<string> {
+        if (!this.path) throw new Error('getZip operation is not supported')
+
+        if (this.isZipped()) return this.path + '.zip'
+
+        var output = fs.createWriteStream(this.path + '.zip')
+        var archive = archiver('zip', { zlib: { level: 9 } })
+
+        await new Promise((resolve, reject) => {
+            output.on('open', (fd) => { 
+                archive.pipe(output)
+                archive.directory(this.path, false)
+                archive.finalize()
+             })
+            archive.on('error', (err) => { reject(err) })
+            output.on('close', () => { resolve(null) })
+            output.on('end', () => { resolve(null) })
+        })
+
+        return this.path + '.zip'
+    }
+}
+
+export class GitFolder extends BaseFolder {
+    public config: gitConfig
+
+    public executableManifest: executableManifest
+
+    constructor(id: string) {
+        super('git')
+        var gitConfig = gitConfigMap[id]
+        if (!gitConfig) throw new FileNotExistError(`file ID ${id} not exist`)
+        this.config = gitConfig
+        this.path = path.join(config.local_file_system.root_path, id)
+        this.url = `${this.type}://${gitConfig.url}`
+    }
+
+    async init() {
+        var repo: Git.Repository
+        if (!fs.existsSync(this.path)) {
+            repo = await Git.Clone.clone(this.config.url, this.path)
+        } else {
+            repo = await Git.Repository.open(this.path)
+        }
+        await repo.getCommit(this.config.sha)
+        const rawExecutableManifest = require(path.join(this.path, 'manifest.json'))
+        this.executableManifest = JSON.parse(JSON.stringify(rawExecutableManifest))
+    }
+
+    async getExecutableManifest(): Promise<executableManifest> {
+        await this.init()
+        return this.executableManifest
+    }
+
+    async getZip(): Promise<string> {
+        await this.init()
+        return await super.getZip()
     }
 }
 
@@ -108,14 +187,7 @@ export class LocalFolder extends BaseFolder {
         this.id = id
         this.path = folderPath
         this.config = this._getConfig()
-    }
-
-    isZipped(): boolean {
-        return fs.existsSync(this.path + '.zip')
-    }
-
-    getURL() {
-        return `${this.type}://${this.id}`
+        this.url = `${this.type}://${this.id}`
     }
 
     validate() {
@@ -135,21 +207,7 @@ export class LocalFolder extends BaseFolder {
 
     async getZip(): Promise<string> {
         if (this.isZipped()) return this.path + '.zip'
-        var output = fs.createWriteStream(this.path + '.zip')
-        var archive = archiver('zip', { zlib: { level: 9 } })
-
-        await new Promise((resolve, reject) => {
-            output.on('open', (fd) => { 
-                archive.pipe(output)
-                archive.directory(this.path, false)
-                archive.finalize()
-             })
-            archive.on('error', (err) => { reject(err) })
-            output.on('close', () => { resolve(null) })
-            output.on('end', () => { resolve(null) })
-        })
-
-        return this.path + '.zip'
+        return await super.getZip()
     }
 
     removeZip() {

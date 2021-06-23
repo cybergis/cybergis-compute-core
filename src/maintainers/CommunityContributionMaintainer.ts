@@ -1,25 +1,14 @@
 import SingularityConnector from '../connectors/SingularityConnector'
 import BaseMaintainer from './BaseMaintainer'
-import { LocalFolder } from '../FileSystem'
+import { LocalFolder, GitFolder } from '../FileSystem'
 
-export default class HelloWorldSingularityMaintainer extends BaseMaintainer {
+export default class CommunityContributionMaintainer extends BaseMaintainer {
 
     public connector: SingularityConnector
 
     public resultFolder: LocalFolder
 
-    public executableFolder: LocalFolder
-
-    private entry_script_template = `
-import time
-print("{{content}}") # {{content}} is replaceable
-time.sleep(5) #sleep for 5 seconds
-print("job complete!")
-`
-
-    private entry_script_file_name = 'main.py'
-
-    private image_path = '/data/keeling/a/cigi-gisolve/simages/spatialaccess.simg'
+    public executableFolder: GitFolder
 
     onDefine() {
         // define connector
@@ -28,9 +17,8 @@ print("job complete!")
 
     async onInit() {
         try {
-            var replacements = {content: "hello world"}
-            this.executableFolder.putFileFromTemplate(this.entry_script_template, replacements, this.entry_script_file_name)
-            this.connector.execCommandWithinImage(this.image_path, `python ${this.connector.getContainerExecutableFolderPath('./main.py')}`, this.slurm)
+            var executableManifest = await this.executableFolder.getExecutableManifest()
+            this.connector.execExecutableManifestWithinImage(executableManifest, this.slurm)
             await this.connector.submit()
             this.emitEvent('JOB_INIT', 'job [' + this.id + '] is initialized, waiting for job completion')
         } catch (e) {

@@ -1,7 +1,9 @@
-import { manifest } from './types'
+import { Job } from './models/Job'
 import { config } from '../configs/config'
+import DB from './DB'
+import { CredentialManager } from './Guard'
+import { promisify } from 'util'
 const redis = require('redis')
-const { promisify } = require("util")
 
 class Queue {
     private name
@@ -15,19 +17,23 @@ class Queue {
 
     private isConnected = false
 
+    private db = new DB()
+
+    private credentialManager = new CredentialManager()
+
     constructor(name: string) {
         this.name = name
     }
 
-    async push(item: manifest) {
+    async push(item: Job) {
         await this.connect()
-        var itemString = JSON.stringify(item)
-        await this.redis.push([this.name, itemString])
+        await this.redis.push([this.name, item.id])
     }
 
-    async shift(): Promise<manifest> {
+    async shift(): Promise<Job> {
         await this.connect()
-        return JSON.parse(await this.redis.shift(this.name))
+        var jobId = await this.redis.shift(this.name)
+        return this.getJobById(jobId)
     }
 
     async isEmpty(): Promise<boolean> {
@@ -35,9 +41,11 @@ class Queue {
         return await this.redis.length(this.name) === 0
     }
 
-    async peak(): Promise<manifest> {
+    async peak(): Promise<Job> {
         await this.connect()
-        return await this.isEmpty() ? undefined : JSON.parse(await this.redis.peak(this.name, 0, 0))
+        if (await this.isEmpty()) return undefined
+        var jobId = await this.redis.peak(this.name, 0, 0)
+        return this.getJobById(jobId)
     }
 
     async length(): Promise<number> {
@@ -63,6 +71,18 @@ class Queue {
             this.redis.length = promisify(client.llen).bind(client)
             this.isConnected = true
         }
+    }
+
+    private async getJobById(id: string): Promise<Job> {
+        var connection = await this.db.connect()
+        var jobRepo = connection.getRepository(Job)
+        var job = await jobRepo.findOne(id)
+
+        if (job.credentialId) {
+            job.credential = await this.credentialManager.get(job.credentialId)
+        }
+
+        return job
     }
 }
 

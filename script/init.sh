@@ -1,7 +1,4 @@
 #!/bin/bash
-echo "installing node modules..."
-npm install
-
 echo "setup iptables..."
 if command -v iptables &> /dev/null
 then

@@ -6,7 +6,10 @@
         "noImplicitAny": false,
         "removeComments": true,
         "noLib": false,
-        "outDir": "production"
+        "outDir": "production",
+        "skipLibCheck": true,
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
     },
     "include": [
         "**/*",

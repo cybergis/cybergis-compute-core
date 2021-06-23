@@ -1,109 +1,67 @@
 import JAT from './JAT'
 import Helper from './Helper'
-import { manifest } from './types'
+import DB from './DB'
+import { FindOneOptions } from 'typeorm'
+import { credential } from './types'
+import { Job } from './models/Job'
 import { config, hpcConfigMap } from '../configs/config'
 const NodeSSH = require('node-ssh')
 const redis = require('redis')
 const { promisify } = require("util")
 
-class SecretTokens {
-    private setIndex = 'sT'
-
+class CredentialManager {
     private redis = {
-        push: null,
-        keys: null,
         getValue: null,
-        length: null,
         setValue: null,
         delValue: null,
-        remove: null
     }
 
     private isConnected = false
 
-    async add(sT: string, data: any) {
+    async add(key: string, cred: credential) {
         await this.connect()
-        await this.redis.push(this.setIndex, sT)
-        await this.redis.setValue(sT, JSON.stringify(data))
+        await this.redis.setValue(key, JSON.stringify(cred))
     }
 
-    async getAll() {
+    async get(key: string): Promise<credential> {
         await this.connect()
-        return await this.redis.keys(this.setIndex)
-    }
-
-    async getManifestBtUid(uid: string = null) {
-        var out = [];
-
-        var sets = await this.getAll();
-        for (var i in sets) {
-            var sT = sets[i];
-            var manifest = await this.getManifestByST(sT)
-            if (uid != null) {
-                if (manifest.uid === uid) {
-                    return manifest
-                }
-            } else {
-                out.push(manifest)
-            }
-        }
-
-        return out
-    }
-
-    async revoke(sT) {
-        await this.redis.delValue(sT)
-        await this.redis.remove(this.setIndex, sT)
-    }
-
-    async getManifestByST(sT: string) {
-        await this.connect()
-        return JSON.parse(await this.redis.getValue(sT))
-    }
-
-    async exists(sT: string) {
-        await this.connect()
-        return await this.redis.getValue(sT) != undefined
+        return JSON.parse(await this.redis.getValue(key))
     }
 
     private async connect() {
-        if (!this.isConnected) {
-            var client = new redis.createClient({
-                host: config.redis.host,
-                port: config.redis.port
-            })
+        if (this.isConnected) return
 
-            if (config.redis.password != null && config.redis.password != undefined) {
-                var redisAuth = promisify(client.auth).bind(client)
-                await redisAuth(config.redis.password)
-            }
+        var client = new redis.createClient({
+            host: config.redis.host,
+            port: config.redis.port
+        })
 
-            this.redis.push = promisify(client.sadd).bind(client)
-            this.redis.remove = promisify(client.srem).bind(client)
-            this.redis.keys = promisify(client.smembers).bind(client)
-            this.redis.getValue = promisify(client.get).bind(client)
-            this.redis.setValue = promisify(client.set).bind(client)
-            this.redis.delValue = promisify(client.del).bind(client)
-            this.redis.length = promisify(client.scard).bind(client)
-            this.isConnected = true
+        if (config.redis.password != null && config.redis.password != undefined) {
+            var redisAuth = promisify(client.auth).bind(client)
+            await redisAuth(config.redis.password)
         }
+
+        this.redis.getValue = promisify(client.get).bind(client)
+        this.redis.setValue = promisify(client.set).bind(client)
+        this.redis.delValue = promisify(client.del).bind(client)
+        this.isConnected = true
     }
 }
 
 class Guard {
     private jat = new JAT()
 
-    private authenticatedAccessTokenCache = {}
+    private authenticatedAccessTokenCache: {[keys: string]: {[keys: string]: Job}} = {}
 
-    private secretTokens = new SecretTokens()
+    private credentialManager = new CredentialManager()
 
     private ssh = new NodeSSH()
 
-    async issueJobSecretTokenForPrivateAccount(hpcName: string, maintainerName: string, user: string, password: string) {
-        this._clearCache()
+    private db = new DB()
 
+    async validatePrivateAccount(hpcName: string, user: string, password: string): Promise<void> {
+        this.clearCache()
         var hpc = hpcConfigMap[hpcName]
-        var isValid = false
 
         try {
             await this.ssh.connect({
@@ -113,106 +71,78 @@ class Guard {
                 password: password
             })
             await this.ssh.dispose()
-            isValid = true
-        } catch (e) {}
-
-        if (!isValid) throw new Error(`unable to check credentials with ${hpcName}`)
-
-        var secretToken = Helper.randomStr(45)
-
-        while (await this.secretTokens.exists(secretToken)) {
-            secretToken = Helper.randomStr(45)
+        } catch (e) {
+            throw new Error(`unable to check credentials with ${hpcName}`)
         }
-
-        var manifest: manifest = {
-            cred: {
-                usr: user,
-                pwd: password
-            },
-            hpc: hpcName,
-            maintainer: maintainerName,
-            sT: secretToken,
-            id: this._generateJobID()
-        }
-        await this.secretTokens.add(secretToken, manifest)
-        delete manifest.cred
-        return manifest
     }
 
-    async issueJobSecretTokenForCommunityAccount(hpcName: string, maintainerName: string, user: string) {
-        this._clearCache()
-
-        var secretToken = Helper.randomStr(45)
-
-        while (await this.secretTokens.exists(secretToken)) {
-            secretToken = Helper.randomStr(45)
-        }
-
-        var manifest: manifest = {
-            cred: {
-                usr: user,
-                pwd: null
-            },
-            hpc: hpcName,
-            maintainer: maintainerName,
-            sT: secretToken,
-            id: this._generateJobID()
-        }
-        await this.secretTokens.add(secretToken, manifest)
-        delete manifest.cred
-        return manifest
+    async validateCommunityAccount(): Promise<void> {
+        this.clearCache()
+        // TBD
     }
 
-    async validateJobAccessToken(manifest): Promise<manifest> {
-        this._clearCache()
+    async issueJobSecretToken(): Promise<string> {
+        var connection = await this.db.connect()
+        var jobRepo = connection.getRepository(Job)
 
-        var rawAT = this.jat.parseAccessToken(manifest.aT)
+        var secretToken = Helper.randomStr(45)
+        while (await jobRepo.findOne({ secretToken: secretToken })) {
+            secretToken = Helper.randomStr(45)
+        }
+        return secretToken
+    }
+
+    async registerCredential(user: string, password: string): Promise<string> {
+        var credentialId = this.generateID()
+        this.credentialManager.add(credentialId, {
+            id: credentialId,
+            user: user,
+            password: password
+        })
+        return credentialId
+    }
+
+    async validateJobAccessToken(accessToken: string, withRelations: boolean = false): Promise<Job> {
+        this.clearCache()
+
+        var rawAccessToken = this.jat.parseAccessToken(accessToken)
         var date = this.jat.getDate()
-        if (rawAT.payload.decoded.date != date) throw new Error('invalid accessToken provided')
-
-        if (this.authenticatedAccessTokenCache[date] != undefined) {
-            var cache = this.authenticatedAccessTokenCache[date][rawAT.hash]
-            if (cache != undefined) {
-                delete manifest.aT
-                manifest.cred = cache.cred
-                manifest.uid = cache.uid
-                manifest.hpc = cache.hpc
-                manifest.maintainer = cache.maintainer
-                manifest.id = cache.id
-                return manifest
-            }
+        if (rawAccessToken.payload.decoded.date != date) throw new Error('invalid accessToken provided')
+    
+        if (!this.authenticatedAccessTokenCache[date]) {
+            this.authenticatedAccessTokenCache[date] = {}
+        } else {
+            var cacheJob: Job = this.authenticatedAccessTokenCache[date][rawAccessToken.hash]
+            if (cacheJob != undefined) return cacheJob
         }
 
-        var keys = await this.secretTokens.getAll()
-        for (var i in keys) {
-            var sT = keys[i]
-            var secretToken = await this.secretTokens.getManifestByST(sT)
-            var hash = this.jat.init(rawAT.alg, secretToken.sT).hash(rawAT.payload.encoded)
-            if (hash == rawAT.hash) {
-                if (this.authenticatedAccessTokenCache[date] === undefined) {
-                    this.authenticatedAccessTokenCache[date] = {}
-                }
-                this.authenticatedAccessTokenCache[date][rawAT.hash] = {
-                    cred: secretToken.cred,
-                    uid: secretToken.uid,
-                    hpc: secretToken.hpc,
-                    maintainer: secretToken.maintainer,
-                    id: secretToken.id
-                }
-                delete manifest.aT
-                manifest.cred = secretToken.cred
-                manifest.uid = secretToken.uid
-                manifest.hpc = secretToken.hpc
-                manifest.maintainer = secretToken.maintainer
-                manifest.id = secretToken.id
-                return manifest
-            }
-        }
+        var connection = await this.db.connect()
+        var jobRepo = connection.getRepository(Job)
+        var relations: FindOneOptions = withRelations ? {
+            relations: ['logs', 'events']
+        } : {}
 
-        throw new Error('invalid accessToken provided')
+        var job = await jobRepo.findOne(rawAccessToken.id, relations)
+        if (!job) throw new Error('invalid accessToken provided')
+
+        var hash = this.jat.init(rawAccessToken.alg, job.id, job.secretToken).hash(rawAccessToken.payload.encoded)
+        if (hash != rawAccessToken.hash) throw new Error('invalid accessToken provided')
+
+        this.authenticatedAccessTokenCache[date][rawAccessToken.hash] = job
+        return job
     }
 
-    private async _clearCache() {
+    updateJobAccessTokenCache(accessToken: string, job: Job) {
+        var date = this.jat.getDate()
+        var rawAccessToken = this.jat.parseAccessToken(accessToken)
+        this.authenticatedAccessTokenCache[date][rawAccessToken.hash] = job
+    }
+
+    generateID(): string {
+        return Math.round((new Date()).getTime() / 1000) + Helper.randomStr(5)
+    }
+
+    private async clearCache() {
         var date = this.jat.getDate()
         for (var i in this.authenticatedAccessTokenCache) {
             if (parseInt(i) < date) {
@@ -220,11 +150,7 @@ class Guard {
             }
         }
     }
-
-    private _generateJobID(): string {
-        return Math.round((new Date()).getTime() / 1000) + Helper.randomStr(4)
-    }
 }
 
 export default Guard
-export { SecretTokens, Guard }
+export { CredentialManager, Guard }

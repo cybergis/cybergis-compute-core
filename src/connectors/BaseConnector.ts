@@ -1,9 +1,11 @@
-import { manifest, options, hpcConfig, SSH } from "../types"
+import { Job } from "../models/Job"
+import { options, hpcConfig, SSH } from "../types"
 import { ConnectorError } from '../errors'
 import BaseMaintainer from '../maintainers/BaseMaintainer'
-import { LocalFolder } from '../FileSystem'
+import { BaseFolder, LocalFolder } from '../FileSystem'
 import * as path from 'path'
 import { config } from "../../configs/config"
+import Helper from '../Helper'
 
 class BaseConnector {
     /** parent pointer **/
@@ -19,9 +21,9 @@ class BaseConnector {
 
     protected envCmd = '#!/bin/bash\n'
 
-    constructor(manifest: manifest, hpcConfig: hpcConfig, maintainer: BaseMaintainer, env: {[keys: string]: any} = {}) {
-        this.jobID = manifest.id
-        this.hpcName = manifest.hpc
+    constructor(job: Job, hpcConfig: hpcConfig, maintainer: BaseMaintainer, env: {[keys: string]: any} = {}) {
+        this.jobID = job.id
+        this.hpcName = job.hpc
         this.config = hpcConfig
         this.maintainer = maintainer
 
@@ -112,7 +114,7 @@ class BaseConnector {
 
     }
 
-    async upload(from: LocalFolder, to: string, mute = false) {
+    async upload(from: BaseFolder, to: string, mute = false) {
         if (from == undefined) throw new ConnectorError('please init input file first')
         var fromZipFilePath = await this.maintainer.executableFolder.getZip()
         var toZipFilePath = to.endsWith('.zip') ? to : `${to}.zip`
@@ -128,6 +130,7 @@ class BaseConnector {
         }
 
         await this.unzip(toZipFilePath, toFilePath)
+        await this.createFile(Helper.job2object(this.maintainer.job), path.join(to, 'job.json'))
         await this.rm(toZipFilePath)
     }
 
@@ -203,6 +206,15 @@ class BaseConnector {
     async untar(from: string, to: string, options: options = {}, mute = false) {
         if (this.maintainer != null && (config.is_testing || !mute)) this.maintainer.emitEvent('SSH_UNTAR', `untaring ${from} to ${to}`)
         var out = await this.exec(`tar -C ${to} -xvf ${from}`, options, true)
+        return out.stdout
+    }
+
+    async createFile(content: string | Object, path: string, options: options = {}, mute = false) {
+        if (this.maintainer != null && (config.is_testing || !mute)) this.maintainer.emitEvent('SSH_CREATE_FILE', `create file to ${path}`)
+        if (typeof content != 'string') {
+            content = JSON.stringify(content)
+        }
+        var out = await this.exec(`touch ${path}; echo "${content}" >> ${path}`, options, true)
         return out.stdout
     }
 }

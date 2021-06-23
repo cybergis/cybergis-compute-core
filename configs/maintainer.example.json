@@ -4,7 +4,8 @@
         "default_hpc": "keeling_community",
         "job_pool_capacity": 5,
         "executable_folder": {
-            "from_user_upload": true,
+            "from_user": true,
+            "allowed_protocol": "local",
             "file_config": {
                 "ignore": [],
                 "must_have": [
@@ -24,9 +25,19 @@
         "default_hpc": "keeling_community",
         "job_pool_capacity": 5,
         "executable_folder": {
-            "from_user_upload": false
+            "from_user": false
         },
         "maintainer": "HelloWorldSingularityMaintainer"
+    },
+    "community_contribution": {
+        "hpc": ["keeling_community"],
+        "default_hpc": "keeling_community",
+        "job_pool_capacity": 5,
+        "executable_folder": {
+            "from_user": true,
+            "allowed_protocol": "git"
+        },
+        "maintainer": "CommunityContributionMaintainer"
     },
     "spatial_access": {
         "hpc": ["keeling_community"],
@@ -34,7 +45,7 @@
         "job_pool_capacity": 5,
         "maintainer": "SpatialAccessMaintainer",
         "executable_folder": {
-            "from_user_upload": false
+            "from_user": false
         }
     }
 }

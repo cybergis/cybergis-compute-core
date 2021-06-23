@@ -1,0 +1,9 @@
+{
+    "python": {
+        "dockerfile": "",
+        "dockerhub": "",
+        "hpc_path": {
+            "keeling_community": "/data/keeling/a/cigi-gisolve/simages/spatialaccess.simg"
+        }
+    }
+}

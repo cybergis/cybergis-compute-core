@@ -1,6 +1,6 @@
-import Helper from "../Helper"
-import { manifest, maintainerConfig, event } from "../types"
-import { BaseFolder, LocalFolder, FileSystem } from '../FileSystem'
+import { Job } from "../models/Job"
+import { maintainerConfig, event, slurm } from "../types"
+import { BaseFolder, LocalFolder, FileSystem, GitFolder } from '../FileSystem'
 import BaseConnector from '../connectors/BaseConnector'
 import SlurmConnector from '../connectors/SlurmConnector'
 import validator from 'validator'
@@ -17,13 +17,13 @@ class BaseMaintainer {
     public validator = validator // https://github.com/validatorjs/validator.js
 
     /** config **/
-    private rawManifest: manifest = undefined
-
-    public manifest: manifest = undefined // secure manifest with no credentials
+    public job: Job = undefined
 
     public config: maintainerConfig = undefined
 
     public id: string = undefined
+
+    public slurm: slurm = undefined
 
     public fileSystem: FileSystem = undefined
 
@@ -58,26 +58,26 @@ class BaseMaintainer {
     public appParam: {[keys: string]: string} = {}
 
     /** constructor **/
-    constructor(manifest: manifest, supervisor: Supervisor) {
+    constructor(job: Job, supervisor: Supervisor) {
         for (var i in this.envParamValidators) {
-            var val = manifest.env[i]
+            var val = job.env[i]
             if (val != undefined) {
                 if (this.envParamValidators[i](val)) this.envParam[i] = val
             }
         }
         const fileSystem = new FileSystem()
-        const maintainerConfig = maintainerConfigMap[manifest.maintainer]
-        if (maintainerConfig.executable_folder.from_user_upload) {
-            this.executableFolder = fileSystem.getLocalFolderByURL(manifest.file)
+        const maintainerConfig = maintainerConfigMap[job.maintainer]
+        if (maintainerConfig.executable_folder.from_user) {
+            this.executableFolder = fileSystem.getFolderByURL(job.executableFolder)
         } else {
             this.executableFolder = fileSystem.createLocalFolder()
         }
         this.supervisor = supervisor
         this.fileSystem = fileSystem
-        this.rawManifest = manifest
-        this.manifest = Helper.hideCredFromManifest(manifest)
+        this.job = job
         this.config = maintainerConfig
-        this.id = manifest.id
+        this.id = job.id
+        this.slurm = job.slurm
         this.onDefine()
     }
 
@@ -87,9 +87,9 @@ class BaseMaintainer {
     /** files **/
     public dataFolder: BaseFolder = undefined
 
-    public resultFolder: LocalFolder = undefined
+    public resultFolder: BaseFolder = undefined
 
-    public executableFolder: LocalFolder = undefined
+    public executableFolder: BaseFolder = undefined
 
     /** data **/
     protected logs: Array<string> = []
@@ -185,33 +185,33 @@ class BaseMaintainer {
 
 
     public getSlurmConnector(): SlurmConnector {
-        var hpc = this.rawManifest.hpc
+        var hpc = this.job.hpc
         if (hpc == undefined) hpc = this.config.default_hpc
         var hpcConfig = hpcConfigMap[hpc]
         if (hpcConfig == undefined) {
             throw new Error("cannot find hpc with name [" + hpc + "]")
         }
-        return new SlurmConnector(this.rawManifest, hpcConfig, this)
+        return new SlurmConnector(this.job, hpcConfig, this)
     }
 
     public getSingularityConnector(): SingularityConnector {
-        var hpc = this.rawManifest.hpc
+        var hpc = this.job.hpc
         if (hpc == undefined) hpc = this.config.default_hpc
         var hpcConfig = hpcConfigMap[hpc]
         if (hpcConfig == undefined) {
             throw new Error("cannot find hpc with name [" + hpc + "]")
         }
-        return new SingularityConnector(this.rawManifest, hpcConfig, this)
+        return new SingularityConnector(this.job, hpcConfig, this)
     }
 
     public getBaseConnector(): BaseConnector {
-        var hpc = this.manifest.hpc
+        var hpc = this.job.hpc
         if (hpc == undefined) hpc = this.config.default_hpc
         var hpcConfig = hpcConfigMap[hpc]
         if (hpcConfig == undefined) {
             throw new Error("cannot find hpc with name [" + hpc + "]")
         }
-        return new BaseConnector(this.manifest, hpcConfig, this)
+        return new BaseConnector(this.job, hpcConfig, this)
     }
 }
 
