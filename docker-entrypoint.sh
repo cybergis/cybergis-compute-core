@@ -16,7 +16,7 @@ fi
 
 # install necessary packages
 npm install -g typescript
-cd /job_supervisor && npm --production install
+cd /job_supervisor && npm install
 
 # compile TypeScript
 cd /job_supervisor && npm run build
