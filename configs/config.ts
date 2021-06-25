@@ -24,8 +24,8 @@ for (var i in rawGitConfig) {
 }
 
 var containerConfigMap: {[key: string]: containerConfig} = {}
-for (var i in containerConfigMap) {
-    containerConfigMap[i] = JSON.parse(JSON.stringify(containerConfigMap[i]))
+for (var i in rawContainerConfig) {
+    containerConfigMap[i] = JSON.parse(JSON.stringify(rawContainerConfig[i]))
 }
 
 export { config, hpcConfigMap, maintainerConfigMap, gitConfigMap, containerConfigMap }
