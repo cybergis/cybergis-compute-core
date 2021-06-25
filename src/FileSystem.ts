@@ -4,7 +4,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { gitConfig, executableManifest } from './types'
 import { config, gitConfigMap } from '../configs/config'
-import * as Git from "nodegit"
+import { exec } from 'child-process-async'
 const rimraf = require("rimraf")
 const unzipper = require('unzipper')
 const archiver = require('archiver')
@@ -149,10 +149,14 @@ export class GitFolder extends BaseFolder {
     }
 
     async init() {
-        var repo = fs.existsSync(this.path) ? await Git.Repository.open(this.path) : await Git.Clone.clone(this.config.url, this.path)
+        if (!fs.existsSync(this.path)) {
+            await exec(`cd ${this.path} && git clone ${this.config.url}`)
+            if (!fs.existsSync(this.path)) throw new Error(`cannot clone from ${this.config.url}`)
+        }
 
-        var commit = this.config.sha ? await repo.getCommit(this.config.sha) : await repo.getHeadCommit()
-        repo.setHeadDetached(commit.id())
+        if (this.config.sha) {
+            await exec(`cd ${this.path} && git checkout ${this.config.sha}`)
+        }
         const rawExecutableManifest = require(path.join(this.path, 'manifest.json'))
         this.executableManifest = JSON.parse(JSON.stringify(rawExecutableManifest))
     }
