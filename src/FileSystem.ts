@@ -151,7 +151,7 @@ export class GitFolder extends BaseFolder {
     async init() {
         if (!fs.existsSync(this.path)) {
             fs.mkdirSync(this.path)
-            await exec(`cd ${this.path} && git clone ${this.config.url}`)
+            await exec(`cd ${this.path} && git clone ${this.config.url} ${this.path}`)
             if (!fs.existsSync(this.path)) throw new Error(`cannot clone from ${this.config.url}`)
         }
 
