@@ -149,13 +149,10 @@ export class GitFolder extends BaseFolder {
     }
 
     async init() {
-        var repo: Git.Repository
-        if (!fs.existsSync(this.path)) {
-            repo = await Git.Clone.clone(this.config.url, this.path)
-        } else {
-            repo = await Git.Repository.open(this.path)
-        }
-        await repo.getCommit(this.config.sha)
+        var repo = fs.existsSync(this.path) ? await Git.Repository.open(this.path) : await Git.Clone.clone(this.config.url, this.path)
+
+        var commit = this.config.sha ? await repo.getCommit(this.config.sha) : await repo.getHeadCommit()
+        repo.setHeadDetached(commit.id())
         const rawExecutableManifest = require(path.join(this.path, 'manifest.json'))
         this.executableManifest = JSON.parse(JSON.stringify(rawExecutableManifest))
     }

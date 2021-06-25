@@ -23,3 +23,5 @@ echo "copying config files..."
 cp -i ./config.example.json ./config.json
 cp -i ./configs/hpc.example.json ./configs/hpc.json
 cp -i ./configs/maintainer.example.json ./configs/maintainer.json
+cp -i ./configs/git.example.json ./configs/git.json
+cp -i ./configs/container.example.json ./configs/container.json

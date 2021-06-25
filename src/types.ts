@@ -110,7 +110,7 @@ export interface fileConfig {
 
 export interface gitConfig {
     url: string,
-    sha: string
+    sha?: string
 }
 
 export interface executableFolder {
