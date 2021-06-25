@@ -13,9 +13,9 @@ class SingularityConnector extends SlurmConnector {
 
     execExecutableManifestWithinImage(manifest: executableManifest, config: slurm) {
         var container = containerConfigMap[manifest.container]
-        if (!container) throw new Error(`unknown container ${container}`)
+        if (!container) throw new Error(`unknown container ${manifest.container}`)
         var containerPath = container.hpc_path[this.hpcName]
-        if (!containerPath) throw new Error(`container ${container} is not supported on HPC ${this.hpcName}`)
+        if (!containerPath) throw new Error(`container ${manifest.container} is not supported on HPC ${this.hpcName}`)
 
         var cmd = ``
         if (manifest.setup_stage) {
