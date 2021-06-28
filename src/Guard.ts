@@ -118,11 +118,11 @@ class Guard {
 
         var connection = await this.db.connect()
         var jobRepo = connection.getRepository(Job)
-        var relations: FindOneOptions = withRelations ? {
+        var options: FindOneOptions = withRelations ? {
             relations: ['logs', 'events']
         } : {}
 
-        var job = await jobRepo.findOne(rawAccessToken.id, relations)
+        var job = await jobRepo.findOne(rawAccessToken.id, options)
         if (!job) throw new Error('invalid accessToken provided')
 
         var hash = this.jat.init(rawAccessToken.alg, job.id, job.secretToken).hash(rawAccessToken.payload.encoded)

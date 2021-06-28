@@ -84,8 +84,7 @@ ${cmd}`
             var i = r.indexOf(this.slurm_id)
             return r[i + 4]
         } catch (e) {
-            if (this.maintainer != null && !mute) this.maintainer.emitEvent('SLURM_GET_STATUS_ERROR', 'cannot parse status result ' + statusResult)
-            throw new ConnectorError('cannot parse status result ' + statusResult)
+            return 'UNKNOWN'
         }
     }
 
