@@ -161,13 +161,13 @@ export class GitFolder extends BaseFolder {
             if (sha != this.config.sha) {
                 rimraf.sync(this.path)
                 fs.mkdirSync(this.path)
-                await exec(`cd ${this.path} && git pull`)
+                await exec(`cd ${this.path} && git clone ${this.config.url} ${this.path}`)
                 await exec(`cd ${this.path} && git checkout ${this.config.sha}`)
             }
         } else {
             rimraf.sync(this.path)
             fs.mkdirSync(this.path)
-            await exec(`cd ${this.path} && git pull`)
+            await exec(`cd ${this.path} && git clone ${this.config.url} ${this.path}`)
             await exec(`cd ${this.path} && git checkout head`)
         }
 
