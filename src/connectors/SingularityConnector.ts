@@ -24,7 +24,7 @@ class SingularityConnector extends SlurmConnector {
         }
 
         var executionStage = manifest.execution_stage.replace('{{JOB_EXECUTABLE_PATH}}', this.getContainerExecutableFolderPath())
-        cmd += `srun --mpi=pmi2 singularity exec ${this._getVolumeBindCMD()} ${containerPath}${executionStage}\n`
+        cmd += `srun --mpi=pmi2 singularity exec ${this._getVolumeBindCMD()} ${containerPath} ${executionStage}\n`
 
         if (manifest.cleanup_stage) {
             var cleanupStage = manifest.cleanup_stage.replace('{{JOB_EXECUTABLE_PATH}}', this.getContainerExecutableFolderPath())
