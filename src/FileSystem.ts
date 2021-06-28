@@ -5,6 +5,7 @@ import * as path from 'path'
 import { gitConfig, executableManifest } from './types'
 import { config, gitConfigMap } from '../configs/config'
 import { exec } from 'child-process-async'
+import { stderr, stdout } from "process"
 const rimraf = require("rimraf")
 const unzipper = require('unzipper')
 const archiver = require('archiver')
@@ -152,12 +153,20 @@ export class GitFolder extends BaseFolder {
         if (!fs.existsSync(this.path)) {
             fs.mkdirSync(this.path)
             await exec(`cd ${this.path} && git clone ${this.config.url} ${this.path}`)
-            if (!fs.existsSync(this.path)) throw new Error(`cannot clone from ${this.config.url}`)
         }
 
         if (this.config.sha) {
-            await exec(`cd ${this.path} && git checkout ${this.config.sha}`)
+            var { stdout, stderr } = await exec(`git rev-parse HEAD`)
+            var sha = stdout.trim()
+            if (sha != this.config.sha) {
+                await exec(`cd ${this.path} && git pull --ff-only`)
+                await exec(`cd ${this.path} && git checkout ${this.config.sha}`)
+            }
+        } else {
+            await exec(`cd ${this.path} && git pull --ff-only`)
+            await exec(`cd ${this.path} && git checkout head`)
         }
+
         const rawExecutableManifest = require(path.join(this.path, 'manifest.json'))
         this.executableManifest = JSON.parse(JSON.stringify(rawExecutableManifest))
     }

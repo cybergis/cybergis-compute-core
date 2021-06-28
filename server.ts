@@ -1,9 +1,9 @@
 import Guard from './src/Guard'
 import Supervisor from './src/Supervisor'
-import { FileSystem, LocalFolder } from './src/FileSystem'
+import { FileSystem, GitFolder, LocalFolder } from './src/FileSystem'
 import Helper from './src/Helper'
-import { hpcConfig, maintainerConfig } from './src/types'
-import { config, hpcConfigMap, maintainerConfigMap } from './configs/config'
+import { gitConfig, hpcConfig, maintainerConfig } from './src/types'
+import { config, gitConfigMap, hpcConfigMap, maintainerConfigMap } from './configs/config'
 import express = require('express')
 import { Job } from './src/models/Job'
 import DB from './src/DB'
@@ -115,6 +115,24 @@ app.get('/maintainer', function (req, res) {
         return out
     }
     res.json({ maintainer: parseMaintainer(maintainerConfigMap) })
+})
+
+app.get('/git', async function (req, res) {
+    var parseGit = async (dest: {[key: string]: gitConfig}) => {
+        var out = {}
+        for (var i in dest) {
+            var gitFolder = new GitFolder(i)
+            var executableManifest = await gitFolder.getExecutableManifest()
+            out[i] = {
+                name: executableManifest.name,
+                container: executableManifest.container,
+                repository: dest[i].url,
+                commit: dest[i].sha
+            }
+        }
+        return out
+    }
+    res.json({ git: await parseGit(gitConfigMap) })
 })
 
 // file
