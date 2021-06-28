@@ -12,7 +12,7 @@ var Helper = {
 
     job2object(job: Job, exclude = []): Object {
         var out = {}
-        var include = ['id', 'userId', 'secretToken', 'maintainer', 'hpc', 'executableFolder', 'dataFolder', 'resultFolder', 'param', 'env', 'slurm', 'createdAt', 'updatedAt', 'deletedAt', 'initializedAt', 'finishedAt', 'isFailed']
+        var include = ['id', 'userId', 'secretToken', 'maintainer', 'hpc', 'executableFolder', 'dataFolder', 'resultFolder', 'param', 'env', 'slurm', 'createdAt', 'updatedAt', 'deletedAt', 'initializedAt', 'finishedAt', 'isFailed', 'events', 'logs']
 
         for (var i in job) {
             if (!exclude.includes(i) && include.includes(i)) {
