@@ -11,7 +11,7 @@ class Emitter {
         if (config.is_testing) console.log(`${job.id}: [event]`, type, message)
         var connection = await this.db.connect()
         var eventRepo = connection.getRepository(Event)
-        var jobRepo = connection.getRepository(Job)
+        var jobId = job.id
 
         var updateJob = false
         if (type === 'JOB_INIT') {
@@ -22,14 +22,16 @@ class Emitter {
             job.finishedAt = new Date()
             job.isFailed = type === 'JOB_FAILED'
         }
+        if (updateJob) {
+            var jobRepo = connection.getRepository(Job)
+            jobRepo.save(job)
+        }
 
         var event: Event = new Event()
-        event.jobId = job.id
+        event.jobId = jobId
         event.type = type
         event.message = message
-        await eventRepo.save(event)
-
-        if (updateJob) jobRepo.save(job)
+        try { await eventRepo.insert(event) } catch {}
     }
 
     async registerLogs(job: Job, message: string) {
