@@ -67,14 +67,14 @@ class BaseConnector {
         var opt = Object.assign({
             onStdout(o) {
                 o = o.toString()
-                if (out.stdout != null) out.stdout = o
+                if (out.stdout === null) out.stdout = o
                     else out.stdout += o
 
                 if (maintainer && !muteLog) maintainer.emitLog(o)
             },
             onStderr(o) {
                 o = o.toString()
-                if (out.stderr != null) out.stderr = o
+                if (out.stderr === null) out.stderr = o
                     else out.stderr += o
 
                     if (maintainer && !muteLog) maintainer.emitLog(o)

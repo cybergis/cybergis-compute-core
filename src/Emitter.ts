@@ -44,7 +44,7 @@ class Emitter {
 
         var log: Log = new Log()
         log.jobId = job.id
-        log.message = message.substring(0,100)
+        log.message = message.substring(0, 500)
         try { await logRepo.save(log) } catch {}
     }
 
