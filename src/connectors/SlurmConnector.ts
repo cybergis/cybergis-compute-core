@@ -101,7 +101,7 @@ ${cmd}`
     }
 
     async getSlurmOutput() {
-        var out = await this.cat(path.join(this.remote_result_folder_path, "slurm.stdout"), {}, true)
+        var out = await this.cat(path.join(this.remote_result_folder_path, "slurm.stdout"), {})
         if (this.maintainer != null && out != null) this.maintainer.emitLog(out)
     }
 

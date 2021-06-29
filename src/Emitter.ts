@@ -38,7 +38,7 @@ class Emitter {
 
         var log: Log = new Log()
         log.jobId = job.id
-        log.message = message
+        log.message = message.substring(0,50)
         await logRepo.save(log)
     }
 
