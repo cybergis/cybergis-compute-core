@@ -150,29 +150,33 @@ export class GitFolder extends BaseFolder {
     }
 
     async init() {
-        if (!fs.existsSync(this.path)) {
-            fs.mkdirSync(this.path)
-            await exec(`cd ${this.path} && git clone ${this.config.url} ${this.path}`)
-        }
+        try {
+            if (!fs.existsSync(this.path)) {
+                fs.mkdirSync(this.path)
+                await exec(`cd ${this.path} && git clone ${this.config.url} ${this.path}`)
+            }
 
-        if (this.config.sha) {
-            var { stdout, stderr } = await exec(`git rev-parse HEAD`)
-            var sha = stdout.trim()
-            if (sha != this.config.sha) {
+            if (this.config.sha) {
+                var { stdout, stderr } = await exec(`git rev-parse HEAD`)
+                var sha = stdout.trim()
+                if (sha != this.config.sha) {
+                    rimraf.sync(this.path)
+                    fs.mkdirSync(this.path)
+                    await exec(`cd ${this.path} && git clone ${this.config.url} ${this.path}`)
+                    await exec(`cd ${this.path} && git checkout ${this.config.sha}`)
+                }
+            } else {
                 rimraf.sync(this.path)
                 fs.mkdirSync(this.path)
                 await exec(`cd ${this.path} && git clone ${this.config.url} ${this.path}`)
-                await exec(`cd ${this.path} && git checkout ${this.config.sha}`)
+                await exec(`cd ${this.path} && git checkout head`)
             }
-        } else {
-            rimraf.sync(this.path)
-            fs.mkdirSync(this.path)
-            await exec(`cd ${this.path} && git clone ${this.config.url} ${this.path}`)
-            await exec(`cd ${this.path} && git checkout head`)
-        }
 
-        const rawExecutableManifest = require(path.join(this.path, 'manifest.json'))
-        this.executableManifest = JSON.parse(JSON.stringify(rawExecutableManifest))
+            const rawExecutableManifest = require(path.join(this.path, 'manifest.json'))
+            this.executableManifest = JSON.parse(JSON.stringify(rawExecutableManifest))
+        } catch (e) {
+            throw new Error(`initialization failed with error: ${e.toString()}`)
+        }
     }
 
     async getExecutableManifest(): Promise<executableManifest> {

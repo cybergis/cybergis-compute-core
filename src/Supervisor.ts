@@ -67,13 +67,6 @@ class Supervisor {
             }
         }
 
-        this.connectorThread = setInterval(async () => {
-            for (var i in this.jobSSHPool) {
-                var ssh = this.jobSSHPool[i].connection
-                if (ssh.isConnected()) await ssh.dispose()
-            }
-        }, 4 * 60 * 1000) // disconnect every 4 hours
-
         this.maintainerThread = setInterval(async () => {
             for (var service in self.jobPools) {
                 var jobPool = self.jobPools[service]

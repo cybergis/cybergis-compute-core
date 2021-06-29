@@ -68,10 +68,12 @@ export class Job {
 
     @AfterLoad()
     sortLogs() {
-        if (this.events) {
+        if (this.logs) {
             if (this.logs.length) {
                 this.logs.sort((a, b) => (a.createdAt < b.createdAt ? -1 : a.createdAt === b.createdAt ? 0 : 1));
             }
+        } else {
+            this.logs = []
         }
     }
 
@@ -81,6 +83,8 @@ export class Job {
             if (this.events.length) {
                 this.events.sort((a, b) => (a.createdAt < b.createdAt ? -1 : a.createdAt === b.createdAt ? 0 : 1));
             }
+        } else {
+            this.events = []
         }
     }
 

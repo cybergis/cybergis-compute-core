@@ -6,7 +6,7 @@ services:
     volumes:
       - ./nginx.conf:/config/nginx/site-confs/default
       - nginx_volume:/config
-    restart: on-failure
+    restart: always
     ports:
       - "80:80"
       - "443:443"

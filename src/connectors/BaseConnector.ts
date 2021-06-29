@@ -70,14 +70,14 @@ class BaseConnector {
                 if (out.stdout != null) out.stdout = o
                     else out.stdout += o
 
-                if (maintainer != null || !mute) maintainer.emitLog(o)
+                if (maintainer && !mute) maintainer.emitLog(o)
             },
             onStderr(o) {
                 o = o.toString()
                 if (out.stderr != null) out.stderr = o
                     else out.stderr += o
 
-                if (maintainer != null || !mute) {
+                if (maintainer && !mute) {
                     maintainer.emitLog(o)
                     maintainer.emitEvent('SSH_STDERR', o)
                 }
