@@ -113,7 +113,7 @@ class Guard {
             this.authenticatedAccessTokenCache[date] = {}
         } else {
             var cacheJob: Job = this.authenticatedAccessTokenCache[date][rawAccessToken.hash]
-            if (cacheJob != undefined) return cacheJob
+            if (cacheJob != undefined && !withRelations) return cacheJob
         }
 
         var connection = await this.db.connect()

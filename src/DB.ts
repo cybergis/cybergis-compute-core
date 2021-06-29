@@ -15,6 +15,15 @@ class DB {
         database: config.mysql.database,
         synchronize: true,
         logging: false,
+        cache: {
+            type: "redis",
+            options: {
+                host: config.redis.host,
+                port: config.redis.port
+                // TODO: add password support
+            },
+            ignoreErrors: true
+        },
         migrationsRun: true,
         entities: [Event, Log, Job]
     }
