@@ -76,9 +76,9 @@ ${cmd}`
     // Job id              Name             Username        Time Use S Queue          
     // ------------------- ---------------- --------------- -------- - ---------------
     // 3142249             singularity      cigi-gisolve    00:00:00 R node           
-    async getStatus(mute = true) {
+    async getStatus() {
         try {
-            var statusResult = (await this.exec(`qstat ${this.slurm_id}`, {}, mute)).stdout
+            var statusResult = (await this.exec(`qstat ${this.slurm_id}`, {}, true)).stdout
             if (statusResult == null) return 'UNKNOWN'
             var r = statusResult.split(/[ |\n]+/)
             var i = r.indexOf(this.slurm_id)
