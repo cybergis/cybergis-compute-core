@@ -169,7 +169,6 @@ export class GitFolder extends BaseFolder {
                 rimraf.sync(this.path)
                 fs.mkdirSync(this.path)
                 await exec(`cd ${this.path} && git clone ${this.config.url} ${this.path}`)
-                await exec(`cd ${this.path} && git checkout head`)
             }
 
             const rawExecutableManifest = require(path.join(this.path, 'manifest.json'))
