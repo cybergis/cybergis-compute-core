@@ -44,7 +44,7 @@ class BaseConnector {
         }
     }
 
-    async exec(commands: string | Array<string>, options: options = {}, muteEvent = true, muteLog = false, continueOnError = false) {
+    async exec(commands: string | Array<string>, options: options = {}, muteEvent = true, muteLog = true, continueOnError = false) {
         type out = {
             stdout: string | null
             stderr: string | null

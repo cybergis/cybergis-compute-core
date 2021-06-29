@@ -34,7 +34,7 @@ class Emitter {
         event.jobId = jobId
         event.type = type
         event.message = message
-        try { await eventRepo.insert(event) } catch {}
+        try { await eventRepo.save(event) } catch {}
     }
 
     async registerLogs(job: Job, message: string) {
@@ -45,7 +45,7 @@ class Emitter {
         var log: Log = new Log()
         log.jobId = job.id
         log.message = message.substring(0,100)
-        try { await logRepo.insert(log) } catch {}
+        try { await logRepo.save(log) } catch {}
     }
 
     async getEvents(jobId: string): Promise<Event[]> {
