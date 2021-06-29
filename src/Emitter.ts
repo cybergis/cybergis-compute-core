@@ -13,18 +13,21 @@ class Emitter {
         var eventRepo = connection.getRepository(Event)
         var jobId = job.id
 
-        var updateJob = false
         if (type === 'JOB_INIT') {
-            updateJob = true
             job.initializedAt = new Date()
+            await connection.createQueryBuilder()
+                .update(Job)
+                .where('id = :id', { id:  job.id })
+                .set({ initializedAt: job.initializedAt })
+                .execute()
         } else if (type == 'JOB_ENDED' || type === 'JOB_FAILED') {
-            updateJob = true
             job.finishedAt = new Date()
             job.isFailed = type === 'JOB_FAILED'
-        }
-        if (updateJob) {
-            var jobRepo = connection.getRepository(Job)
-            jobRepo.save(job)
+            await connection.createQueryBuilder()
+                .update(Job)
+                .where('id = :id', { id:  job.id })
+                .set({ finishedAt: job.finishedAt, isFailed: job.isFailed })
+                .execute()
         }
 
         var event: Event = new Event()
@@ -41,8 +44,8 @@ class Emitter {
 
         var log: Log = new Log()
         log.jobId = job.id
-        log.message = message.substring(0,50)
-        await logRepo.save(log)
+        log.message = message.substring(0,100)
+        try { await logRepo.insert(log) } catch {}
     }
 
     async getEvents(jobId: string): Promise<Event[]> {
