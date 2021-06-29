@@ -89,15 +89,15 @@ ${cmd}`
     }
 
     async cancel() {
-        await this.exec(`scancel ${this.slurm_id}`)
+        await this.exec(`scancel ${this.slurm_id}`, {}, true)
     }
 
     async pause() {
-        await this.exec(`scontrol suspend ${this.slurm_id}`)
+        await this.exec(`scontrol suspend ${this.slurm_id}`, {}, true)
     }
 
     async resume() {
-        await this.exec(`scontrol resume ${this.slurm_id}`)
+        await this.exec(`scontrol resume ${this.slurm_id}`, {}, true)
     }
 
     async getSlurmOutput() {
