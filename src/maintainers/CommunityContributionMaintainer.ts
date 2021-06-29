@@ -32,7 +32,7 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
             if (status == 'C' || status == 'UNKNOWN') {
                 await this.connector.getSlurmOutput()
                 // ending condition
-                await this.connector.rm(this.connector.getRemoteExecutableFolderPath()) // clear executable files
+                // await this.connector.rm(this.connector.getRemoteExecutableFolderPath()) // clear executable files
                 this.emitEvent('JOB_ENDED', 'job [' + this.id + '] finished')
             } else if (status == 'ERROR') {
                 // failing condition
