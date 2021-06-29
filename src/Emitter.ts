@@ -22,13 +22,14 @@ class Emitter {
             job.finishedAt = new Date()
             job.isFailed = type === 'JOB_FAILED'
         }
-        if (updateJob) jobRepo.save(job)
 
         var event: Event = new Event()
         event.jobId = job.id
         event.type = type
         event.message = message
         await eventRepo.save(event)
+
+        if (updateJob) jobRepo.save(job)
     }
 
     async registerLogs(job: Job, message: string) {
