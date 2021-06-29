@@ -55,16 +55,16 @@ ${cmd}`
 
     async submit() {
         if (this.maintainer != null) this.maintainer.emitEvent('SLURM_UPLOAD', `uploading executable files`)
-        await this.upload(this.maintainer.executableFolder, this.remote_executable_folder_path)
-        await this.createFile(this.template, path.join(this.remote_executable_folder_path, 'job.sbatch'))
+        await this.upload(this.maintainer.executableFolder, this.remote_executable_folder_path, true)
+        await this.createFile(this.template, path.join(this.remote_executable_folder_path, 'job.sbatch'), {}, true)
 
         if (this.maintainer != null) this.maintainer.emitEvent('SLURM_MKDIR_RESULT', `creating result folder`)
-        await this.mkdir(this.remote_result_folder_path)
+        await this.mkdir(this.remote_result_folder_path, {}, true)
 
         if (this.maintainer != null) this.maintainer.emitEvent('SLURM_SUBMIT', `submitting slurm job`)
         var sbatchResult = (await this.exec(`sbatch job.sbatch`, {
             cwd: this.remote_executable_folder_path
-        })).stdout
+        }, true, true)).stdout
 
         if (sbatchResult.includes('ERROR') || sbatchResult.includes('WARN')) {
             if (this.maintainer != null) this.maintainer.emitEvent('SLURM_SUBMIT_ERROR', 'cannot submit job ' + this.maintainer.id + ': ' + sbatchResult)
@@ -78,7 +78,7 @@ ${cmd}`
     // 3142249             singularity      cigi-gisolve    00:00:00 R node           
     async getStatus() {
         try {
-            var statusResult = (await this.exec(`qstat ${this.slurm_id}`, {}, true)).stdout
+            var statusResult = (await this.exec(`qstat ${this.slurm_id}`, {}, true, true)).stdout
             if (statusResult == null) return 'UNKNOWN'
             var r = statusResult.split(/[ |\n]+/)
             var i = r.indexOf(this.slurm_id)
