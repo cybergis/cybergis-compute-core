@@ -42,7 +42,8 @@ print("job complete!")
         try {
             var status = await this.connector.getStatus()
             if (status == 'C' || status == 'UNKNOWN') {
-                await this.connector.getSlurmOutput()
+                await this.connector.getSlurmStdout()
+                await this.connector.getSlurmStderr()
                 // ending condition
                 await this.connector.rm(this.connector.getRemoteExecutableFolderPath()) // clear executable files
                 this.emitEvent('JOB_ENDED', 'job [' + this.id + '] finished')

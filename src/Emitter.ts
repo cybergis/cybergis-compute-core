@@ -44,7 +44,7 @@ class Emitter {
 
         var log: Log = new Log()
         log.jobId = job.id
-        log.message = message.substring(0, 500)
+        log.message = message.length > 500 ? message.substring(0, 500) + '...[download for full log]' : message
         try { await logRepo.save(log) } catch {}
     }
 

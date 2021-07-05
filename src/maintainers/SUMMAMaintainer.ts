@@ -123,7 +123,8 @@ print("Done in {}/{} ".format(rank, size))`
             var status = await this.connector.getStatus()
             if (status == 'C' || status == 'UNKNOWN') {
                 // ending condition
-                await this.connector.getSlurmOutput()
+                await this.connector.getSlurmStdout()
+                await this.connector.getSlurmStderr()
                 this.resultFolder = this.fileSystem.createLocalFolder()
                 await this.connector.download(this.connector.getRemoteExecutableFolderPath(), this.resultFolder)
                 this.emitEvent('JOB_ENDED', 'job [' + this.id + '] finished')

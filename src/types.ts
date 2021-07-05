@@ -157,3 +157,12 @@ export interface SSH {
     connection: NodeSSH
     config: SSHConfig
 }
+
+export interface job_maintainer_updatable {
+    executableFolder?: string
+    dataFolder?: string
+    resultFolder?: string
+    param?: {[keys: string]: string}
+    env?: {[keys: string]: string}
+    slurm?: slurm
+}

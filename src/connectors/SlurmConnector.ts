@@ -46,8 +46,8 @@ class SlurmConnector extends BaseConnector {
 #SBATCH --cpus-per-task=${config.cpu_per_task}
 #SBATCH --mem-per-cpu=${config.memory_per_cpu}
 #SBATCH --time=${walltime}
-#SBATCH --error=${path.join(this.remote_result_folder_path, "slurm.stdout")}
-#SBATCH --output=${path.join(this.remote_result_folder_path, "slurm.stdout")}
+#SBATCH --error=${path.join(this.remote_result_folder_path, "job.stderr")}
+#SBATCH --output=${path.join(this.remote_result_folder_path, "job.stdout")}
 
 ${modules}
 ${cmd}`
@@ -100,8 +100,13 @@ ${cmd}`
         await this.exec(`scontrol resume ${this.slurm_id}`, {}, true)
     }
 
-    async getSlurmOutput() {
-        var out = await this.cat(path.join(this.remote_result_folder_path, "slurm.stdout"), {})
+    async getSlurmStdout() {
+        var out = await this.cat(path.join(this.remote_result_folder_path, "job.stdout"), {})
+        if (this.maintainer != null && out != null) this.maintainer.emitLog(out)
+    }
+
+    async getSlurmStderr() {
+        var out = await this.cat(path.join(this.remote_result_folder_path, "job.stderr"), {})
         if (this.maintainer != null && out != null) this.maintainer.emitLog(out)
     }
 

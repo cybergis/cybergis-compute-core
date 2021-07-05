@@ -248,7 +248,9 @@ export class LocalFolder extends BaseFolder {
 
             const writeFile = () => {
                 if (type === 'File' && !that.config.ignore.includes(entryName)) {
-                    var stream = fs.createWriteStream(path.join(that.path, entryParentPath, entryName), { flags: 'wx', encoding: 'utf-8', mode: 0o755 })
+                    var p = path.join(that.path, entryParentPath, entryName)
+                    if (fs.existsSync(p)) fs.unlinkSync(p)
+                    var stream = fs.createWriteStream(p, { flags: 'wx', encoding: 'utf-8', mode: 0o755 })
                     stream.on('open', (fd) => { entry.pipe(stream) })
                 }
             }

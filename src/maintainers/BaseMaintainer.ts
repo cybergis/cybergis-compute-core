@@ -1,5 +1,5 @@
 import { Job } from "../models/Job"
-import { maintainerConfig, event, slurm } from "../types"
+import { maintainerConfig, event, slurm, job_maintainer_updatable } from "../types"
 import { BaseFolder, LocalFolder, FileSystem, GitFolder } from '../FileSystem'
 import BaseConnector from '../connectors/BaseConnector'
 import SlurmConnector from '../connectors/SlurmConnector'
@@ -8,6 +8,7 @@ import { NotImplementedError } from '../errors'
 import { config, hpcConfigMap, maintainerConfigMap } from '../../configs/config'
 import SingularityConnector from "../connectors/SingularityConnector"
 import Supervisor from '../Supervisor'
+import DB from '../DB'
 
 class BaseMaintainer {
     /** parent pointer **/
@@ -15,6 +16,8 @@ class BaseMaintainer {
 
     /** packages **/
     public validator = validator // https://github.com/validatorjs/validator.js
+
+    public db: DB
 
     /** config **/
     public job: Job = undefined
@@ -78,6 +81,7 @@ class BaseMaintainer {
         this.config = maintainerConfig
         this.id = job.id
         this.slurm = job.slurm
+        this.db = new DB()
         this.onDefine()
     }
 
@@ -183,6 +187,16 @@ class BaseMaintainer {
         return events
     }
 
+    public async updateJob(job: job_maintainer_updatable) {
+        var connection = await this.db.connect()
+        await connection.createQueryBuilder()
+            .update(Job)
+            .where('id = :id', { id:  this.id })
+            .set(job)
+            .execute()
+        var jobRepo = connection.getRepository(Job)
+        this.job = await jobRepo.findOne(this.id)
+    }
 
     public getSlurmConnector(): SlurmConnector {
         var hpc = this.job.hpc

@@ -13,6 +13,7 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
     onDefine() {
         // define connector
         this.connector = this.getSingularityConnector()
+        this.resultFolder = this.fileSystem.createLocalFolder()
     }
 
     async onInit() {
@@ -30,9 +31,13 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
         try {
             var status = await this.connector.getStatus()
             if (status == 'C' || status == 'UNKNOWN') {
-                await this.connector.getSlurmOutput()
+                await this.connector.getSlurmStdout()
+                await this.connector.getSlurmStderr()
+                this.connector.download(this.connector.getRemoteResultFolderPath(), this.resultFolder)
+                await this.updateJob({
+                    resultFolder: this.resultFolder.getURL()
+                })
                 // ending condition
-                // await this.connector.rm(this.connector.getRemoteExecutableFolderPath()) // clear executable files
                 this.emitEvent('JOB_ENDED', 'job [' + this.id + '] finished')
             } else if (status == 'ERROR') {
                 // failing condition

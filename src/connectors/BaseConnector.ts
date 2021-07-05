@@ -109,7 +109,6 @@ class BaseConnector {
             if (this.maintainer && !muteEvent) this.maintainer.emitEvent('SSH_SCP_DOWNLOAD_ERROR', error)
             throw new ConnectorError(error)
         }
-
     }
 
     async upload(from: BaseFolder, to: string, muteEvent = false) {

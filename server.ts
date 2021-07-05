@@ -68,6 +68,15 @@ var schemas = {
             accessToken: { type: 'string' }
         },
         required: ['accessToken']
+    },
+
+    getFile: {
+        type: 'object',
+        properties: {
+            accessToken: { type: 'string' },
+            fileUrl: { type: 'string' }
+        },
+        required: ['accessToken', 'fileUrl']
     }
 }
 
@@ -139,8 +148,8 @@ app.get('/git', async function (req, res) {
 app.post('/file', async function (req: any, res) {
     if (res.statusCode == 402) return
 
-    var aT = req.body
-    var errors = requestErrors(validator.validate(aT, schemas.getJob))
+    var body = req.body
+    var errors = requestErrors(validator.validate(body, schemas.getJob))
 
     if (errors.length > 0) {
         res.json({ error: "invalid input", messages: errors })
@@ -149,7 +158,7 @@ app.post('/file', async function (req: any, res) {
     }
 
     try {
-        var job = await guard.validateJobAccessToken(aT)
+        var job = await guard.validateJobAccessToken(body.accessToken)
     } catch (e) {
         res.json({ error: "invalid access token", messages: [e.toString()] })
         res.status(401)
@@ -166,6 +175,35 @@ app.post('/file', async function (req: any, res) {
         res.json({ file: file.getURL() })
     } catch (e) {
         res.json({ error: e.toString() })
+        res.status(402)
+        return
+    }
+})
+
+app.get('/file', async function (req: any, res) {
+    var body = req.body
+    var errors = requestErrors(validator.validate(body, schemas.getFile))
+
+    if (errors.length > 0) {
+        res.json({ error: "invalid input", messages: errors })
+        res.status(402)
+        return
+    }
+
+    try {
+        await guard.validateJobAccessToken(body.accessToken)
+    } catch (e) {
+        res.json({ error: "invalid access token", messages: [e.toString()] })
+        res.status(401)
+        return
+    }
+
+    try {
+        var folder = fileSystem.getFolderByURL(body.fileUrl, 'local')
+        var dir = await folder.getZip()
+        res.download(dir)
+    } catch (e) {
+        res.json({ error: `cannot get file by url [${body.fileUrl}]`, messages: [e.toString()] })
         res.status(402)
         return
     }
