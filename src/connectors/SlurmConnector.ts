@@ -5,12 +5,6 @@ import * as path from 'path'
 
 class SlurmConnector extends BaseConnector {
 
-    public remote_executable_folder_path: string = path.join(this.config.root_path, this.maintainer.id, 'executable')
-
-    public remote_data_folder_path: string = path.join(this.config.root_path, this.maintainer.id, 'data')
-
-    public remote_result_folder_path: string = path.join(this.config.root_path, this.maintainer.id, 'result')
-
     public slurm_id: string
 
     public modules: Array<string> = []
@@ -108,21 +102,6 @@ ${cmd}`
     async getSlurmStderr() {
         var out = await this.cat(path.join(this.remote_result_folder_path, "job.stderr"), {})
         if (this.maintainer != null && out != null) this.maintainer.emitLog(out)
-    }
-
-    getRemoteExecutableFolderPath(providedPath: string = null): string {
-        if (providedPath) return path.join(this.remote_executable_folder_path, providedPath)
-        else return this.remote_executable_folder_path
-    }
-
-    getRemoteDataFolderPath(providedPath: string = null): string {
-        if (providedPath) return path.join(this.remote_data_folder_path, providedPath)
-        else return this.remote_data_folder_path
-    }
-
-    getRemoteResultFolderPath(providedPath: string = null): string {
-        if (providedPath) return path.join(this.remote_result_folder_path, providedPath)
-        else return this.remote_result_folder_path
     }
 }
 

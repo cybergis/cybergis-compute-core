@@ -16,6 +16,12 @@ class BaseConnector {
 
     public hpcName: string
 
+    public remote_executable_folder_path: string
+
+    public remote_data_folder_path: string
+
+    public remote_result_folder_path: string
+
     /** config **/
     public config: hpcConfig
 
@@ -33,6 +39,9 @@ class BaseConnector {
             envCmd += `export ${i}=${v};\n`
         }
         this.envCmd = envCmd
+        this.remote_executable_folder_path = path.join(this.config.root_path, this.maintainer.id, 'executable')
+        this.remote_data_folder_path = path.join(this.config.root_path, this.maintainer.id, 'data')
+        this.remote_result_folder_path = path.join(this.config.root_path, this.maintainer.id, 'result')
     }
 
     /** actions **/
@@ -127,7 +136,17 @@ class BaseConnector {
         }
 
         await this.unzip(toZipFilePath, toFilePath)
-        await this.createFile(Helper.job2object(this.maintainer.job), path.join(to, 'job.json'))
+        await this.createFile({
+            jobId: this.maintainer.job.id,
+            userId: this.maintainer.job.userId,
+            maintainer: this.maintainer.job.maintainer,
+            hpc: this.maintainer.job.hpc,
+            param: this.maintainer.job.param,
+            env: this.maintainer.job.env,
+            executableFolder: this.getRemoteExecutableFolderPath(),
+            dataFolder: this.getRemoteDataFolderPath(),
+            resultFolder: this.getRemoteResultFolderPath()
+        }, path.join(to, 'job.json'))
         await this.rm(toZipFilePath)
     }
 
@@ -213,6 +232,21 @@ class BaseConnector {
         }
         var out = await this.exec(`touch ${path}; echo "${content}" >> ${path}`, options, true)
         return out.stdout
+    }
+
+    getRemoteExecutableFolderPath(providedPath: string = null): string {
+        if (providedPath) return path.join(this.remote_executable_folder_path, providedPath)
+        else return this.remote_executable_folder_path
+    }
+
+    getRemoteDataFolderPath(providedPath: string = null): string {
+        if (providedPath) return path.join(this.remote_data_folder_path, providedPath)
+        else return this.remote_data_folder_path
+    }
+
+    getRemoteResultFolderPath(providedPath: string = null): string {
+        if (providedPath) return path.join(this.remote_result_folder_path, providedPath)
+        else return this.remote_result_folder_path
     }
 }
 
