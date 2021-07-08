@@ -112,6 +112,13 @@ export class BaseFolder {
         return fs.existsSync(this.path + '.zip')
     }
 
+    removeZip() {
+        if (this.isZipped()) {
+            if (Helper.fileModifiedDate(this.path) > Helper.fileModifiedDate(this.path + '.zip'))
+                fs.unlinkSync(this.path + '.zip')
+        }
+    }
+
     async getZip(): Promise<string> {
         if (!this.path) throw new Error('getZip operation is not supported')
 
@@ -160,6 +167,7 @@ export class GitFolder extends BaseFolder {
                 try {
                     await exec(`cd ${this.path} && git checkout ${this.config.sha}`)
                 } catch {
+                    this.removeZip()
                     rimraf.sync(this.path)
                     fs.mkdirSync(this.path)
                     await exec(`cd ${this.path} && git clone ${this.config.url} ${this.path}`)
@@ -169,6 +177,7 @@ export class GitFolder extends BaseFolder {
                 await exec(`cd ${this.path} && git fetch origin`)
                 var { stdout, stderr } = await exec(`cd ${this.path} && git --no-pager diff origin/HEAD --stat-count=1`)
                 if (stdout.trim()) {
+                    this.removeZip()
                     rimraf.sync(this.path)
                     fs.mkdirSync(this.path)
                     await exec(`cd ${this.path} && git clone ${this.config.url} ${this.path}`)
@@ -230,13 +239,6 @@ export class LocalFolder extends BaseFolder {
     async getZip(): Promise<string> {
         if (this.isZipped()) return this.path + '.zip'
         return await super.getZip()
-    }
-
-    removeZip() {
-        if (this.isZipped()) {
-            if (Helper.fileModifiedDate(this.path) > Helper.fileModifiedDate(this.path + '.zip'))
-                fs.unlinkSync(this.path + '.zip')
-        }
     }
 
     async putFileFromZip(zipFilePath: string) {
