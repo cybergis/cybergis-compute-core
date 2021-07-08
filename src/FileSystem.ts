@@ -157,10 +157,9 @@ export class GitFolder extends BaseFolder {
             }
 
             if (this.config.sha) {
-                var { stdout, stderr } = await exec(`git rev-parse HEAD`)
-                var sha = stdout.trim()
-                console.log(sha, this.config.sha)
-                if (sha != this.config.sha) {
+                try {
+                    await exec(`cd ${this.path} && git checkout ${this.config.sha}`)
+                } catch {
                     rimraf.sync(this.path)
                     fs.mkdirSync(this.path)
                     await exec(`cd ${this.path} && git clone ${this.config.url} ${this.path}`)
