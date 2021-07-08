@@ -163,11 +163,12 @@ export class GitFolder extends BaseFolder {
                 await exec(`cd ${this.path} && git clone ${this.config.url} ${this.path}`)
             }
 
+            this.removeZip()
+
             if (this.config.sha) {
                 try {
                     await exec(`cd ${this.path} && git checkout ${this.config.sha}`)
                 } catch {
-                    this.removeZip()
                     rimraf.sync(this.path)
                     fs.mkdirSync(this.path)
                     await exec(`cd ${this.path} && git clone ${this.config.url} ${this.path}`)
@@ -177,7 +178,6 @@ export class GitFolder extends BaseFolder {
                 await exec(`cd ${this.path} && git fetch origin`)
                 var { stdout, stderr } = await exec(`cd ${this.path} && git --no-pager diff origin/HEAD --stat-count=1`)
                 if (stdout.trim()) {
-                    this.removeZip()
                     rimraf.sync(this.path)
                     fs.mkdirSync(this.path)
                     await exec(`cd ${this.path} && git clone ${this.config.url} ${this.path}`)
