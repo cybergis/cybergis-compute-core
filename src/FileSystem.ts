@@ -160,13 +160,15 @@ export class GitFolder extends BaseFolder {
                 var { stdout, stderr } = await exec(`git rev-parse HEAD`)
                 var sha = stdout.trim()
                 if (sha != this.config.sha) {
-                    await exec(`cd ${this.path} && git fetch`)
-                    await exec(`cd ${this.path} && git switch -C master origin/master`)
+                    try { await exec(`git switch -`) } catch {}
+                    await exec(`cd ${this.path} && git reset --hard`)
+                    await exec(`cd ${this.path} && git pull`)
                     await exec(`cd ${this.path} && git checkout ${this.config.sha}`)
                 }
             } else {
-                await exec(`cd ${this.path} && git fetch`)
-                await exec(`cd ${this.path} && git switch -C master origin/master`)
+                try { await exec(`git switch -`) } catch {}
+                await exec(`cd ${this.path} && git reset --hard`)
+                await exec(`cd ${this.path} && git pull`)
             }
 
             const rawExecutableManifest = require(path.join(this.path, 'manifest.json'))
