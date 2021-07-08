@@ -20,27 +20,27 @@ class SingularityConnector extends SlurmConnector {
         var cmd = ``
         if (manifest.pre_processing_stage) {
             var preProcessingStage = manifest.pre_processing_stage.replace('{{JOB_EXECUTABLE_PATH}}', this.getContainerExecutableFolderPath())
-            cmd += `singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c "cd ${this.getContainerExecutableFolderPath()} && ${preProcessingStage}"\n`
+            cmd += `singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${preProcessingStage}\"\n`
         }
         
         // TODO: remove
         if (manifest.setup_stage) {
             var preProcessingStage = manifest.setup_stage.replace('{{JOB_EXECUTABLE_PATH}}', this.getContainerExecutableFolderPath())
-            cmd += `singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c "cd ${this.getContainerExecutableFolderPath()} && ${preProcessingStage}"\n`
+            cmd += `singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${preProcessingStage}\"\n`
         }
 
         var executionStage = manifest.execution_stage.replace('{{JOB_EXECUTABLE_PATH}}', this.getContainerExecutableFolderPath())
-        cmd += `srun --mpi=pmi2 singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c "cd ${this.getContainerExecutableFolderPath()} && ${executionStage}"\n`
+        cmd += `srun --mpi=pmi2 singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${executionStage}"\n`
 
         if (manifest.post_processing_stage) {
             var postProcessingStage = manifest.post_processing_stage.replace('{{JOB_EXECUTABLE_PATH}}', this.getContainerExecutableFolderPath())
-            cmd += `singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c "cd ${this.getContainerExecutableFolderPath()} && ${postProcessingStage}"`
+            cmd += `singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${postProcessingStage}\"`
         }
 
         // TODO: remove
         if (manifest.cleanup_stage) {
             var preProcessingStage = manifest.cleanup_stage.replace('{{JOB_EXECUTABLE_PATH}}', this.getContainerExecutableFolderPath())
-            cmd += `singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c "cd ${this.getContainerExecutableFolderPath()} && ${preProcessingStage}"\n`
+            cmd += `singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${preProcessingStage}\"\n`
         }
 
         super.prepare(cmd, config)
