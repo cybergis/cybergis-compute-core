@@ -228,7 +228,7 @@ class BaseConnector {
     async createFile(content: string | Object, path: string, options: options = {}, muteEvent = false) {
         if (this.maintainer && !muteEvent) this.maintainer.emitEvent('SSH_CREATE_FILE', `create file to ${path}`)
         if (typeof content != 'string') {
-            content = JSON.stringify(content)
+            content = JSON.stringify(content).replace(/(["'])/g, "\\$1")
         }
         var out = await this.exec(`touch ${path}; echo "${content}" >> ${path}`, options, true)
         return out.stdout

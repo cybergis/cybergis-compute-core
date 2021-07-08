@@ -18,17 +18,29 @@ class SingularityConnector extends SlurmConnector {
         if (!containerPath) throw new Error(`container ${manifest.container} is not supported on HPC ${this.hpcName}`)
 
         var cmd = ``
+        if (manifest.pre_processing_stage) {
+            var preProcessingStage = manifest.pre_processing_stage.replace('{{JOB_EXECUTABLE_PATH}}', this.getContainerExecutableFolderPath())
+            cmd += `singularity exec ${this._getVolumeBindCMD()} ${containerPath} ${preProcessingStage}\n`
+        }
+        
+        // TODO: remove
         if (manifest.setup_stage) {
-            var setupStage = manifest.setup_stage.replace('{{JOB_EXECUTABLE_PATH}}', this.getContainerExecutableFolderPath())
-            cmd += `singularity exec ${this._getVolumeBindCMD()} ${containerPath} ${setupStage}\n`
+            var preProcessingStage = manifest.setup_stage.replace('{{JOB_EXECUTABLE_PATH}}', this.getContainerExecutableFolderPath())
+            cmd += `singularity exec ${this._getVolumeBindCMD()} ${containerPath} ${preProcessingStage}\n`
         }
 
         var executionStage = manifest.execution_stage.replace('{{JOB_EXECUTABLE_PATH}}', this.getContainerExecutableFolderPath())
         cmd += `srun --mpi=pmi2 singularity exec ${this._getVolumeBindCMD()} ${containerPath} ${executionStage}\n`
 
+        if (manifest.post_processing_stage) {
+            var postProcessingStage = manifest.post_processing_stage.replace('{{JOB_EXECUTABLE_PATH}}', this.getContainerExecutableFolderPath())
+            cmd += `singularity exec ${this._getVolumeBindCMD()} ${containerPath} ${postProcessingStage}`
+        }
+
+        // TODO: remove
         if (manifest.cleanup_stage) {
-            var cleanupStage = manifest.cleanup_stage.replace('{{JOB_EXECUTABLE_PATH}}', this.getContainerExecutableFolderPath())
-            if (manifest.cleanup_stage) `singularity exec ${this._getVolumeBindCMD()} ${containerPath} ${cleanupStage}`
+            var preProcessingStage = manifest.cleanup_stage.replace('{{JOB_EXECUTABLE_PATH}}', this.getContainerExecutableFolderPath())
+            cmd += `singularity exec ${this._getVolumeBindCMD()} ${containerPath} ${preProcessingStage}\n`
         }
 
         super.prepare(cmd, config)
@@ -57,13 +69,14 @@ class SingularityConnector extends SlurmConnector {
     }
 
     getContainerResultFolderPath(providedPath: string = null) {
-        if (providedPath) return path.join(`/${this.jobID}/data`, providedPath)
+        if (providedPath) return path.join(`/${this.jobID}/result`, providedPath)
         else return `/${this.jobID}/result`
     }
 
     private _getVolumeBindCMD() {
         this.volumeBinds[this.getRemoteExecutableFolderPath()] = this.getContainerExecutableFolderPath()
         this.volumeBinds[this.getRemoteResultFolderPath()] = this.getContainerResultFolderPath()
+        this.volumeBinds[this.getRemoteDataFolderPath()] = this.getContainerDataFolderPath()
         var bindCMD: Array<string>= []
         for (var from in this.volumeBinds) {
             var to = this.volumeBinds[from]

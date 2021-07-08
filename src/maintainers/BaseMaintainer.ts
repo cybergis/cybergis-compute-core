@@ -75,6 +75,7 @@ class BaseMaintainer {
         } else {
             this.executableFolder = fileSystem.createLocalFolder()
         }
+        this.dataFolder = job.dataFolder ? fileSystem.getFolderByURL(job.dataFolder) : null
         this.supervisor = supervisor
         this.fileSystem = fileSystem
         this.job = job

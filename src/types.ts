@@ -130,8 +130,11 @@ export interface maintainerConfig {
 export interface executableManifest {
     name: string
     container: string
-    setup_stage?: string
+    pre_processing_stage?: string
     execution_stage: string
+    post_processing_stage?: string
+    // TODO: need to deprecate
+    setup_stage?: string
     cleanup_stage?: string
 }
 

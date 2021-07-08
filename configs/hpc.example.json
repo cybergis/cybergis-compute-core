@@ -13,6 +13,19 @@
         },
         "root_path": "/data/keeling/a/cigi-gisolve/scratch/dev"
     },
+    "bridges_community": {
+        "ip": "bridges2.psc.edu",
+        "port": 22,
+        "is_community_account": true,
+        "community_login": {
+            "user": "cybergis",
+            "use_local_key": false,
+            "external_key": {
+                "private_key_path": "/job_supervisor/keys/bridges-community.key",
+                "passphrase": null
+            }
+        }
+    },
     "hadoop": {
         "ip": "hadoop01.cigi.illinois.edu",
         "port": 50022,
