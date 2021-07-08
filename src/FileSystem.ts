@@ -159,22 +159,15 @@ export class GitFolder extends BaseFolder {
             if (this.config.sha) {
                 var { stdout, stderr } = await exec(`git rev-parse HEAD`)
                 var sha = stdout.trim()
-                console.log(sha, this.config.sha)
                 if (sha != this.config.sha) {
-                    await exec(`cd ${this.path} && git fetch origin`)
-                    var { stdout, stderr } = await exec(`cd ${this.path} && git --no-pager diff origin/${this.config.sha} --stat-count=1`)
-                    console.log(1111, stdout.trim())
-                    if (stdout.trim()) {
-                        rimraf.sync(this.path)
-                        fs.mkdirSync(this.path)
-                        await exec(`cd ${this.path} && git clone ${this.config.url} ${this.path}`)
-                        await exec(`cd ${this.path} && git checkout ${this.config.sha}`)
-                    }
+                    rimraf.sync(this.path)
+                    fs.mkdirSync(this.path)
+                    await exec(`cd ${this.path} && git clone ${this.config.url} ${this.path}`)
+                    await exec(`cd ${this.path} && git checkout ${this.config.sha}`)
                 }
             } else {
                 await exec(`cd ${this.path} && git fetch origin`)
                 var { stdout, stderr } = await exec(`cd ${this.path} && git --no-pager diff origin/HEAD --stat-count=1`)
-                console.log(2222, stdout.trim())
                 if (stdout.trim()) {
                     rimraf.sync(this.path)
                     fs.mkdirSync(this.path)
