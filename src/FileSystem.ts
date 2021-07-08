@@ -160,14 +160,14 @@ export class GitFolder extends BaseFolder {
                 var { stdout, stderr } = await exec(`git rev-parse HEAD`)
                 var sha = stdout.trim()
                 if (sha != this.config.sha) {
-                    await exec(`cd ${this.path} && git checkout HEAD`)
-                    await exec(`cd ${this.path} && git reset --hard`)
+                    await exec(`cd ${this.path} && git fetch --all`)
+                    await exec(`cd ${this.path} && git reset --hard @{u}`)
                     await exec(`cd ${this.path} && git pull`)
                     await exec(`cd ${this.path} && git checkout ${this.config.sha}`)
                 }
             } else {
-                await exec(`cd ${this.path} && git checkout HEAD`)
-                await exec(`cd ${this.path} && git reset --hard`)
+                await exec(`cd ${this.path} && git fetch --all`)
+                await exec(`cd ${this.path} && git reset --hard @{u}`)
                 await exec(`cd ${this.path} && git pull`)
             }
 
