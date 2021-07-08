@@ -114,8 +114,7 @@ export class BaseFolder {
 
     removeZip() {
         if (this.isZipped()) {
-            if (Helper.fileModifiedDate(this.path) > Helper.fileModifiedDate(this.path + '.zip'))
-                fs.unlinkSync(this.path + '.zip')
+            fs.unlinkSync(this.path + '.zip')
         }
     }
 
