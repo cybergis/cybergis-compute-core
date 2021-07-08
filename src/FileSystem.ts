@@ -161,15 +161,11 @@ export class GitFolder extends BaseFolder {
                 var sha = stdout.trim()
                 if (sha != this.config.sha) {
                     try { await exec(`git switch -`) } catch {}
-                    await exec(`cd ${this.path} && git fetch --all`)
-                    await exec(`cd ${this.path} && git reset --hard @{u}`)
                     await exec(`cd ${this.path} && git pull`)
                     await exec(`cd ${this.path} && git checkout ${this.config.sha}`)
                 }
             } else {
                 try { await exec(`git switch -`) } catch {}
-                await exec(`cd ${this.path} && git fetch --all`)
-                await exec(`cd ${this.path} && git reset --hard @{u}`)
                 await exec(`cd ${this.path} && git pull`)
             }
 
