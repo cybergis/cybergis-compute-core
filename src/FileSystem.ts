@@ -162,7 +162,7 @@ export class GitFolder extends BaseFolder {
                 console.log(sha, this.config.sha)
                 if (sha != this.config.sha) {
                     await exec(`git fetch origin`)
-                    var { stdout, stderr } = await exec(`git rev-parse HEAD`)
+                    var { stdout, stderr } = await exec(`git --no-pager diff origin/HEAD`)
                     console.log(1111, stdout.trim())
                     if (stdout.trim()) {
                         rimraf.sync(this.path)
@@ -173,8 +173,8 @@ export class GitFolder extends BaseFolder {
                 }
             } else {
                 await exec(`git fetch origin`)
-                var { stdout, stderr } = await exec(`git rev-parse HEAD`)
-                console.log(1111, stdout.trim())
+                var { stdout, stderr } = await exec(`git --no-pager diff origin/HEAD`)
+                console.log(2222, stdout.trim())
                 if (stdout.trim()) {
                     rimraf.sync(this.path)
                     fs.mkdirSync(this.path)
