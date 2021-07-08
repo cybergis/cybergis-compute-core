@@ -159,14 +159,27 @@ export class GitFolder extends BaseFolder {
             if (this.config.sha) {
                 var { stdout, stderr } = await exec(`git rev-parse HEAD`)
                 var sha = stdout.trim()
+                console.log(sha, this.config.sha)
                 if (sha != this.config.sha) {
-                    try { await exec(`git switch -`) } catch {}
-                    await exec(`cd ${this.path} && git pull`)
-                    await exec(`cd ${this.path} && git checkout ${this.config.sha}`)
+                    await exec(`git fetch origin`)
+                    var { stdout, stderr } = await exec(`git rev-parse HEAD`)
+                    console.log(1111, stdout.trim())
+                    if (stdout.trim()) {
+                        rimraf.sync(this.path)
+                        fs.mkdirSync(this.path)
+                        await exec(`cd ${this.path} && git clone ${this.config.url} ${this.path}`)
+                        await exec(`cd ${this.path} && git checkout ${this.config.sha}`)
+                    }
                 }
             } else {
-                try { await exec(`git switch -`) } catch {}
-                await exec(`cd ${this.path} && git pull`)
+                await exec(`git fetch origin`)
+                var { stdout, stderr } = await exec(`git rev-parse HEAD`)
+                console.log(1111, stdout.trim())
+                if (stdout.trim()) {
+                    rimraf.sync(this.path)
+                    fs.mkdirSync(this.path)
+                    await exec(`cd ${this.path} && git clone ${this.config.url} ${this.path}`)
+                }
             }
 
             const rawExecutableManifest = require(path.join(this.path, 'manifest.json'))
