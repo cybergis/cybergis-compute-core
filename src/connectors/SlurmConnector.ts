@@ -48,10 +48,30 @@ ${cmd}`
     }
 
     async submit() {
-        if (this.maintainer != null) this.maintainer.emitEvent('SLURM_UPLOAD', `uploading executable files`)
+        // executable folder
+        if (this.maintainer != null) this.maintainer.emitEvent('SLURM_UPLOAD', `uploading files`)
         await this.upload(this.maintainer.executableFolder, this.remote_executable_folder_path, true)
         await this.createFile(this.template, path.join(this.remote_executable_folder_path, 'job.sbatch'), {}, true)
+        await this.createFile({
+            jobId: this.maintainer.job.id,
+            userId: this.maintainer.job.userId,
+            maintainer: this.maintainer.job.maintainer,
+            hpc: this.maintainer.job.hpc,
+            param: this.maintainer.job.param,
+            env: this.maintainer.job.env,
+            executableFolder: this.getRemoteExecutableFolderPath(),
+            dataFolder: this.getRemoteDataFolderPath(),
+            resultFolder: this.getRemoteResultFolderPath()
+        }, path.join(this.remote_executable_folder_path, 'job.json'))
 
+        // data folder
+        if (this.maintainer.dataFolder) {
+            await this.upload(this.maintainer.dataFolder, this.remote_data_folder_path, true)
+        } else {
+            await this.mkdir(this.remote_data_folder_path, {}, true)
+        }
+
+        // result folder
         if (this.maintainer != null) this.maintainer.emitEvent('SLURM_MKDIR_RESULT', `creating result folder`)
         await this.mkdir(this.remote_result_folder_path, {}, true)
 

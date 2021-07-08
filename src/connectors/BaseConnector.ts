@@ -136,17 +136,6 @@ class BaseConnector {
         }
 
         await this.unzip(toZipFilePath, toFilePath)
-        await this.createFile({
-            jobId: this.maintainer.job.id,
-            userId: this.maintainer.job.userId,
-            maintainer: this.maintainer.job.maintainer,
-            hpc: this.maintainer.job.hpc,
-            param: this.maintainer.job.param,
-            env: this.maintainer.job.env,
-            executableFolder: this.getRemoteExecutableFolderPath(),
-            dataFolder: this.getRemoteDataFolderPath(),
-            resultFolder: this.getRemoteResultFolderPath()
-        }, path.join(to, 'job.json'))
         await this.rm(toZipFilePath)
     }
 
