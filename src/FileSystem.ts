@@ -113,9 +113,7 @@ export class BaseFolder {
     }
 
     removeZip() {
-        if (this.isZipped()) {
-            fs.unlinkSync(this.path + '.zip')
-        }
+        if (this.isZipped()) fs.unlinkSync(this.path + '.zip')
     }
 
     async getZip(): Promise<string> {

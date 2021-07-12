@@ -1,6 +1,11 @@
 {
     "hello_world": {
-        "url": "https://github.com/cybergis/cybergis-compute-hello-world.git",
-        "sha": "364e138bc286f4cffa00c2ab713b0503eed7c144"
+        "url": "https://github.com/cybergis/cybergis-compute-hello-world.git"
+    },
+    "bridge_hello_world": {
+        "url": "https://github.com/cybergis/CyberGIS-Compute-Bridges-2.git"
+    },
+    "spatial_access_covid-19" : {
+        "url": "https://github.com/alexandermichels/cybergis-compute-spatial-access-covid-19.git"
     }
 }
