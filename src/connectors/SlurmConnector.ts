@@ -117,7 +117,8 @@ ${cmd}`
 
             return 'UNKNOWN'
         } catch (e) {
-            return 'ERROR'
+            console.log(e)
+            return 'RETRY'
         }
     }
 
