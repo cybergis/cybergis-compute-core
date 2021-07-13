@@ -33,7 +33,7 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
             if (status == 'C' || status == 'UNKNOWN') {
                 await this.connector.getSlurmStdout()
                 await this.connector.getSlurmStderr()
-                this.connector.download(this.connector.getRemoteResultFolderPath(), this.resultFolder)
+                await this.connector.download(this.connector.getRemoteResultFolderPath(), this.resultFolder)
                 await this.updateJob({
                     resultFolder: this.resultFolder.getURL()
                 })

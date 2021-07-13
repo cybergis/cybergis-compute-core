@@ -96,11 +96,7 @@ class Supervisor {
                     var events = job.maintainerInstance.dumpEvents()
                     var logs = job.maintainerInstance.dumpLogs()
 
-                    for (var j in events) {
-                        var event = events[j]
-                        self.emitter.registerEvents(job, event.type, event.message)
-                    }
-
+                    for (var j in events) self.emitter.registerEvents(job, events[j].type, events[j].message)
                     for (var j in logs) self.emitter.registerLogs(job, logs[j])
 
                     if (job.maintainerInstance.isEnd) {
