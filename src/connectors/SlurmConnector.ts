@@ -101,11 +101,11 @@ ${cmd}`
         try {
             var squeueResult = await this.exec(`squeue --job ${this.slurm_id}`, {}, true, true)
 
-            if (squeueResult.stdout) {
+            if (!squeueResult.stderr && squeueResult.stdout) {
                 console.log(squeueResult)
                 var r = squeueResult.stdout.split(/[ |\n]+/)
                 var i = r.indexOf(this.slurm_id)
-                return r[i + 4]
+                return i >= 0 ? r[i + 4] : 'UNKNOWN'
             }
 
             var qstatResult = await this.exec(`qstat ${this.slurm_id}`, {}, true, true)
@@ -113,10 +113,10 @@ ${cmd}`
             if (qstatResult.stdout) {
                 var r = qstatResult.stdout.split(/[ |\n]+/)
                 var i = r.indexOf(this.slurm_id)
-                return r[i + 4]
+                return i >= 0 ? r[i + 4] : 'UNKNOWN'
             }
 
-            return 'UNKNOWN'
+            return 'RETRY'
         } catch (e) {
             return 'RETRY'
         }

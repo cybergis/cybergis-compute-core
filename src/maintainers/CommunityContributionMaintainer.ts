@@ -1,6 +1,7 @@
 import SingularityConnector from '../connectors/SingularityConnector'
 import BaseMaintainer from './BaseMaintainer'
 import { LocalFolder, GitFolder } from '../FileSystem'
+import { stat } from 'fs'
 
 export default class CommunityContributionMaintainer extends BaseMaintainer {
 
@@ -39,9 +40,9 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
                 })
                 // ending condition
                 this.emitEvent('JOB_ENDED', 'job [' + this.id + '] finished')
-            } else if (status == 'ERROR') {
+            } else if (status == 'ERROR' || status == 'F' || status == 'NF') {
                 // failing condition
-                this.emitEvent('JOB_FAILED', 'job [' + this.id + '] failed')
+                this.emitEvent('JOB_FAILED', 'job [' + this.id + '] failed with status ' + status)
             }
         } catch (e) {
             this.emitEvent('JOB_RETRY', 'job [' + this.id + '] encountered system error ' + e.toString())
