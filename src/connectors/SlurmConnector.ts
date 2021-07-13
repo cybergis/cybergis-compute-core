@@ -118,12 +118,12 @@ ${cmd}`
 
     async getSlurmStdout() {
         var out = await this.cat(path.join(this.remote_result_folder_path, "job.stdout"), {})
-        if (this.maintainer != null && out != null) this.maintainer.emitLog(out)
+        if (this.maintainer && out) this.maintainer.emitLog(out)
     }
 
     async getSlurmStderr() {
         var out = await this.cat(path.join(this.remote_result_folder_path, "job.stderr"), {})
-        if (this.maintainer != null && out != null) this.maintainer.emitLog(out)
+        if (this.maintainer && out) this.maintainer.emitLog(out)
     }
 }
 
