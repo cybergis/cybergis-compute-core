@@ -16,26 +16,27 @@ class SingularityConnector extends SlurmConnector {
         if (!container) throw new Error(`unknown container ${manifest.container}`)
         var containerPath = container.hpc_path[this.hpcName]
         if (!containerPath) throw new Error(`container ${manifest.container} is not supported on HPC ${this.hpcName}`)
+        // remove buffer: https://dashboard.hpc.unimelb.edu.au/job_submission/
 
         var cmd = ``
         if (manifest.pre_processing_stage) {
-            cmd += `singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.pre_processing_stage}\"\n`
+            cmd += `stdbuf -o0 -e0 singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.pre_processing_stage}\"\n`
         }
         
         // TODO: remove
         if (manifest.setup_stage) {
-            cmd += `singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.setup_stage}\"\n`
+            cmd += `stdbuf -o0 -e0 singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.setup_stage}\"\n`
         }
 
-        cmd += `srun --mpi=pmi2 singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.execution_stage}"\n`
+        cmd += `srun --unbuffered --mpi=pmi2 singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.execution_stage}"\n`
 
         if (manifest.post_processing_stage) {
-            cmd += `singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.post_processing_stage}\"`
+            cmd += `stdbuf -o0 -e0 singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.post_processing_stage}\"`
         }
 
         // TODO: remove
         if (manifest.cleanup_stage) {
-            cmd += `singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.cleanup_stage}\"\n`
+            cmd += `stdbuf -o0 -e0 singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.cleanup_stage}\"\n`
         }
 
         super.prepare(cmd, config)
