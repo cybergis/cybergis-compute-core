@@ -20,23 +20,23 @@ class SingularityConnector extends SlurmConnector {
 
         var cmd = ``
         if (manifest.pre_processing_stage) {
-            cmd += `stdbuf -o0 -e0 singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.pre_processing_stage}\"\n`
+            cmd += `singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.pre_processing_stage}\"\n`
         }
         
         // TODO: remove
         if (manifest.setup_stage) {
-            cmd += `stdbuf -o0 -e0 singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.setup_stage}\"\n`
+            cmd += `singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.setup_stage}\"\n`
         }
 
         cmd += `srun --unbuffered --mpi=pmi2 singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.execution_stage}"\n`
 
         if (manifest.post_processing_stage) {
-            cmd += `stdbuf -o0 -e0 singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.post_processing_stage}\"`
+            cmd += `singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.post_processing_stage}\"`
         }
 
         // TODO: remove
         if (manifest.cleanup_stage) {
-            cmd += `stdbuf -o0 -e0 singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.cleanup_stage}\"\n`
+            cmd += `singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.cleanup_stage}\"\n`
         }
 
         super.prepare(cmd, config)
