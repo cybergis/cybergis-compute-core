@@ -111,7 +111,6 @@ ${cmd}`
             var qstatResult = await this.exec(`qstat ${this.slurm_id}`, {}, true, true)
 
             if (!qstatResult.stderr && qstatResult.stdout) {
-                console.log(qstatResult)
                 var r = qstatResult.stdout.split(/[ |\n]+/)
                 var i = r.indexOf(this.slurm_id)
                 return r[i + 4]
