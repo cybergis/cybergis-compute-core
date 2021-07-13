@@ -102,7 +102,6 @@ ${cmd}`
             var squeueResult = await this.exec(`squeue --job ${this.slurm_id}`, {}, true, true)
 
             if (!squeueResult.stderr && squeueResult.stdout) {
-                console.log(squeueResult)
                 var r = squeueResult.stdout.split(/[ |\n]+/)
                 var i = r.indexOf(this.slurm_id)
                 return i >= 0 ? r[i + 4] : 'UNKNOWN'
