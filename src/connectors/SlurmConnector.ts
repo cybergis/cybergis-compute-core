@@ -102,7 +102,7 @@ ${cmd}`
             var squeueResult = await this.exec(`squeue --job ${this.slurm_id}`, {}, true, true)
 
             if (!squeueResult.stderr && squeueResult.stdout) {
-                var r = qstatResult.stdout.split(/[ |\n]+/)
+                var r = squeueResult.stdout.split(/[ |\n]+/)
                 var i = r.indexOf(this.slurm_id)
                 return r[i + 4]
             }
