@@ -42,6 +42,8 @@ class SlurmConnector extends BaseConnector {
 #SBATCH --time=${walltime}
 #SBATCH --error=${path.join(this.remote_result_folder_path, "job.stderr")}
 #SBATCH --output=${path.join(this.remote_result_folder_path, "job.stdout")}
+${config.gpus ? '#SBATCH --gres=gpu:' + config.gpus : ''}
+${config.partition ? '#SBATCH --partition=' + config.partition : ''}
 
 ${modules}
 ${cmd}`
@@ -78,13 +80,13 @@ ${cmd}`
         if (this.maintainer != null) this.maintainer.emitEvent('SLURM_SUBMIT', `submitting slurm job`)
         var sbatchResult = (await this.exec(`sbatch job.sbatch`, {
             cwd: this.remote_executable_folder_path
-        }, true, true)).stdout
+        }, true, true))
 
-        if (sbatchResult.includes('ERROR') || sbatchResult.includes('WARN')) {
-            if (this.maintainer != null) this.maintainer.emitEvent('SLURM_SUBMIT_ERROR', 'cannot submit job ' + this.maintainer.id + ': ' + sbatchResult)
-            throw new ConnectorError('cannot submit job ' + this.maintainer.id + ': ' + sbatchResult)
+        if (sbatchResult.stdout.includes('ERROR') || sbatchResult.stdout.includes('WARN') || sbatchResult.stderr) {
+            if (this.maintainer != null) this.maintainer.emitEvent('SLURM_SUBMIT_ERROR', 'cannot submit job ' + this.maintainer.id + ': ' + JSON.stringify(sbatchResult))
+            throw new ConnectorError('cannot submit job ' + this.maintainer.id + ': ' + JSON.stringify(sbatchResult))
         }
-        this.slurm_id = sbatchResult.split(/[ ]+/).pop().trim()
+        this.slurm_id = sbatchResult.stdout.split(/[ ]+/).pop().trim()
     }
 
     // Job id              Name             Username        Time Use S Queue          

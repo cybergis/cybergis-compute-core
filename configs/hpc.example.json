@@ -24,7 +24,8 @@
                 "private_key_path": "/job_supervisor/keys/bridges-community.key",
                 "passphrase": null
             }
-        }
+        },
+        "root_path": "/jet/home/cybergis/data"
     },
     "hadoop": {
         "ip": "hadoop01.cigi.illinois.edu",

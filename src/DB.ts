@@ -2,7 +2,7 @@ import { Event } from '../src/models/Event'
 import { Log } from '../src/models/Log'
 import { Job } from '../src/models/Job'
 import { config } from '../configs/config'
-import { ConnectionOptions, getConnection, ConnectionManager } from 'typeorm'
+import { ConnectionOptions, getConnection, Connection, createConnection } from 'typeorm'
 
 class DB {
     private config: ConnectionOptions = {
@@ -28,13 +28,11 @@ class DB {
         entities: [Event, Log, Job]
     }
 
-    async connect() {
+    async connect(): Promise<Connection> {
         try {
             return await getConnection(this.config.name)
         } catch (error) {
-          const connectionManager = new ConnectionManager()
-          const connection = connectionManager.create(this.config);
-          return await connection.connect()
+            return await createConnection(this.config)
         }
     }
 }

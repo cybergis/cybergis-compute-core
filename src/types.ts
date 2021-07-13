@@ -30,6 +30,8 @@ export interface slurm {
     num_of_task?: number
     cpu_per_task?: number
     memory_per_cpu?: string
+    gpus?: number
+    partition?: string
 }
 
 export interface secretTokenCache {
