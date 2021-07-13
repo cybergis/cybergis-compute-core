@@ -89,18 +89,35 @@ ${cmd}`
         this.slurm_id = sbatchResult.stdout.split(/[ ]+/).pop().trim()
     }
 
+    // qstat:
     // Job id              Name             Username        Time Use S Queue          
     // ------------------- ---------------- --------------- -------- - ---------------
-    // 3142249             singularity      cigi-gisolve    00:00:00 R node           
+    // 3142249             singularity      cigi-gisolve    00:00:00 R node      
+    //
+    // squeue: https://slurm.schedmd.com/squeue.html
+    // ['JOBID', 'PARTITION', 'NAME', 'USER', 'ST', 'TIME', 'NODES', 'NODELIST(REASON)']
+    // ['3142135', 'node', 'singular', 'cigi-gis', 'R', '0:11', '1', 'keeling-b08']
     async getStatus() {
         try {
-            var statusResult = (await this.exec(`qstat ${this.slurm_id}`, {}, true, true)).stdout
-            if (statusResult == null) return 'UNKNOWN'
-            var r = statusResult.split(/[ |\n]+/)
-            var i = r.indexOf(this.slurm_id)
-            return r[i + 4]
-        } catch (e) {
+            var squeueResult = await this.exec(`squeue --job ${this.slurm_id}`, {}, true, true)
+
+            if (!squeueResult.stderr && squeueResult.stdout) {
+                var r = qstatResult.stdout.split(/[ |\n]+/)
+                var i = r.indexOf(this.slurm_id)
+                return r[i + 4]
+            }
+
+            var qstatResult = await this.exec(`qstat ${this.slurm_id}`, {}, true, true)
+
+            if (!qstatResult.stderr && qstatResult.stdout) {
+                var r = qstatResult.stdout.split(/[ |\n]+/)
+                var i = r.indexOf(this.slurm_id)
+                return r[i + 4]
+            }
+
             return 'UNKNOWN'
+        } catch (e) {
+            return 'ERROR'
         }
     }
 

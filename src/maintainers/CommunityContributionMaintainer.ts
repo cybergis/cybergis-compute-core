@@ -30,7 +30,7 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
     async onMaintain() {
         try {
             var status = await this.connector.getStatus()
-            if (status == 'C' || status == 'UNKNOWN') {
+            if (status == 'C' || status == 'CD' || status == 'UNKNOWN') {
                 await this.connector.getSlurmStdout()
                 await this.connector.getSlurmStderr()
                 await this.connector.download(this.connector.getRemoteResultFolderPath(), this.resultFolder)
