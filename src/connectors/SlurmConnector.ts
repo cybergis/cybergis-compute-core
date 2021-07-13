@@ -78,7 +78,7 @@ ${cmd}`
         await this.mkdir(this.remote_result_folder_path, {}, true)
 
         if (this.maintainer != null) this.maintainer.emitEvent('SLURM_SUBMIT', `submitting slurm job`)
-        var sbatchResult = (await this.exec(`sbatch --unbuffered job.sbatch`, {
+        var sbatchResult = (await this.exec(`sbatch job.sbatch`, {
             cwd: this.remote_executable_folder_path
         }, true, true))
 
