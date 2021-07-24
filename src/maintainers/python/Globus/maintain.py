@@ -19,8 +19,8 @@ response = tc.get_task(globus_task_id)
 status = response.data["status"]
 
 if status == "SUCCEEDED":
-    print("@event=[JOB_ENDED: {} {} ({} ; {})]".format(job_id, status, globus_task_id, globus_task_label))
+    print("@event=[JOB_ENDED: {} ({} ; {} ; {})]".format(status, job_id, globus_task_id, globus_task_label))
 elif status == "FAILED":
-    print("@event=[JOB_FAILED: {} {} ({} ; {})]".format(job_id, status, globus_task_id, globus_task_label))
+    print("@event=[JOB_FAILED: {} ({} ; {} ; {})]".format(status, job_id, globus_task_id, globus_task_label))
 else:
-    print("@event=[JOB_STATUS: {} {} ({} ; {})]".format(job_id, status, globus_task_id, globus_task_label))
+    print("@event=[JOB_STATUS: {} ({} ; {} ; {})]".format(status, job_id, globus_task_id, globus_task_label))
