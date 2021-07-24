@@ -95,7 +95,7 @@ source_endpoint_id = os.environ["GLOBUS_SOURCE_ENDPOINT_ID"]
 # cjw NFS
 destination_endpoint_id = os.environ["GLOBUS_DESTINATION_ENDPOINT_ID"]
 
-globus_task_label = "{}_{}_{}".format(hpc, jupyter_user, job_folder_name)
+globus_task_label = "{}_{}_{}_{}".format(job_id, hpc, jupyter_user, job_folder_name)
 tdata = globus_sdk.TransferData(tc, source_endpoint_id,
                                  destination_endpoint_id,
                                  label=globus_task_label,
