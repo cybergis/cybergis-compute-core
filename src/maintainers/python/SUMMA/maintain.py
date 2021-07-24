@@ -22,3 +22,5 @@ if status == "C" or status == "UNKNOWN":
     print("@event=[JOB_ENDED:SUMMA job with remote_id " + remote_id + " completed]")
 elif status == "ERROR":
     print("@event=[JOB_FAILED:SUMMA job with remote_id " + remote_id + " failed]")
+else:
+    print("@event=[JOB_STATUS: {}]".format(status))
