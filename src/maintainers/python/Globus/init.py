@@ -2,6 +2,8 @@ import os
 import sys
 import json
 
+## Setup Globus Connect Personal on JetStream NFS VM
+## see: https://docs.globus.org/how-to/globus-connect-personal-linux/
 
 ## see: https://globus-sdk-python.readthedocs.io/en/stable/examples/advanced_transfer.html
 
