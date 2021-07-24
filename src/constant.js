@@ -110,7 +110,30 @@ exports.default = {
                 ],
                 ignoreEverythingExceptMustHave: false
             }
-        }
+        },
+        globus: {
+            ip: "keeling.earth.illinois.edu",
+            port: 22,
+            maintainer: 'GlobusMaintainer',
+            jobPoolCapacity: 5,
+            isCommunityAccount: true,
+            communityAccountSSH: {
+                user: 'cigi-gisolve',
+                useLocalKeys: false,
+                key: {
+                    privateKeyPath: __dirname + '/../key/cigi-gisolve.key',
+                    passphrase: null
+                }
+            },
+            useUploadedFile: true,
+            uploadFileConfig: {
+                ignore: [],
+                mustHave: [
+                    "globus.json"
+                ],
+                ignoreEverythingExceptMustHave: false
+            }
+        },
     },
     doctorScripts: {
         python: [

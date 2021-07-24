@@ -1,9 +1,10 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -49,7 +50,7 @@ var Supervisor = (function () {
         this.queues = {};
         this.emitter = new Emitter_1.default();
         this.maintainerThread = null;
-        this.workerTimePeriodInSeconds = 1;
+        this.workerTimePeriodInSeconds = 10;
         var self = this;
         for (var service in constant_1.default.destinationMap) {
             var destination = constant_1.default.destinationMap[service];
