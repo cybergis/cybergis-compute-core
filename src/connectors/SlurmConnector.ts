@@ -1,6 +1,6 @@
 import { ConnectorError } from '../errors'
 import BaseConnector from './BaseConnector'
-import { slurm } from '../types'
+import { slurm, slurmCeiling } from '../types'
 import * as path from 'path'
 
 class SlurmConnector extends BaseConnector {
@@ -11,26 +11,37 @@ class SlurmConnector extends BaseConnector {
 
     public template: string
 
+    public defaultSlurmCeiling: slurmCeiling = {
+        num_of_node: 50,
+        num_of_task: 50,
+        cpu_per_task: 50,
+        gpus: 50,
+        memory_per_cpu: '10G',
+        memory_per_gpu: '10G',
+        memory: '50G',
+        walltime: '10:00:00'
+    }
+
+    storageKey = ['memory_per_cpu', 'memory_per_gpu', 'memory']
+
+    timeKey = ['walltime']
+
     registerModules(modules: Array<string>) {
         this.modules = this.modules.concat(modules)
     }
 
     prepare(cmd: string, config: slurm) {
         config = Object.assign({
-            walltime: 1,
+            walltime: '00:10:00',
             num_of_node: 1,
             num_of_task: 1,
             cpu_per_task: 1,
-            memory_per_cpu: '2G'
         }, config)
 
-        var walltime = config.walltime < 10 ? '0' + config.walltime : config.walltime
-        walltime += ':00:00' // 01:00:00
+        this.validateSlurmConfig(config, {})
 
         var modules = ''
-        for (var module in this.modules) {
-            modules += `module load ${module}\n`
-        }
+        for (var module in this.modules) modules += `module load ${module}\n`
 
         // https://researchcomputing.princeton.edu/support/knowledge-base/slurm
         this.template = `#!/bin/bash
@@ -38,12 +49,19 @@ class SlurmConnector extends BaseConnector {
 #SBATCH --nodes=${config.num_of_node}
 #SBATCH --ntasks=${config.num_of_task}
 #SBATCH --cpus-per-task=${config.cpu_per_task}
-#SBATCH --mem-per-cpu=${config.memory_per_cpu}
-#SBATCH --time=${walltime}
+#SBATCH --time=${config.walltime}
 #SBATCH --error=${path.join(this.remote_result_folder_path, "job.stderr")}
 #SBATCH --output=${path.join(this.remote_result_folder_path, "job.stdout")}
-${config.gpus ? '#SBATCH --gres=gpu:' + config.gpus : ''}
-${config.partition ? '#SBATCH --partition=' + config.partition : ''}
+${config.memory_per_gpu ? `#SBATCH --mem-per-gpu=${config.memory_per_gpu}` : ''}
+${config.memory_per_cpu ? `#SBATCH --mem-per-cpu=${config.memory_per_cpu}` : ''}
+${config.memory ? `#SBATCH --mem=${config.memory}` : ''}
+${config.gpus ? `#SBATCH --gpus=${config.gpus}` : ''}
+${config.gpus_per_node ? `#SBATCH --gpus-per-node=${config.gpus_per_node}` : ''}
+${config.gpus_per_socket ? `#SBATCH --gpus-per-socket=${config.gpus_per_socket}` : ''}
+${config.gpus_per_task ? `#SBATCH --gpus-per-task=${config.gpus_per_task}` : ''}
+${config.partition ? `#SBATCH --partition= ${config.partition}` : ''}
+${this.getSBatchTagsFromArray('mail-type', config.mail_type)}
+${this.getSBatchTagsFromArray('mail-user', config.mail_user)}
 
 ${modules}
 ${cmd}`
@@ -142,6 +160,114 @@ ${cmd}`
         var out = await this.cat(path.join(this.remote_result_folder_path, "job.stderr"), {})
         if (this.maintainer && out) this.maintainer.emitLog(out)
     }
+
+    private getSBatchTagsFromArray(tag: string, vals: string[]) {
+        if (!vals) return ``
+        var out = ``
+        for (var i in vals) out += `#SBATCH --${tag}=${vals[i]}\n`
+        return out
+    }
+
+    private storageUnitToSize(i: string) {
+        if (i.includes('g')) {
+            return parseInt(i.replace('g', '')) * 1000 * 1000 * 1000
+        }
+        if (i.includes('m')) {
+            return parseInt(i.replace('g', '')) * 1000 * 1000
+        }
+        if (i.includes('k')) {
+            return parseInt(i.replace('k', '')) * 1000
+        }
+    }
+
+    private storageIsSmaller(a: string, b: string) {
+        a = a.toLowerCase()
+        b = b.toLowerCase()
+        var i = this.storageUnitToSize(a)
+        var j = this.storageUnitToSize(b)
+        return i < j
+    }
+
+    private timeToSeconds(i: string[]) {
+        if (i.length == 1) {
+            var j = i[0].split('-')
+            if (j.length == 1) {
+                // minutes
+                return parseInt(i[0]) * 60
+            } else {
+                // days-hours
+                return parseInt(j[0]) * 60 * 60 * 24 + parseInt(j[0]) * 60 * 60
+            }
+        } else if (i.length == 2) {
+            var j = i[0].split('-')
+            if (j.length == 2) {
+                // days-hours:minutes
+                return parseInt(j[0]) * 60 * 60 * 24 + parseInt(j[1]) * 60 * 60 + parseInt(i[1]) * 60
+            } else {
+                // minutes:seconds
+                return parseInt(i[0]) * 60 + parseInt(i[0])
+            }
+        } else if (i.length == 3) {
+            var j = i[0].split('-')
+            if (j.length == 2) {
+                // days-hours:minutes:seconds
+                return parseInt(j[0]) * 60 * 60 * 24 + parseInt(j[1]) * 60 * 60 + parseInt(i[1]) * 60 + parseInt(i[2])
+            } else {
+                // hours:minutes:seconds
+                return parseInt(i[0]) * 60 * 60 + parseInt(i[1]) * 60 + parseInt(i[2])
+            }
+        }
+        return Infinity
+    }
+
+    private timeIsSmaller(a: string, b: string) {
+        var a_bar = a.split(':')
+        var b_bar = b.split(':')
+        return this.timeToSeconds(a_bar) < this.timeToSeconds(b_bar)
+    }
+
+    private validateSlurmConfig(config: slurm, providedSlurmCeiling: slurmCeiling) {
+        var slurmCeiling = {}
+
+        for (var i in this.defaultSlurmCeiling) {
+            slurmCeiling[i] = this.defaultSlurmCeiling[i]
+            if (!providedSlurmCeiling[i]) continue
+
+            if (this.storageKey.includes(i)) {
+                if (this.storageIsSmaller(providedSlurmCeiling[i], this.defaultSlurmCeiling[i])) {
+                    slurmCeiling[i] = providedSlurmCeiling[i]
+                }
+            } else if (this.timeKey.includes(i)) {
+                if (this.timeIsSmaller(providedSlurmCeiling[i], this.defaultSlurmCeiling[i])) {
+                    slurmCeiling[i] = providedSlurmCeiling[i]
+                }
+            } else {
+                if (providedSlurmCeiling[i] < this.defaultSlurmCeiling[i]) {
+                    slurmCeiling[i] = providedSlurmCeiling[i]
+                }
+            }
+        }
+
+        for (var i in slurmCeiling) {
+            if (!config[i]) continue
+
+            if (this.storageKey.includes(i)) {
+                if (this.storageIsSmaller(slurmCeiling[i], config[i])) {
+                    throw new Error(`slurm config ${i} exceeds the threshold of ${slurmCeiling[i]} (current value ${config[i]})`)
+                }
+            } else if (this.timeKey.includes(i)) {
+                if (this.timeIsSmaller(slurmCeiling[i], config[i])) {
+                    throw new Error(`slurm config ${i} exceeds the threshold of ${slurmCeiling[i]} (current value ${config[i]})`)
+                }
+            } else {
+                if (slurmCeiling[i] < config[i]) {
+                    throw new Error(`slurm config ${i} exceeds the threshold of ${slurmCeiling[i]} (current value ${config[i]})`)
+                }
+            }
+        }
+    }
+
+
 }
 
 export default SlurmConnector

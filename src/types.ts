@@ -1,4 +1,3 @@
-import BaseMaintainer from './maintainers/BaseMaintainer'
 import { ConnectConfig } from 'ssh2';
 import { Prompt } from 'ssh2-streams';
 import NodeSSH = require('node-ssh')
@@ -24,14 +23,32 @@ export interface credential {
     password: string
 }
 
-export interface slurm {
-    walltime?: number
+export interface slurmCeiling {
     num_of_node?: number
     num_of_task?: number
     cpu_per_task?: number
-    memory_per_cpu?: string
     gpus?: number
+    memory_per_cpu?: string
+    memory_per_gpu?: string
+    memory?: string
+    walltime?: string
+}
+
+export interface slurm {
+    walltime?: string
+    num_of_node?: number
+    num_of_task?: number
+    cpu_per_task?: number
+    memory?: string
+    memory_per_cpu?: string
+    memory_per_gpu?: string
+    gpus?: number
+    gpus_per_node?: number | string
+    gpus_per_socket?: number | string
+    gpus_per_task?: number | string
     partition?: string
+    mail_type?: string[]
+    mail_user?: string[]
 }
 
 export interface secretTokenCache {
