@@ -152,6 +152,7 @@ export interface executableManifest {
     pre_processing_stage?: string
     execution_stage: string
     post_processing_stage?: string
+    slurm_ceiling?: slurmCeiling
     // TODO: need to deprecate
     setup_stage?: string
     cleanup_stage?: string

@@ -11,21 +11,6 @@ class SlurmConnector extends BaseConnector {
 
     public template: string
 
-    public defaultSlurmCeiling: slurmCeiling = {
-        num_of_node: 50,
-        num_of_task: 50,
-        cpu_per_task: 50,
-        gpus: 50,
-        memory_per_cpu: '10G',
-        memory_per_gpu: '10G',
-        memory: '50G',
-        walltime: '10:00:00'
-    }
-
-    storageKey = ['memory_per_cpu', 'memory_per_gpu', 'memory']
-
-    timeKey = ['walltime']
-
     registerModules(modules: Array<string>) {
         this.modules = this.modules.concat(modules)
     }
@@ -37,8 +22,6 @@ class SlurmConnector extends BaseConnector {
             num_of_task: 1,
             cpu_per_task: 1,
         }, config)
-
-        this.validateSlurmConfig(config, {})
 
         var modules = ''
         for (var module in this.modules) modules += `module load ${module}\n`
@@ -168,7 +151,7 @@ ${cmd}`
         return out
     }
 
-    private storageUnitToSize(i: string) {
+    static storageUnitToSize(i: string) {
         if (i.includes('g')) {
             return parseInt(i.replace('g', '')) * 1000 * 1000 * 1000
         }
@@ -180,7 +163,7 @@ ${cmd}`
         }
     }
 
-    private storageIsSmaller(a: string, b: string) {
+    static storageIsSmaller(a: string, b: string) {
         a = a.toLowerCase()
         b = b.toLowerCase()
         var i = this.storageUnitToSize(a)
@@ -188,7 +171,7 @@ ${cmd}`
         return i < j
     }
 
-    private timeToSeconds(i: string[]) {
+    static timeToSeconds(i: string[]) {
         if (i.length == 1) {
             var j = i[0].split('-')
             if (j.length == 1) {
@@ -220,29 +203,44 @@ ${cmd}`
         return Infinity
     }
 
-    private timeIsSmaller(a: string, b: string) {
+    static timeIsSmaller(a: string, b: string) {
         var a_bar = a.split(':')
         var b_bar = b.split(':')
         return this.timeToSeconds(a_bar) < this.timeToSeconds(b_bar)
     }
 
-    private validateSlurmConfig(config: slurm, providedSlurmCeiling: slurmCeiling) {
+    static validateSlurmConfig(config: slurm, providedSlurmCeiling: slurmCeiling) {
+        var defaultSlurmCeiling: slurmCeiling = {
+            num_of_node: 50,
+            num_of_task: 50,
+            cpu_per_task: 50,
+            gpus: 50,
+            memory_per_cpu: '10G',
+            memory_per_gpu: '10G',
+            memory: '50G',
+            walltime: '10:00:00'
+        }
+    
+        var storageKey = ['memory_per_cpu', 'memory_per_gpu', 'memory']
+    
+        var timeKey = ['walltime']
+
         var slurmCeiling = {}
 
-        for (var i in this.defaultSlurmCeiling) {
-            slurmCeiling[i] = this.defaultSlurmCeiling[i]
+        for (var i in defaultSlurmCeiling) {
+            slurmCeiling[i] = defaultSlurmCeiling[i]
             if (!providedSlurmCeiling[i]) continue
 
-            if (this.storageKey.includes(i)) {
-                if (this.storageIsSmaller(providedSlurmCeiling[i], this.defaultSlurmCeiling[i])) {
+            if (storageKey.includes(i)) {
+                if (this.storageIsSmaller(providedSlurmCeiling[i], defaultSlurmCeiling[i])) {
                     slurmCeiling[i] = providedSlurmCeiling[i]
                 }
-            } else if (this.timeKey.includes(i)) {
-                if (this.timeIsSmaller(providedSlurmCeiling[i], this.defaultSlurmCeiling[i])) {
+            } else if (timeKey.includes(i)) {
+                if (this.timeIsSmaller(providedSlurmCeiling[i], defaultSlurmCeiling[i])) {
                     slurmCeiling[i] = providedSlurmCeiling[i]
                 }
             } else {
-                if (providedSlurmCeiling[i] < this.defaultSlurmCeiling[i]) {
+                if (providedSlurmCeiling[i] < defaultSlurmCeiling[i]) {
                     slurmCeiling[i] = providedSlurmCeiling[i]
                 }
             }
@@ -251,11 +249,11 @@ ${cmd}`
         for (var i in slurmCeiling) {
             if (!config[i]) continue
 
-            if (this.storageKey.includes(i)) {
+            if (storageKey.includes(i)) {
                 if (this.storageIsSmaller(slurmCeiling[i], config[i])) {
                     throw new Error(`slurm config ${i} exceeds the threshold of ${slurmCeiling[i]} (current value ${config[i]})`)
                 }
-            } else if (this.timeKey.includes(i)) {
+            } else if (timeKey.includes(i)) {
                 if (this.timeIsSmaller(slurmCeiling[i], config[i])) {
                     throw new Error(`slurm config ${i} exceeds the threshold of ${slurmCeiling[i]} (current value ${config[i]})`)
                 }

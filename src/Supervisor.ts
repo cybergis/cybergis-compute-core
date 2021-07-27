@@ -1,10 +1,11 @@
 import Queue from "./Queue"
 import Emitter from "./Emitter"
 import { Job } from "./models/Job"
-import { SSH, SSHConfig, hpcConfig } from './types'
+import { SSH, SSHConfig, hpcConfig, slurmCeiling } from './types'
 import { config, maintainerConfigMap, hpcConfigMap } from '../configs/config'
-import { FileSystem, LocalFolder } from './FileSystem'
+import { FileSystem, LocalFolder, GitFolder } from './FileSystem'
 import NodeSSH = require('node-ssh')
+import SlurmConnector from "./connectors/SlurmConnector"
 
 class Supervisor {
 
@@ -142,6 +143,7 @@ class Supervisor {
 
     async pushJobToQueue(job: Job) {
         this._validateMaintainerExecutableFolder(job)
+        await this._validateSlurmConfig(job)
         await this.queues[job.maintainer].push(job)
         this.emitter.registerEvents(job, 'JOB_QUEUED', 'job [' + job.id + '] is queued, waiting for registration')
     }
@@ -154,6 +156,25 @@ class Supervisor {
             var file = fileSystem.getFolderByURL(job.executableFolder, maintainerConfig.executable_folder.allowed_protocol)
             file.validate()
         }
+    }
+
+    private async _validateSlurmConfig(job: Job) {
+        if (!job.slurm) return
+
+        var providedSlurmCeiling: slurmCeiling = {}
+        const maintainerConfig = maintainerConfigMap[job.maintainer]
+        if (maintainerConfig.executable_folder.from_user) {
+            var u = job.executableFolder.split('://')
+            if (u[0] === 'git') {
+                var f = new GitFolder(u[1])
+                var m = await f.getExecutableManifest()
+                if (m.slurm_ceiling) {
+                    providedSlurmCeiling = m.slurm_ceiling
+                }
+            }
+        }
+
+        SlurmConnector.validateSlurmConfig(job.slurm, providedSlurmCeiling)
     }
 
     destroy() {
