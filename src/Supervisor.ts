@@ -20,7 +20,7 @@ class Supervisor {
 
     private maintainerThread = null
 
-    private workerTimePeriodInSeconds = 1
+    private workerTimePeriodInSeconds = 10
 
     constructor() {
         var self = this

@@ -1,4 +1,4 @@
-name: jobsupdev
+name: jobsupdev_v1
 channels:
   - conda-forge
 dependencies:
@@ -8,6 +8,7 @@ dependencies:
   - cartopy
   - notebook
   - typescript
+  - globus-sdk
   - pip
   - pip:
     - git+https://github.com/UW-Hydro/pysumma.git@7480a12d40742d58629f2742ae7abc92131f831e
