@@ -181,8 +181,9 @@ export class GitFolder extends BaseFolder {
                 }
             }
 
-            const rawExecutableManifest = require(path.join(this.path, 'manifest.json'))
-            this.executableManifest = JSON.parse(JSON.stringify(rawExecutableManifest))
+            var executableFolderPath = path.join(this.path, 'manifest.json')
+            const rawExecutableManifest = (await fs.promises.readFile(executableFolderPath)).toString()
+            this.executableManifest = JSON.parse(rawExecutableManifest)
         } catch (e) {
             throw new Error(`initialization failed with error: ${e.toString()}`)
         }
