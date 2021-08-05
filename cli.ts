@@ -12,7 +12,7 @@ cmd.command('git <operation>')
     .option('-a, --address <address>', '[operation=add/update] git repository\'s address')
     .option('-s, --sha <sha>', '[operation=add/update] git repository\'s sha hash')
     .action(async (operation: string, cmd) => {
-        const db = new DB()
+        const db = new DB(false)
         switch (operation) {
             case 'add':
                 var git = new Git()
