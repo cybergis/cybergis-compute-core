@@ -3,6 +3,7 @@ import { Log } from '../src/models/Log'
 import { Job } from '../src/models/Job'
 import { config } from '../configs/config'
 import { ConnectionOptions, getConnection, Connection, createConnection } from 'typeorm'
+import { Git } from './models/Git'
 
 class DB {
     private config: ConnectionOptions = {
@@ -25,7 +26,7 @@ class DB {
             ignoreErrors: true
         },
         migrationsRun: true,
-        entities: [Event, Log, Job]
+        entities: [Event, Log, Job, Git]
     }
 
     async connect(): Promise<Connection> {
