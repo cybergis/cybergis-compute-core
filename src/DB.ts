@@ -16,6 +16,8 @@ class DB {
         database: config.mysql.database,
         synchronize: true,
         logging: false,
+        migrationsRun: true,
+        entities: [Event, Log, Job, Git],
         cache: {
             type: "redis",
             options: {
@@ -24,12 +26,28 @@ class DB {
                 // TODO: add password support
             },
             ignoreErrors: true
-        },
-        migrationsRun: true,
-        entities: [Event, Log, Job, Git]
+        }
     }
 
-    async connect(): Promise<Connection> {
+    constructor(withCache = true) {
+        if (!withCache) {
+            this.config = {
+                name: 'default',
+                type: 'mysql',
+                host: config.mysql.host,
+                port: config.mysql.port,
+                username: config.mysql.username,
+                password: config.mysql.password,
+                database: config.mysql.database,
+                synchronize: true,
+                logging: false,
+                migrationsRun: true,
+                entities: [Event, Log, Job, Git]
+            }
+        }
+    }
+
+    async connect(withCache = true): Promise<Connection> {
         try {
             return await getConnection(this.config.name)
         } catch (error) {
