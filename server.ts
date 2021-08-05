@@ -149,7 +149,11 @@ app.get('/git', async function (req, res) {
 
     var connection = await db.connect()
     var gitRepo = connection.getRepository(Git)
-    var gits = await gitRepo.find()
+    var gits = await gitRepo.find({
+        order: {
+            id: "DESC"
+        }
+    })
     res.json({ git: await parseGit(gits) })
 })
 
