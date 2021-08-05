@@ -7,6 +7,8 @@ import { FileSystem, LocalFolder, GitFolder } from './FileSystem'
 import NodeSSH = require('node-ssh')
 import SlurmConnector from "./connectors/SlurmConnector"
 
+type actions = 'stop' | 'resume' | 'cancel'
+
 class Supervisor {
 
     private jobPoolCapacities: {[keys: string]: number } = {}
@@ -28,6 +30,8 @@ class Supervisor {
     private connectorThread = null
 
     private workerTimePeriodInSeconds = config.worker_time_period_in_seconds
+
+    private actionQueue: {[keys: string]: actions[]} = {}
 
     constructor() {
         var self = this

@@ -2,10 +2,8 @@ import { Job } from "../models/Job"
 import { options, hpcConfig, SSH } from "../types"
 import { ConnectorError } from '../errors'
 import BaseMaintainer from '../maintainers/BaseMaintainer'
-import { BaseFolder, LocalFolder } from '../FileSystem'
+import { LocalFolder } from '../FileSystem'
 import * as path from 'path'
-import { config } from "../../configs/config"
-import Helper from '../Helper'
 
 class BaseConnector {
     /** parent pointer **/
@@ -120,7 +118,7 @@ class BaseConnector {
         }
     }
 
-    async upload(from: BaseFolder, to: string, muteEvent = false) {
+    async upload(from: LocalFolder, to: string, muteEvent = false) {
         if (from == undefined) throw new ConnectorError('please init input file first')
         var fromZipFilePath = await this.maintainer.executableFolder.getZip()
         var toZipFilePath = to.endsWith('.zip') ? to : `${to}.zip`

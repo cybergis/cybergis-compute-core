@@ -1,9 +1,8 @@
-import { config, hpcConfig, maintainerConfig, gitConfig, containerConfig } from '../src/types'
+import { config, hpcConfig, maintainerConfig, containerConfig } from '../src/types'
 
 const rawConfig = require('../config.json')
 const rawHpc = require('./hpc.json')
 const rawMaintainer = require('./maintainer.json')
-const rawGitConfig = require('./git.json')
 const rawContainerConfig = require('./container.json')
 
 const config: config = JSON.parse(JSON.stringify(rawConfig))
@@ -18,14 +17,9 @@ for (var i in rawMaintainer) {
     maintainerConfigMap[i] = JSON.parse(JSON.stringify(rawMaintainer[i]))
 }
 
-var gitConfigMap: {[key: string]: gitConfig} = {}
-for (var i in rawGitConfig) {
-    gitConfigMap[i] = JSON.parse(JSON.stringify(rawGitConfig[i]))
-}
-
 var containerConfigMap: {[key: string]: containerConfig} = {}
 for (var i in rawContainerConfig) {
     containerConfigMap[i] = JSON.parse(JSON.stringify(rawContainerConfig[i]))
 }
 
-export { config, hpcConfigMap, maintainerConfigMap, gitConfigMap, containerConfigMap }
+export { config, hpcConfigMap, maintainerConfigMap, containerConfigMap }

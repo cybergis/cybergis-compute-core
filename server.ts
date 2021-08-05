@@ -1,9 +1,10 @@
 import Guard from './src/Guard'
 import Supervisor from './src/Supervisor'
+import { Git } from './src/models/Git'
 import { FileSystem, GitFolder, LocalFolder } from './src/FileSystem'
 import Helper from './src/Helper'
-import { gitConfig, hpcConfig, maintainerConfig } from './src/types'
-import { config, gitConfigMap, hpcConfigMap, maintainerConfigMap } from './configs/config'
+import { hpcConfig, maintainerConfig } from './src/types'
+import { config, hpcConfigMap, maintainerConfigMap } from './configs/config'
 import express = require('express')
 import { Job } from './src/models/Job'
 import DB from './src/DB'
@@ -77,7 +78,7 @@ var schemas = {
             fileUrl: { type: 'string' }
         },
         required: ['accessToken', 'fileUrl']
-    }
+    }    
 }
 
 function requestErrors(v) {
@@ -127,21 +128,29 @@ app.get('/maintainer', function (req, res) {
 })
 
 app.get('/git', async function (req, res) {
-    var parseGit = async (dest: {[key: string]: gitConfig}) => {
+    var parseGit = async (dest: Git[]) => {
         var out = {}
         for (var i in dest) {
             var gitFolder = new GitFolder(i)
-            var executableManifest = await gitFolder.getExecutableManifest()
-            out[i] = {
-                name: executableManifest.name,
-                container: executableManifest.container,
-                repository: dest[i].url,
-                commit: dest[i].sha
+            try {
+                var executableManifest = await gitFolder.getExecutableManifest()
+                out[i] = {
+                    name: executableManifest.name,
+                    container: executableManifest.container,
+                    repository: dest[i].address,
+                    commit: dest[i].sha
+                }
+            } catch (e) {
+                console.error(`cannot clone git: ${e.toString()}`)
             }
         }
         return out
     }
-    res.json({ git: await parseGit(gitConfigMap) })
+
+    var connection = await db.connect()
+    var gitRepo = connection.getRepository(Git)
+    var gits = await gitRepo.find()
+    res.json({ git: await parseGit(gits) })
 })
 
 // file
@@ -200,8 +209,12 @@ app.get('/file', async function (req: any, res) {
 
     try {
         var folder = fileSystem.getFolderByURL(body.fileUrl, 'local')
-        var dir = await folder.getZip()
-        res.download(dir)
+        if (folder instanceof LocalFolder) {
+            var dir = await folder.getZip()
+            res.download(dir)
+        } else {
+            throw new Error('folder is not a local folder')
+        }
     } catch (e) {
         res.json({ error: `cannot get file by url [${body.fileUrl}]`, messages: [e.toString()] })
         res.status(402)
@@ -323,6 +336,18 @@ app.post('/job/:jobId/submit', async function (req, res) {
     }
 
     res.json(Helper.job2object(job))
+})
+
+app.put('/job/:jobId/pause', async function (req, res) {
+    
+})
+
+app.put('/job/:jobId/resume', async function (req, res) {
+    
+})
+
+app.put('/job/:jobId/cancel', async function (req, res) {
+    
 })
 
 app.get('/job/:jobId/events', async function (req, res) {

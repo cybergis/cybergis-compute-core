@@ -1,6 +1,7 @@
 import { ConnectorError } from '../errors'
 import BaseConnector from './BaseConnector'
 import { slurm, slurmCeiling } from '../types'
+import { LocalFolder } from '../FileSystem'
 import * as path from 'path'
 
 class SlurmConnector extends BaseConnector {
@@ -54,8 +55,10 @@ ${cmd}`
         // executable folder
         if (this.maintainer != null) this.maintainer.emitEvent('SLURM_UPLOAD', `uploading files`)
         await this.upload(this.maintainer.executableFolder, this.remote_executable_folder_path, true)
+        // job.sbatch
         await this.createFile(this.template, path.join(this.remote_executable_folder_path, 'job.sbatch'), {}, true)
-        await this.createFile({
+        // job.json
+        var jobJSON = {
             jobId: this.maintainer.job.id,
             userId: this.maintainer.job.userId,
             maintainer: this.maintainer.job.maintainer,
@@ -65,11 +68,18 @@ ${cmd}`
             executableFolder: this.getRemoteExecutableFolderPath(),
             dataFolder: this.getRemoteDataFolderPath(),
             resultFolder: this.getRemoteResultFolderPath()
-        }, path.join(this.remote_executable_folder_path, 'job.json'))
+        }
+        await this.createFile(jobJSON, path.join(this.remote_executable_folder_path, 'job.json'))
+        // job.env
+        var jobENV = ''
+        for (var key in jobJSON) jobENV += `${key.split(/(?=[A-Z])/).join('_').toUpperCase()}="${jobJSON[key]}"\n`
+        await this.createFile(jobENV, path.join(this.remote_executable_folder_path, 'job.sbatch'), {}, true)
 
         // data folder
         if (this.maintainer.dataFolder) {
-            await this.upload(this.maintainer.dataFolder, this.remote_data_folder_path, true)
+            if (this.maintainer.dataFolder instanceof LocalFolder) {
+                await this.upload(this.maintainer.dataFolder, this.remote_data_folder_path, true)
+            }
         } else {
             await this.mkdir(this.remote_data_folder_path, {}, true)
         }
@@ -220,9 +230,9 @@ ${cmd}`
             memory: '50G',
             walltime: '10:00:00'
         }
-    
+
         var storageKey = ['memory_per_cpu', 'memory_per_gpu', 'memory']
-    
+
         var timeKey = ['walltime']
 
         var slurmCeiling = {}
@@ -264,8 +274,6 @@ ${cmd}`
             }
         }
     }
-
-
 }
 
 export default SlurmConnector

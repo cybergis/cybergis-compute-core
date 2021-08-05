@@ -15,7 +15,7 @@ services:
       - EMAIL=zimox2@illinois.edu
 
   job_supervisor:
-    image: zimoxiao/job_supervisor:v0.0.6
+    image: zimoxiao/job_supervisor:v0.0.8
     restart: on-failure
     volumes:
     - ./:/job_supervisor:rw

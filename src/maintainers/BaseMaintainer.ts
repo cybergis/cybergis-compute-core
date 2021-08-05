@@ -1,6 +1,6 @@
 import { Job } from "../models/Job"
 import { maintainerConfig, event, slurm, job_maintainer_updatable } from "../types"
-import { BaseFolder, LocalFolder, FileSystem, GitFolder } from '../FileSystem'
+import { BaseFolder, LocalFolder, FileSystem } from '../FileSystem'
 import BaseConnector from '../connectors/BaseConnector'
 import SlurmConnector from '../connectors/SlurmConnector'
 import validator from 'validator'
@@ -71,7 +71,12 @@ class BaseMaintainer {
         const fileSystem = new FileSystem()
         const maintainerConfig = maintainerConfigMap[job.maintainer]
         if (maintainerConfig.executable_folder.from_user) {
-            this.executableFolder = fileSystem.getFolderByURL(job.executableFolder)
+            var folder = fileSystem.getFolderByURL(job.executableFolder)
+            if (folder instanceof LocalFolder) {
+                this.executableFolder = folder
+            } else {
+                throw new Error('executable folder must be local folder')
+            }
         } else {
             this.executableFolder = fileSystem.createLocalFolder()
         }
@@ -94,7 +99,7 @@ class BaseMaintainer {
 
     public resultFolder: BaseFolder = undefined
 
-    public executableFolder: BaseFolder = undefined
+    public executableFolder: LocalFolder = undefined
 
     /** data **/
     protected logs: Array<string> = []
