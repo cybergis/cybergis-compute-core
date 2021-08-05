@@ -363,6 +363,8 @@ export class GitFolder extends LocalFolder {
             var gitRepo = connection.getRepository(Git)
             this.git = await gitRepo.findOne(this.id)
 
+            if (!this.git) throw new Error(`cannot find git folder with url ${this.getURL()}`)
+
             if (!fs.existsSync(this.path)) {
                 await fs.promises.mkdir(this.path)
                 await exec(`cd ${this.path} && git clone ${this.git.address} ${this.path}`)
