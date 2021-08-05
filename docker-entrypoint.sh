@@ -22,7 +22,7 @@ cd /job_supervisor && npm install
 cd /job_supervisor && npm run build
 
 # set SSH config
-RUN cat >> /etc/ssh_config <<EOT
+cat >> /etc/ssh_config <<EOT
 Host *
     StrictHostKeyChecking no
 EOT
