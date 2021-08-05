@@ -134,7 +134,7 @@ app.get('/git', async function (req, res) {
             var gitFolder = new GitFolder(i)
             try {
                 var executableManifest = await gitFolder.getExecutableManifest()
-                out[i] = {
+                out[dest[i].id] = {
                     name: executableManifest.name,
                     container: executableManifest.container,
                     repository: dest[i].address,

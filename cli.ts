@@ -65,6 +65,7 @@ cmd.command('git <operation>')
                 console.error('<operation> invalid operation, only support [add/update/delete/approve]')
                 break
         }
+        await db.close()
     })
 
     cmd.parse(process.argv)

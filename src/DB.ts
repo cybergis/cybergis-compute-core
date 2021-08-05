@@ -54,6 +54,10 @@ class DB {
             return await createConnection(this.config)
         }
     }
+
+    async close() {
+        await (await this.connect()).close()
+    }
 }
 
 export default DB
