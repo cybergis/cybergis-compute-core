@@ -73,7 +73,7 @@ ${cmd}`
         // job.env
         var jobENV = ''
         for (var key in jobJSON) jobENV += `${key.split(/(?=[A-Z])/).join('_').toUpperCase()}="${jobJSON[key]}"\n`
-        await this.createFile(jobENV, path.join(this.remote_executable_folder_path, 'job.sbatch'), {}, true)
+        await this.createFile(jobENV, path.join(this.remote_executable_folder_path, 'job.env'), {}, true)
 
         // data folder
         if (this.maintainer.dataFolder) {
