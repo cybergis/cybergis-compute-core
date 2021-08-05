@@ -3,6 +3,9 @@ import { Entity, Column, PrimaryColumn } from "typeorm"
 @Entity({name: "gits"})
 export class Git {
     @PrimaryColumn()
+    id: string
+
+    @Column()
     address: string
 
     @Column({nullable: true, default: null})

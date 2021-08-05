@@ -8,17 +8,19 @@ var cmd = new Command()
 cmd.version(pkg.version)
 
 cmd.command('git <operation>')
-    .option('-a, --address <address>', '[operation=add/update/delete/approve] git repository\'s address')
+    .option('-i, --id <id>', '[operation=add/update/delete/approve] git repository\'s id')
+    .option('-a, --address <address>', '[operation=add/update] git repository\'s address')
     .option('-s, --sha <sha>', '[operation=add/update] git repository\'s sha hash')
     .action(async (operation: string, cmd) => {
         const db = new DB()
         switch (operation) {
             case 'add':
                 var git = new Git()
-                if (cmd.address) {
+                if (cmd.address && cmd.id) {
                     git.address = cmd.address
+                    git.id = cmd.id
                 } else {
-                    console.error('-a, --address <address> flag is required'); return
+                    console.error('-a, --address <address> and -i, --id <id> flags is required'); return
                 }
                 git.isApproved = true
                 if (cmd.sha) git.sha = cmd.sha
@@ -29,31 +31,34 @@ cmd.command('git <operation>')
                 console.log(git)
                 break
             case 'update':
-                if (!cmd.address) { console.error('-a, --address <address> flag is required'); return }
+                if (!cmd.id) { console.error('-i, --id <id> flag is required'); return }
                 var connection = await db.connect()
+                var i = {}
+                if (cmd.address) i['address'] = cmd.address
+                if (cmd.sha) i['sha'] = cmd.sha
                 await connection.createQueryBuilder()
                     .update(Git)
-                    .where('address = :address', { address:  cmd.address })
-                    .set({ sha: cmd.sha })
+                    .where('id = :id', { id:  cmd.id })
+                    .set(i)
                     .execute()
                 console.log('git successfully updated:')
                 var gitRepo = connection.getRepository(Git)
-                console.log(await gitRepo.findOne(cmd.address))
+                console.log(await gitRepo.findOne(cmd.id))
                 break
             case 'approve':
-                if (!cmd.address) { console.error('-a, --address <address> flag is required'); return }
+                if (!cmd.id) { console.error('-i, --id <id> flag is required'); return }
                 var connection = await db.connect()
                 await connection.createQueryBuilder()
                     .update(Git)
-                    .where('address = :address', { address:  cmd.address })
+                    .where('id = :id', { id:  cmd.id })
                     .set({ isApproved: true })
                     .execute()
                 console.log('git approved')
                 break
             case 'delete':
-                if (!cmd.address) { console.error('-a, --address <address> flag is required'); return }
+                if (!cmd.id) { console.error('-i, --id <id> flag is required'); return }
                 var gitRepo = connection.getRepository(Git)
-                await gitRepo.delete(cmd.address)
+                await gitRepo.delete(cmd.id)
                 console.log('git successfully deleted')
                 break
             default:
