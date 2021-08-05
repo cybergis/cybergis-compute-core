@@ -183,6 +183,12 @@ export class LocalFolder extends BaseFolder {
 
     // write operations
 
+    async chmod(filePath: string, mode: string) {
+        if (!await this.exists()) throw new FileNotExistError('file not exists or initialized')
+        if (!this.isReadonly) throw new Error('cannot write to a read only folder') 
+        await fs.promises.chmod(path.join(this.path, filePath), mode)
+    }
+
     async putFileFromZip(zipFilePath: string) {
         if (!await this.exists()) throw new FileNotExistError('file not exists or initialized')
         if (!this.isReadonly) throw new Error('cannot write to a read only folder') 
