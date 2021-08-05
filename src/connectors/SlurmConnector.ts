@@ -59,28 +59,27 @@ ${cmd}`
         await this.createFile(this.template, path.join(this.remote_executable_folder_path, 'job.sbatch'), {}, true)
         // job.json
         var jobJSON = {
-            jobId: this.maintainer.job.id,
-            userId: this.maintainer.job.userId,
+            job_id: this.maintainer.job.id,
+            user_id: this.maintainer.job.userId,
             maintainer: this.maintainer.job.maintainer,
             hpc: this.maintainer.job.hpc,
             param: this.maintainer.job.param,
             env: this.maintainer.job.env,
-            executableFolder: this.getRemoteExecutableFolderPath(),
-            dataFolder: this.getRemoteDataFolderPath(),
-            resultFolder: this.getRemoteResultFolderPath()
+            executable_folder: this.getRemoteExecutableFolderPath(),
+            data_folder: this.getRemoteDataFolderPath(),
+            result_folder: this.getRemoteResultFolderPath()
         }
         await this.createFile(jobJSON, path.join(this.remote_executable_folder_path, 'job.json'))
         // job.env
         var jobENV = ''
         for (var key in jobJSON) {
             var structuredKeys = ['hpc', 'param', 'env']
-            var snakeCaseKey = key.split(/(?=[A-Z])/).join('_').toLowerCase()
             if (structuredKeys.includes(key)) {
                 for (var i in jobJSON[key]) {
-                    jobENV += `${snakeCaseKey}_${i}="${jobJSON[key][i]}"\n`
+                    jobENV += `${key}_${i}="${jobJSON[key][i]}"\n`
                 }
             } else {
-                jobENV += `${snakeCaseKey}="${jobJSON[key]}"\n`
+                jobENV += `${key}="${jobJSON[key]}"\n`
             }
         }
         await this.createFile(jobENV, path.join(this.remote_executable_folder_path, 'job.env'), {}, true)
