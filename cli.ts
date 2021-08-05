@@ -61,3 +61,5 @@ cmd.command('git <operation>')
                 break
         }
     })
+
+    cmd.parse(process.argv)

@@ -17,7 +17,7 @@ done
 
 echo "running job-supervisor..."
 if [[ ! -z "${RUN_IN_BACKGROUND}" ]]; then
-  docker-compose -f ./docker-compose.yml up -d --remove-orphans job_supervisor
+  docker-compose -f ./docker-compose.yml --log-level ERROR up -d --remove-orphans job_supervisor
 else
-  docker-compose -f ./docker-compose.yml up --remove-orphans job_supervisor
+  docker-compose -f ./docker-compose.yml --log-level ERROR up --remove-orphans job_supervisor
 fi
