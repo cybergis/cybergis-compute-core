@@ -1,2 +1,2 @@
 #!/bin/bash
-docker-compose -f ./docker-compose.yml --log-level ERROR stop
+docker-compose -f ./docker-compose.yml stop
