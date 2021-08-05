@@ -185,13 +185,13 @@ export class LocalFolder extends BaseFolder {
 
     async chmod(filePath: string, mode: string) {
         if (!await this.exists()) throw new FileNotExistError('file not exists or initialized')
-        if (!this.isReadonly) throw new Error('cannot write to a read only folder') 
+        if (this.isReadonly) throw new Error('cannot write to a read only folder') 
         await fs.promises.chmod(path.join(this.path, filePath), mode)
     }
 
     async putFileFromZip(zipFilePath: string) {
         if (!await this.exists()) throw new FileNotExistError('file not exists or initialized')
-        if (!this.isReadonly) throw new Error('cannot write to a read only folder') 
+        if (this.isReadonly) throw new Error('cannot write to a read only folder') 
 
         var zip = fs.createReadStream(zipFilePath).pipe(unzipper.Parse({ forceStream: true }))
 
@@ -250,7 +250,7 @@ export class LocalFolder extends BaseFolder {
 
     async putFileFromTemplate(template: string, replacements: any, filePath: string) {
         if (!await this.exists()) throw new FileNotExistError('file not exists or initialized')
-        if (!this.isReadonly) throw new Error('cannot write to a read only folder') 
+        if (this.isReadonly) throw new Error('cannot write to a read only folder') 
 
         for (var key in replacements) {
             var value = replacements[key]
@@ -261,7 +261,7 @@ export class LocalFolder extends BaseFolder {
 
     async putFileFromString(content: string, filePath: string) {
         if (!await this.exists()) throw new FileNotExistError('file not exists or initialized')
-        if (!this.isReadonly) throw new Error('cannot write to a read only folder') 
+        if (this.isReadonly) throw new Error('cannot write to a read only folder') 
 
         const fileName = path.basename(filePath)
         filePath = path.join(this.path, filePath)
@@ -280,7 +280,7 @@ export class LocalFolder extends BaseFolder {
 
     async putFolder(folderPath: string) {
         if (!await this.exists()) throw new FileNotExistError('file not exists or initialized')
-        if (!this.isReadonly) throw new Error('cannot write to a read only folder') 
+        if (this.isReadonly) throw new Error('cannot write to a read only folder') 
 
         folderPath = path.join(this.path, folderPath)
         if (!fs.existsSync(folderPath)) await fs.promises.mkdir(folderPath, { recursive: true })
