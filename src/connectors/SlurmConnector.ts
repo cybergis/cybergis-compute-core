@@ -72,7 +72,17 @@ ${cmd}`
         await this.createFile(jobJSON, path.join(this.remote_executable_folder_path, 'job.json'))
         // job.env
         var jobENV = ''
-        for (var key in jobJSON) jobENV += `${key.split(/(?=[A-Z])/).join('_').toUpperCase()}="${jobJSON[key]}"\n`
+        for (var key in jobJSON) {
+            var structuredKeys = ['hpc', 'param', 'env']
+            var snakeCaseKey = key.split(/(?=[A-Z])/).join('_').toLowerCase()
+            if (structuredKeys.includes(key)) {
+                for (var i in jobJSON[key]) {
+                    jobENV += `${snakeCaseKey}_${i}="${jobJSON[key][i]}"\n`
+                }
+            } else {
+                jobENV += `${snakeCaseKey}="${jobJSON[key]}"\n`
+            }
+        }
         await this.createFile(jobENV, path.join(this.remote_executable_folder_path, 'job.env'), {}, true)
 
         // data folder
