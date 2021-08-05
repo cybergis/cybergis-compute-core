@@ -1,7 +1,7 @@
 import { Command } from 'commander'
 import { Git } from './src/models/Git'
 import DB from './src/DB'
-var pkg = require('./package.json')
+var pkg = require('../package.json')
 
 var cmd = new Command()
 
