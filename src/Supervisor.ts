@@ -67,7 +67,7 @@ class Supervisor {
             }
         }
 
-        //
+        this.createMaintainerMaster()
     }
 
     createMaintainerMaster() {
