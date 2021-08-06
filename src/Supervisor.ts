@@ -171,7 +171,7 @@ class Supervisor {
     async pushJobToQueue(job: Job) {
         this._validateMaintainerExecutableFolder(job)
         await this._validateSlurmConfig(job)
-        await this.queues[job.maintainer].push(job)
+        await this.queues[job.hpc].push(job)
         this.emitter.registerEvents(job, 'JOB_QUEUED', 'job [' + job.id + '] is queued, waiting for registration')
     }
 
