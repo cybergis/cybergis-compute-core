@@ -28,7 +28,7 @@ class Supervisor {
 
     private maintainerMasterEventEmitter = new events.EventEmitter()
 
-    private queueConsumeTimePeriodInSeconds = config.worker_time_period_in_seconds
+    private queueConsumeTimePeriodInSeconds = config.queue_consume_time_period_in_seconds
 
     private actionQueue: {[keys: string]: actions[]} = {}
 

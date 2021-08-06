@@ -22,6 +22,6 @@
         "cache_path": "/job_supervisor/data/tmp",
         "root_path": "/job_supervisor/data/root"
     },
-    "worker_time_period_in_seconds": 3,
+    "queue_consume_time_period_in_seconds": 3,
     "is_testing": true
 }

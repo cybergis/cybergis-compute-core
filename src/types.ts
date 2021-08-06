@@ -98,7 +98,7 @@ export interface config {
     redis: redis
     mysql: mysql
     local_file_system: localFileSystem
-    worker_time_period_in_seconds: number
+    queue_consume_time_period_in_seconds: number
     is_testing: boolean
 }
 
