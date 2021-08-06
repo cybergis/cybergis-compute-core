@@ -119,6 +119,7 @@ export interface hpcConfig {
     is_community_account: boolean
     community_login: communityLogin
     root_path: string
+    job_pool_capacity: number
 }
 
 export interface fileConfig {
@@ -136,7 +137,6 @@ export interface executableFolder {
 export interface maintainerConfig {
     hpc: string[]
     default_hpc: string
-    job_pool_capacity: number
     executable_folder: executableFolder
     maintainer: string
 }

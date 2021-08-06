@@ -1,9 +1,10 @@
 import Queue from "./Queue"
 import Emitter from "./Emitter"
 import { Job } from "./models/Job"
-import { SSH, SSHConfig, hpcConfig, slurmCeiling } from './types'
+import { SSH, SSHConfig, slurmCeiling } from './types'
 import { config, maintainerConfigMap, hpcConfigMap } from '../configs/config'
-import { FileSystem, LocalFolder, GitFolder } from './FileSystem'
+import { FileSystem, GitFolder } from './FileSystem'
+import * as events from 'events'
 import NodeSSH = require('node-ssh')
 import SlurmConnector from "./connectors/SlurmConnector"
 
@@ -15,40 +16,34 @@ class Supervisor {
 
     private jobCommunitySSHCounters: {[keys: string]: number } = {}
 
-    private jobPools: {[keys: string]: Job[]} = {}
+    private jobPoolCounters: {[keys: string]: number} = {}
 
     public jobSSHPool: {[keys: string]: SSH} = {}
-
-    public downloadPool: {[keys: string]: LocalFolder } = {}
 
     private queues: {[keys: string]: Queue} = {}
 
     private emitter = new Emitter()
 
-    private maintainerThread = null
+    private maintainerMasterThread = null
 
-    private connectorThread = null
+    private maintainerMasterEventEmitter = new events.EventEmitter()
 
-    private workerTimePeriodInSeconds = config.worker_time_period_in_seconds
+    private queueConsumeTimePeriodInSeconds = config.worker_time_period_in_seconds
 
     private actionQueue: {[keys: string]: actions[]} = {}
 
     constructor() {
-        var self = this
-
-        // create job queue
-        for (var key in maintainerConfigMap) {
-            var maintainerConfig = maintainerConfigMap[key]
-            this.jobPoolCapacities[key] = maintainerConfig.job_pool_capacity
-            this.jobPools[key] = []
-            this.queues[key] = new Queue(key)
-        }
-
-        // register community account SSH
         for (var hpcName in hpcConfigMap) {
             var hpcConfig = hpcConfigMap[hpcName]
+
+            // register job pool & queues
+            this.jobPoolCapacities[hpcName] = hpcConfig.job_pool_capacity
+            this.jobPoolCapacities[hpcName] = 0
+            this.queues[hpcName] = new Queue(hpcName)
+
             if (!hpcConfig.is_community_account) continue
 
+            // register community account SSH
             this.jobCommunitySSHCounters[hpcName] = 0
 
             var sshConfig: SSHConfig = {
@@ -72,62 +67,26 @@ class Supervisor {
             }
         }
 
-        this.maintainerThread = setInterval(async () => {
-            for (var service in self.jobPools) {
-                var jobPool = self.jobPools[service]
+        //
+    }
 
-                for (var i = 0; i < jobPool.length; i++) {
-                    var job = jobPool[i]
-                    var ssh: SSH
+    createMaintainerMaster() {
+        var self = this
 
-                    if (job.maintainerInstance.connector.config.is_community_account) {
-                        ssh = self.jobSSHPool[job.hpc]
-                    } else {
-                        ssh = self.jobSSHPool[job.id]
-                    }
-
-                    try {
-                        if (!ssh.connection.isConnected()) await ssh.connection.connect(ssh.config)
-                        await ssh.connection.execCommand('echo') // test connection
-                        if (job.maintainerInstance.isInit) {
-                            await job.maintainerInstance.maintain()
-                        } else {
-                            await job.maintainerInstance.init()
-                        }
-                    } catch (e) { 
-                        if (config.is_testing) console.error(e.stack); continue
-                    }
-
-                    var events = job.maintainerInstance.dumpEvents()
-                    var logs = job.maintainerInstance.dumpLogs()
-
-                    for (var j in events) self.emitter.registerEvents(job, events[j].type, events[j].message)
-                    for (var j in logs) self.emitter.registerLogs(job, logs[j])
-
-                    if (job.maintainerInstance.isEnd) {
-                        jobPool.splice(i, 1)
-
-                        if (job.maintainerInstance.connector.config.is_community_account) {
-                            self.jobCommunitySSHCounters[job.hpc]--
-                            if (self.jobCommunitySSHCounters[job.hpc] === 0) {
-                                if (ssh.connection.isConnected()) await ssh.connection.dispose()
-                            }
-                        } else {
-                            if (ssh.connection.isConnected()) await ssh.connection.dispose()
-                            delete self.jobSSHPool[job.id]
-                        }
-                        i--
-                    }
-                }
-
-                while (jobPool.length < self.jobPoolCapacities[service] && !await self.queues[service].isEmpty()) {
-                    var job = await self.queues[service].shift()
+        // queue consumer
+        this.maintainerMasterThread = setInterval(async () => {
+            for (var hpcName in self.jobPoolCounters) {
+                while (self.jobPoolCounters[hpcName] < self.jobPoolCapacities[hpcName] && !await self.queues[hpcName].isEmpty()) {
+                    var job = await self.queues[hpcName].shift()
                     var maintainer = require(`./maintainers/${maintainerConfigMap[job.maintainer].maintainer}`).default // typescript compilation hack
                     job.maintainerInstance = new maintainer(job, self)
-                    self.jobPools[service].push(job)
+                    self.jobPoolCounters[hpcName]++
+
+                    // manage ssh pool
                     if (job.maintainerInstance.connector.config.is_community_account) {
                         self.jobCommunitySSHCounters[job.hpc]++
                     } else {
+                        var hpcConfig = hpcConfigMap[job.hpc]
                         self.jobSSHPool[job.id] = {
                             connection: new NodeSSH(),
                             config: {
@@ -139,10 +98,74 @@ class Supervisor {
                             }
                         }
                     }
+
+                    // emit event
                     self.emitter.registerEvents(job, 'JOB_REGISTERED', `job [${job.id}] is registered with the supervisor, waiting for initialization`)
+
+                    // run worker
+                    this.createMaintainerWorker(job)
                 }
             }
-        }, this.workerTimePeriodInSeconds * 1000)
+        }, this.queueConsumeTimePeriodInSeconds * 1000)
+
+        // remove job once ended
+        this.maintainerMasterEventEmitter.on('job_end', (hpcName, jobName) => {
+            if (config.is_testing) console.log(`received job_end event from ${jobName}`)
+            self.jobPoolCounters[hpcName]--
+        })
+    }
+
+    async createMaintainerWorker(job: Job) {
+        var self = this
+
+        while (true) {
+            // get ssh connector from pool
+            var ssh: SSH
+            if (job.maintainerInstance.connector.config.is_community_account) {
+                ssh = self.jobSSHPool[job.hpc]
+            } else {
+                ssh = self.jobSSHPool[job.id]
+            }
+
+            // connect ssh & run
+            try {
+                if (!ssh.connection.isConnected()) await ssh.connection.connect(ssh.config)
+                await ssh.connection.execCommand('echo') // test connection
+                if (job.maintainerInstance.isInit) {
+                    await job.maintainerInstance.maintain()
+                } else {
+                    await job.maintainerInstance.init()
+                }
+            } catch (e) { 
+                if (config.is_testing) console.error(e.stack); continue
+            }
+
+            // emit events & logs
+            var events = job.maintainerInstance.dumpEvents()
+            var logs = job.maintainerInstance.dumpLogs()
+            for (var j in events) self.emitter.registerEvents(job, events[j].type, events[j].message)
+            for (var j in logs) self.emitter.registerLogs(job, logs[j])
+
+            // ending conditions
+            if (job.maintainerInstance.isEnd) {
+                // exit or deflag ssh pool
+                if (job.maintainerInstance.connector.config.is_community_account) {
+                    self.jobCommunitySSHCounters[job.hpc]--
+                    if (self.jobCommunitySSHCounters[job.hpc] === 0) {
+                        if (ssh.connection.isConnected()) await ssh.connection.dispose()
+                    }
+                } else {
+                    if (ssh.connection.isConnected()) await ssh.connection.dispose()
+                    delete self.jobSSHPool[job.id]
+                }
+
+                // emit event
+                this.maintainerMasterEventEmitter.emit('job_end', job.hpc, job.id)
+
+                // exit loop
+                return
+            }
+        }
     }
 
     async pushJobToQueue(job: Job) {
@@ -182,8 +205,7 @@ class Supervisor {
     }
 
     destroy() {
-        clearInterval(this.maintainerThread)
-        clearInterval(this.connectorThread)
+        clearInterval(this.maintainerMasterThread)
     }
 }
 

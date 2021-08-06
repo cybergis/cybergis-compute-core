@@ -11,7 +11,8 @@
                 "passphrase": null
             }
         },
-        "root_path": "/data/keeling/a/cigi-gisolve/scratch/dev"
+        "root_path": "/data/keeling/a/cigi-gisolve/scratch/dev",
+        "job_pool_capacity": 10
     },
     "bridges_community": {
         "ip": "bridges2.psc.edu",
@@ -25,11 +26,13 @@
                 "passphrase": null
             }
         },
-        "root_path": "/jet/home/cybergis/data"
+        "root_path": "/jet/home/cybergis/data",
+        "job_pool_capacity": 10
     },
     "hadoop": {
         "ip": "hadoop01.cigi.illinois.edu",
         "port": 50022,
-        "is_community_account": false
+        "is_community_account": false,
+        "job_pool_capacity": 10
     }
 }
