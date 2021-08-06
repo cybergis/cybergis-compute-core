@@ -38,7 +38,7 @@ class Supervisor {
 
             // register job pool & queues
             this.jobPoolCapacities[hpcName] = hpcConfig.job_pool_capacity
-            this.jobPoolCapacities[hpcName] = 0
+            this.jobPoolCounters[hpcName] = 0
             this.queues[hpcName] = new Queue(hpcName)
 
             if (!hpcConfig.is_community_account) continue
