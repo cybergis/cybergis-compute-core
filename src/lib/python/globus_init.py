@@ -5,14 +5,17 @@ import logging
 import time
 from globus_sdk import GlobusAPIError, NetworkError, NativeAppAuthClient, RefreshTokenAuthorizer, TransferClient, TransferData
 
+def output(k, i):
+    print('@' + k + '=[' + i + ']')
+
 logger = logging.getLogger(__name__)
-CLIENT_ID = None
-TRANSFER_REFRESH_TOKEN = None
-SOURCE_ENDPOINT_ID = None
-DESTINATION_ENDPOINT_ID = None
-SOURCE_PATH = None
-DESTINATION_PATH = None
-GLOBUS_TASK_LABEL = None
+CLIENT_ID = str(sys.argv[1])
+SOURCE_ENDPOINT_ID = str(sys.argv[2])
+SOURCE_PATH = str(sys.argv[3])
+DESTINATION_TRANSFER_REFRESH_TOKEN = str(sys.argv[4])
+DESTINATION_ENDPOINT_ID = str(sys.argv[5])
+DESTINATION_PATH = str(sys.argv[6])
+GLOBUS_TASK_LABEL = str(sys.argv[7])
 
 ## Setup Globus Connect Personal on JetStream NFS VM
 ## see: https://docs.globus.org/how-to/globus-connect-personal-linux/
@@ -67,7 +70,7 @@ def submit_transfer_with_retries(transfer_client, transfer_data):
 
 
 client = NativeAppAuthClient(CLIENT_ID)
-authorizer = RefreshTokenAuthorizer(TRANSFER_REFRESH_TOKEN, client)
+authorizer = RefreshTokenAuthorizer(DESTINATION_TRANSFER_REFRESH_TOKEN, client)
 transfer_client = TransferClient(authorizer=authorizer)
 
 transfer_instance = TransferData(transfer_client, SOURCE_ENDPOINT_ID, DESTINATION_ENDPOINT_ID, label=GLOBUS_TASK_LABEL, sync_level="checksum")
@@ -75,14 +78,4 @@ transfer_instance.add_item(SOURCE_PATH, DESTINATION_PATH, recursive=True)
 transfer_result = submit_transfer_with_retries(GLOBUS_TASK_LABEL, transfer_instance)
 
 GLOBUS_TASK_ID = transfer_result["task_id"]
-
-res = transfer_client.get_task(GLOBUS_TASK_ID)
-
-while True:
-    status = res.data["status"]
-    if status == 'SUCCEEDED' or status == 'FAILED':
-        print('@status=[' + status + ']')
-        break
-    else:
-        time.sleep(1)
-        res = transfer_client.get_task(GLOBUS_TASK_ID)
+output('task_id', GLOBUS_TASK_ID)

@@ -49,6 +49,7 @@ export interface slurm {
     partition?: string
     mail_type?: string[]
     mail_user?: string[]
+    modules?: string[]
 }
 
 export interface secretTokenCache {
@@ -119,7 +120,8 @@ export interface hpcConfig {
     is_community_account: boolean
     community_login: communityLogin
     root_path: string
-    job_pool_capacity: number
+    job_pool_capacity: number,
+    init_sbatch_script: string[]
 }
 
 export interface fileConfig {
