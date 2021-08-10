@@ -3,7 +3,7 @@
         "dockerfile": "",
         "dockerhub": "",
         "hpc_path": {
-            "keeling_community": "/data/keeling/a/cigi-gisolve/simages/spatialaccess.simg",
+            "keeling_community": "/data/keeling/a/cigi-gisolve/simages/python.sif",
             "bridges_community": "/jet/home/cybergis/image/python.sif"
         }
     }

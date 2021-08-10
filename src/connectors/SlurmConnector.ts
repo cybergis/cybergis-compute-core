@@ -25,7 +25,7 @@ class SlurmConnector extends BaseConnector {
         }, config)
 
         var modules = 'module purge\n'
-        if (config.modules) for (var module in config.modules) modules += `module load ${module}\n`
+        if (config.modules) for (var i in config.modules) modules += `module load ${config.modules[i]}\n`
 
         // https://researchcomputing.princeton.edu/support/knowledge-base/slurm
         this.template = `#!/bin/bash
