@@ -24,7 +24,7 @@ class SlurmConnector extends BaseConnector {
             cpu_per_task: 1,
         }, config)
 
-        var modules = 'module purge\n'
+        var modules = ``
         if (config.modules) for (var i in config.modules) modules += `module load ${config.modules[i]}\n`
 
         // https://researchcomputing.princeton.edu/support/knowledge-base/slurm
@@ -36,7 +36,6 @@ class SlurmConnector extends BaseConnector {
 #SBATCH --time=${config.walltime}
 #SBATCH --error=${path.join(this.remote_result_folder_path, "job.stderr")}
 #SBATCH --output=${path.join(this.remote_result_folder_path, "job.stdout")}
-${this.config.init_sbatch_script ? this.config.init_sbatch_script.join('\n') : ''}
 ${config.memory_per_gpu ? `#SBATCH --mem-per-gpu=${config.memory_per_gpu}` : ''}
 ${config.memory_per_cpu ? `#SBATCH --mem-per-cpu=${config.memory_per_cpu}` : ''}
 ${config.memory ? `#SBATCH --mem=${config.memory}` : ''}
@@ -48,6 +47,8 @@ ${config.partition ? `#SBATCH --partition= ${config.partition}` : ''}
 ${this.getSBatchTagsFromArray('mail-type', config.mail_type)}
 ${this.getSBatchTagsFromArray('mail-user', config.mail_user)}
 
+module purge
+${this.config.init_sbatch_script ? this.config.init_sbatch_script.join('\n') : ''}
 ${modules}
 ${cmd}`
     }
