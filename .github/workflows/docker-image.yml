@@ -21,7 +21,7 @@ jobs:
         id: verify-changed-files
         with:
           files: |
-            default_images/python/3.6/
+            default_images/python/3.6/Dockerfile
       - name: Run step only when files change.
         run: |
           echo "Changed files: ${{ steps.verify_changed_files.outputs.changed_files }}"
