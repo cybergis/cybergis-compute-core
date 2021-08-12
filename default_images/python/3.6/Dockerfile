@@ -7,7 +7,6 @@ RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpin
 RUN pip install \
     pandas \
     gdal \
-    basemap \
     --upgrade --no-cache-dir
 RUN pip install \
     geopandas \
