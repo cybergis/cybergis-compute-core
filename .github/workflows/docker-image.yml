@@ -9,18 +9,23 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Login to DockerHub
-        uses: docker/login-action@v1 
+        uses: docker/login-action@v1
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+      # - name: Verify Changed files
+      #   uses: tj-actions/verify-changed-files@v7.1
+      #   id: verify-changed-files
+      #   with:
+      #     files: |
+      #       default_images/python/3.6/Dockerfile
       - name: Build Python 3.6
         id: docker_build
+        # if: steps.changed_files.outputs.files_changed == 'true'
         uses: docker/build-push-action@v2
         with:
-          context: ./default_images/python/3.6
-          file: ./Dockerfile
+          context: .
           push: true
-          tags: zimoxiao/python_default:latest
+          tags: zimoxiao/python_default:3.6
