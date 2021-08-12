@@ -19,12 +19,9 @@ jobs:
       - name: Verify Changed files
         uses: tj-actions/verify-changed-files@v7.1
         id: verify-changed-files
-        with:
-          files: |
-            default_images/python/3.6/Dockerfile
       - name: Build Python 3.6
         id: docker_build
-        if: steps.changed_files.outputs.files_changed == 'true'
+        if: contains(steps.verify-changed-files.outputs.changed_files, 'default_images/python/3.6/Dockerfile')
         uses: docker/build-push-action@v2
         with:
           context: ./default_images/python/3.6
