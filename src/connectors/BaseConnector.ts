@@ -2,7 +2,7 @@ import { Job } from "../models/Job"
 import { options, hpcConfig, SSH } from "../types"
 import { ConnectorError } from '../errors'
 import BaseMaintainer from '../maintainers/BaseMaintainer'
-import { LocalFolder } from '../FileSystem'
+import { GlobusFolder, LocalFolder } from '../FileSystem'
 import * as path from 'path'
 
 class BaseConnector {
@@ -135,6 +135,10 @@ class BaseConnector {
 
         await this.unzip(toZipFilePath, toFilePath)
         await this.rm(toZipFilePath)
+    }
+
+    async transferGlobus(from: GlobusFolder, to: GlobusFolder) {
+        
     }
 
     /** helpers **/

@@ -104,8 +104,6 @@ export class FileSystem {
 export class BaseFolder {
     public type: fileTypes
 
-    public isLocal: boolean
-
     public id: string
 
     constructor(id: string) {
@@ -129,9 +127,9 @@ export class GlobusFolder extends BaseFolder {
     constructor(id: string) {
         super(id)
         this.type = 'globus'
-        var i = this.id.split('@')
+        var i = this.id.split(':')
         if (i.length != 2) {
-            throw new Error('invalid folder url format [' + this.getURL() + '] (ex. globus://endpoint@path/to/file)')
+            throw new Error('invalid folder url format [' + this.getURL() + '] (ex. globus://endpoint:/path/to/file)')
         }
         this.endpoint = i[0]
         this.path = i[1]
@@ -148,7 +146,6 @@ export class LocalFolder extends BaseFolder {
     constructor(id: string) {
         super(id)
         this.type = 'local'
-        this.isLocal = true
         this.isReadonly = false
         this.path = path.join(config.local_file_system.root_path, id)
         this.fileConfig = this._getFileConfig()

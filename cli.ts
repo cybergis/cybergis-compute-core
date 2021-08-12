@@ -68,4 +68,10 @@ cmd.command('git <operation>')
         await db.close()
     })
 
-    cmd.parse(process.argv)
+cmd.command('globus-refresh-transfer-token')
+    .option('-i, --id <id>', '[operation=add/update/delete/approve] git repository\'s id')
+    .action(async (operation: string, cmd) => {
+        //
+    })
+
+cmd.parse(process.argv)

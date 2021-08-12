@@ -122,6 +122,11 @@ export interface hpcConfig {
     root_path: string
     job_pool_capacity: number,
     init_sbatch_script: string[]
+    globus?: {
+        identity?: string
+        endpoint?: string
+        root_path?: string
+    }
 }
 
 export interface fileConfig {

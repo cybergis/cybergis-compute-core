@@ -1,0 +1,26 @@
+name: BUILD DOCKER IMAGE
+
+on:
+  push:
+    branches:
+      - main
+      - v2
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Login to DockerHub
+        uses: docker/login-action@v1 
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+      - name: Build Python 3.6
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          context: ./default_images/python/3.6s
+          file: ./Dockerfile
+          push: true
+          tags: zimoxiao/python_default:latest
