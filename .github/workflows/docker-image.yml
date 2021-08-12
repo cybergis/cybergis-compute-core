@@ -19,6 +19,9 @@ jobs:
       - name: Verify Changed files
         uses: tj-actions/verify-changed-files@v7.1
         id: verify-changed-files
+        with:
+          files: |
+            default_images
       - name: Run step only when files change.
         run: |
           echo "Changed files: ${{ steps.verify_changed_files.outputs.changed_files }}"
