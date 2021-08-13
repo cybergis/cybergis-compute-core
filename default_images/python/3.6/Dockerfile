@@ -3,9 +3,7 @@ RUN set -ex; \
     apk add --update --no-cache \
     bash nettle iptables redis dumb-init openrc tzdata pkgconfig build-base libffi-dev jpeg-dev alpine-sdk zlib-dev proj-dev gfortran
 RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/testing \
-        geos proj gdal binutils gdal-dev
-RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.5/community \
-        liblapack-dev libquadmath musl libgfortran lapack-dev libopenblas-dev
+        geos proj gdal binutils gdal-dev liblapack-dev libquadmath musl libgfortran libopenblas-dev
 RUN pip install \
     pandas \
     --upgrade --no-cache-dir
