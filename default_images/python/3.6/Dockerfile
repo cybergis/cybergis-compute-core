@@ -20,7 +20,7 @@ RUN pip install \
 RUN pip install \
     geoviews \
     datashader \
-    --upgrade --no-cache-dirs
+    --upgrade --no-cache-dir
 RUN pip install \
     panel \
     fiona \
