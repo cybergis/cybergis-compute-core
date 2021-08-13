@@ -1,5 +1,6 @@
 FROM python:3.6-alpine
 RUN set -ex; \
+    apk update && apk upgrade && \
     apk add --update --no-cache \
     bash nettle iptables redis dumb-init openrc tzdata pkgconfig build-base cython libffi-dev jpeg-dev alpine-sdk zlib-dev proj-dev gfortran patch libgfortran
 RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/testing \
