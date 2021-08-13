@@ -6,6 +6,8 @@ import * as path from 'path'
 class SingularityConnector extends SlurmConnector {
     private volumeBinds: {[keys: string]: string} = {}
 
+    public isContainer = true
+
     execCommandWithinImage(image: string, cmd: string, config: slurm) {
         cmd = `srun --mpi=pmi2 singularity exec --env-file job.env ${this._getVolumeBindCMD()} ${image} ${cmd}`
         super.prepare(cmd, config)
@@ -42,21 +44,6 @@ class SingularityConnector extends SlurmConnector {
             var to = volumeBinds[from]
             this.volumeBinds[from] = to
         }
-    }
-
-    getContainerExecutableFolderPath(providedPath: string = null) {
-        if (providedPath) return path.join(`/${this.jobID}/executable`, providedPath)
-        else return `/${this.jobID}/executable` 
-    }
-
-    getContainerDataFolderPath(providedPath: string = null) {
-        if (providedPath) return path.join(`/${this.jobID}/data`, providedPath)
-        else return `/${this.jobID}/data` 
-    }
-
-    getContainerResultFolderPath(providedPath: string = null) {
-        if (providedPath) return path.join(`/${this.jobID}/result`, providedPath)
-        else return `/${this.jobID}/result`
     }
 
     private _getVolumeBindCMD() {

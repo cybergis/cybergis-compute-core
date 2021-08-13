@@ -12,6 +12,8 @@ class SlurmConnector extends BaseConnector {
 
     public template: string
 
+    public isContainer = false
+
     registerModules(modules: Array<string>) {
         this.modules = this.modules.concat(modules)
     }
@@ -67,9 +69,9 @@ ${cmd}`
             hpc: this.maintainer.job.hpc,
             param: this.maintainer.job.param,
             env: this.maintainer.job.env,
-            executable_folder: this.getRemoteExecutableFolderPath(),
-            data_folder: this.getRemoteDataFolderPath(),
-            result_folder: this.getRemoteResultFolderPath()
+            executable_folder: this.isContainer ? this.getContainerExecutableFolderPath() : this.getRemoteExecutableFolderPath(),
+            data_folder: this.isContainer ? this.getContainerDataFolderPath() : this.getRemoteDataFolderPath(),
+            result_folder: this.isContainer ? this.getContainerResultFolderPath() : this.getRemoteResultFolderPath()
         }
         await this.createFile(jobJSON, path.join(this.remote_executable_folder_path, 'job.json'))
         // job.env
@@ -284,6 +286,21 @@ ${cmd}`
                 }
             }
         }
+    }
+
+    getContainerExecutableFolderPath(providedPath: string = null) {
+        if (providedPath) return path.join(`/${this.jobID}/executable`, providedPath)
+        else return `/${this.jobID}/executable` 
+    }
+
+    getContainerDataFolderPath(providedPath: string = null) {
+        if (providedPath) return path.join(`/${this.jobID}/data`, providedPath)
+        else return `/${this.jobID}/data` 
+    }
+
+    getContainerResultFolderPath(providedPath: string = null) {
+        if (providedPath) return path.join(`/${this.jobID}/result`, providedPath)
+        else return `/${this.jobID}/result`
     }
 }
 
