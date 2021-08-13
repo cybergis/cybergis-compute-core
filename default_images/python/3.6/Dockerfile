@@ -1,7 +1,8 @@
 FROM python:3.6-alpine
 RUN set -ex; \
+    echo "http://dl-cdn.alpinelinux.org/alpine/v3.5/community" >> /etc/apk/repositories && \
     apk add --update --no-cache \
-    bash nettle iptables redis dumb-init openrc tzdata pkgconfig build-base libffi-dev jpeg-dev alpine-sdk zlib-dev proj-dev gfortran libopenblas-dev liblapack-dev
+    bash nettle iptables redis dumb-init openrc tzdata pkgconfig build-base libffi-dev jpeg-dev alpine-sdk zlib-dev proj-dev gfortran libopenblas-dev liblapack-dev libquadmath musl libgfortran lapack-dev
 RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/testing \
         geos proj gdal binutils gdal-dev
 RUN pip install \
