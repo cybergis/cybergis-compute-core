@@ -20,7 +20,6 @@ RUN pip install \
     holoviews \
     --upgrade --no-cache-dir
 RUN pip install \
-    geoviews \
     datashader \
     --upgrade --no-cache-dir
 RUN pip install \
@@ -116,6 +115,4 @@ RUN pip install \
     --upgrade --no-cache-dir
 RUN pip install \
     pyhdfs \
-    geopyspark \
-    geospark \
     --upgrade --no-cache-dir
