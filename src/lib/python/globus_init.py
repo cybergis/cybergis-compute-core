@@ -1,6 +1,4 @@
-import os
 import sys
-import json
 import logging
 import time
 from globus_sdk import GlobusAPIError, NetworkError, NativeAppAuthClient, RefreshTokenAuthorizer, TransferClient, TransferData
@@ -10,9 +8,9 @@ def output(k, i):
 
 logger = logging.getLogger(__name__)
 CLIENT_ID = str(sys.argv[1])
-SOURCE_ENDPOINT_ID = str(sys.argv[2])
-SOURCE_PATH = str(sys.argv[3])
-DESTINATION_TRANSFER_REFRESH_TOKEN = str(sys.argv[4])
+TRANSFER_REFRESH_TOKEN = str(sys.argv[2])
+SOURCE_ENDPOINT_ID = str(sys.argv[3])
+SOURCE_PATH = str(sys.argv[4])
 DESTINATION_ENDPOINT_ID = str(sys.argv[5])
 DESTINATION_PATH = str(sys.argv[6])
 GLOBUS_TASK_LABEL = str(sys.argv[7])
@@ -70,7 +68,7 @@ def submit_transfer_with_retries(transfer_client, transfer_data):
 
 
 client = NativeAppAuthClient(CLIENT_ID)
-authorizer = RefreshTokenAuthorizer(DESTINATION_TRANSFER_REFRESH_TOKEN, client)
+authorizer = RefreshTokenAuthorizer(TRANSFER_REFRESH_TOKEN, client)
 transfer_client = TransferClient(authorizer=authorizer)
 
 transfer_instance = TransferData(transfer_client, SOURCE_ENDPOINT_ID, DESTINATION_ENDPOINT_ID, label=GLOBUS_TASK_LABEL, sync_level="checksum")

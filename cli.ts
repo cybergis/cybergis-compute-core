@@ -1,7 +1,23 @@
 import { Command } from 'commander'
 import { Git } from './src/models/Git'
+import { hpcConfigMap } from './configs/config'
 import DB from './src/DB'
+import PythonUtil from './src/lib/PythonUtil'
+import { config } from './configs/config'
+import { createInterface } from "readline"
+import { GlobusTransferRefreshToken } from './src/models/GlobusTransferRefreshToken'
+
 var pkg = require('../package.json')
+const readline = createInterface({
+    input: process.stdin,
+    output: process.stdout
+})
+
+function ask(question: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+        readline.question(question, (input: string) => resolve(input) );
+    });
+}
 
 var cmd = new Command()
 
@@ -69,9 +85,40 @@ cmd.command('git <operation>')
     })
 
 cmd.command('globus-refresh-transfer-token')
-    .option('-i, --id <id>', '[operation=add/update/delete/approve] git repository\'s id')
     .action(async (operation: string, cmd) => {
-        //
+        const db = new DB(false)
+
+        var identities = []
+        for (var i in hpcConfigMap) {
+            if (hpcConfigMap[i].globus) {
+                if (!(hpcConfigMap[i].globus.identity in identities)) {
+                    identities.push(hpcConfigMap[i].globus.identity)
+                }
+            }
+        }
+
+        var connection = await db.connect()
+
+        for (var i in identities) {
+            var identity = identities[i]
+            console.log(`⚠️ refreshing transfer refresh token for ${identity}...`)
+
+            var out = await PythonUtil.runPython('get_auth_url.py', [config.globus_client_id], ['auth_url'])
+            console.log(`please go to this URL and login with identity ${identity}: \n\n`)
+            console.log(out['auth_url'])
+
+            var authCode = await ask('Please enter the code you get after login here: ')
+            var out = await PythonUtil.runPython('globus_get_transfer_refresh_token_from_auth_code.py', [config.globus_client_id, authCode], ['transfer_refresh_token'])
+            var transferRefreshToken = out['transfer_refresh_token']
+
+            var globusTransferRefreshTokenRepo = connection.getRepository(GlobusTransferRefreshToken)
+            var g = new GlobusTransferRefreshToken()
+            g.identity = identity
+            g.transferRefreshToken = transferRefreshToken
+            await globusTransferRefreshTokenRepo.save(g)
+        }
+
+        await db.close()
     })
 
 cmd.parse(process.argv)

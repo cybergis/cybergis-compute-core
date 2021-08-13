@@ -98,6 +98,7 @@ export interface config {
     server_ip: string
     redis: redis
     mysql: mysql
+    globus_client_id: string
     local_file_system: localFileSystem
     queue_consume_time_period_in_seconds: number
     is_testing: boolean

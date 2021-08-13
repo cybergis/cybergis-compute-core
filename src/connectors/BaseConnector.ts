@@ -3,7 +3,11 @@ import { options, hpcConfig, SSH } from "../types"
 import { ConnectorError } from '../errors'
 import BaseMaintainer from '../maintainers/BaseMaintainer'
 import { GlobusFolder, LocalFolder } from '../FileSystem'
+import DB from "../DB"
+import { GlobusTransferRefreshToken } from '../models/GlobusTransferRefreshToken'
+import PythonUtil from "../lib/PythonUtil"
 import * as path from 'path'
+import { config } from "../../configs/config"
 
 class BaseConnector {
     /** parent pointer **/
@@ -22,6 +26,8 @@ class BaseConnector {
 
     /** config **/
     public config: hpcConfig
+
+    public db = new DB()
 
     protected envCmd = '#!/bin/bash\n'
 
@@ -137,8 +143,36 @@ class BaseConnector {
         await this.rm(toZipFilePath)
     }
 
-    async transferGlobus(from: GlobusFolder, to: GlobusFolder) {
-        
+    async initTransferGlobus(from: GlobusFolder, to: GlobusFolder): Promise<string> {
+        var connection = await this.db.connect()
+        var globusTransferRefreshTokenRepo = connection.getRepository(GlobusTransferRefreshToken)
+        var g = await globusTransferRefreshTokenRepo.findOne(this.config.globus.identity)
+
+        var out = await PythonUtil.runPython('globus_init.py', [
+            config.globus_client_id,
+            g.transferRefreshToken,
+            from.endpoint,
+            from.path,
+            to.endpoint,
+            to.path,
+            `${from.endpoint}:${from.path}->${to.endpoint}:${to.endpoint}`
+        ], ['task_id'])
+
+        return out['task_id']
+    }
+
+    async monitorTransferGlobus(taskId: string): Promise<string> {
+        var connection = await this.db.connect()
+        var globusTransferRefreshTokenRepo = connection.getRepository(GlobusTransferRefreshToken)
+        var g = await globusTransferRefreshTokenRepo.findOne(this.config.globus.identity)
+
+        var out = await PythonUtil.runPython('globus_monitor.py', [
+            config.globus_client_id,
+            g.transferRefreshToken,
+            taskId
+        ], ['status'])
+
+        return out['status']
     }
 
     /** helpers **/

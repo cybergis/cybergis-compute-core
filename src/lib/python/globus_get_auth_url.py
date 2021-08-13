@@ -1,4 +1,5 @@
 from globus_sdk import NativeAppAuthClient
+import sys
 
 CLIENT_ID = str(sys.argv[1])
 

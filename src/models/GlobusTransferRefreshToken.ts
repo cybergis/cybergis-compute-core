@@ -3,7 +3,7 @@ import {Entity, Column, OneToMany, PrimaryColumn, AfterLoad} from "typeorm"
 @Entity({name: "globus_transfer_refresh_token"})
 export class GlobusTransferRefreshToken {
     @PrimaryColumn()
-    hpc: string
+    identity: string
 
     @Column()
     transferRefreshToken: string

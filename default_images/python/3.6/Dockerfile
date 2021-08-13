@@ -2,7 +2,7 @@ FROM python:3.6-alpine
 RUN set -ex; \
     apk update && apk upgrade && \
     apk add --update --no-cache \
-    bash nettle iptables openrc tzdata pkgconfig build-base cython libffi-dev jpeg-dev alpine-sdk zlib-dev proj-dev gfortran patch libgfortran
+    bash nettle iptables openrc tzdata pkgconfig build-base cython libffi-dev jpeg-dev alpine-sdk zlib-dev proj-dev gfortran patch libgfortran llvm-config-8
 RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/testing \
         geos proj gdal binutils gdal-dev lapack-dev libquadmath musl musl-dev libgfortran openblas-dev
 RUN pip install \

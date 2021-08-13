@@ -3,7 +3,7 @@ import { FileStructureError, FileNotExistError } from './errors'
 import * as fs from 'fs'
 import * as path from 'path'
 import { Git } from "./models/Git"
-import { executableManifest } from './types'
+import { executableManifest, hpcConfig } from './types'
 import DB from './DB'
 import { config } from '../configs/config'
 import { exec } from 'child-process-async'
@@ -77,6 +77,12 @@ export class FileSystem {
 
     getGlobusFolder(id: string): GlobusFolder {
         return new GlobusFolder(id)
+    }
+
+    getGlobusFolderByHPCConfig(hpcConfig: hpcConfig) {
+        if (hpcConfig.globus) throw new Error(`HPC does not have a globus account associated with it`)
+        var id = `${hpcConfig.globus.endpoint}:${hpcConfig.globus.root_path}`
+        return this.getGlobusFolder(id)
     }
 
     createLocalFolder(providedFileConfig: fileConfig = {}): LocalFolder {
