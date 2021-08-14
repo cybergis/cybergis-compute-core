@@ -1,7 +1,7 @@
 import { ConnectorError } from '../errors'
 import BaseConnector from './BaseConnector'
 import { slurm, slurmCeiling } from '../types'
-import { LocalFolder } from '../FileSystem'
+import { LocalFolder, GlobusFolder, FileSystem } from '../FileSystem'
 import * as path from 'path'
 
 class SlurmConnector extends BaseConnector {
@@ -92,6 +92,13 @@ ${cmd}`
         if (this.maintainer.dataFolder) {
             if (this.maintainer.dataFolder instanceof LocalFolder) {
                 await this.upload(this.maintainer.dataFolder, this.remote_data_folder_path, true)
+            }
+
+            if (this.maintainer.dataFolder instanceof GlobusFolder) {
+                var to = FileSystem.getGlobusFolderByHPCConfig(this.config)
+                var taskId = await this.initTransferGlobus(this.maintainer.dataFolder, to)
+                var status = await this.monitorTransferGlobus(taskId)
+                if (status === 'FAILED') throw new Error('Globus transfer failed')
             }
         } else {
             await this.mkdir(this.remote_data_folder_path, {}, true)

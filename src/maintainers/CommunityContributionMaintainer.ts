@@ -1,7 +1,6 @@
 import SingularityConnector from '../connectors/SingularityConnector'
 import BaseMaintainer from './BaseMaintainer'
-import { LocalFolder, GitFolder } from '../FileSystem'
-import { stat } from 'fs'
+import { LocalFolder, GitFolder, FileSystem } from '../FileSystem'
 
 export default class CommunityContributionMaintainer extends BaseMaintainer {
 
@@ -14,7 +13,7 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
     onDefine() {
         // define connector
         this.connector = this.getSingularityConnector()
-        this.resultFolder = this.fileSystem.createLocalFolder()
+        this.resultFolder = FileSystem.createLocalFolder()
     }
 
     async onInit() {

@@ -15,7 +15,12 @@
         "init_sbatch_script": [
             "module use /data/cigi/common/cigi-modules"
         ],
-        "job_pool_capacity": 10
+        "job_pool_capacity": 10,
+        "globus": {
+            "identity": "string",
+            "endpoint": "string",
+            "root_path": "string"
+        }
     },
     "bridges_community": {
         "ip": "bridges2.psc.edu",

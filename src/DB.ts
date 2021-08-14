@@ -4,6 +4,7 @@ import { Job } from '../src/models/Job'
 import { config } from '../configs/config'
 import { ConnectionOptions, getConnection, Connection, createConnection } from 'typeorm'
 import { Git } from './models/Git'
+import { GlobusTransferRefreshToken } from './models/GlobusTransferRefreshToken'
 
 class DB {
     private config: ConnectionOptions = {
@@ -42,7 +43,7 @@ class DB {
                 synchronize: true,
                 logging: false,
                 migrationsRun: true,
-                entities: [Event, Log, Job, Git]
+                entities: [Event, Log, Job, Git, GlobusTransferRefreshToken]
             }
         }
     }

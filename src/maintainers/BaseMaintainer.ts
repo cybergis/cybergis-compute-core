@@ -1,6 +1,6 @@
 import { Job } from "../models/Job"
 import { maintainerConfig, event, slurm, job_maintainer_updatable } from "../types"
-import { BaseFolder, LocalFolder, FileSystem } from '../FileSystem'
+import { BaseFolder, LocalFolder, FileSystem, GlobusFolder } from '../FileSystem'
 import BaseConnector from '../connectors/BaseConnector'
 import SlurmConnector from '../connectors/SlurmConnector'
 import validator from 'validator'
@@ -27,8 +27,6 @@ class BaseMaintainer {
     public id: string = undefined
 
     public slurm: slurm = undefined
-
-    public fileSystem: FileSystem = undefined
 
     /** mutex **/
     private _lock = false
@@ -68,21 +66,24 @@ class BaseMaintainer {
                 if (this.envParamValidators[i](val)) this.envParam[i] = val
             }
         }
-        const fileSystem = new FileSystem()
         const maintainerConfig = maintainerConfigMap[job.maintainer]
         if (maintainerConfig.executable_folder.from_user) {
-            var folder = fileSystem.getFolderByURL(job.executableFolder)
+            var folder = FileSystem.getFolderByURL(job.executableFolder)
             if (folder instanceof LocalFolder) {
                 this.executableFolder = folder
             } else {
                 throw new Error('executable folder must be local folder')
             }
         } else {
-            this.executableFolder = fileSystem.createLocalFolder()
+            this.executableFolder = FileSystem.createLocalFolder()
         }
-        this.dataFolder = job.dataFolder ? fileSystem.getFolderByURL(job.dataFolder) : null
+
+        this.dataFolder = job.dataFolder ? FileSystem.getFolderByURL(job.dataFolder) : null
+        if (this.dataFolder instanceof GlobusFolder) {
+            if (!this.connector.config.globus) throw new Error('HPC does not support Globus')
+        }
+
         this.supervisor = supervisor
-        this.fileSystem = fileSystem
         this.job = job
         this.config = maintainerConfig
         this.id = job.id

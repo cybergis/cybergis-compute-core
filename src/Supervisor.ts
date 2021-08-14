@@ -176,11 +176,10 @@ class Supervisor {
     }
 
     private _validateMaintainerExecutableFolder(job: Job) {
-        const fileSystem = new FileSystem()
         const maintainerConfig = maintainerConfigMap[job.maintainer]
         if (maintainerConfig.executable_folder.from_user) {
             if (job.executableFolder == undefined) throw new Error('no file provided')
-            var file = fileSystem.getFolderByURL(job.executableFolder, maintainerConfig.executable_folder.allowed_protocol)
+            var file = FileSystem.getFolderByURL(job.executableFolder, maintainerConfig.executable_folder.allowed_protocol)
             file.validate()
         }
     }

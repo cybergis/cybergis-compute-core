@@ -1,4 +1,4 @@
-name: BUILD PYTHON 3.6 IMAGE
+name: BUILD CYBERGIS COMPUTE IMAGE
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - master
       - v2
     paths:
-      - 'default_images/python/3.6/**'
+      - 'Dockerfile'
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -17,10 +17,10 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
       - uses: actions/checkout@v2
-      - name: Build Python 3.6
+      - name: Build Image
         id: docker_build
         uses: docker/build-push-action@v2
         with:
-          context: ./default_images/python/3.6
+          context: .
           push: true
-          tags: zimoxiao/python_default:3.6
+          tags: zimoxiao/job_supervisor:latest

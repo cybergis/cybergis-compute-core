@@ -3,8 +3,8 @@ import Supervisor from './src/Supervisor'
 import { Git } from './src/models/Git'
 import { FileSystem, GitFolder, LocalFolder } from './src/FileSystem'
 import Helper from './src/Helper'
-import { hpcConfig, maintainerConfig } from './src/types'
-import { config, hpcConfigMap, maintainerConfigMap } from './configs/config'
+import { hpcConfig, maintainerConfig, containerConfig } from './src/types'
+import { config, containerConfigMap, hpcConfigMap, maintainerConfigMap } from './configs/config'
 import express = require('express')
 import { Job } from './src/models/Job'
 import DB from './src/DB'
@@ -31,11 +31,10 @@ app.use(fileUpload({
 
 const guard = new Guard()
 const supervisor = new Supervisor()
-const fileSystem = new FileSystem()
 const validator = new Validator()
 const db = new DB()
 
-fileSystem.createClearLocalCacheProcess()
+FileSystem.createClearLocalCacheProcess()
 
 var schemas = {
     updateJob: {
@@ -127,6 +126,20 @@ app.get('/maintainer', function (req, res) {
     res.json({ maintainer: parseMaintainer(maintainerConfigMap) })
 })
 
+app.get('/container', function (req, res) {
+    var parseContainer = (dest: {[key: string]: containerConfig}) => {
+        var out = {}
+        for (var i in dest) {
+            var d: containerConfig = JSON.parse(JSON.stringify(dest[i])) // hard copy
+            if (!(i in ['dockerfile', 'dockerhub'])) {
+                out[i] = d
+            }
+        }
+        return out
+    }
+    res.json({ container: parseContainer(containerConfigMap) })
+})
+
 app.get('/git', async function (req, res) {
     var parseGit = async (dest: Git[]) => {
         var out = {}
@@ -182,7 +195,7 @@ app.post('/file', async function (req: any, res) {
         var maintainerConfig = maintainerConfigMap[job.maintainer]
         if (maintainerConfig.executable_folder.from_user) {
             var fileConfig = maintainerConfig.executable_folder.file_config
-            var file: LocalFolder = await fileSystem.createLocalFolder(fileConfig)
+            var file: LocalFolder = await FileSystem.createLocalFolder(fileConfig)
             await file.putFileFromZip(req.files.file.tempFilePath)
         }
         res.json({ file: file.getURL() })
@@ -212,7 +225,7 @@ app.get('/file', async function (req: any, res) {
     }
 
     try {
-        var folder = fileSystem.getFolderByURL(body.fileUrl, 'local')
+        var folder = FileSystem.getFolderByURL(body.fileUrl, 'local')
         if (folder instanceof LocalFolder) {
             var dir = await folder.getZip()
             res.download(dir)

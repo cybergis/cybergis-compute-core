@@ -20,7 +20,7 @@ type fileConfig = {
 type fileTypes = 'local' | 'git' | 'globus'
 
 export class FileSystem {
-    createClearLocalCacheProcess() {
+    static createClearLocalCacheProcess() {
         var cachePath = config.local_file_system.cache_path
         setInterval(function () {
             try {
@@ -43,13 +43,13 @@ export class FileSystem {
     }
 
     // operations
-    async initGlobusTransfer(from: GlobusFolder, to: GlobusFolder, muteEvent = false) {
+    static async initGlobusTransfer(from: GlobusFolder, to: GlobusFolder, muteEvent = false) {
         if (from == undefined || to == undefined) throw new Error('please init input file first')
 
     }
 
     // getter
-    getFolderByURL(url: string, onlyAllow: string | Array<string> = null): BaseFolder {
+    static getFolderByURL(url: string, onlyAllow: string | Array<string> = null): BaseFolder {
         var u = url.split('://')
         if (onlyAllow) {
             if (typeof onlyAllow == 'string') {
@@ -61,31 +61,31 @@ export class FileSystem {
         return this.getFolder(u[0], u[1])
     }
 
-    getFolder(type: string, id: string): BaseFolder {
+    static getFolder(type: string, id: string): BaseFolder {
         if (type == 'local') return new LocalFolder(id)
         if (type == 'git') return new GitFolder(id)
         throw new Error(`cannot find file ${type}://${id}`)
     }
 
-    getLocalFolder(id: string): LocalFolder {
+    static getLocalFolder(id: string): LocalFolder {
         return new LocalFolder(id)
     }
 
-    getGitFolder(id: string): GitFolder {
+    static getGitFolder(id: string): GitFolder {
         return new GitFolder(id)
     }
 
-    getGlobusFolder(id: string): GlobusFolder {
+    static getGlobusFolder(id: string): GlobusFolder {
         return new GlobusFolder(id)
     }
 
-    getGlobusFolderByHPCConfig(hpcConfig: hpcConfig) {
+    static getGlobusFolderByHPCConfig(hpcConfig: hpcConfig) {
         if (hpcConfig.globus) throw new Error(`HPC does not have a globus account associated with it`)
         var id = `${hpcConfig.globus.endpoint}:${hpcConfig.globus.root_path}`
         return this.getGlobusFolder(id)
     }
 
-    createLocalFolder(providedFileConfig: fileConfig = {}): LocalFolder {
+    static createLocalFolder(providedFileConfig: fileConfig = {}): LocalFolder {
         var id = this._generateID()
         var filePath = path.join(config.local_file_system.root_path, id)
 
@@ -102,7 +102,7 @@ export class FileSystem {
         return new LocalFolder(id)
     }
 
-    private _generateID(): string {
+    static _generateID(): string {
         return Math.round((new Date()).getTime() / 1000) + Helper.randomStr(4)
     }
 }
