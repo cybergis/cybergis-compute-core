@@ -259,7 +259,7 @@ export class LocalFolder extends BaseFolder {
         if (await this.isZipped()) return this.path + '.zip'
 
         try {
-            await spawn(`ls && zip -q -r ${this.path}.zip . ${path.basename(this.path)}`, [], {
+            await spawn(`cd ${this.path} && zip -q -r ${this.path}.zip . ${path.basename(this.path)}`, [], {
                 cwd: this.path
             })
         } catch (e) {
