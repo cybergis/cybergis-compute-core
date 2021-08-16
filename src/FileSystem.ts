@@ -265,6 +265,7 @@ export class LocalFolder extends BaseFolder {
         } catch (e) {
             throw new Error(e)
         }
+        return `${this.path}.zip`
     }
 
     private _getFileConfig(): fileConfig  {
