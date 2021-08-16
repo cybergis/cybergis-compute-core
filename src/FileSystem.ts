@@ -7,6 +7,7 @@ import { executableManifest, hpcConfig } from './types'
 import DB from './DB'
 import { config } from '../configs/config'
 import { exec } from 'child-process-async'
+import { spawn } from "child_process"
 const rimraf = require("rimraf")
 const unzipper = require('unzipper')
 const archiver = require('archiver')
@@ -194,61 +195,13 @@ export class LocalFolder extends BaseFolder {
 
     async putFileFromZip(zipFilePath: string) {
         if (!await this.exists()) throw new FileNotExistError('file not exists or initialized')
-        if (this.isReadonly) throw new Error('cannot write to a read only folder') 
+        if (this.isReadonly) throw new Error('cannot write to a read only folder')
 
-        var zip = fs.createReadStream(zipFilePath).pipe(unzipper.Parse({ forceStream: true }))
-
-        for await (const entry of zip) {
-            const entryPath = entry.path
-            const entryName = path.basename(entryPath)
-            const entryRoot = entryPath.split('/')[0]
-            const entryParentPath = path.dirname(entryPath)
-            const type = entry.type
-            const that = this
-
-            const writeFile = async () => {
-                if (type === 'File' && !that.fileConfig.ignore.includes(entryName)) {
-                    var p = path.join(that.path, entryParentPath, entryName)
-                    if (fs.existsSync(p)) await fs.promises.unlink(p)
-                    var stream = fs.createWriteStream(p, { flags: 'wx', encoding: 'utf-8', mode: 0o755 })
-                    stream.on('open', (fd) => { entry.pipe(stream) })
-                }
-            }
-
-            const createDir = async () => {
-                if (!fs.existsSync(path.join(that.path, entryParentPath))) {
-                    await fs.promises.mkdir(path.join(that.path, entryParentPath), { recursive: true })
-                }
-            }
-
-            if (entryRoot != undefined) {
-                if (this.fileConfig.ignore.includes(entryRoot)) {
-                    entry.autodrain()
-                } else if (this.fileConfig.ignore_everything_except_must_have) {
-                    if (this.fileConfig.must_have.includes(entryRoot)) {
-                        await createDir(); await writeFile()
-                    } else {
-                        entry.autodrain()
-                    }
-                } else {
-                    await createDir(); await writeFile()
-                }
-            } else {
-                if (this.fileConfig.ignore.includes(entryRoot)) {
-                    entry.autodrain()
-                } else if (this.fileConfig.ignore_everything_except_must_have) {
-                    if (this.fileConfig.must_have.includes(entryName)) {
-                        await createDir(); await writeFile()
-                    } else {
-                        entry.autodrain()
-                    }
-                } else {
-                    await createDir(); await writeFile()
-                }
-            }
+        try {
+            await spawn(`unzip -o -q ${zipFilePath} -d ${this.path}`, [])
+        } catch (e) {
+            throw new Error(e)
         }
-
-        await this.removeZip()
     }
 
     async putFileFromTemplate(template: string, replacements: any, filePath: string) {
@@ -307,21 +260,13 @@ export class LocalFolder extends BaseFolder {
         if (!this.path) throw new Error('getZip operation is not supported')
         if (await this.isZipped()) return this.path + '.zip'
 
-        var output = fs.createWriteStream(this.path + '.zip')
-        var archive = archiver('zip', { zlib: { level: 9 } })
-
-        await new Promise((resolve, reject) => {
-            output.on('open', (fd) => { 
-                archive.pipe(output)
-                archive.directory(this.path, false)
-                archive.finalize()
-             })
-            archive.on('error', (err) => { reject(err) })
-            output.on('close', () => { resolve(null) })
-            output.on('end', () => { resolve(null) })
-        })
-
-        return this.path + '.zip'
+        try {
+            await spawn(`zip -q -r ${this.path}.zip . ${path.basename(this.path)}`, [], {
+                cwd: path.dirname(this.path)
+            })
+        } catch (e) {
+            throw new Error(e)
+        }
     }
 
     private _getFileConfig(): fileConfig  {

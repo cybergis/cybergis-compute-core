@@ -2,12 +2,9 @@ import { Job } from "../models/Job"
 import { options, hpcConfig, SSH } from "../types"
 import { ConnectorError } from '../errors'
 import BaseMaintainer from '../maintainers/BaseMaintainer'
-import { GlobusFolder, LocalFolder } from '../FileSystem'
+import { LocalFolder } from '../FileSystem'
 import DB from "../DB"
-import { GlobusTransferRefreshToken } from '../models/GlobusTransferRefreshToken'
-import PythonUtil from "../lib/PythonUtil"
 import * as path from 'path'
-import { config } from "../../configs/config"
 
 class BaseConnector {
     /** parent pointer **/
@@ -143,38 +140,6 @@ class BaseConnector {
         await this.rm(toZipFilePath)
     }
 
-    async initTransferGlobus(from: GlobusFolder, to: GlobusFolder): Promise<string> {
-        var connection = await this.db.connect()
-        var globusTransferRefreshTokenRepo = connection.getRepository(GlobusTransferRefreshToken)
-        var g = await globusTransferRefreshTokenRepo.findOne(this.config.globus.identity)
-
-        var out = await PythonUtil.runPython('globus_init.py', [
-            config.globus_client_id,
-            g.transferRefreshToken,
-            from.endpoint,
-            from.path,
-            to.endpoint,
-            to.path,
-            `${from.endpoint}:${from.path}->${to.endpoint}:${to.endpoint}`
-        ], ['task_id'])
-
-        return out['task_id']
-    }
-
-    async monitorTransferGlobus(taskId: string): Promise<string> {
-        var connection = await this.db.connect()
-        var globusTransferRefreshTokenRepo = connection.getRepository(GlobusTransferRefreshToken)
-        var g = await globusTransferRefreshTokenRepo.findOne(this.config.globus.identity)
-
-        var out = await PythonUtil.runPython('globus_monitor.py', [
-            config.globus_client_id,
-            g.transferRefreshToken,
-            taskId
-        ], ['status'])
-
-        return out['status']
-    }
-
     /** helpers **/
 
     // getters
@@ -224,7 +189,7 @@ class BaseConnector {
     async zip(from: string, to: string, options: options = {}, muteEvent = false) {
         if (this.maintainer && !muteEvent) this.maintainer.emitEvent('SSH_ZIP', `zipping ${from} to ${to}`)
         var out = await this.exec(`zip -q -r ${to} . ${path.basename(from)}`, Object.assign({
-            cwd: from
+            cwd: path.dirname(from)
         }, options))
         return out.stdout
     }

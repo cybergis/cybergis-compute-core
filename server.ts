@@ -1,10 +1,11 @@
 import Guard from './src/Guard'
 import Supervisor from './src/Supervisor'
 import { Git } from './src/models/Git'
-import { FileSystem, GitFolder, LocalFolder } from './src/FileSystem'
+import { FileSystem, GitFolder, GlobusFolder, LocalFolder } from './src/FileSystem'
 import Helper from './src/Helper'
 import { hpcConfig, maintainerConfig, containerConfig } from './src/types'
 import { config, containerConfigMap, hpcConfigMap, maintainerConfigMap } from './configs/config'
+import GlobusUtil, { JobGlobusTaskListManager } from './src/lib/GlobusUtil'
 import express = require('express')
 import { Job } from './src/models/Job'
 import DB from './src/DB'
@@ -33,6 +34,7 @@ const guard = new Guard()
 const supervisor = new Supervisor()
 const validator = new Validator()
 const db = new DB()
+const globusTaskList = new JobGlobusTaskListManager()
 
 FileSystem.createClearLocalCacheProcess()
 
@@ -217,7 +219,7 @@ app.get('/file', async function (req: any, res) {
     }
 
     try {
-        await guard.validateJobAccessToken(body.accessToken)
+        var job = await guard.validateJobAccessToken(body.accessToken)
     } catch (e) {
         res.json({ error: "invalid access token", messages: [e.toString()] })
         res.status(401)
@@ -225,12 +227,16 @@ app.get('/file', async function (req: any, res) {
     }
 
     try {
-        var folder = FileSystem.getFolderByURL(body.fileUrl, 'local')
+        var folder = FileSystem.getFolderByURL(body.fileUrl, ['local', 'globus'])
         if (folder instanceof LocalFolder) {
             var dir = await folder.getZip()
             res.download(dir)
-        } else {
-            throw new Error('folder is not a local folder')
+        } else if (folder instanceof GlobusFolder) {
+            var hpcConfig = hpcConfigMap[job.hpc]
+            var from = FileSystem.getGlobusFolderByHPCConfig(hpcConfigMap[job.hpc])
+            var taskId = await GlobusUtil.initTransfer(from, folder, hpcConfig)
+            await globusTaskList.append(job, taskId)
+            res.json({ message: `Globus transfer task start with task_id ${taskId}` })
         }
     } catch (e) {
         res.json({ error: `cannot get file by url [${body.fileUrl}]`, messages: [e.toString()] })
@@ -239,14 +245,46 @@ app.get('/file', async function (req: any, res) {
     }
 })
 
+app.get('/file/:jobId/globus_task_status', async function (req: any, res) {
+    var body = req.body
+    var errors = requestErrors(validator.validate(body, schemas.getJob))
+
+    if (errors.length > 0) {
+        res.json({ error: "invalid input", messages: errors }); res.status(402)
+        return
+    }
+
+    try {
+        var job = await guard.validateJobAccessToken(body.accessToken)
+    } catch (e) {
+        res.json({ error: "invalid access token", messages: [e.toString()] }); res.status(401)
+        return
+    }
+
+    if (job.id != req.params.jobId) {
+        res.json({ error: "invalid access", messages: [] }); res.status(401)
+        return
+    }
+
+    var taskIds = await globusTaskList.get(job)
+    var out = {}
+
+    for (var i in taskIds) {
+        var taskId = taskIds[i]
+        out[taskId] = await GlobusUtil.queryTransferStatus(taskId, hpcConfigMap[job.hpc])
+        if (out[taskId] in ['SUCCEEDED', 'FAILED']) await globusTaskList.remove(job, taskId)
+    }
+
+    res.json(out)
+})
+
 // job
 app.post('/job', async function (req, res) {
     var body = req.body
     var errors = requestErrors(validator.validate(body, schemas.createJob))
 
     if (errors.length > 0) {
-        res.json({ error: "invalid input", messages: errors })
-        res.status(402)
+        res.json({ error: "invalid input", messages: errors }); res.status(402)
         return
     }
 
@@ -308,6 +346,11 @@ app.put('/job/:jobId', async function (req, res) {
         return
     }
 
+    if (job.id != req.params.jobId) {
+        res.json({ error: "invalid access", messages: [] }); res.status(401)
+        return
+    }
+
     try {
         var connection = await db.connect()
         await connection.createQueryBuilder()
@@ -340,8 +383,12 @@ app.post('/job/:jobId/submit', async function (req, res) {
     try {
         var job = await guard.validateJobAccessToken(body.accessToken)
     } catch (e) {
-        res.json({ error: "invalid access token", messages: [e.toString()] })
-        res.status(401)
+        res.json({ error: "invalid access token", messages: [e.toString()] }); res.status(401)
+        return
+    }
+
+    if (job.id != req.params.jobId) {
+        res.json({ error: "invalid access", messages: [] }); res.status(401)
         return
     }
 
@@ -383,6 +430,11 @@ app.get('/job/:jobId/events', async function (req, res) {
         return
     }
 
+    if (job.id != req.params.jobId) {
+        res.json({ error: "invalid access", messages: [] }); res.status(401)
+        return
+    }
+
     res.json(job.events)
 })
 
@@ -402,6 +454,11 @@ app.get('/job/:jobId/logs', async function (req, res) {
         return
     }
 
+    if (job.id != req.params.jobId) {
+        res.json({ error: "invalid access", messages: [] }); res.status(401)
+        return
+    }
+
     res.json(job.logs)
 })
 
@@ -418,6 +475,11 @@ app.get('/job/:jobId', async function (req, res) {
         var job = await guard.validateJobAccessToken(body.accessToken, true)
     } catch (e) {
         res.json({ error: "invalid access token", messages: [e.toString()] }); res.status(401)
+        return
+    }
+
+    if (job.id != req.params.jobId) {
+        res.json({ error: "invalid access", messages: [] }); res.status(401)
         return
     }
 

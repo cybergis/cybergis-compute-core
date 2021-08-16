@@ -3,6 +3,7 @@ import BaseConnector from './BaseConnector'
 import { slurm, slurmCeiling } from '../types'
 import { LocalFolder, GlobusFolder, FileSystem } from '../FileSystem'
 import * as path from 'path'
+import GlobusUtil from '../lib/GlobusUtil'
 
 class SlurmConnector extends BaseConnector {
 
@@ -96,8 +97,8 @@ ${cmd}`
 
             if (this.maintainer.dataFolder instanceof GlobusFolder) {
                 var to = FileSystem.getGlobusFolderByHPCConfig(this.config)
-                var taskId = await this.initTransferGlobus(this.maintainer.dataFolder, to)
-                var status = await this.monitorTransferGlobus(taskId)
+                var taskId = await GlobusUtil.initTransfer(this.maintainer.dataFolder, to, this.config)
+                var status = await GlobusUtil.monitorTransfer(taskId, this.config)
                 if (status === 'FAILED') throw new Error('Globus transfer failed')
             }
         } else {
