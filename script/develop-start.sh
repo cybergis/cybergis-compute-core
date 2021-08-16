@@ -1,4 +1,6 @@
 #!/bin/bash
+docker-compose -f ./docker-compose.yml stop
+
 print_usage() {
   echo "-l [OPENCONNECT_URL] -u [OPENCONNECT_USER] -p [OPENCONNECT_PASSWORD] -g [OPENCONNECT_AUTHGROUP]"
 }
