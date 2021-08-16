@@ -30,8 +30,10 @@ export default class PythonUtil {
             }
         })
 
-        const { stdout, stderr, exitCode } = await child
-        if (config.is_testing) console.log(stderr)
-        return out
+        return new Promise((resolve, reject) => {
+            child.on('exit', () => {
+                resolve(out)
+            })
+        })
     }
 }

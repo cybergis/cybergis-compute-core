@@ -196,7 +196,10 @@ export class LocalFolder extends BaseFolder {
         if (this.isReadonly) throw new Error('cannot write to a read only folder')
 
         try {
-            await spawn(`unzip`, ['-o', '-q', `${zipFilePath}`, '-d', `${this.path}`])
+            const child = spawn(`unzip`, ['-o', '-q', `${zipFilePath}`, '-d', `${this.path}`])
+            return new Promise((resolve, reject) => {
+                child.on('exit', () => resolve(`${this.path}.zip`))
+            })
         } catch (e) {
             throw new Error(e)
         }
@@ -259,13 +262,13 @@ export class LocalFolder extends BaseFolder {
         if (await this.isZipped()) return this.path + '.zip'
 
         try {
-            await spawn(`zip`, ['-q', '-r', `${this.path}.zip`, '.', `${path.basename(this.path)}`], {
-                cwd: this.path
+            const child = spawn(`zip`, ['-q', '-r', `${this.path}.zip`, '.', `${path.basename(this.path)}`], { cwd: this.path })
+            return new Promise((resolve, reject) => {
+                child.on('exit', () => resolve(`${this.path}.zip`))
             })
         } catch (e) {
             throw new Error(e)
         }
-        return `${this.path}.zip`
     }
 
     private _getFileConfig(): fileConfig  {
