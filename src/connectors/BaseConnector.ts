@@ -189,7 +189,7 @@ class BaseConnector {
     async zip(from: string, to: string, options: options = {}, muteEvent = false) {
         if (this.maintainer && !muteEvent) this.maintainer.emitEvent('SSH_ZIP', `zipping ${from} to ${to}`)
         var out = await this.exec(`zip -q -r ${to} . ${path.basename(from)}`, Object.assign({
-            cwd: path.dirname(from)
+            cwd: from
         }, options))
         return out.stdout
     }

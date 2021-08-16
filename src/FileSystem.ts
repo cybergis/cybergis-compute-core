@@ -9,8 +9,6 @@ import { config } from '../configs/config'
 import { exec } from 'child-process-async'
 import { spawn } from "child_process"
 const rimraf = require("rimraf")
-const unzipper = require('unzipper')
-const archiver = require('archiver')
 
 type fileConfig = {
     ignore?: Array<string>,
@@ -262,7 +260,7 @@ export class LocalFolder extends BaseFolder {
 
         try {
             await spawn(`zip -q -r ${this.path}.zip . ${path.basename(this.path)}`, [], {
-                cwd: path.dirname(this.path)
+                cwd: this.path
             })
         } catch (e) {
             throw new Error(e)
