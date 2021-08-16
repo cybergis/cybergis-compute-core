@@ -196,7 +196,7 @@ export class LocalFolder extends BaseFolder {
         if (this.isReadonly) throw new Error('cannot write to a read only folder')
 
         try {
-            await spawn(`unzip`, ['-o', '-q', `${zipFilePath}`, '-d', `${this.path}`)
+            await spawn(`unzip`, ['-o', '-q', `${zipFilePath}`, '-d', `${this.path}`])
         } catch (e) {
             throw new Error(e)
         }
