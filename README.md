@@ -1,4 +1,4 @@
-# Job Supervisor
+# CyberGIS-Compute
 HPC job submitting and maintaining framework with Restful API
 <img width="1028" alt="Screen Shot 2020-08-12 at 3 37 04 PM" src="https://user-images.githubusercontent.com/34933627/90065330-bad40280-dcb1-11ea-8e8c-4edfd3eb8987.png">
 
