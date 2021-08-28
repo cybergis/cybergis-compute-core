@@ -103,7 +103,7 @@ cmd.command('globus-refresh-transfer-token')
             var identity = identities[i]
             console.log(`⚠️ refreshing transfer refresh token for ${identity}...`)
 
-            var out = await PythonUtil.runPython('get_auth_url.py', [config.globus_client_id], ['auth_url'])
+            var out = await PythonUtil.runPython('globus_get_auth_url.py', [config.globus_client_id], ['auth_url'])
             console.log(`please go to this URL and login with identity ${identity}: \n\n`)
             console.log(out['auth_url'])
 

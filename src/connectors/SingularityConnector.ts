@@ -1,7 +1,6 @@
 import SlurmConnector from './SlurmConnector'
 import { slurm, executableManifest } from '../types'
 import { containerConfigMap } from '../../configs/config'
-import * as path from 'path'
 
 class SingularityConnector extends SlurmConnector {
     private volumeBinds: {[keys: string]: string} = {}

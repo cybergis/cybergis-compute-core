@@ -48,7 +48,7 @@ class DB {
         }
     }
 
-    async connect(withCache = true): Promise<Connection> {
+    async connect(): Promise<Connection> {
         try {
             return await getConnection(this.config.name)
         } catch (error) {
