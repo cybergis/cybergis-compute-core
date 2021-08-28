@@ -98,6 +98,7 @@ cmd.command('globus-refresh-transfer-token')
         }
 
         var connection = await db.connect()
+        console.log(identities)
 
         for (var i in identities) {
             var identity = identities[i]
