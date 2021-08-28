@@ -103,19 +103,19 @@ cmd.command('globus-refresh-transfer-token')
             var identity = identities[i]
             console.log(`⚠️ refreshing transfer refresh token for ${identity}...`)
 
-            var out = await PythonUtil.runPython('globus_get_auth_url.py', [config.globus_client_id], ['auth_url'])
-            console.log(`please go to this URL and login with identity ${identity}: \n\n`)
-            console.log(out['auth_url'])
+            // var out = await PythonUtil.runPython('globus_get_auth_url.py', [config.globus_client_id], ['auth_url'])
+            // console.log(`please go to this URL and login with identity ${identity}: \n\n`)
+            // console.log(out['auth_url'])
 
-            var authCode = await ask('Please enter the code you get after login here: ')
-            var out = await PythonUtil.runPython('globus_get_transfer_refresh_token_from_auth_code.py', [config.globus_client_id, authCode], ['transfer_refresh_token'])
-            var transferRefreshToken = out['transfer_refresh_token']
+            // var authCode = await ask('Please enter the code you get after login here: ')
+            // var out = await PythonUtil.runPython('globus_get_transfer_refresh_token_from_auth_code.py', [config.globus_client_id, authCode], ['transfer_refresh_token'])
+            // var transferRefreshToken = out['transfer_refresh_token']
 
-            var globusTransferRefreshTokenRepo = connection.getRepository(GlobusTransferRefreshToken)
-            var g = new GlobusTransferRefreshToken()
-            g.identity = identity
-            g.transferRefreshToken = transferRefreshToken
-            await globusTransferRefreshTokenRepo.save(g)
+            // var globusTransferRefreshTokenRepo = connection.getRepository(GlobusTransferRefreshToken)
+            // var g = new GlobusTransferRefreshToken()
+            // g.identity = identity
+            // g.transferRefreshToken = transferRefreshToken
+            // await globusTransferRefreshTokenRepo.save(g)
         }
 
         await db.close()
