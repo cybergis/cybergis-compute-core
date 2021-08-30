@@ -7,6 +7,7 @@ import DB from "../DB"
 import { Job } from '../models/Job'
 const redis = require('redis')
 const { promisify } = require("util")
+const md5 = require('crypto-js/md5')
 
 export class JobGlobusTaskListManager {
     private redis = {
@@ -82,7 +83,7 @@ export default class GlobusUtil {
                 from.path,
                 to.endpoint,
                 to.path,
-                `${from.endpoint}:${from.path}->${to.endpoint}:${to.endpoint}`
+                md5(`${from.endpoint}:${from.path}->${to.endpoint}:${to.endpoint}`).toString()
             ], ['task_id'])
         } catch (e) {
             throw new Error(`Globus query status failed with error: ${e}`)
