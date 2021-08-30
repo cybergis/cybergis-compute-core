@@ -66,14 +66,13 @@ def submit_transfer_with_retries(transfer_client, transfer_data):
 
     return retry_globus_function(locally_bound_func, func_name="submit_transfer")
 
-
 client = NativeAppAuthClient(CLIENT_ID)
 authorizer = RefreshTokenAuthorizer(TRANSFER_REFRESH_TOKEN, client)
 transfer_client = TransferClient(authorizer=authorizer)
 
 transfer_instance = TransferData(transfer_client, SOURCE_ENDPOINT_ID, DESTINATION_ENDPOINT_ID, label=GLOBUS_TASK_LABEL, sync_level="checksum")
 transfer_instance.add_item(SOURCE_PATH, DESTINATION_PATH, recursive=True)
-transfer_result = submit_transfer_with_retries(GLOBUS_TASK_LABEL, transfer_instance)
+transfer_result = submit_transfer_with_retries(transfer_client, transfer_instance)
 
 GLOBUS_TASK_ID = transfer_result["task_id"]
 output('task_id', GLOBUS_TASK_ID)
