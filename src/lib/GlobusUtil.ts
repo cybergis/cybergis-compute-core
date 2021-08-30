@@ -28,7 +28,8 @@ export class JobGlobusTaskListManager {
 
     async get(job: Job): Promise<string[]> {
         await this.connect()
-        return JSON.parse(await this.redis.getValue(`globus_task_${job.id}`))
+        var out = JSON.parse(await this.redis.getValue(`globus_task_${job.id}`))
+        return out ? out : []
     }
 
     async remove(job: Job, taskId: string) {

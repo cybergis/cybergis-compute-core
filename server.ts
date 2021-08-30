@@ -245,7 +245,7 @@ app.get('/file', async function (req: any, res) {
             res.json({ message: `Globus transfer task start with task_id ${taskId}` })
         }
     } catch (e) {
-        res.json({ error: `cannot get file by url [${body.fileUrl}]`, messages: [e.stack] })
+        res.json({ error: `cannot get file by url [${body.fileUrl}]`, messages: [e.toString()] })
         res.status(402)
         return
     }
