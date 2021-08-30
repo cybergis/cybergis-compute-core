@@ -106,6 +106,7 @@ cmd.command('globus-refresh-transfer-token')
             console.log(`refreshing transfer refresh token for ${identity}...`)
 
             var out = await PythonUtil.runInteractive('globus_refresh_transfer_token.py', [], ['transfer_refresh_token'])
+            console.log(out)
 
             if (out['transfer_refresh_token']) {
                 var globusTransferRefreshTokenRepo = connection.getRepository(GlobusTransferRefreshToken)
