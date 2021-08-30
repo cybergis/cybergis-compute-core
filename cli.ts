@@ -13,12 +13,6 @@ const readline = createInterface({
     output: process.stdout
 })
 
-function ask(question: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-        readline.question(question, (input: string) => resolve(input) );
-    });
-}
-
 var cmd = new Command()
 
 cmd.version(pkg.version)
