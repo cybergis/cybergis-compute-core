@@ -78,6 +78,14 @@ class BaseMaintainer {
             this.executableFolder = FileSystem.createLocalFolder()
         }
 
+        this.supervisor = supervisor
+        this.job = job
+        this.config = maintainerConfig
+        this.id = job.id
+        this.slurm = job.slurm
+        this.db = new DB()
+        this.onDefine()
+
         this.dataFolder = job.dataFolder ? FileSystem.getFolderByURL(job.dataFolder) : null
         if (this.dataFolder instanceof GlobusFolder) {
             var hpc = this.job.hpc
@@ -86,14 +94,6 @@ class BaseMaintainer {
             if (!hpcConfig) throw new Error("cannot find hpc with name [" + hpc + "]")
             if (!hpcConfig.globus) throw new Error('HPC does not support Globus')
         }
-
-        this.supervisor = supervisor
-        this.job = job
-        this.config = maintainerConfig
-        this.id = job.id
-        this.slurm = job.slurm
-        this.db = new DB()
-        this.onDefine()
     }
 
     /** HPC connectors **/
