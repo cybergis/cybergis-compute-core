@@ -80,7 +80,7 @@ export class FileSystem {
     }
 
     static getGlobusFolderByHPCConfig(hpcConfig: hpcConfig) {
-        if (hpcConfig.globus) throw new Error(`HPC does not have a globus account associated with it`)
+        if (!hpcConfig.globus) throw new Error(`HPC does not have a globus account associated with it`)
         var id = `${hpcConfig.globus.endpoint}:${hpcConfig.globus.root_path}`
         return this.getGlobusFolder(id)
     }
