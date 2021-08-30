@@ -76,6 +76,12 @@ export default class PythonUtil {
             if(config.is_testing) console.log(stdout)
         })
 
+        if (config.is_testing) {
+            child.stderr.on('data', function (result) {
+                console.log(Buffer.from(result, 'utf-8').toString())
+            })
+        }
+
         return new Promise((resolve, reject) => {
             child.on('exit', () => { resolve(out) })
             child.on('error', (err) => { reject(err) })

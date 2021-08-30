@@ -97,11 +97,13 @@ ${cmd}`
 
             if (this.maintainer.dataFolder instanceof GlobusFolder) {
                 var to = FileSystem.getGlobusFolderByHPCConfig(this.config)
+
                 try {
                     var taskId = await GlobusUtil.initTransfer(this.maintainer.dataFolder, to, this.config)
                 } catch (e) {
                     throw new Error(e)
                 }
+
                 try {
                     var status = await GlobusUtil.monitorTransfer(taskId, this.config)
                 } catch (e) {
