@@ -77,3 +77,5 @@ transfer_result = submit_transfer_with_retries(GLOBUS_TASK_LABEL, transfer_insta
 
 GLOBUS_TASK_ID = transfer_result["task_id"]
 output('task_id', GLOBUS_TASK_ID)
+
+exit()

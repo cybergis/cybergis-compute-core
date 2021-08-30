@@ -63,6 +63,7 @@ export class FileSystem {
     static getFolder(type: string, id: string): BaseFolder {
         if (type == 'local') return new LocalFolder(id)
         if (type == 'git') return new GitFolder(id)
+        if (type == 'globus') return new GlobusFolder(id)
         throw new Error(`cannot find file ${type}://${id}`)
     }
 

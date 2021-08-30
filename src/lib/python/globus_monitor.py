@@ -22,3 +22,5 @@ while True:
     else:
         time.sleep(1)
         res = transfer_client.get_task(GLOBUS_TASK_ID)
+
+exit()

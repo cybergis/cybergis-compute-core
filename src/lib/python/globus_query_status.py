@@ -16,3 +16,5 @@ res = transfer_client.get_task(GLOBUS_TASK_ID)
 
 status = res.data["status"]
 output('status', status)
+
+exit()

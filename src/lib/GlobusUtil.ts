@@ -74,7 +74,7 @@ export default class GlobusUtil {
         var globusTransferRefreshTokenRepo = connection.getRepository(GlobusTransferRefreshToken)
         var g = await globusTransferRefreshTokenRepo.findOne(hpcConfig.globus.identity)
 
-        var out = await PythonUtil.runPython('globus_init.py', [
+        var out = await PythonUtil.run('globus_init.py', [
             config.globus_client_id,
             g.transferRefreshToken,
             from.endpoint,
@@ -100,7 +100,7 @@ export default class GlobusUtil {
         var globusTransferRefreshTokenRepo = connection.getRepository(GlobusTransferRefreshToken)
         var g = await globusTransferRefreshTokenRepo.findOne(hpcConfig.globus.identity)
 
-        var out = await PythonUtil.runPython(script, [
+        var out = await PythonUtil.run(script, [
             config.globus_client_id,
             g.transferRefreshToken,
             taskId

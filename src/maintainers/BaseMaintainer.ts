@@ -80,7 +80,11 @@ class BaseMaintainer {
 
         this.dataFolder = job.dataFolder ? FileSystem.getFolderByURL(job.dataFolder) : null
         if (this.dataFolder instanceof GlobusFolder) {
-            if (!this.connector.config.globus) throw new Error('HPC does not support Globus')
+            var hpc = this.job.hpc
+            if (hpc == undefined) hpc = this.config.default_hpc
+            var hpcConfig = hpcConfigMap[hpc]
+            if (!hpcConfig) throw new Error("cannot find hpc with name [" + hpc + "]")
+            if (!hpcConfig.globus) throw new Error('HPC does not support Globus')
         }
 
         this.supervisor = supervisor
