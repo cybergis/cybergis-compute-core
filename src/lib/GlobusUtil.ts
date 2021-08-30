@@ -74,15 +74,19 @@ export default class GlobusUtil {
         var globusTransferRefreshTokenRepo = connection.getRepository(GlobusTransferRefreshToken)
         var g = await globusTransferRefreshTokenRepo.findOne(hpcConfig.globus.identity)
 
-        var out = await PythonUtil.run('globus_init.py', [
-            config.globus_client_id,
-            g.transferRefreshToken,
-            from.endpoint,
-            from.path,
-            to.endpoint,
-            to.path,
-            `${from.endpoint}:${from.path}->${to.endpoint}:${to.endpoint}`
-        ], ['task_id'])
+        try {
+            var out = await PythonUtil.run('globus_init.py', [
+                config.globus_client_id,
+                g.transferRefreshToken,
+                from.endpoint,
+                from.path,
+                to.endpoint,
+                to.path,
+                `${from.endpoint}:${from.path}->${to.endpoint}:${to.endpoint}`
+            ], ['task_id'])
+        } catch (e) {
+            throw new Error(`Globus query status failed with error: ${e}`)
+        }
 
         return out['task_id']
     }
@@ -100,11 +104,15 @@ export default class GlobusUtil {
         var globusTransferRefreshTokenRepo = connection.getRepository(GlobusTransferRefreshToken)
         var g = await globusTransferRefreshTokenRepo.findOne(hpcConfig.globus.identity)
 
-        var out = await PythonUtil.run(script, [
-            config.globus_client_id,
-            g.transferRefreshToken,
-            taskId
-        ], ['status'])
+        try {
+            var out = await PythonUtil.run(script, [
+                config.globus_client_id,
+                g.transferRefreshToken,
+                taskId
+            ], ['status'])
+        } catch (e) {
+            throw new Error(`Globus query status failed with error: ${e}`)
+        }
 
         return out['status']   
     }

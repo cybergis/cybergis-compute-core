@@ -78,7 +78,7 @@ export default class PythonUtil {
 
         return new Promise((resolve, reject) => {
             child.on('exit', () => { resolve(out) })
-            child.on('error', () => { resolve(out) })
+            child.on('error', (err) => { reject(err) })
             child.on('close', () => { resolve(out) })
         })
     }
