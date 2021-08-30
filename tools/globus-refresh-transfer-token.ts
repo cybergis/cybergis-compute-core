@@ -38,3 +38,5 @@ var main = async () => {
 
     await db.close()
 }
+
+main()
