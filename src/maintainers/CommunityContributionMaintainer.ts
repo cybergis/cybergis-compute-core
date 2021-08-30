@@ -6,14 +6,11 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
 
     public connector: SingularityConnector
 
-    public resultFolder: LocalFolder
-
     public executableFolder: GitFolder
 
     onDefine() {
         // define connector
         this.connector = this.getSingularityConnector()
-        this.resultFolder = FileSystem.createLocalFolder()
     }
 
     async onInit() {
@@ -33,10 +30,12 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
             if (status == 'C' || status == 'CD' || status == 'UNKNOWN') {
                 await this.connector.getSlurmStdout()
                 await this.connector.getSlurmStderr()
-                await this.connector.download(this.connector.getRemoteResultFolderPath(), this.resultFolder)
-                await this.updateJob({
-                    resultFolder: this.resultFolder.getURL()
-                })
+                if (this.resultFolder instanceof LocalFolder) {
+                    await this.connector.download(this.connector.getRemoteResultFolderPath(), this.resultFolder)
+                    await this.updateJob({
+                        resultFolder: this.resultFolder.getURL()
+                    })
+                }
                 // ending condition
                 this.emitEvent('JOB_ENDED', 'job [' + this.id + '] finished')
             } else if (status == 'ERROR' || status == 'F' || status == 'NF') {

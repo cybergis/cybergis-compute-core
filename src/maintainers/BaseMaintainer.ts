@@ -94,6 +94,8 @@ class BaseMaintainer {
             if (!hpcConfig) throw new Error("cannot find hpc with name [" + hpc + "]")
             if (!hpcConfig.globus) throw new Error('HPC does not support Globus')
         }
+
+        this.resultFolder = job.resultFolder ? FileSystem.getFolderByURL(job.resultFolder) : FileSystem.createLocalFolder()
     }
 
     /** HPC connectors **/

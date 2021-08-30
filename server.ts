@@ -226,6 +226,12 @@ app.get('/file', async function (req: any, res) {
         return
     }
 
+    if (!job.finishedAt) {
+        res.json({ error: `job is not finished, please try it later`, })
+        res.status(402)
+        return
+    }
+
     try {
         var folder = FileSystem.getFolderByURL(body.fileUrl, ['local', 'globus'])
         if (folder instanceof LocalFolder) {
