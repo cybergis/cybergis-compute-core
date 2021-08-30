@@ -18,7 +18,7 @@ class DB {
         synchronize: true,
         logging: false,
         migrationsRun: true,
-        entities: [Event, Log, Job, Git],
+        entities: [Event, Log, Job, Git, GlobusTransferRefreshToken],
         cache: {
             type: "redis",
             options: {
