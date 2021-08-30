@@ -34,8 +34,8 @@ export default class PythonUtil {
         })
 
         process.stdin.on('readable', () => {
-            const chunk = process.stdin.read();
-            if (chunk !== null) child.stdin.write(`${chunk}`);
+            const chunk = process.stdin.read()
+            if (chunk !== null) child.stdin.write(`${chunk}`)
         })
 
         return new Promise((resolve, reject) => {

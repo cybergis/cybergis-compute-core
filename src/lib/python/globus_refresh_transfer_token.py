@@ -13,6 +13,7 @@ authorize_url = client.oauth2_get_authorize_url()
 print("Please go to this URL and login: {0}".format(authorize_url))
 
 auth_code = input("Please enter the code you get after login here: ").strip()
+print(auth_code)
 token_response = client.oauth2_exchange_code_for_tokens(auth_code)
 
 # the useful values that you want at the end of this
