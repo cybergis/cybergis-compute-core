@@ -123,7 +123,7 @@ class BaseConnector {
 
     async upload(from: LocalFolder, to: string, muteEvent = false) {
         if (from == undefined) throw new ConnectorError('please init input file first')
-        var fromZipFilePath = await this.maintainer.executableFolder.getZip()
+        var fromZipFilePath = await from.getZip()
         var toZipFilePath = to.endsWith('.zip') ? to : `${to}.zip`
         var toFilePath = to.endsWith('.zip') ? to.replace('.zip', '') : to
 
