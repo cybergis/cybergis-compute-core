@@ -200,6 +200,8 @@ export class LocalFolder extends BaseFolder {
             const child = spawn(`unzip`, ['-o', '-q', `${zipFilePath}`, '-d', `${this.path}`])
             return new Promise((resolve, reject) => {
                 child.on('exit', () => resolve(`${this.path}.zip`))
+                child.on('close', () => resolve(`${this.path}.zip`))
+                child.on('error', () => reject(`${this.path}.zip`))
             })
         } catch (e) {
             throw new Error(e)
@@ -266,6 +268,8 @@ export class LocalFolder extends BaseFolder {
             const child = spawn(`zip`, ['-q', '-r', `${this.path}.zip`, '.', `${path.basename(this.path)}`], { cwd: this.path })
             return new Promise((resolve, reject) => {
                 child.on('exit', () => resolve(`${this.path}.zip`))
+                child.on('close', () => resolve(`${this.path}.zip`))
+                child.on('error', () => reject(`${this.path}.zip`))
             })
         } catch (e) {
             throw new Error(e)
