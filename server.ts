@@ -239,7 +239,7 @@ app.get('/file', async function (req: any, res) {
             res.download(dir)
         } else if (folder instanceof GlobusFolder) {
             var hpcConfig = hpcConfigMap[job.hpc]
-            var from = FileSystem.getGlobusFolderByHPCConfig(hpcConfigMap[job.hpc])
+            var from = FileSystem.getGlobusFolderByHPCConfig(hpcConfigMap[job.hpc], `${job.id}/result`)
             var taskId = await GlobusUtil.initTransfer(from, folder, hpcConfig)
             await globusTaskList.append(job, taskId)
             res.json({ message: `Globus transfer task start with task_id ${taskId}` })

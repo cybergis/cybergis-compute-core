@@ -1,6 +1,6 @@
 import SingularityConnector from '../connectors/SingularityConnector'
 import BaseMaintainer from './BaseMaintainer'
-import { LocalFolder, GitFolder, FileSystem } from '../FileSystem'
+import { LocalFolder, GitFolder } from '../FileSystem'
 
 export default class CommunityContributionMaintainer extends BaseMaintainer {
 

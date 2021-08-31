@@ -96,20 +96,31 @@ ${cmd}`
             }
 
             if (this.maintainer.dataFolder instanceof GlobusFolder) {
-                var to = FileSystem.getGlobusFolderByHPCConfig(this.config)
+                var to = FileSystem.getGlobusFolderByHPCConfig(this.config, `${this.jobID}/data`)
 
                 try {
                     var taskId = await GlobusUtil.initTransfer(this.maintainer.dataFolder, to, this.config)
+                    if (this.maintainer != null) this.maintainer.emitEvent('GLOBUS_TRANSFER_INIT', `initialized Globus job with task ID ${taskId}`)
                 } catch (e) {
                     throw new Error(e)
                 }
 
-                try {
-                    var status = await GlobusUtil.monitorTransfer(taskId, this.config)
-                } catch (e) {
-                    throw new Error(e)
+                var monitorTransfer = async (): Promise<string> => {
+                    try {
+                        var status = await GlobusUtil.monitorTransfer(taskId, this.config)
+                        return status
+                    } catch (e) { 
+                        return await monitorTransfer() // recursive
+                    }
                 }
-                if (status === 'FAILED') throw new Error('Globus transfer failed')
+
+                var status = await monitorTransfer()
+                if (status === 'FAILED') {
+                    if (this.maintainer != null) this.maintainer.emitEvent('GLOBUS_TRANSFER_FAILED', `Globus job with task ID ${taskId} failed`)
+                    throw new Error('Globus transfer failed')
+                } else {
+                    if (this.maintainer != null) this.maintainer.emitEvent('GLOBUS_TRANSFER_COMPLETE', `Globus job with task ID ${taskId} is complete`)
+                }
             }
         } else {
             await this.mkdir(this.remote_data_folder_path, {}, true)

@@ -24,6 +24,6 @@ while True:
         try:
             res = transfer_client.get_task(GLOBUS_TASK_ID)
         except:
-            print()
+            time.sleep(1)
 
 exit()

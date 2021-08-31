@@ -79,9 +79,9 @@ export class FileSystem {
         return new GlobusFolder(id)
     }
 
-    static getGlobusFolderByHPCConfig(hpcConfig: hpcConfig) {
+    static getGlobusFolderByHPCConfig(hpcConfig: hpcConfig, dir: string = '') {
         if (!hpcConfig.globus) throw new Error(`HPC does not have a globus account associated with it`)
-        var id = `${hpcConfig.globus.endpoint}:${hpcConfig.globus.root_path}`
+        var id = `${hpcConfig.globus.endpoint}:${path.join(hpcConfig.globus.root_path, dir)}`
         return this.getGlobusFolder(id)
     }
 
