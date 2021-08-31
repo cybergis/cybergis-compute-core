@@ -75,19 +75,6 @@ ${cmd}`
             result_folder: this.isContainer ? this.getContainerResultFolderPath() : this.getRemoteResultFolderPath()
         }
         await this.createFile(jobJSON, path.join(this.remote_executable_folder_path, 'job.json'))
-        // job.env
-        var jobENV = ''
-        for (var key in jobJSON) {
-            var structuredKeys = ['hpc', 'param', 'env']
-            if (structuredKeys.includes(key)) {
-                for (var i in jobJSON[key]) {
-                    jobENV += `${key}_${i}="${jobJSON[key][i]}"\n`
-                }
-            } else {
-                jobENV += `${key}="${jobJSON[key]}"\n`
-            }
-        }
-        await this.createFile(jobENV, path.join(this.remote_executable_folder_path, 'job.env'), {}, true)
 
         // data folder
         if (this.maintainer.dataFolder) {

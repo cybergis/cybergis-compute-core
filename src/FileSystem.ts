@@ -325,7 +325,7 @@ export class GitFolder extends LocalFolder {
                 await exec(`cd ${this.path} && git clone ${this.git.address} ${this.path}`)
             }
 
-            this.removeZip()
+            await this.removeZip()
 
             if (this.git.sha) {
                 try {

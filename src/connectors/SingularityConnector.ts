@@ -8,7 +8,7 @@ class SingularityConnector extends SlurmConnector {
     public isContainer = true
 
     execCommandWithinImage(image: string, cmd: string, config: slurm) {
-        cmd = `srun --mpi=pmi2 singularity exec --env-file job.env ${this._getVolumeBindCMD()} ${image} ${cmd}`
+        cmd = `srun --mpi=pmi2 singularity exec ${this._getVolumeBindCMD()} ${image} ${cmd}`
         super.prepare(cmd, config)
     }
 
@@ -19,22 +19,24 @@ class SingularityConnector extends SlurmConnector {
         if (!containerPath) throw new Error(`container ${manifest.container} is not supported on HPC ${this.hpcName}`)
         // remove buffer: https://dashboard.hpc.unimelb.edu.au/job_submission/
 
+        var jobENV = this._getJobENV()
         var cmd = ``
         if (manifest.pre_processing_stage) {
-            cmd += `singularity exec --env-file job.env ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.pre_processing_stage}\"\n`
+            cmd += `${jobENV.join(' ')} singularity exec ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.pre_processing_stage}\"\n`
         }
 
-        cmd += `srun --unbuffered --mpi=pmi2 singularity exec --env-file job.env ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.execution_stage}"\n`
+        cmd += `srun --unbuffered --mpi=pmi2 ${jobENV.join(' ')} singularity exec ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.execution_stage}"\n`
 
         if (manifest.post_processing_stage) {
-            cmd += `singularity exec --env-file job.env ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.post_processing_stage}\"`
+            cmd += `${jobENV.join(' ')} singularity exec ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.post_processing_stage}\"`
         }
 
         super.prepare(cmd, config)
     }
 
     runImage(image: string, config: slurm) {
-        var cmd = `srun --mpi=pmi2 singularity run --env-file job.env ${this._getVolumeBindCMD()} ${image}`
+        var jobENV = this._getJobENV()
+        var cmd = `srun --mpi=pmi2 ${jobENV.join(' ')} singularity run ${this._getVolumeBindCMD()} ${image}`
         super.prepare(cmd, config)
     }
 
@@ -55,6 +57,34 @@ class SingularityConnector extends SlurmConnector {
             bindCMD.push(`${from}:${to}`)
         }
         return `--bind ${bindCMD.join(',')}`
+    }
+
+    private _getJobENV(): string[] {
+        var jobJSON = {
+            job_id: this.maintainer.job.id,
+            user_id: this.maintainer.job.userId,
+            maintainer: this.maintainer.job.maintainer,
+            hpc: this.maintainer.job.hpc,
+            param: this.maintainer.job.param,
+            env: this.maintainer.job.env,
+            executable_folder: this.isContainer ? this.getContainerExecutableFolderPath() : this.getRemoteExecutableFolderPath(),
+            data_folder: this.isContainer ? this.getContainerDataFolderPath() : this.getRemoteDataFolderPath(),
+            result_folder: this.isContainer ? this.getContainerResultFolderPath() : this.getRemoteResultFolderPath()
+        }
+
+        var jobENV = []
+        for (var key in jobJSON) {
+            var structuredKeys = ['hpc', 'param', 'env']
+            if (structuredKeys.includes(key)) {
+                for (var i in jobJSON[key]) {
+                    jobENV.push(`${key}_${i}="${jobJSON[key][i]}"`)
+                }
+            } else {
+                jobENV.push(`${key}="${jobJSON[key]}"`)
+            }
+        }
+
+        return jobENV
     }
 }
 
