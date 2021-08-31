@@ -78,6 +78,7 @@ class Supervisor {
             for (var hpcName in self.jobPoolCounters) {
                 while (self.jobPoolCounters[hpcName] < self.jobPoolCapacities[hpcName] && !await self.queues[hpcName].isEmpty()) {
                     var job = await self.queues[hpcName].shift()
+                    if (!job) continue
                     var maintainer = require(`./maintainers/${maintainerConfigMap[job.maintainer].maintainer}`).default // typescript compilation hack
                     job.maintainerInstance = new maintainer(job, self)
                     self.jobPoolCounters[hpcName]++

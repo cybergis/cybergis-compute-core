@@ -78,6 +78,8 @@ class Queue {
         var jobRepo = connection.getRepository(Job)
         var job = await jobRepo.findOne(id)
 
+        if (!job) return null
+
         if (job.credentialId) {
             job.credential = await this.credentialManager.get(job.credentialId)
         }
