@@ -135,10 +135,15 @@ ${cmd}`
             cwd: this.remote_executable_folder_path
         }, true, true))
 
-        if (sbatchResult.stdout.includes('ERROR') || sbatchResult.stdout.includes('WARN') || sbatchResult.stderr) {
+        var failed = false
+        if (!sbatchResult.stdout || sbatchResult.stderr) failed = true
+        else if (sbatchResult.stdout.includes('ERROR') || sbatchResult.stdout.includes('WARN')) failed = true
+
+        if (failed) {
             if (this.maintainer != null) this.maintainer.emitEvent('SLURM_SUBMIT_ERROR', 'cannot submit job ' + this.maintainer.id + ': ' + JSON.stringify(sbatchResult))
             throw new ConnectorError('cannot submit job ' + this.maintainer.id + ': ' + JSON.stringify(sbatchResult))
         }
+
         this.slurm_id = sbatchResult.stdout.split(/[ ]+/).pop().trim()
     }
 
