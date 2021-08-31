@@ -49,7 +49,7 @@ ${config.gpus_per_task ? `#SBATCH --gpus-per-task=${config.gpus_per_task}` : ''}
 ${config.partition ? `#SBATCH --partition= ${config.partition}` : ''}
 ${this.getSBatchTagsFromArray('mail-type', config.mail_type)}
 ${this.getSBatchTagsFromArray('mail-user', config.mail_user)}
-
+${this.config.init_sbatch_options ? this.config.init_sbatch_options.join('\n') : ''}
 module purge
 ${this.config.init_sbatch_script ? this.config.init_sbatch_script.join('\n') : ''}
 ${modules}
