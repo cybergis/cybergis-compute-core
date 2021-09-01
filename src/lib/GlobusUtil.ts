@@ -84,7 +84,7 @@ export default class GlobusUtil {
                 from.path,
                 to.endpoint,
                 to.path,
-                `${label}_${Math.floor(Math.random() * 10)}`
+                `${label}_${Math.floor(Math.random() * 1000)}`
             ], ['task_id'])
         } catch (e) {
             throw new Error(`Globus query status failed with error: ${e}`)
