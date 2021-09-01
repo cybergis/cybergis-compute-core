@@ -49,7 +49,16 @@ export default class PythonUtil {
         args.unshift(`${__dirname}/python/${file}`)
         const child = spawn('python3', args)
 
-        var out = {}
+        var out = {
+            error: null
+        }
+
+        child.stderr.on('data', function(result) {
+            var stderr = Buffer.from(result, 'utf-8').toString()
+            if(config.is_testing) console.log(stderr)
+            if (!out.error) out.error = stderr
+                else out.error += stderr
+        })
 
         child.stdout.on('data', function (result) {
             var stdout = Buffer.from(result, 'utf-8').toString()

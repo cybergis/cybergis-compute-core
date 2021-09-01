@@ -90,6 +90,7 @@ export default class GlobusUtil {
             throw new Error(`Globus query status failed with error: ${e}`)
         }
 
+        if (!out['task_id']) throw new Error(`cannot initialize Globus job: ${out['error']}`)
         return out['task_id']
     }
 

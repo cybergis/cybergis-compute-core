@@ -1,10 +1,11 @@
+import sys
 import globus_sdk
 
 def output(k, i):
     print('@' + k + '=[' + i + ']')
 
 # you must have a client ID
-CLIENT_ID = "9188de77-7f40-4cb3-9c76-bdc518d5681f"
+CLIENT_ID = str(sys.argv[1])
 
 client = globus_sdk.NativeAppAuthClient(CLIENT_ID)
 client.oauth2_start_flow(refresh_tokens=True)
