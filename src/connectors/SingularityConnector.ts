@@ -22,10 +22,10 @@ class SingularityConnector extends SlurmConnector {
         var jobENV = this._getJobENV()
         var cmd = ``
         if (manifest.pre_processing_stage) {
-            cmd += `${jobENV.join(' ')} singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.pre_processing_stage}\"\n`
+            cmd += `${jobENV.join(' ')} singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.pre_processing_stage}\"\n\n`
         }
 
-        cmd += `${jobENV.join(' ')} srun --unbuffered --mpi=pmi2 singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.execution_stage}"\n`
+        cmd += `${jobENV.join(' ')} srun --unbuffered --mpi=pmi2 singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.execution_stage}"\n\n`
 
         if (manifest.post_processing_stage) {
             cmd += `${jobENV.join(' ')} singularity exec ${this._getVolumeBindCMD()} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${manifest.post_processing_stage}\"`
