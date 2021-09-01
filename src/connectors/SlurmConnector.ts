@@ -87,7 +87,7 @@ ${cmd}`
 
                 try {
                     if (this.maintainer != null) this.maintainer.emitEvent('GLOBUS_TRANSFER_INIT', `initializing Globus job`)
-                    var taskId = await GlobusUtil.initTransfer(this.maintainer.dataFolder, to, this.config)
+                    var taskId = await GlobusUtil.initTransfer(this.maintainer.dataFolder, to, this.config, this.jobID)
                     if (this.maintainer != null) this.maintainer.emitEvent('GLOBUS_TRANSFER_INIT_SUCCESS', `initialized Globus job with task ID ${taskId}`)
                 } catch (e) {
                     if (this.maintainer != null) this.maintainer.emitEvent('GLOBUS_TRANSFER_INIT_FAILED', `cannot initialize Globus job`)

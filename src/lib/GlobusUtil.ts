@@ -7,7 +7,6 @@ import DB from "../DB"
 import { Job } from '../models/Job'
 const redis = require('redis')
 const { promisify } = require("util")
-const md5 = require('crypto-js/md5')
 
 export class JobGlobusTaskListManager {
     private redis = {
@@ -71,7 +70,7 @@ export class JobGlobusTaskListManager {
 export default class GlobusUtil {
     static db = new DB()
 
-    static async initTransfer(from: GlobusFolder, to: GlobusFolder, hpcConfig: hpcConfig): Promise<string> {
+    static async initTransfer(from: GlobusFolder, to: GlobusFolder, hpcConfig: hpcConfig, label: string = ''): Promise<string> {
         var connection = await this.db.connect()
         var globusTransferRefreshTokenRepo = connection.getRepository(GlobusTransferRefreshToken)
         var g = await globusTransferRefreshTokenRepo.findOne(hpcConfig.globus.identity)
@@ -84,7 +83,7 @@ export default class GlobusUtil {
                 from.path,
                 to.endpoint,
                 to.path,
-                md5(`${from.endpoint}:${from.path}->${to.endpoint}:${to.endpoint}`).toString()
+                `${label}_from_${from.endpoint}_${from.path}_to_${to.endpoint}_${to.endpoint}`
             ], ['task_id'])
         } catch (e) {
             throw new Error(`Globus query status failed with error: ${e}`)
