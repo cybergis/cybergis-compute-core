@@ -51,6 +51,11 @@ class SingularityConnector extends SlurmConnector {
         this.volumeBinds[this.getRemoteExecutableFolderPath()] = this.getContainerExecutableFolderPath()
         this.volumeBinds[this.getRemoteResultFolderPath()] = this.getContainerResultFolderPath()
         this.volumeBinds[this.getRemoteDataFolderPath()] = this.getContainerDataFolderPath()
+        // TODO: hack, remove after globus implemented
+        if (this.hpcName === 'bridges_community') {
+            this.volumeBinds['/ocean/projects/soc200002p/fzthebug/cybergis_compute/Landsat_clip'] = '/data_fusion/Landsat_clip'
+            this.volumeBinds['/ocean/projects/soc200002p/fzthebug/cybergis_compute/MODIS_composite_resample'] = 'data_fusion/MODIS_composite_resample'
+        }
         var bindCMD: Array<string>= []
         for (var from in this.volumeBinds) {
             var to = this.volumeBinds[from]

@@ -7,7 +7,6 @@ import DB from "../DB"
 import { Job } from '../models/Job'
 const redis = require('redis')
 const { promisify } = require("util")
-const md5 = require('crypto-js/md5')
 
 export class JobGlobusTaskListManager {
     private redis = {

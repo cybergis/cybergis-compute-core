@@ -11,7 +11,8 @@
         "dockerfile": "",
         "dockerhub": "",
         "hpc_path": {
-            "keeling_community": "/data/keeling/a/cigi-gisolve/simages/cybergisx_0.4.simg"
+            "keeling_community": "/data/keeling/a/cigi-gisolve/simages/cybergisx_0.4.simg",
+            "bridges_community": "/jet/home/cybergis/image/cybergisx_0.4.simg"
         }
     }
 }
