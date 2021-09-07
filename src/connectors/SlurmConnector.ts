@@ -134,6 +134,7 @@ ${cmd}`
         }
 
         this.slurm_id = sbatchResult.stdout.split(/[ ]+/).pop().trim()
+        if (this.maintainer != null) this.maintainer.emitEvent('SLURM_SUBMIT_SUCCESS', `slurm job submitted with slurm job id ${this.slurm_id}`)
     }
 
     // qstat:
