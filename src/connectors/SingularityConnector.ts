@@ -79,7 +79,7 @@ class SingularityConnector extends SlurmConnector {
 
         var jobENV = []
         for (var key in jobJSON) {
-            var structuredKeys = ['hpc', 'param', 'env']
+            var structuredKeys = ['param', 'env']
             if (structuredKeys.includes(key)) {
                 for (var i in jobJSON[key]) {
                     jobENV.push(`${key}_${i}="${jobJSON[key][i]}"`)

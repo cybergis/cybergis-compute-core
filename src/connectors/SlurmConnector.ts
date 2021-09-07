@@ -46,7 +46,7 @@ ${config.gpus ? `#SBATCH --gpus=${config.gpus}` : ''}
 ${config.gpus_per_node ? `#SBATCH --gpus-per-node=${config.gpus_per_node}` : ''}
 ${config.gpus_per_socket ? `#SBATCH --gpus-per-socket=${config.gpus_per_socket}` : ''}
 ${config.gpus_per_task ? `#SBATCH --gpus-per-task=${config.gpus_per_task}` : ''}
-${config.partition ? `#SBATCH --partition= ${config.partition}` : ''}
+${config.partition ? `#SBATCH --partition=${config.partition}` : ''}
 ${this.getSBatchTagsFromArray('mail-type', config.mail_type)}
 ${this.getSBatchTagsFromArray('mail-user', config.mail_user)}
 ${this.config.init_sbatch_options ? this.config.init_sbatch_options.join('\n') : ''}
