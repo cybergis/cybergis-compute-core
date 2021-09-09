@@ -14,5 +14,18 @@
             "keeling_community": "/data/keeling/a/cigi-gisolve/simages/cybergisx_0.4.simg",
             "bridges_community": "/jet/home/cybergis/image/cybergisx_0.4.simg"
         }
+    },
+    "cjw-eb": {
+        "dockerfile": "",
+        "dockerhub": "",
+        "hpc_path": {
+            "keeling_community": "/data/keeling/a/cigi-gisolve/simages/cjw-eb.simg",
+            "bridges_community": "/jet/home/cybergis/image/cybergisx_0.4.simg"
+        },
+        "mount": {
+            "keeling_community": {
+                "/data/cigi/cybergisx-easybuild": "/data/cigi/cybergisx-easybuild"
+            }
+        }
     }
 }

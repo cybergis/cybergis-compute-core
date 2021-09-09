@@ -162,7 +162,12 @@ export interface executableManifest {
 export interface containerConfig {
     dockerfile?: string
     dockerhub?: string
-    hpc_path: {[keys: string]: string}
+    hpc_path: {[keys: string]: string},
+    mount: {
+        [keys: string]: {
+            [keys: string]: string
+        }
+    }
 }
 
 export interface event {
