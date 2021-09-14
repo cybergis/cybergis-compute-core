@@ -105,7 +105,7 @@ tdata = globus_sdk.TransferData(tc, source_endpoint_id,
 expanse_root = "/expanse/lustre/scratch/cybergis/temp_project"
 source_path = os.path.join(expanse_root, job_folder_name)
 
-target_root = "/~/vol_b/notebook_home_data"
+target_root = "/~/mnt/nfs_folder/notebook_home_data"
 target_path = os.path.join(target_root, jupyter_user, jupyter_output_path)
 
 tdata.add_item(source_path,
