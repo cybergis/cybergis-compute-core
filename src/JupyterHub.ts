@@ -14,7 +14,7 @@ class JupyterHub {
     public async getUsername(token: string) {
         var t = this._decodeToken(token)
         try {
-            var res = await axios.get(path.join(`https://${t.host}`, this.basePath, '/user'), {
+            var res = await axios.get(`https://${path.join(t.host, this.basePath, '/user')}`, {
                 headers: { 'Authorization': `token ${t.token}` }
             })
             return `${res.data.name}@${t.host}`
