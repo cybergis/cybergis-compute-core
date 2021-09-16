@@ -46,7 +46,7 @@ class BaseMaintainer {
     /** parameters **/
     public initRetry = 3
 
-    public maintainThresholdInHours = 0.1
+    public maintainThresholdInHours = 100000 // something super large
 
     public envParamValidators: {[keys: string]: (val: string) => boolean} = undefined
 
