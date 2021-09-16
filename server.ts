@@ -142,7 +142,7 @@ app.get('/user', (req, res) => {
         res.status(402)
         return
     }
-    res.json({ user: res.locals.username })
+    res.json({ username: res.locals.username })
 })
 
 app.get('/user/job', async (req, res) => {
