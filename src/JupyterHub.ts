@@ -18,7 +18,8 @@ class JupyterHub {
                 headers: { 'Authorization': `token ${t.token}` }
             })
             return `${res.data.name}@${t.host}`
-        } catch {
+        } catch(e) {
+            console.log(e)
             return undefined
         }
     }
