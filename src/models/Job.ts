@@ -63,6 +63,9 @@ export class Job {
     @Column({type: 'timestamp', nullable: true, default: null})
     finishedAt: Date
 
+    @Column({type: 'timestamp', nullable: true, default: null})
+    queuedAt: Date
+
     @Column({default: false})
     isFailed: boolean
 

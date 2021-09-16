@@ -467,8 +467,21 @@ app.post('/job/:jobId/submit', async function (req, res) {
         return
     }
 
+    if (job.queuedAt) {
+        res.json({ error: "job already submitted or in queue", messages: [] }); res.status(401)
+        return 
+    }
+
     try {
         await supervisor.pushJobToQueue(job)
+        // update status
+        var connection = await db.connect()
+        job.queuedAt = new Date()
+        await connection.createQueryBuilder()
+            .update(Job)
+            .where('id = :id', { id:  job.id })
+            .set({ queuedAt: job.queuedAt })
+            .execute()
     } catch (e) {
         res.json({ error: e.toString() }); res.status(402)
         return
@@ -538,7 +551,7 @@ app.get('/job/:jobId/logs', async function (req, res) {
 })
 
 // same as /job/:jobId
-app.get('/job', async function (req, res) {
+app.get('/job/get-by-token', async function (req, res) {
     var body = req.body
     var errors = requestErrors(validator.validate(body, schemas.getJob))
 
