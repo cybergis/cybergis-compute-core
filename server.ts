@@ -42,9 +42,8 @@ app.use(async function (req, res, next) {
     if (req.body.jupyterhubApiToken) {
         try {
             res.locals.username = await jupyterHub.getUsername(req.body.jupyterhubApiToken)
-        } catch (e) {
-            console.log(e)
-        }
+            console.log(res.locals.username)
+        } catch {}
     }
     next()
 })

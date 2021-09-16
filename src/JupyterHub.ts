@@ -19,7 +19,6 @@ class JupyterHub {
             })
             return `${res.data.name}@${t.host}`
         } catch(e) {
-            console.log(e)
             return undefined
         }
     }
