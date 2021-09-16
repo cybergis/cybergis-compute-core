@@ -136,12 +136,13 @@ app.get('/user', (req, res) => {
         return
     }
 
-    if (!res.locals.user) {
+    console.log(res.locals.username)
+    if (!res.locals.username) {
         res.json({ error: "invalid token" })
         res.status(402)
         return
     }
-    res.json({ user: res.locals.user })
+    res.json({ user: res.locals.username })
 })
 
 app.get('/user/job', async (req, res) => {
@@ -154,7 +155,7 @@ app.get('/user/job', async (req, res) => {
         return
     }
 
-    if (!res.locals.user) {
+    if (!res.locals.username) {
         res.json({ error: "invalid token" })
         res.status(402)
         return
@@ -164,7 +165,7 @@ app.get('/user/job', async (req, res) => {
 
     const jobs = await connection
         .getRepository(Job)
-        .find({ userId: res.locals.user })
+        .find({ userId: res.locals.username })
 
     res.json({ jobs: jobs })
 })
@@ -392,7 +393,7 @@ app.post('/job', async function (req, res) {
 
     var job: Job = new Job()
     job.id = guard.generateID()
-    job.userId = res.locals.user ? res.locals.user : null
+    job.userId = res.locals.username ? res.locals.username : null
     job.secretToken = await guard.issueJobSecretToken()
     job.maintainer = maintainerName
     job.hpc = hpcName
