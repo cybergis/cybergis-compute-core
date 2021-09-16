@@ -167,7 +167,7 @@ app.get('/user/job', async (req, res) => {
         .getRepository(Job)
         .find({ userId: res.locals.username })
 
-    res.json({ jobs: jobs })
+    res.json({ job: jobs })
 })
 
 // list info
