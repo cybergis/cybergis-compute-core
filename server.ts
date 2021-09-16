@@ -8,6 +8,7 @@ import { config, containerConfigMap, hpcConfigMap, maintainerConfigMap } from '.
 import GlobusUtil, { JobGlobusTaskListManager } from './src/lib/GlobusUtil'
 import express = require('express')
 import { Job } from './src/models/Job'
+import JupyterHub from './src/JupyterHub'
 import DB from './src/DB'
 const bodyParser = require('body-parser')
 const Validator = require('jsonschema').Validator;
@@ -35,14 +36,33 @@ const supervisor = new Supervisor()
 const validator = new Validator()
 const db = new DB()
 const globusTaskList = new JobGlobusTaskListManager()
+const jupyterHub = new JupyterHub()
+
+app.use(async function (req, res, next) {
+    if (req.body.jupyterhubApiToken) {
+        try {
+            res.locals.username = await jupyterHub.getUsername(req.body.jupyterhubApiToken)
+        } catch {}
+    }
+    next()
+})
 
 FileSystem.createClearLocalCacheProcess()
 
 var schemas = {
+    user: {
+        type: 'object',
+        properties: {
+            jupyterhubApiToken: { type: 'string' },
+        },
+        required: ['jupyterhubApiToken']
+    },
+
     updateJob: {
         type: 'object',
         properties: {
             accessToken: { type: 'string' },
+            jupyterhubApiToken: { type: 'string' },
             param: { type: 'object' },
             env: { type: 'object' },
             slurm: { type: 'object' },
@@ -56,6 +76,7 @@ var schemas = {
     createJob: {
         type: 'object',
         properties: {
+            jupyterhubApiToken: { type: 'string' },
             maintainer: { type: 'string' },
             hpc: { type: 'string' },
             user: { type: 'string' },
@@ -67,6 +88,7 @@ var schemas = {
     getJob: {
         type: 'object',
         properties: {
+            jupyterhubApiToken: { type: 'string' },
             accessToken: { type: 'string' }
         },
         required: ['accessToken']
@@ -75,6 +97,7 @@ var schemas = {
     getFile: {
         type: 'object',
         properties: {
+            jupyterhubApiToken: { type: 'string' },
             accessToken: { type: 'string' },
             fileUrl: { type: 'string' }
         },
@@ -99,6 +122,50 @@ function setDefaultValues(data, defaults) {
 // index
 app.get('/', (req, res) => {
     res.json({ message: 'hello world' })
+})
+
+// user
+app.get('/user', (req, res) => {
+    var body = req.body
+    var errors = requestErrors(validator.validate(body, schemas.user))
+
+    if (errors.length > 0) {
+        res.json({ error: "invalid input", messages: errors })
+        res.status(402)
+        return
+    }
+
+    if (!res.locals.user) {
+        res.json({ error: "invalid token" })
+        res.status(402)
+        return
+    }
+    res.json({ user: res.locals.user })
+})
+
+app.get('/user/job', async (req, res) => {
+    var body = req.body
+    var errors = requestErrors(validator.validate(body, schemas.user))
+
+    if (errors.length > 0) {
+        res.json({ error: "invalid input", messages: errors })
+        res.status(402)
+        return
+    }
+
+    if (!res.locals.user) {
+        res.json({ error: "invalid token" })
+        res.status(402)
+        return
+    }
+
+    var connection = await db.connect()
+
+    const jobs = await connection
+        .getRepository(Job)
+        .find({ userId: res.locals.user })
+
+    res.json({ jobs: jobs })
 })
 
 // list info
@@ -324,7 +391,7 @@ app.post('/job', async function (req, res) {
 
     var job: Job = new Job()
     job.id = guard.generateID()
-    job.userId = null
+    job.userId = res.locals.user ? res.locals.user : null
     job.secretToken = await guard.issueJobSecretToken()
     job.maintainer = maintainerName
     job.hpc = hpcName
