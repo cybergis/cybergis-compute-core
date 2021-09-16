@@ -537,6 +537,26 @@ app.get('/job/:jobId/logs', async function (req, res) {
     res.json(job.logs)
 })
 
+// same as /job/:jobId
+app.get('/job', async function (req, res) {
+    var body = req.body
+    var errors = requestErrors(validator.validate(body, schemas.getJob))
+
+    if (errors.length > 0) {
+        res.json({ error: "invalid input", messages: errors }); res.status(402)
+        return
+    }
+
+    try {
+        var job = await guard.validateJobAccessToken(body.accessToken, true)
+    } catch (e) {
+        res.json({ error: "invalid access token", messages: [e.toString()] }); res.status(401)
+        return
+    }
+
+    res.json(Helper.job2object(job))
+})
+
 app.get('/job/:jobId', async function (req, res) {
     var body = req.body
     var errors = requestErrors(validator.validate(body, schemas.getJob))
