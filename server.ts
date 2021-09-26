@@ -129,8 +129,26 @@ app.get('/', (req, res) => {
 
 // statistic
 app.get('/statistic', async (req, res) => {
-    await statistic.getTotal()
-    await statistic.getByJobId('1632659567t1bH9')
+    res.json({ runtime_in_seconds: await statistic.getRuntimeTotal() })
+})
+
+app.get('/statistic/job/:jobId', async (req, res) => {
+    var body = req.body
+    var errors = requestErrors(validator.validate(body, schemas.getJob))
+
+    if (errors.length > 0) {
+        res.json({ error: "invalid input", messages: errors }); res.status(402)
+        return
+    }
+
+    try {
+        var job = await guard.validateJobAccessToken(body.accessToken)
+    } catch (e) {
+        res.json({ error: "invalid access token", messages: [e.toString()] }); res.status(401)
+        return
+    }
+
+    res.json({ runtime_in_seconds: await statistic.getRuntimeByJobId(job.id) })
 })
 
 // user

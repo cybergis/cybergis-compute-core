@@ -4,7 +4,7 @@ import { Job } from './models/Job';
 export default class Statistic {
     private db = new DB()
 
-    public async getByJobId(jobId: string) {
+    public async getRuntimeByJobId(jobId: string) {
         const connection = await this.db.connect()
         const statistic = await connection
             .getRepository(Job)
@@ -15,7 +15,7 @@ export default class Statistic {
         console.log(statistic)
     }
 
-    public async getTotal() {
+    public async getRuntimeTotal() {
         const connection = await this.db.connect()
         const statistic = await connection
             .getRepository(Job)
