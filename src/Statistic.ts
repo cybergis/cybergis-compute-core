@@ -4,8 +4,15 @@ import { Job } from './models/Job';
 export default class Statistic {
     private db = new DB()
 
-    public getByJobId(jobId: string) {
-
+    public async getByJobId(jobId: string) {
+        const connection = await this.db.connect()
+        const statistic = await connection
+            .getRepository(Job)
+            .createQueryBuilder("job")
+            .select('TIMESTAMPDIFF(SECOND,job.initializedAt,job.finishedAt) as STATISTIC')
+            .where("job.initializedAt IS NOT NULL AND job.finishedAt IS NOT NULL AND id = :id", {id: jobId})
+            .getRawOne()
+        console.log(statistic)
     }
 
     public async getTotal() {
@@ -13,9 +20,9 @@ export default class Statistic {
         const statistic = await connection
             .getRepository(Job)
             .createQueryBuilder("job")
-            .select('TIMESTAMPDIFF(SECOND,job.initializedAt,job.finishedAt) as STATISTIC')
+            .select('SUM(TIMESTAMPDIFF(SECOND,job.initializedAt,job.finishedAt)) as STATISTIC')
             .where("job.initializedAt IS NOT NULL AND job.finishedAt IS NOT NULL")
-            .getRawMany()
+            .getRawOne()
         console.log(statistic)
     }
 }

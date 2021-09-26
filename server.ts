@@ -130,6 +130,7 @@ app.get('/', (req, res) => {
 // statistic
 app.get('/statistic', async (req, res) => {
     await statistic.getTotal()
+    await statistic.getByJobId('1632659567t1bH9')
 })
 
 // user
