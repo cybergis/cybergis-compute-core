@@ -31,7 +31,7 @@ export default class Statistic {
         const statisticByHPC = await connection
             .getRepository(Job)
             .createQueryBuilder("job")
-            .select('SUM(TIMESTAMPDIFF(SECOND,job.initializedAt,job.finishedAt)) as STATISTIC')
+            .select('SUM(TIMESTAMPDIFF(SECOND,job.initializedAt,job.finishedAt)) as STATISTIC, job.hpc as HPC')
             .where("job.initializedAt IS NOT NULL AND job.finishedAt IS NOT NULL")
             .groupBy('hpc')
             .getRawOne()
@@ -40,7 +40,7 @@ export default class Statistic {
                 total: parseInt(statisticTotal['STATISTIC'])
             }
             for (var i in statisticByHPC) {
-                out[i] = statisticByHPC[i]
+                out[statisticByHPC[i]['HPC']] = parseInt(statisticByHPC[i]['STATISTIC'])
             }
             return out
         } else {
