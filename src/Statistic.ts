@@ -12,7 +12,11 @@ export default class Statistic {
             .select('TIMESTAMPDIFF(SECOND,job.initializedAt,job.finishedAt) as STATISTIC')
             .where("job.initializedAt IS NOT NULL AND job.finishedAt IS NOT NULL AND job.id = :id", {id: jobId})
             .getRawOne()
-        console.log(statistic)
+        if (statistic) {
+            return parseInt(statistic['STATISTIC'])
+        } else {
+            return null
+        }
     }
 
     public async getRuntimeTotal() {
@@ -23,7 +27,11 @@ export default class Statistic {
             .select('SUM(TIMESTAMPDIFF(SECOND,job.initializedAt,job.finishedAt)) as STATISTIC')
             .where("job.initializedAt IS NOT NULL AND job.finishedAt IS NOT NULL")
             .getRawOne()
-        console.log(statistic)
+        if (statistic) {
+            return parseInt(statistic['STATISTIC'])
+        } else {
+            return null
+        }
     }
 }
 
