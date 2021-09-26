@@ -15,7 +15,7 @@ export default class Statistic {
             .createQueryBuilder("job")
             .select('TIMESTAMPDIFF(SECOND,job.initializedAt,job.finishedAt) as STATISTIC')
             .where("job.initializedAt IS NOT NULL AND job.finishedAt IS NOT NULL")
-            .getOne()
+            .getRawMany()
         console.log(statistic)
     }
 }
