@@ -14,7 +14,7 @@ export default class Statistic {
             .getRepository(Job)
             .createQueryBuilder("job")
             .select('TIMESTAMPDIFF(SECOND,job.initializedAt,job.finishedAt) as STATISTIC')
-            .where("job.initializedAt NOT NULL AND job.finishedAt NOT NULL")
+            .where("job.initializedAt IS NOT NULL AND job.finishedAt IS NOT NULL")
             .getOne()
         console.log(statistic)
     }
