@@ -21,14 +21,28 @@ export default class Statistic {
 
     public async getRuntimeTotal() {
         const connection = await this.db.connect()
-        const statistic = await connection
+        const statisticTotal = await connection
             .getRepository(Job)
             .createQueryBuilder("job")
             .select('SUM(TIMESTAMPDIFF(SECOND,job.initializedAt,job.finishedAt)) as STATISTIC')
             .where("job.initializedAt IS NOT NULL AND job.finishedAt IS NOT NULL")
             .getRawOne()
-        if (statistic) {
-            return parseInt(statistic['STATISTIC'])
+
+        const statisticByHPC = await connection
+            .getRepository(Job)
+            .createQueryBuilder("job")
+            .select('SUM(TIMESTAMPDIFF(SECOND,job.initializedAt,job.finishedAt)) as STATISTIC')
+            .where("job.initializedAt IS NOT NULL AND job.finishedAt IS NOT NULL")
+            .groupBy('hpc')
+            .getRawOne()
+        if (statisticTotal && statisticByHPC) {
+            var out = {
+                total: parseInt(statisticTotal['STATISTIC'])
+            }
+            for (var i in statisticByHPC) {
+                out[i] = statisticByHPC[i]
+            }
+            return out
         } else {
             return null
         }
