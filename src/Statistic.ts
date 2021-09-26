@@ -10,7 +10,7 @@ export default class Statistic {
             .getRepository(Job)
             .createQueryBuilder("job")
             .select('TIMESTAMPDIFF(SECOND,job.initializedAt,job.finishedAt) as STATISTIC')
-            .where("job.initializedAt IS NOT NULL AND job.finishedAt IS NOT NULL AND id = :id", {id: jobId})
+            .where("job.initializedAt IS NOT NULL AND job.finishedAt IS NOT NULL AND job.id = :id", {id: jobId})
             .getRawOne()
         console.log(statistic)
     }
