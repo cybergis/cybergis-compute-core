@@ -10,6 +10,7 @@ import express = require('express')
 import { Job } from './src/models/Job'
 import JupyterHub from './src/JupyterHub'
 import DB from './src/DB'
+import Statistic from './src/Statistic'
 const bodyParser = require('body-parser')
 const Validator = require('jsonschema').Validator;
 const fileUpload = require('express-fileupload')
@@ -37,6 +38,7 @@ const validator = new Validator()
 const db = new DB()
 const globusTaskList = new JobGlobusTaskListManager()
 const jupyterHub = new JupyterHub()
+const statistic = new Statistic()
 
 app.use(async function (req, res, next) {
     if (req.body.jupyterhubApiToken) {
@@ -123,6 +125,11 @@ function setDefaultValues(data, defaults) {
 // index
 app.get('/', (req, res) => {
     res.json({ message: 'hello world' })
+})
+
+// statistic
+app.get('/statistic', async (req, res) => {
+    await statistic.getTotal()
 })
 
 // user
@@ -452,6 +459,11 @@ app.post('/job/:jobId/submit', async function (req, res) {
     if (errors.length > 0) {
         res.json({ error: "invalid input", messages: errors })
         res.status(402)
+        return
+    }
+
+    if (!res.locals.username) {
+        res.json({ error: "submit without login is not allowed", messages: [] }); res.status(401)
         return
     }
 
