@@ -34,7 +34,8 @@ export default class Statistic {
             .select('SUM(TIMESTAMPDIFF(SECOND,job.initializedAt,job.finishedAt)) as STATISTIC, job.hpc as HPC')
             .where("job.initializedAt IS NOT NULL AND job.finishedAt IS NOT NULL")
             .groupBy('hpc')
-            .getRawOne()
+            .getRawMany()
+        console.log(statisticByHPC)
         if (statisticTotal && statisticByHPC) {
             var out = {
                 total: parseInt(statisticTotal['STATISTIC'])
