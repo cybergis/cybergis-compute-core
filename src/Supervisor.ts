@@ -7,10 +7,13 @@ import { FileSystem, GitFolder } from './FileSystem'
 import * as events from 'events'
 import NodeSSH = require('node-ssh')
 import SlurmConnector from "./connectors/SlurmConnector"
+import DB from "./DB"
 
 type actions = 'stop' | 'resume' | 'cancel'
 
 class Supervisor {
+
+    private db = new DB()
 
     private jobPoolCapacities: {[keys: string]: number } = {}
 
@@ -80,7 +83,20 @@ class Supervisor {
                     var job = await self.queues[hpcName].shift()
                     if (!job) continue
                     var maintainer = require(`./maintainers/${maintainerConfigMap[job.maintainer].maintainer}`).default // typescript compilation hack
-                    job.maintainerInstance = new maintainer(job, self)
+                    try {
+                        job.maintainerInstance = new maintainer(job, self)
+                    } catch(e) {
+                        // log error and skip job
+                        self.emitter.registerEvents(job, 'JOB_INIT_ERROR', `job [${job.id}] failed to initialized with error ${e.toString()}`)
+                        job.finishedAt = new Date()
+                        var connection = await self.db.connect()
+                        await connection.createQueryBuilder()
+                            .update(Job)
+                            .where('id = :id', { id:  job.id })
+                            .set({ finishedAt: job.finishedAt})
+                            .execute()
+                            continue
+                    }
                     self.jobPoolCounters[hpcName]++
 
                     // manage ssh pool
