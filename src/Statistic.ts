@@ -35,7 +35,7 @@ export default class Statistic {
             .where("job.initializedAt IS NOT NULL AND job.finishedAt IS NOT NULL")
             .groupBy('hpc')
             .getRawMany()
-        console.log(statisticByHPC)
+
         if (statisticTotal && statisticByHPC) {
             var out = {
                 total: parseInt(statisticTotal['STATISTIC'])
