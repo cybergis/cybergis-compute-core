@@ -17,10 +17,38 @@
         ],
         "job_pool_capacity": 10,
         "globus": {
-            "identity": "string",
-            "endpoint": "string",
-            "root_path": "string"
+            "identity": "apadmana@illinois.edu",
+            "endpoint": "a1fa3d20-123d-11ec-ba7d-138ac5bdb19f",
+            "root_path": "/"
         }
+    },
+    "expanse_community": {
+        "ip": "login.expanse.sdsc.edu",
+        "port": 22,
+        "is_community_account": true,
+        "community_login": {
+            "user": "cybergis",
+            "use_local_key": false,
+            "external_key": {
+                "private_key_path": "/job_supervisor/keys/cigi-gisolve.key",
+                "passphrase": null
+            }
+        },
+        "root_path": "/home/cybergis/scratch_folder/",
+        "job_pool_capacity": 10,
+        "globus": {
+            "identity": "apadmana@illinois.edu",
+            "endpoint": "b256c034-1578-11eb-893e-0a5521ff3f4b",
+            "root_path": "/home/cybergis/scratch_folder/"
+        },
+        "init_sbatch_script": [
+            "module load DefaultModules",
+            "module load singularitypro/3.5"
+        ],
+        "init_sbatch_options": [
+            "#SBATCH --partition=shared",
+            "#SBATCH --account=TG-EAR190007"
+        ]
     },
     "bridges_community": {
         "ip": "bridges2.psc.edu",
@@ -30,17 +58,16 @@
             "user": "cybergis",
             "use_local_key": false,
             "external_key": {
-                "private_key_path": "/job_supervisor/keys/bridges-community.key",
+                "private_key_path": "/job_supervisor/keys/cigi-gisolve.key",
                 "passphrase": null
             }
         },
         "root_path": "/jet/home/cybergis/data",
-        "job_pool_capacity": 10
-    },
-    "hadoop": {
-        "ip": "hadoop01.cigi.illinois.edu",
-        "port": 50022,
-        "is_community_account": false,
-        "job_pool_capacity": 10
+        "job_pool_capacity": 10,
+        "globus": {
+            "identity": "apadmana@illinois.edu",
+            "endpoint": "8e5f3a0a-542d-11eb-a45a-0e095b4c2e55",
+            "root_path": "/jet/home/cybergis/data"
+        }
     }
 }

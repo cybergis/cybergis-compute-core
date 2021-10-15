@@ -131,6 +131,11 @@ export interface hpcConfig {
     }
 }
 
+export interface jupyterGlobusMapConfig {
+    endpoint: string
+    root_path: string
+}
+
 export interface fileConfig {
     ignore: string[]
     must_have: string[]

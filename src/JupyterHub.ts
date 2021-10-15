@@ -23,6 +23,11 @@ class JupyterHub {
         }
     }
 
+    public async getHost(token: string) {
+        var t = this._decodeToken(token)
+        return t.host
+    }
+
     private _decodeToken(target: string): decodedToken {
         var t = Helper.btoa(target)
         var i = t.split('@')

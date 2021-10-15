@@ -4,13 +4,14 @@ import { Git } from './src/models/Git'
 import { FileSystem, GitFolder, GlobusFolder, LocalFolder } from './src/FileSystem'
 import Helper from './src/Helper'
 import { hpcConfig, maintainerConfig, containerConfig } from './src/types'
-import { config, containerConfigMap, hpcConfigMap, maintainerConfigMap } from './configs/config'
+import { config, containerConfigMap, hpcConfigMap, maintainerConfigMap, jupyterGlobusMap } from './configs/config'
 import GlobusUtil, { JobGlobusTaskListManager } from './src/lib/GlobusUtil'
 import express = require('express')
 import { Job } from './src/models/Job'
 import JupyterHub from './src/JupyterHub'
 import DB from './src/DB'
 import Statistic from './src/Statistic'
+import * as path from 'path'
 const bodyParser = require('body-parser')
 const Validator = require('jsonschema').Validator;
 const fileUpload = require('express-fileupload')
@@ -44,7 +45,7 @@ app.use(async function (req, res, next) {
     if (req.body.jupyterhubApiToken) {
         try {
             res.locals.username = await jupyterHub.getUsername(req.body.jupyterhubApiToken)
-            console.log(res.locals.username)
+            res.locals.host = await jupyterHub.getHost(req.body.jupyterhubApiToken)
         } catch {}
     }
     next()
@@ -162,13 +163,40 @@ app.get('/user', (req, res) => {
         return
     }
 
-    console.log(res.locals.username)
     if (!res.locals.username) {
         res.json({ error: "invalid token" })
         res.status(402)
         return
     }
     res.json({ username: res.locals.username })
+})
+
+app.get('/user/jupyter-globus', (req, res) => {
+    var body = req.body
+    var errors = requestErrors(validator.validate(body, schemas.user))
+
+    if (errors.length > 0) {
+        res.json({ error: "invalid input", messages: errors })
+        res.status(402)
+        return
+    }
+
+    if (!res.locals.username) {
+        res.json({ error: "invalid token" })
+        res.status(402)
+        return
+    }
+
+    var jupyterGlobus = jupyterGlobusMap[res.locals.host]
+    if (!jupyterGlobus) {
+        res.json({ error: "unknown host" })
+        res.status(404)
+        return
+    }
+
+    jupyterGlobus.root_path = path.join(jupyterGlobus.root_path, res.locals.username)
+
+    res.json(jupyterGlobus)
 })
 
 app.get('/user/job', async (req, res) => {
