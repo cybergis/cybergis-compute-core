@@ -15,7 +15,7 @@ for (var i in rawHpc) {
 
 var jupyterGlobusMap: {[key: string]: jupyterGlobusMapConfig} = {}
 for (var i in rawJupyterGlobusMapConfig) {
-    jupyterGlobusMap[i] = JSON.parse(JSON.stringify(rawHpc[i]))
+    jupyterGlobusMap[i] = JSON.parse(JSON.stringify(rawJupyterGlobusMapConfig[i]))
 }
 
 var maintainerConfigMap: {[key: string]: maintainerConfig} = {}
