@@ -194,9 +194,10 @@ app.get('/user/jupyter-globus', (req, res) => {
         return
     }
 
-    jupyterGlobus.root_path = path.join(jupyterGlobus.root_path, res.locals.username.split('@')[0])
-
-    res.json(jupyterGlobus)
+    res.json({
+        endpoint: jupyterGlobus.endpoint,
+        root_path: path.join(jupyterGlobus.root_path, res.locals.username.split('@')[0])
+    })
 })
 
 app.get('/user/job', async (req, res) => {
