@@ -194,7 +194,7 @@ app.get('/user/jupyter-globus', (req, res) => {
         return
     }
 
-    jupyterGlobus.root_path = path.join(jupyterGlobus.root_path, res.locals.username)
+    jupyterGlobus.root_path = path.join(jupyterGlobus.root_path, res.locals.username.split('@')[0])
 
     res.json(jupyterGlobus)
 })
