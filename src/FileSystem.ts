@@ -306,6 +306,17 @@ export class GitFolder extends LocalFolder {
 
     private db = new DB()
 
+    private defaultManifest: executableManifest = {
+        name: undefined,
+        container: undefined,
+        pre_processing_stage: undefined,
+        execution_stage: undefined,
+        post_processing_stage: undefined,
+        slurm_ceiling: {},
+        description: 'none',
+        estimated_runtime: 'unknown'
+    }
+
     constructor(id: string) {
         super(id)
         this.type = 'git'
@@ -348,7 +359,7 @@ export class GitFolder extends LocalFolder {
 
             var executableFolderPath = path.join(this.path, 'manifest.json')
             const rawExecutableManifest = (await fs.promises.readFile(executableFolderPath)).toString()
-            this.executableManifest = JSON.parse(rawExecutableManifest)
+            this.executableManifest = Object.assign(this.defaultManifest, JSON.parse(rawExecutableManifest))
         } catch (e) {
             throw new Error(`initialization failed with error: ${e.toString()}`)
         }

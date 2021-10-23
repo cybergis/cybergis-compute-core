@@ -162,6 +162,8 @@ export interface executableManifest {
     execution_stage: string
     post_processing_stage?: string
     slurm_ceiling?: slurmCeiling
+    description?: string
+    estimated_runtime?: string
 }
 
 export interface containerConfig {
