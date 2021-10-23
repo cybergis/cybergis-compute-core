@@ -272,13 +272,7 @@ app.get('/git', async function (req, res) {
         for (var i in dest) {
             var gitFolder = new GitFolder(dest[i].id)
             try {
-                var executableManifest = await gitFolder.getExecutableManifest()
-                out[dest[i].id] = {
-                    name: executableManifest.name,
-                    container: executableManifest.container,
-                    repository: dest[i].address,
-                    commit: dest[i].sha
-                }
+                out[dest[i].id] = await gitFolder.getExecutableManifest()
             } catch (e) {
                 console.error(`cannot clone git: ${e.toString()}`)
             }
