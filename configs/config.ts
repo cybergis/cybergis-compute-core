@@ -9,8 +9,20 @@ const rawJupyterGlobusMapConfig = require('./jupyter-globus-map.json')
 const config: config = JSON.parse(JSON.stringify(rawConfig))
 
 var hpcConfigMap: {[key: string]: hpcConfig} = {}
+var hpcDefault = {
+    ip: undefined,
+    port: undefined,
+    is_community_account: undefined,
+    community_login: undefined,
+    root_path: undefined,
+    job_pool_capacity: undefined,
+    init_sbatch_script: [],
+    init_sbatch_options: [],
+    description: 'none',
+    globus: undefined
+}
 for (var i in rawHpc) {
-    hpcConfigMap[i] = JSON.parse(JSON.stringify(rawHpc[i]))
+    hpcConfigMap[i] = Object.assign(hpcDefault, JSON.parse(JSON.stringify(rawHpc[i])))
 }
 
 var jupyterGlobusMap: {[key: string]: jupyterGlobusMapConfig} = {}

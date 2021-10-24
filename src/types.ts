@@ -124,6 +124,7 @@ export interface hpcConfig {
     job_pool_capacity: number
     init_sbatch_script: string[]
     init_sbatch_options: string[]
+    description?: string
     globus?: {
         identity?: string
         endpoint?: string
@@ -164,6 +165,8 @@ export interface executableManifest {
     slurm_ceiling?: slurmCeiling
     description?: string
     estimated_runtime?: string
+    supported_hpc?: string[]
+    default_hpc?: string
 }
 
 export interface containerConfig {

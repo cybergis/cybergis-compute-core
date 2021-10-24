@@ -314,7 +314,9 @@ export class GitFolder extends LocalFolder {
         post_processing_stage: undefined,
         slurm_ceiling: {},
         description: 'none',
-        estimated_runtime: 'unknown'
+        estimated_runtime: 'unknown',
+        supported_hpc: ['keeling_community'],
+        default_hpc: undefined
     }
 
     constructor(id: string) {
@@ -360,6 +362,9 @@ export class GitFolder extends LocalFolder {
             var executableFolderPath = path.join(this.path, 'manifest.json')
             const rawExecutableManifest = (await fs.promises.readFile(executableFolderPath)).toString()
             this.executableManifest = Object.assign(this.defaultManifest, JSON.parse(rawExecutableManifest))
+            if (!this.executableManifest.default_hpc) {
+                this.executableManifest.default_hpc = this.executableManifest.supported_hpc[0]
+            }
         } catch (e) {
             throw new Error(`initialization failed with error: ${e.toString()}`)
         }
