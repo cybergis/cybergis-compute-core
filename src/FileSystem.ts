@@ -306,20 +306,6 @@ export class GitFolder extends LocalFolder {
 
     private db = new DB()
 
-    private defaultManifest: executableManifest = {
-        name: undefined,
-        container: undefined,
-        pre_processing_stage: undefined,
-        execution_stage: undefined,
-        post_processing_stage: undefined,
-        slurm_ceiling: {},
-        description: 'none',
-        estimated_runtime: 'unknown',
-        supported_hpc: ['keeling_community'],
-        default_hpc: undefined,
-        repository: undefined,
-    }
-
     constructor(id: string) {
         super(id)
         this.type = 'git'
@@ -360,10 +346,21 @@ export class GitFolder extends LocalFolder {
                 }
             }
 
-            this.defaultManifest.repository = this.git.address
             var executableFolderPath = path.join(this.path, 'manifest.json')
             const rawExecutableManifest = (await fs.promises.readFile(executableFolderPath)).toString()
-            this.executableManifest = Object.assign(this.defaultManifest, JSON.parse(rawExecutableManifest))
+            this.executableManifest = Object.assign({
+                name: undefined,
+                container: undefined,
+                pre_processing_stage: undefined,
+                execution_stage: undefined,
+                post_processing_stage: undefined,
+                slurm_ceiling: {},
+                description: 'none',
+                estimated_runtime: 'unknown',
+                supported_hpc: ['keeling_community'],
+                default_hpc: undefined,
+                repository: this.git.address,
+            }, JSON.parse(rawExecutableManifest))
             if (!this.executableManifest.default_hpc) {
                 this.executableManifest.default_hpc = this.executableManifest.supported_hpc[0]
             }
