@@ -167,6 +167,7 @@ export interface executableManifest {
     estimated_runtime?: string
     supported_hpc?: string[]
     default_hpc?: string
+    repository?: string
 }
 
 export interface containerConfig {

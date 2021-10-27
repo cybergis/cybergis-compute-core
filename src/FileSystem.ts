@@ -316,7 +316,8 @@ export class GitFolder extends LocalFolder {
         description: 'none',
         estimated_runtime: 'unknown',
         supported_hpc: ['keeling_community'],
-        default_hpc: undefined
+        default_hpc: undefined,
+        repository: undefined,
     }
 
     constructor(id: string) {
@@ -359,6 +360,7 @@ export class GitFolder extends LocalFolder {
                 }
             }
 
+            this.defaultManifest.repository = this.git.address
             var executableFolderPath = path.join(this.path, 'manifest.json')
             const rawExecutableManifest = (await fs.promises.readFile(executableFolderPath)).toString()
             this.executableManifest = Object.assign(this.defaultManifest, JSON.parse(rawExecutableManifest))
