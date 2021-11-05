@@ -360,7 +360,7 @@ app.get('/file', async function (req: any, res) {
             var from = FileSystem.getGlobusFolderByHPCConfig(hpcConfigMap[job.hpc], `${job.id}/result`)
             var taskId = await GlobusUtil.initTransfer(from, folder, hpcConfig, job.id)
             await globusTaskList.append(job, taskId)
-            res.json({ message: `Globus transfer task start with task_id ${taskId}` })
+            res.json({ task_id: taskId, message: `Globus transfer task start with task_id ${taskId}` })
         }
     } catch (e) {
         res.json({ error: `cannot get file by url [${body.fileUrl}]`, messages: [e.toString()] })

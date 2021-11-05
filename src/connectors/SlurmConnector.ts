@@ -35,10 +35,10 @@ class SlurmConnector extends BaseConnector {
 #SBATCH --job-name=${this.jobID}
 #SBATCH --nodes=${config.num_of_node}
 #SBATCH --ntasks=${config.num_of_task}
-#SBATCH --cpus-per-task=${config.cpu_per_task}
 #SBATCH --time=${config.walltime}
 #SBATCH --error=${path.join(this.remote_result_folder_path, "job.stderr")}
 #SBATCH --output=${path.join(this.remote_result_folder_path, "job.stdout")}
+${config.cpu_per_task ? `#SBATCH --cpus-per-task=${config.cpu_per_task}` : ''}
 ${config.memory_per_gpu ? `#SBATCH --mem-per-gpu=${config.memory_per_gpu}` : ''}
 ${config.memory_per_cpu ? `#SBATCH --mem-per-cpu=${config.memory_per_cpu}` : ''}
 ${config.memory ? `#SBATCH --mem=${config.memory}` : ''}
