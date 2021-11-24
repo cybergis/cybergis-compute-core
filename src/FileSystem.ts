@@ -3,7 +3,7 @@ import { FileStructureError, FileNotExistError } from './errors'
 import * as fs from 'fs'
 import * as path from 'path'
 import { Git } from "./models/Git"
-import { executableManifest, hpcConfig, slurm_integer_none_unit_config, slurm_integer_time_unit_config, slurm_integer_storage_unit_config, slurm_configs } from './types'
+import { executableManifest, hpcConfig, slurm_integer_configs, slurm_integer_none_unit_config, slurm_integer_time_unit_config, slurm_integer_storage_unit_config, slurm_configs, slurm_string_option_configs } from './types'
 import DB from './DB'
 import { config } from '../configs/config'
 import { exec } from 'child-process-async'
@@ -389,10 +389,6 @@ export class GitFolder extends LocalFolder {
         }
 
         for (var i in this.executableManifest.slurm_input_rules) {
-            if (slurm_integer_none_unit_config.includes(i)) {
-                this.executableManifest.slurm_input_rules[i].unit = 'None'
-                continue
-            }
             // remove invalid configs
             if (!slurm_configs.includes(i)) {
                 delete this.executableManifest.slurm_input_rules[i]
@@ -409,9 +405,36 @@ export class GitFolder extends LocalFolder {
                 delete this.executableManifest.slurm_input_rules[i]
                 continue
             }
+
             if (slurm_integer_storage_unit_config.includes(i) && !(['GB', 'MB'].includes(j.unit))) {
                 delete this.executableManifest.slurm_input_rules[i]
                 continue
+            }
+
+            // default values
+            if (slurm_integer_none_unit_config.includes(i)) {
+                this.executableManifest.slurm_input_rules[i].unit = 'None'
+                continue
+            }
+
+            if (slurm_integer_configs.includes(i)) {
+                if (!this.executableManifest.slurm_input_rules[i].max) {
+                    this.executableManifest.slurm_input_rules[i].max = this.executableManifest.slurm_input_rules[i].default_value * 2
+                }
+                if (!this.executableManifest.slurm_input_rules[i].min) {
+                    this.executableManifest.slurm_input_rules[i].min = 0
+                }
+                if (!this.executableManifest.slurm_input_rules[i].step) {
+                    this.executableManifest.slurm_input_rules[i].step = 1
+                }
+            }
+
+            if (slurm_string_option_configs.includes(i)) {
+                if (!this.executableManifest.slurm_input_rules[i].options) {
+                    this.executableManifest.slurm_input_rules[i].options = [
+                        this.executableManifest.slurm_input_rules[i].default_value
+                    ]
+                }
             }
         }
     }
