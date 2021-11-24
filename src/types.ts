@@ -12,7 +12,6 @@ export const slurm_integer_none_unit_config = ['cpu_per_task', 'num_of_node', 'n
 export const slurm_string_option_configs = ['partition']
 
 export interface integerRule {
-    require?: boolean
     type?: 'integer'
     max?: number
     min?: number
@@ -22,14 +21,12 @@ export interface integerRule {
 }
 
 export interface stringOptionRule {
-    require?: boolean
     type?: 'string_option'
     options: string[]
     default_value: string 
 }
 
 export interface stringInputRule {
-    require?: boolean
     type?: 'string_input'
     default_value: string 
 }

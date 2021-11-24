@@ -456,10 +456,6 @@ export class GitFolder extends LocalFolder {
             }
 
             // default values
-            if (!this.executableManifest.param_rules[i].require) {
-                this.executableManifest.param_rules[i].require = false
-            }
-
             if (this.executableManifest.param_rules[i].type == 'integer') {
                 if (!this.executableManifest.param_rules[i].max) {
                     this.executableManifest.param_rules[i].max = this.executableManifest.param_rules[i].default_value * 2
