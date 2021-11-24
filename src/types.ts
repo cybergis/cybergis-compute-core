@@ -208,7 +208,7 @@ export interface executableManifest {
     default_hpc?: string
     repository?: string
     slurm_input_rules?: slurmInputRules
-    param_rules?: {[keys: string]: stringInputRule | stringOptionRule | integerRule}
+    param_rules?: {[keys: string]: any}
 }
 
 export interface containerConfig {

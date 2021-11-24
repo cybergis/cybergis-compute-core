@@ -438,5 +438,39 @@ export class GitFolder extends LocalFolder {
                 }
             }
         }
+
+        for (var i in this.executableManifest.param_rules) {
+            // ignore invalid param
+            if (!this.executableManifest.param_rules[i].default_value) {
+                delete this.executableManifest.param_rules[i]
+                continue
+            }
+            
+            if (['integer', 'string_option', 'string_input'].includes(this.executableManifest.param_rules[i].type)) {
+                delete this.executableManifest.param_rules[i]
+                continue
+            }
+
+            // default values
+            if (this.executableManifest.param_rules[i].type == 'integer') {
+                if (!this.executableManifest.param_rules[i].max) {
+                    this.executableManifest.param_rules[i].max = this.executableManifest.param_rules[i].default_value * 2
+                }
+                if (!this.executableManifest.param_rules[i].min) {
+                    this.executableManifest.param_rules[i].min = 0
+                }
+                if (!this.executableManifest.param_rules[i].step) {
+                    this.executableManifest.param_rules[i].step = 1
+                }
+            }
+
+            if (this.executableManifest.param_rules[i].type == 'string_option') {
+                if (!this.executableManifest.param_rules[i].options) {
+                    this.executableManifest.param_rules[i].options = [
+                        this.executableManifest.param_rules[i].default_value
+                    ]
+                }
+            }
+        }
     }
 }

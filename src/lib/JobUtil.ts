@@ -3,7 +3,7 @@ import { Job } from "../models/Job"
 import { hpcConfigMap } from "../../configs/config"
 
 export default class JobUtil {
-    static validateParam(job: Job, paramRules: {[keys: string]: stringInputRule | stringOptionRule | integerRule}) {
+    static validateParam(job: Job, paramRules: {[keys: string]: any}) {
         for (var i in paramRules) {
             if (paramRules[i].require && !job.param[i]) {
                 throw new Error(`job missing input param ${i}`)

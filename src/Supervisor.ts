@@ -205,7 +205,7 @@ class Supervisor {
         if (!job.slurm) return
 
         var providedSlurmInputRules: slurmInputRules = {}
-        var providedParamRules: {[keys: string]: stringInputRule | stringOptionRule | integerRule} = {}
+        var providedParamRules: {[keys: string]: any} = {}
         const maintainerConfig = maintainerConfigMap[job.maintainer]
         if (maintainerConfig.executable_folder.from_user) {
             var u = job.executableFolder.split('://')
