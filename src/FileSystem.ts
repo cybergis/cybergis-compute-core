@@ -436,6 +436,9 @@ export class GitFolder extends LocalFolder {
                         this.executableManifest.slurm_input_rules[i].default_value
                     ]
                 }
+                if (!this.executableManifest.slurm_input_rules[i].options.includes(this.executableManifest.slurm_input_rules[i].default_value)) {
+                    this.executableManifest.slurm_input_rules[i].options.push(this.executableManifest.slurm_input_rules[i].default_value)
+                }
             }
         }
 
@@ -452,6 +455,10 @@ export class GitFolder extends LocalFolder {
             }
 
             // default values
+            if (!this.executableManifest.param_rules[i].require) {
+                this.executableManifest.param_rules[i].require = false
+            }
+
             if (this.executableManifest.param_rules[i].type == 'integer') {
                 if (!this.executableManifest.param_rules[i].max) {
                     this.executableManifest.param_rules[i].max = this.executableManifest.param_rules[i].default_value * 2
@@ -469,6 +476,9 @@ export class GitFolder extends LocalFolder {
                     this.executableManifest.param_rules[i].options = [
                         this.executableManifest.param_rules[i].default_value
                     ]
+                }
+                if (!this.executableManifest.param_rules[i].options.includes(this.executableManifest.param_rules[i].default_value)) {
+                    this.executableManifest.param_rules[i].options.push(this.executableManifest.param_rules[i].default_value)
                 }
             }
         }
