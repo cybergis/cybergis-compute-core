@@ -207,6 +207,7 @@ export interface executableManifest {
     supported_hpc?: string[]
     default_hpc?: string
     repository?: string
+    require_upload_data?: boolean
     slurm_input_rules?: slurmInputRules
     param_rules?: {[keys: string]: any}
 }

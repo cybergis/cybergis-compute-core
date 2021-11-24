@@ -206,6 +206,7 @@ class Supervisor {
 
         var providedSlurmInputRules: slurmInputRules = {}
         var providedParamRules: {[keys: string]: any} = {}
+        var requireUploadData = false
         const maintainerConfig = maintainerConfigMap[job.maintainer]
         if (maintainerConfig.executable_folder.from_user) {
             var u = job.executableFolder.split('://')
@@ -218,7 +219,14 @@ class Supervisor {
                 if (m.param_rules) {
                     providedParamRules = m.param_rules
                 }
+                if (m.require_upload_data) {
+                    requireUploadData = m.require_upload_data
+                }
             }
+        }
+
+        if (requireUploadData && !job.dataFolder) {
+            throw new Error(`job missing upload data`)
         }
 
         JobUtil.validateSlurmConfig(job, providedSlurmInputRules)

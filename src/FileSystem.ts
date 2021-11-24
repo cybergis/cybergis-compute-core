@@ -381,6 +381,7 @@ export class GitFolder extends LocalFolder {
             supported_hpc: ['keeling_community'],
             default_hpc: undefined,
             repository: this.git.address,
+            require_upload_data: false,
             slurm_input_rules: {},
             param_rules: {}
         }, JSON.parse(rawExecutableManifest))
@@ -448,7 +449,7 @@ export class GitFolder extends LocalFolder {
                 delete this.executableManifest.param_rules[i]
                 continue
             }
-            
+
             if (!['integer', 'string_option', 'string_input'].includes(this.executableManifest.param_rules[i].type)) {
                 delete this.executableManifest.param_rules[i]
                 continue
