@@ -449,7 +449,7 @@ export class GitFolder extends LocalFolder {
                 continue
             }
             
-            if (['integer', 'string_option', 'string_input'].includes(this.executableManifest.param_rules[i].type)) {
+            if (!['integer', 'string_option', 'string_input'].includes(this.executableManifest.param_rules[i].type)) {
                 delete this.executableManifest.param_rules[i]
                 continue
             }
