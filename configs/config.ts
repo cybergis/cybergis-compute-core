@@ -20,7 +20,8 @@ for (var i in rawHpc) {
         init_sbatch_script: [],
         init_sbatch_options: [],
         description: 'none',
-        globus: undefined
+        globus: undefined,
+        slurm_input_rules: {}
     }, JSON.parse(JSON.stringify(rawHpc[i])))
 }
 

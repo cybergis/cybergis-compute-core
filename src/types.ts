@@ -2,6 +2,43 @@ import { ConnectConfig } from 'ssh2';
 import { Prompt } from 'ssh2-streams';
 import NodeSSH = require('node-ssh')
 
+type unit = 'GB' | 'MB' | 'Minutes' | 'Hours' | 'Days' | 'None'
+
+export const slurm_configs = ['num_of_node', 'num_of_task', 'time', 'cpu_per_task', 'memory_per_cpu', 'memory_per_gpu', 'memory', 'gpus', 'gpus_per_node', 'gpus_per_socket', 'gpus_per_task', 'partition']
+export const slurm_integer_configs = ['num_of_node', 'num_of_task', 'time', 'cpu_per_task', 'memory_per_cpu', 'memory_per_gpu', 'memory', 'gpus', 'gpus_per_node', 'gpus_per_socket', 'gpus_per_task']
+export const slurm_integer_storage_unit_config = ['memory_per_cpu', 'memory_per_gpu', 'memory']
+export const slurm_integer_time_unit_config = ['time']
+export const slurm_integer_none_unit_config = ['cpu_per_task', 'num_of_node', 'num_of_task', 'gpus', 'gpus_per_node', 'gpus_per_socket', 'gpus_per_task']
+export const slurm_string_option_configs = ['partition']
+
+export interface slurmIntegerRule {
+    max?: number
+    min?: number
+    step?: number
+    default_value: number
+    unit?: unit
+}
+
+export interface slurmStringOptionRule {
+    options: string[]
+    default_value: string 
+}
+
+export interface slurmInputRules {
+    num_of_node?: slurmIntegerRule,
+    num_of_task?: slurmIntegerRule,
+    time?: slurmIntegerRule,
+    cpu_per_task?: slurmIntegerRule,
+    memory_per_cpu?: slurmIntegerRule,
+    memory_per_gpu?: slurmIntegerRule,
+    memory?: slurmIntegerRule,
+    gpus?: slurmIntegerRule,
+    gpus_per_node?: slurmIntegerRule,
+    gpus_per_socket?: slurmIntegerRule,
+    gpus_per_task?: slurmIntegerRule,
+    partition?: slurmStringOptionRule
+}
+
 export interface rawAccessToken {
     alg: string
     payload: {
@@ -23,19 +60,8 @@ export interface credential {
     password: string
 }
 
-export interface slurmCeiling {
-    num_of_node?: number
-    num_of_task?: number
-    cpu_per_task?: number
-    gpus?: number
-    memory_per_cpu?: string
-    memory_per_gpu?: string
-    memory?: string
-    walltime?: string
-}
-
 export interface slurm {
-    walltime?: string
+    time?: string
     num_of_node?: number
     num_of_task?: number
     cpu_per_task?: number
@@ -130,6 +156,7 @@ export interface hpcConfig {
         endpoint?: string
         root_path?: string
     }
+    slurm_input_rules?: slurmInputRules
 }
 
 export interface jupyterGlobusMapConfig {
@@ -160,14 +187,17 @@ export interface executableManifest {
     name: string
     container: string
     pre_processing_stage?: string
+    pre_processing_stage_in_raw_sbatch?: string[]
     execution_stage: string
+    execution_stage_in_raw_sbatch?: string[]
     post_processing_stage?: string
-    slurm_ceiling?: slurmCeiling
+    post_processing_stage_in_raw_sbatch?: string[]
     description?: string
     estimated_runtime?: string
     supported_hpc?: string[]
     default_hpc?: string
     repository?: string
+    slurm_input_rules?: slurmInputRules
 }
 
 export interface containerConfig {

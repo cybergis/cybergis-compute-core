@@ -1,13 +1,14 @@
 import Queue from "./Queue"
 import Emitter from "./Emitter"
 import { Job } from "./models/Job"
-import { SSH, SSHConfig, slurmCeiling } from './types'
+import { slurmInputRules, SSH, SSHConfig } from './types'
 import { config, maintainerConfigMap, hpcConfigMap } from '../configs/config'
 import { FileSystem, GitFolder } from './FileSystem'
 import * as events from 'events'
 import NodeSSH = require('node-ssh')
 import SlurmConnector from "./connectors/SlurmConnector"
 import DB from "./DB"
+import SlurmUtil from "./lib/SlurmUtil"
 
 type actions = 'stop' | 'resume' | 'cancel'
 
@@ -204,20 +205,20 @@ class Supervisor {
     private async _validateSlurmConfig(job: Job) {
         if (!job.slurm) return
 
-        var providedSlurmCeiling: slurmCeiling = {}
+        var providedSlurmInputRules: slurmInputRules = {}
         const maintainerConfig = maintainerConfigMap[job.maintainer]
         if (maintainerConfig.executable_folder.from_user) {
             var u = job.executableFolder.split('://')
             if (u[0] === 'git') {
                 var f = new GitFolder(u[1])
                 var m = await f.getExecutableManifest()
-                if (m.slurm_ceiling) {
-                    providedSlurmCeiling = m.slurm_ceiling
+                if (m.slurm_input_rules) {
+                    providedSlurmInputRules = m.slurm_input_rules
                 }
             }
         }
 
-        SlurmConnector.validateSlurmConfig(job.slurm, providedSlurmCeiling)
+        SlurmUtil.validateSlurmConfig(job, providedSlurmInputRules)
     }
 
     destroy() {

@@ -169,7 +169,7 @@ SlurmConnector.registerModules(['python', 'purge'])
 ```TypeScript
 // user will provide config when submit
 var config = {
-    walltime: 1,
+    time: 1,
     num_of_node: 1,
     num_of_task: 1,
     cpu_per_task: 1,
@@ -184,7 +184,7 @@ SlurmConnector.prepare('python hello_world.py', config)
 |   #SBATCH --ntasks=${config.num_of_task}
 |   #SBATCH --cpus-per-task=${config.cpu_per_task}
 |   #SBATCH --mem-per-cpu=${config.memory_per_cpu}
-|   #SBATCH --time=${walltime}
+|   #SBATCH --time=${time}
 |   #SBATCH --error=${path.join(this.remote_result_folder_path, "slurm.stdout")}
 |   #SBATCH --output=${path.join(this.remote_result_folder_path, "slurm.stdout")}
 |
@@ -231,7 +231,7 @@ SingularityConnector.registerContainerVolumeBinds({
 
 ```TypeScript
 var config = {
-    walltime: 1,
+    time: 1,
     num_of_node: 1,
     num_of_task: 1,
     cpu_per_task: 1,

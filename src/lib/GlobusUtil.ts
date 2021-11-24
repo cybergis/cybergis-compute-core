@@ -17,34 +17,22 @@ export class JobGlobusTaskListManager {
 
     private isConnected = false
 
-    async append(job: Job, taskId: string) {
+    async put(job: Job, taskId: string) {
         await this.connect()
-        var taskIds = await this.get(job)
-        if (taskId in taskIds) return
-        taskIds.push(taskId)
-        await this.redis.setValue(`globus_task_${job.id}`, JSON.stringify(taskIds))
+        await this.redis.setValue(`globus_task_${job.id}`, taskId)
     }
 
-    async get(job: Job): Promise<string[]> {
+    async get(job: Job): Promise<string> {
         await this.connect()
-        var out = JSON.parse(await this.redis.getValue(`globus_task_${job.id}`))
-        return out ? out : []
+        var out = await this.redis.getValue(`globus_task_${job.id}`)
+        return out ? out : null
     }
 
     async remove(job: Job, taskId: string) {
         await this.connect()
-        var taskIds = await this.get(job)
-        if (!(taskId in taskIds)) return
-
-        if (newTaskIds.length == 1) {
-            this.redis.delValue(`globus_task_${job}`)
-        }
-
-        var newTaskIds = []
-        for (var i in taskIds) {
-            if (taskIds[i] != taskId) newTaskIds.push(taskIds[i])
-        }
-        await this.redis.setValue(`${job.id}`, JSON.stringify(taskIds))
+        var taskId = await this.get(job)
+        if (!taskId) return
+        this.redis.delValue(`globus_task_${job}`)
     }
 
     private async connect() {

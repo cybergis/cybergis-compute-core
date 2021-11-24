@@ -1,6 +1,6 @@
 import { ConnectorError } from '../errors'
 import BaseConnector from './BaseConnector'
-import { slurm, slurmCeiling } from '../types'
+import { slurm } from '../types'
 import { LocalFolder, GlobusFolder, FileSystem } from '../FileSystem'
 import * as path from 'path'
 import GlobusUtil from '../lib/GlobusUtil'
@@ -21,7 +21,7 @@ class SlurmConnector extends BaseConnector {
 
     prepare(cmd: string, config: slurm) {
         config = Object.assign({
-            walltime: '00:10:00',
+            time: '00:10:00',
             num_of_node: 1,
             num_of_task: 1,
             cpu_per_task: 1,
@@ -35,7 +35,7 @@ class SlurmConnector extends BaseConnector {
 #SBATCH --job-name=${this.jobID}
 #SBATCH --nodes=${config.num_of_node}
 #SBATCH --ntasks=${config.num_of_task}
-#SBATCH --time=${config.walltime}
+#SBATCH --time=${config.time}
 #SBATCH --error=${path.join(this.remote_result_folder_path, "job.stderr")}
 #SBATCH --output=${path.join(this.remote_result_folder_path, "job.stdout")}
 ${config.cpu_per_task ? `#SBATCH --cpus-per-task=${config.cpu_per_task}` : ''}
@@ -198,133 +198,19 @@ ${cmd}`
         return out
     }
 
-    static storageUnitToSize(i: string) {
-        if (i.includes('g')) {
-            return parseInt(i.replace('g', '')) * 1000 * 1000 * 1000
-        }
-        if (i.includes('m')) {
-            return parseInt(i.replace('g', '')) * 1000 * 1000
-        }
-        if (i.includes('k')) {
-            return parseInt(i.replace('k', '')) * 1000
-        }
-    }
-
-    static storageIsSmaller(a: string, b: string) {
-        a = a.toLowerCase()
-        b = b.toLowerCase()
-        var i = this.storageUnitToSize(a)
-        var j = this.storageUnitToSize(b)
-        return i < j
-    }
-
-    static timeToSeconds(i: string[]) {
-        if (i.length == 1) {
-            var j = i[0].split('-')
-            if (j.length == 1) {
-                // minutes
-                return parseInt(i[0]) * 60
-            } else {
-                // days-hours
-                return parseInt(j[0]) * 60 * 60 * 24 + parseInt(j[0]) * 60 * 60
-            }
-        } else if (i.length == 2) {
-            var j = i[0].split('-')
-            if (j.length == 2) {
-                // days-hours:minutes
-                return parseInt(j[0]) * 60 * 60 * 24 + parseInt(j[1]) * 60 * 60 + parseInt(i[1]) * 60
-            } else {
-                // minutes:seconds
-                return parseInt(i[0]) * 60 + parseInt(i[0])
-            }
-        } else if (i.length == 3) {
-            var j = i[0].split('-')
-            if (j.length == 2) {
-                // days-hours:minutes:seconds
-                return parseInt(j[0]) * 60 * 60 * 24 + parseInt(j[1]) * 60 * 60 + parseInt(i[1]) * 60 + parseInt(i[2])
-            } else {
-                // hours:minutes:seconds
-                return parseInt(i[0]) * 60 * 60 + parseInt(i[1]) * 60 + parseInt(i[2])
-            }
-        }
-        return Infinity
-    }
-
-    static timeIsSmaller(a: string, b: string) {
-        var a_bar = a.split(':')
-        var b_bar = b.split(':')
-        return this.timeToSeconds(a_bar) < this.timeToSeconds(b_bar)
-    }
-
-    static validateSlurmConfig(config: slurm, providedSlurmCeiling: slurmCeiling) {
-        var defaultSlurmCeiling: slurmCeiling = {
-            num_of_node: 50,
-            num_of_task: 50,
-            cpu_per_task: 50,
-            gpus: 50,
-            memory_per_cpu: '10G',
-            memory_per_gpu: '10G',
-            memory: '50G',
-            walltime: '10:00:00'
-        }
-
-        var storageKey = ['memory_per_cpu', 'memory_per_gpu', 'memory']
-
-        var timeKey = ['walltime']
-
-        var slurmCeiling = {}
-
-        for (var i in defaultSlurmCeiling) {
-            slurmCeiling[i] = defaultSlurmCeiling[i]
-            if (!providedSlurmCeiling[i]) continue
-
-            if (storageKey.includes(i)) {
-                if (this.storageIsSmaller(providedSlurmCeiling[i], defaultSlurmCeiling[i])) {
-                    slurmCeiling[i] = providedSlurmCeiling[i]
-                }
-            } else if (timeKey.includes(i)) {
-                if (this.timeIsSmaller(providedSlurmCeiling[i], defaultSlurmCeiling[i])) {
-                    slurmCeiling[i] = providedSlurmCeiling[i]
-                }
-            } else {
-                if (providedSlurmCeiling[i] < defaultSlurmCeiling[i]) {
-                    slurmCeiling[i] = providedSlurmCeiling[i]
-                }
-            }
-        }
-
-        for (var i in slurmCeiling) {
-            if (!config[i]) continue
-
-            if (storageKey.includes(i)) {
-                if (this.storageIsSmaller(slurmCeiling[i], config[i])) {
-                    throw new Error(`slurm config ${i} exceeds the threshold of ${slurmCeiling[i]} (current value ${config[i]})`)
-                }
-            } else if (timeKey.includes(i)) {
-                if (this.timeIsSmaller(slurmCeiling[i], config[i])) {
-                    throw new Error(`slurm config ${i} exceeds the threshold of ${slurmCeiling[i]} (current value ${config[i]})`)
-                }
-            } else {
-                if (slurmCeiling[i] < config[i]) {
-                    throw new Error(`slurm config ${i} exceeds the threshold of ${slurmCeiling[i]} (current value ${config[i]})`)
-                }
-            }
-        }
-    }
-
     getContainerExecutableFolderPath(providedPath: string = null) {
-        if (providedPath) return path.join(`/${this.jobID}/executable`, providedPath)
-        else return `/${this.jobID}/executable` 
+        if (providedPath) return path.join(`/job/executable`, providedPath)
+        else return `/job/executable` 
     }
 
     getContainerDataFolderPath(providedPath: string = null) {
-        if (providedPath) return path.join(`/${this.jobID}/data`, providedPath)
-        else return `/${this.jobID}/data` 
+        if (providedPath) return path.join(`/job/data`, providedPath)
+        else return `/job/data` 
     }
 
     getContainerResultFolderPath(providedPath: string = null) {
-        if (providedPath) return path.join(`/${this.jobID}/result`, providedPath)
-        else return `/${this.jobID}/result`
+        if (providedPath) return path.join(`/job/result`, providedPath)
+        else return `/job/result`
     }
 }
 

@@ -55,7 +55,7 @@ class SlurmConnector {
 - SBATCH Scheduler Parameters are defined as:
 ```typescript
 interface slurm {
-    walltime?: number,
+    time?: number,
     num_of_node?: number,
     num_of_task?: number,
     cpu_per_task?: number,

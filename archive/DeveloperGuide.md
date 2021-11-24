@@ -206,7 +206,7 @@ Before we dive into the implementation of model, we run the HelloWorld notebook 
     
     #SBATCH --job-name=$job_name
     #SBATCH --ntasks=$ntasks
-    #SBATCH --time=$walltime
+    #SBATCH --time=$time
     
     ## allocated hostnames
     echo "Compute node(s) assigned: $$SLURM_JOB_NODELIST"

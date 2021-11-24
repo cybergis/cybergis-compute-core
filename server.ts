@@ -231,6 +231,8 @@ app.get('/hpc', function (req, res) {
         var out = {}
         for (var i in dest) {
             var d: hpcConfig = JSON.parse(JSON.stringify(dest[i])) // hard copy
+            delete d.init_sbatch_script
+            delete d.init_sbatch_options
             delete d.community_login
             delete d.root_path
             out[i] = d
@@ -356,50 +358,22 @@ app.get('/file', async function (req: any, res) {
             var dir = await folder.getZip()
             res.download(dir)
         } else if (folder instanceof GlobusFolder) {
-            var hpcConfig = hpcConfigMap[job.hpc]
-            var from = FileSystem.getGlobusFolderByHPCConfig(hpcConfigMap[job.hpc], `${job.id}/result`)
-            var taskId = await GlobusUtil.initTransfer(from, folder, hpcConfig, job.id)
-            await globusTaskList.append(job, taskId)
-            res.json({ task_id: taskId, message: `Globus transfer task start with task_id ${taskId}` })
+            var taskId = await globusTaskList.get(job)
+            if (!taskId) {
+                var hpcConfig = hpcConfigMap[job.hpc]
+                var from = FileSystem.getGlobusFolderByHPCConfig(hpcConfigMap[job.hpc], `${job.id}/result`)
+                var taskId = await GlobusUtil.initTransfer(from, folder, hpcConfig, job.id)
+                await globusTaskList.put(job, taskId)
+            }
+            var status = await GlobusUtil.queryTransferStatus(taskId, hpcConfigMap[job.hpc])
+            if (status in ['SUCCEEDED', 'FAILED']) await globusTaskList.remove(job, taskId)
+            res.json({ task_id: taskId, status: status })
         }
     } catch (e) {
         res.json({ error: `cannot get file by url [${body.fileUrl}]`, messages: [e.toString()] })
         res.status(402)
         return
     }
-})
-
-app.get('/file/:jobId/globus_task_status', async function (req: any, res) {
-    var body = req.body
-    var errors = requestErrors(validator.validate(body, schemas.getJob))
-
-    if (errors.length > 0) {
-        res.json({ error: "invalid input", messages: errors }); res.status(402)
-        return
-    }
-
-    try {
-        var job = await guard.validateJobAccessToken(body.accessToken)
-    } catch (e) {
-        res.json({ error: "invalid access token", messages: [e.toString()] }); res.status(401)
-        return
-    }
-
-    if (job.id != req.params.jobId) {
-        res.json({ error: "invalid access", messages: [] }); res.status(401)
-        return
-    }
-
-    var taskIds = await globusTaskList.get(job)
-    var out = {}
-
-    for (var i in taskIds) {
-        var taskId = taskIds[i]
-        out[taskId] = await GlobusUtil.queryTransferStatus(taskId, hpcConfigMap[job.hpc])
-        if (out[taskId] in ['SUCCEEDED', 'FAILED']) await globusTaskList.remove(job, taskId)
-    }
-
-    res.json(out)
 })
 
 // job

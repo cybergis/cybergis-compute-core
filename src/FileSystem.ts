@@ -3,7 +3,7 @@ import { FileStructureError, FileNotExistError } from './errors'
 import * as fs from 'fs'
 import * as path from 'path'
 import { Git } from "./models/Git"
-import { executableManifest, hpcConfig } from './types'
+import { executableManifest, hpcConfig, slurm_integer_none_unit_config, slurm_integer_time_unit_config, slurm_integer_storage_unit_config, slurm_configs } from './types'
 import DB from './DB'
 import { config } from '../configs/config'
 import { exec } from 'child-process-async'
@@ -346,24 +346,7 @@ export class GitFolder extends LocalFolder {
                 }
             }
 
-            var executableFolderPath = path.join(this.path, 'manifest.json')
-            const rawExecutableManifest = (await fs.promises.readFile(executableFolderPath)).toString()
-            this.executableManifest = Object.assign({
-                name: undefined,
-                container: undefined,
-                pre_processing_stage: undefined,
-                execution_stage: undefined,
-                post_processing_stage: undefined,
-                slurm_ceiling: {},
-                description: 'none',
-                estimated_runtime: 'unknown',
-                supported_hpc: ['keeling_community'],
-                default_hpc: undefined,
-                repository: this.git.address,
-            }, JSON.parse(rawExecutableManifest))
-            if (!this.executableManifest.default_hpc) {
-                this.executableManifest.default_hpc = this.executableManifest.supported_hpc[0]
-            }
+            await this._readExecutableManifest()
         } catch (e) {
             throw new Error(`initialization failed with error: ${e.toString()}`)
         }
@@ -380,6 +363,51 @@ export class GitFolder extends LocalFolder {
             return await super.getZip()
         } catch (e) {
             throw new Error(e)
+        }
+    }
+
+    async _readExecutableManifest() {
+        var executableFolderPath = path.join(this.path, 'manifest.json')
+        const rawExecutableManifest = (await fs.promises.readFile(executableFolderPath)).toString()
+
+        this.executableManifest = Object.assign({
+            name: undefined,
+            container: undefined,
+            pre_processing_stage: undefined,
+            execution_stage: undefined,
+            post_processing_stage: undefined,
+            description: 'none',
+            estimated_runtime: 'unknown',
+            supported_hpc: ['keeling_community'],
+            default_hpc: undefined,
+            repository: this.git.address,
+            slurm_input_rules: {}
+        }, JSON.parse(rawExecutableManifest))
+
+        if (!this.executableManifest.default_hpc) {
+            this.executableManifest.default_hpc = this.executableManifest.supported_hpc[0]
+        }
+
+        for (var i in this.executableManifest.slurm_input_rules) {
+            if (slurm_integer_none_unit_config.includes(i)) {
+                this.executableManifest.slurm_input_rules[i].unit = 'None'
+                continue
+            }
+            // remove invalid configs
+            if (!slurm_configs.includes(i)) {
+                delete this.executableManifest.slurm_input_rules[i]
+                continue
+            }
+
+            var j = this.executableManifest.slurm_input_rules[i]
+            if (slurm_integer_time_unit_config.includes(i) && !(['Minutes', 'Hours', 'Days'].includes(j.unit))) {
+                delete this.executableManifest.slurm_input_rules[i]
+                continue
+            }
+            if (slurm_integer_storage_unit_config.includes(i) && !(['GB', 'MB'].includes(j.unit))) {
+                delete this.executableManifest.slurm_input_rules[i]
+                continue
+            }
         }
     }
 }
