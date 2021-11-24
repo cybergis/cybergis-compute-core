@@ -11,7 +11,9 @@ export const slurm_integer_time_unit_config = ['time']
 export const slurm_integer_none_unit_config = ['cpu_per_task', 'num_of_node', 'num_of_task', 'gpus', 'gpus_per_node', 'gpus_per_socket', 'gpus_per_task']
 export const slurm_string_option_configs = ['partition']
 
-export interface slurmIntegerRule {
+export interface integerRule {
+    require?: boolean
+    type?: 'integer'
     max?: number
     min?: number
     step?: number
@@ -19,24 +21,32 @@ export interface slurmIntegerRule {
     unit?: unit
 }
 
-export interface slurmStringOptionRule {
+export interface stringOptionRule {
+    require?: boolean
+    type?: 'string_option'
     options: string[]
     default_value: string 
 }
 
+export interface stringInputRule {
+    require?: boolean
+    type?: 'string_input'
+    default_value: string 
+}
+
 export interface slurmInputRules {
-    num_of_node?: slurmIntegerRule,
-    num_of_task?: slurmIntegerRule,
-    time?: slurmIntegerRule,
-    cpu_per_task?: slurmIntegerRule,
-    memory_per_cpu?: slurmIntegerRule,
-    memory_per_gpu?: slurmIntegerRule,
-    memory?: slurmIntegerRule,
-    gpus?: slurmIntegerRule,
-    gpus_per_node?: slurmIntegerRule,
-    gpus_per_socket?: slurmIntegerRule,
-    gpus_per_task?: slurmIntegerRule,
-    partition?: slurmStringOptionRule
+    num_of_node?: integerRule,
+    num_of_task?: integerRule,
+    time?: integerRule,
+    cpu_per_task?: integerRule,
+    memory_per_cpu?: integerRule,
+    memory_per_gpu?: integerRule,
+    memory?: integerRule,
+    gpus?: integerRule,
+    gpus_per_node?: integerRule,
+    gpus_per_socket?: integerRule,
+    gpus_per_task?: integerRule,
+    partition?: stringOptionRule
 }
 
 export interface rawAccessToken {
@@ -187,10 +197,10 @@ export interface executableManifest {
     name: string
     container: string
     pre_processing_stage?: string
-    pre_processing_stage_in_raw_sbatch?: string[]
     execution_stage: string
-    execution_stage_in_raw_sbatch?: string[]
     post_processing_stage?: string
+    pre_processing_stage_in_raw_sbatch?: string[]
+    execution_stage_in_raw_sbatch?: string[]
     post_processing_stage_in_raw_sbatch?: string[]
     description?: string
     estimated_runtime?: string
@@ -198,6 +208,7 @@ export interface executableManifest {
     default_hpc?: string
     repository?: string
     slurm_input_rules?: slurmInputRules
+    param_rules?: {[keys: string]: stringInputRule | stringOptionRule | integerRule}
 }
 
 export interface containerConfig {

@@ -1,14 +1,13 @@
 import Queue from "./Queue"
 import Emitter from "./Emitter"
 import { Job } from "./models/Job"
-import { slurmInputRules, SSH, SSHConfig } from './types'
+import { slurmInputRules, SSH, SSHConfig, stringInputRule, stringOptionRule, integerRule } from './types'
 import { config, maintainerConfigMap, hpcConfigMap } from '../configs/config'
 import { FileSystem, GitFolder } from './FileSystem'
 import * as events from 'events'
 import NodeSSH = require('node-ssh')
-import SlurmConnector from "./connectors/SlurmConnector"
 import DB from "./DB"
-import SlurmUtil from "./lib/SlurmUtil"
+import JobUtil from "./lib/JobUtil"
 
 type actions = 'stop' | 'resume' | 'cancel'
 
@@ -206,6 +205,7 @@ class Supervisor {
         if (!job.slurm) return
 
         var providedSlurmInputRules: slurmInputRules = {}
+        var providedParamRules: {[keys: string]: stringInputRule | stringOptionRule | integerRule} = {}
         const maintainerConfig = maintainerConfigMap[job.maintainer]
         if (maintainerConfig.executable_folder.from_user) {
             var u = job.executableFolder.split('://')
@@ -215,10 +215,14 @@ class Supervisor {
                 if (m.slurm_input_rules) {
                     providedSlurmInputRules = m.slurm_input_rules
                 }
+                if (m.param_rules) {
+                    providedParamRules = m.param_rules
+                }
             }
         }
 
-        SlurmUtil.validateSlurmConfig(job, providedSlurmInputRules)
+        JobUtil.validateSlurmConfig(job, providedSlurmInputRules)
+        JobUtil.validateParam(job, providedParamRules)
     }
 
     destroy() {

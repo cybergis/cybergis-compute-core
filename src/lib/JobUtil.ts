@@ -1,8 +1,16 @@
-import { slurm_integer_storage_unit_config, slurm_integer_time_unit_config, slurmInputRules } from '../types'
+import { slurm_integer_storage_unit_config, slurm_integer_time_unit_config, slurmInputRules, stringInputRule, stringOptionRule, integerRule } from '../types'
 import { Job } from "../models/Job"
 import { hpcConfigMap } from "../../configs/config"
 
-export default class SlurmUtil {
+export default class JobUtil {
+    static validateParam(job: Job, paramRules: {[keys: string]: stringInputRule | stringOptionRule | integerRule}) {
+        for (var i in paramRules) {
+            if (paramRules[i].require && !job.param[i]) {
+                throw new Error(`job missing input param ${i}`)
+            }
+        }
+    }
+
     static validateSlurmConfig(job: Job, slurmInputRules: slurmInputRules) {
         var slurmCeiling = {}
         slurmInputRules = Object.assign(hpcConfigMap[job.hpc].slurm_input_rules, slurmInputRules)
@@ -27,8 +35,8 @@ export default class SlurmUtil {
             if (slurm_integer_time_unit_config.includes(i)) {
                 var val = slurmInputRules[i].max
                 var unit = slurmInputRules[i].unit
-                var sec = SlurmUtil.unitTimeToSeconds(val, unit)
-                slurmCeiling[i] = SlurmUtil.secondsToTime(sec)
+                var sec = JobUtil.unitTimeToSeconds(val, unit)
+                slurmCeiling[i] = JobUtil.secondsToTime(sec)
             }
         }
 

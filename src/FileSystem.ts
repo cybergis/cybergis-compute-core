@@ -381,7 +381,8 @@ export class GitFolder extends LocalFolder {
             supported_hpc: ['keeling_community'],
             default_hpc: undefined,
             repository: this.git.address,
-            slurm_input_rules: {}
+            slurm_input_rules: {},
+            param_rules: {}
         }, JSON.parse(rawExecutableManifest))
 
         if (!this.executableManifest.default_hpc) {
