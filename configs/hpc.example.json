@@ -50,7 +50,7 @@
             "#SBATCH --account=TG-EAR190007"
         ]
     },
-    "bridges_community": {
+    "bridges_community_gpu": {
         "ip": "bridges2.psc.edu",
         "port": 22,
         "is_community_account": true,
@@ -68,6 +68,9 @@
             "identity": "apadmana@illinois.edu",
             "endpoint": "8e5f3a0a-542d-11eb-a45a-0e095b4c2e55",
             "root_path": "/jet/home/cybergis/data"
-        }
+        },
+        "init_sbatch_options": [
+            "#SBATCH --partition=GPU"
+        ]
     }
 }
