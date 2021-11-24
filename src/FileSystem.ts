@@ -399,6 +399,11 @@ export class GitFolder extends LocalFolder {
                 continue
             }
 
+            if (!this.executableManifest.slurm_input_rules[i].default_value) {
+                delete this.executableManifest.slurm_input_rules[i]
+                continue
+            }
+
             var j = this.executableManifest.slurm_input_rules[i]
             if (slurm_integer_time_unit_config.includes(i) && !(['Minutes', 'Hours', 'Days'].includes(j.unit))) {
                 delete this.executableManifest.slurm_input_rules[i]
