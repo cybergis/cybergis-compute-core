@@ -1,4 +1,4 @@
-import { slurm_integer_storage_unit_config, slurm_integer_time_unit_config, slurmInputRules, stringInputRule, stringOptionRule, integerRule } from '../types'
+import { slurm_integer_storage_unit_config, slurm_integer_time_unit_config, slurmInputRules, stringInputRule, stringOptionRule, integerRule, slurm_integer_configs } from '../types'
 import { Job } from "../models/Job"
 import { hpcConfigMap } from "../../configs/config"
 
@@ -31,12 +31,15 @@ export default class JobUtil {
 
         for (var i in slurmInputRules) {
             if (!slurmInputRules[i].max) continue
-            if (slurm_integer_storage_unit_config.includes(i)) slurmCeiling[i] = slurmInputRules[i].max + slurmInputRules[i].unit
-            if (slurm_integer_time_unit_config.includes(i)) {
+            if (slurm_integer_storage_unit_config.includes(i)) {
+                slurmCeiling[i] = slurmInputRules[i].max + slurmInputRules[i].unit
+            } else if (slurm_integer_time_unit_config.includes(i)) {
                 var val = slurmInputRules[i].max
                 var unit = slurmInputRules[i].unit
                 var sec = JobUtil.unitTimeToSeconds(val, unit)
                 slurmCeiling[i] = JobUtil.secondsToTime(sec)
+            } else if (slurm_integer_configs.includes(i)) {
+                slurmCeiling[i] = slurmInputRules[i].max
             }
         }
 
