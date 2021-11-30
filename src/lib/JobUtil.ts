@@ -26,7 +26,7 @@ export default class JobUtil {
             // gpus_per_node: 20,
             // gpus_per_socket: 20,
             // gpus_per_task: 20,
-            time: '10:00:00'
+            time: '1:00:00'
         }
 
         for (var i in slurmInputRules) {
