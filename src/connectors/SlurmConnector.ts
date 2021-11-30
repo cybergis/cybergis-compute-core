@@ -32,7 +32,7 @@ class SlurmConnector extends BaseConnector {
         // https://researchcomputing.princeton.edu/support/knowledge-base/slurm
         this.template = `#!/bin/bash
 #SBATCH --job-name=${this.jobID}
-#SBATCH --nodes=${config.num_of_node}
+${config.num_of_node ? `#SBATCH --nodes=${config.num_of_node}` : ''}
 #SBATCH --ntasks=${config.num_of_task}
 #SBATCH --time=${config.time}
 #SBATCH --error=${path.join(this.remote_result_folder_path, "job.stderr")}
