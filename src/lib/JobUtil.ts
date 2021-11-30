@@ -16,17 +16,17 @@ export default class JobUtil {
         slurmInputRules = Object.assign(hpcConfigMap[job.hpc].slurm_input_rules, slurmInputRules)
 
         var defaultSlurmCeiling = {
-            // num_of_node: 50,
-            // num_of_task: 50,
-            // cpu_per_task: 50,
-            // memory_per_cpu: '10G',
-            // memory_per_gpu: '10G',
-            // memory: '50G',
-            // gpus: 20,
-            // gpus_per_node: 20,
-            // gpus_per_socket: 20,
-            // gpus_per_task: 20,
-            time: '1:00:00'
+            num_of_node: 50,
+            num_of_task: 50,
+            cpu_per_task: 50,
+            memory_per_cpu: '10G',
+            memory_per_gpu: '10G',
+            memory: '50G',
+            gpus: 20,
+            gpus_per_node: 20,
+            gpus_per_socket: 20,
+            gpus_per_task: 20,
+            time: '10:00:00'
         }
 
         for (var i in slurmInputRules) {

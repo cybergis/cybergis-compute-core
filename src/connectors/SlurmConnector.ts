@@ -21,10 +21,9 @@ class SlurmConnector extends BaseConnector {
 
     prepare(cmd: string, config: slurm) {
         config = Object.assign({
-            time: '00:10:00',
-            num_of_node: 1,
+            time: '01:00:00',
             num_of_task: 1,
-            cpu_per_task: 1,
+            cpu_per_task: 1
         }, config)
 
         var modules = ``
