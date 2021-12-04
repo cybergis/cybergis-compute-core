@@ -164,6 +164,7 @@ export interface hpcConfig {
         root_path?: string
     }
     slurm_input_rules?: slurmInputRules
+    slurm_global_cap: slurm
 }
 
 export interface jupyterGlobusMapConfig {

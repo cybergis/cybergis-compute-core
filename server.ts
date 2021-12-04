@@ -12,6 +12,7 @@ import JupyterHub from './src/JupyterHub'
 import DB from './src/DB'
 import Statistic from './src/Statistic'
 import * as path from 'path'
+import JobUtil from './src/lib/JobUtil'
 const bodyParser = require('body-parser')
 const Validator = require('jsonschema').Validator;
 const fileUpload = require('express-fileupload')
@@ -438,6 +439,11 @@ app.put('/job/:jobId', async function (req, res) {
         return
     }
 
+    if (!res.locals.username) {
+        res.json({ error: "job setting without login is not allowed", messages: [] }); res.status(401)
+        return
+    }
+
     try {
         var job = await guard.validateJobAccessToken(body.accessToken)
     } catch (e) {
@@ -451,6 +457,7 @@ app.put('/job/:jobId', async function (req, res) {
     }
 
     try {
+        await JobUtil.validateJob(job, res.locals.host, res.locals.username)
         var connection = await db.connect()
         await connection.createQueryBuilder()
             .update(Job)

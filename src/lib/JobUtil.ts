@@ -1,6 +1,8 @@
-import { slurm_integer_storage_unit_config, slurm_integer_time_unit_config, slurmInputRules, stringInputRule, stringOptionRule, integerRule, slurm_integer_configs } from '../types'
+import { slurm_integer_storage_unit_config, slurm_integer_time_unit_config, slurmInputRules, slurm_integer_configs } from '../types'
 import { Job } from "../models/Job"
-import { hpcConfigMap } from "../../configs/config"
+import { hpcConfigMap, jupyterGlobusMap, maintainerConfigMap } from "../../configs/config"
+import { GitFolder, FileSystem } from '../FileSystem'
+import path = require('path')
 
 export default class JobUtil {
     static validateParam(job: Job, paramRules: {[keys: string]: any}) {
@@ -11,8 +13,58 @@ export default class JobUtil {
         }
     }
 
+    static async validateJob(job: Job, jupyterHost: string, username: string) {
+        // validate input data
+        if (job.dataFolder) {
+            var jupyterGlobus = jupyterGlobusMap[jupyterHost]
+            if (jupyterGlobus) {
+                var validPath = path.join(jupyterGlobus.root_path, username)
+                if (!job.dataFolder.includes(validPath)) {
+                    throw new Error('invalid dataFolder path')
+                }
+            }
+        }
+
+        // create slurm config rules
+        var providedSlurmInputRules: slurmInputRules = {}
+        var providedParamRules: {[keys: string]: any} = {}
+        var requireUploadData = false
+        const maintainerConfig = maintainerConfigMap[job.maintainer]
+        if (maintainerConfig.executable_folder.from_user) {
+            var u = job.executableFolder.split('://')
+            if (u[0] === 'git') {
+                var f = new GitFolder(u[1])
+                var m = await f.getExecutableManifest()
+                if (m.slurm_input_rules) {
+                    providedSlurmInputRules = m.slurm_input_rules
+                }
+                if (m.param_rules) {
+                    providedParamRules = m.param_rules
+                }
+                if (m.require_upload_data) {
+                    requireUploadData = m.require_upload_data
+                }
+            }
+        }
+
+        if (requireUploadData && !job.dataFolder) {
+            throw new Error(`job missing upload data`)
+        }
+
+        if (maintainerConfig.executable_folder.from_user) {
+            if (job.executableFolder == undefined) throw new Error('no file provided')
+            var file = FileSystem.getFolderByURL(job.executableFolder, maintainerConfig.executable_folder.allowed_protocol)
+            file.validate()
+        }
+
+        JobUtil.validateSlurmConfig(job, providedSlurmInputRules)
+        JobUtil.validateParam(job, providedParamRules)
+    }
+
     static validateSlurmConfig(job: Job, slurmInputRules: slurmInputRules) {
         var slurmCeiling = {}
+        var globalInputCap = hpcConfigMap[job.hpc].slurm_global_cap
+        if (!globalInputCap) globalInputCap = {}
         slurmInputRules = Object.assign(hpcConfigMap[job.hpc].slurm_input_rules, slurmInputRules)
 
         var defaultSlurmCeiling = {
@@ -43,6 +95,13 @@ export default class JobUtil {
             }
         }
 
+        for (var i in globalInputCap) {
+            if (!globalInputCap[i]) slurmCeiling[i] = globalInputCap[i]
+            else if (this.compareSlurmConfig(i, globalInputCap[i], slurmCeiling[i])) {
+                slurmCeiling[i] = globalInputCap[i]
+            }
+        }
+
         for (var i in defaultSlurmCeiling) {
             if (!slurmCeiling[i]) {
                 slurmCeiling[i] = defaultSlurmCeiling[i]
@@ -52,21 +111,20 @@ export default class JobUtil {
 
         for (var i in slurmCeiling) {
             if (!job.slurm[i]) continue
-
-            if (slurm_integer_storage_unit_config.includes(i)) {
-                if (this.storageUnitToSize(slurmCeiling[i]) < this.storageUnitToSize(job.slurm[i])) {
-                    throw new Error(`slurm config ${i} exceeds the threshold of ${slurmCeiling[i]} (current value ${job.slurm[i]})`)
-                }
-            } else if (slurm_integer_time_unit_config.includes(i)) {
-                if (this.timeToSeconds(slurmCeiling[i]) < this.timeToSeconds(job.slurm[i])) {
-                    throw new Error(`slurm config ${i} exceeds the threshold of ${slurmCeiling[i]} (current value ${job.slurm[i]})`)
-                }
-            } else {
-                if (slurmCeiling[i] < job.slurm[i]) {
-                    throw new Error(`slurm config ${i} exceeds the threshold of ${slurmCeiling[i]} (current value ${job.slurm[i]})`)
-                }
+            if (this.compareSlurmConfig(i, slurmCeiling[i], job.slurm[i])) {
+                throw new Error(`slurm config ${i} exceeds the threshold of ${slurmCeiling[i]} (current value ${job.slurm[i]})`)
             }
         }
+    }
+
+    static compareSlurmConfig(i, a, b) {
+        if (slurm_integer_storage_unit_config.includes(i)) {
+            return this.storageUnitToSize(a) < this.storageUnitToSize(b)
+        }
+        if (slurm_integer_time_unit_config.includes(i)) {
+            return this.timeToSeconds(a) < this.timeToSeconds(b)
+        }
+        return a < b
     }
 
     static storageUnitToSize(i: string) {

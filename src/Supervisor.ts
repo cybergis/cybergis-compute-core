@@ -7,7 +7,6 @@ import { FileSystem, GitFolder } from './FileSystem'
 import * as events from 'events'
 import NodeSSH = require('node-ssh')
 import DB from "./DB"
-import JobUtil from "./lib/JobUtil"
 
 type actions = 'stop' | 'resume' | 'cancel'
 
@@ -186,51 +185,8 @@ class Supervisor {
     }
 
     async pushJobToQueue(job: Job) {
-        this._validateMaintainerExecutableFolder(job)
-        await this._validateSlurmConfig(job)
         await this.queues[job.hpc].push(job)
         this.emitter.registerEvents(job, 'JOB_QUEUED', 'job [' + job.id + '] is queued, waiting for registration')
-    }
-
-    private _validateMaintainerExecutableFolder(job: Job) {
-        const maintainerConfig = maintainerConfigMap[job.maintainer]
-        if (maintainerConfig.executable_folder.from_user) {
-            if (job.executableFolder == undefined) throw new Error('no file provided')
-            var file = FileSystem.getFolderByURL(job.executableFolder, maintainerConfig.executable_folder.allowed_protocol)
-            file.validate()
-        }
-    }
-
-    private async _validateSlurmConfig(job: Job) {
-        if (!job.slurm) return
-
-        var providedSlurmInputRules: slurmInputRules = {}
-        var providedParamRules: {[keys: string]: any} = {}
-        var requireUploadData = false
-        const maintainerConfig = maintainerConfigMap[job.maintainer]
-        if (maintainerConfig.executable_folder.from_user) {
-            var u = job.executableFolder.split('://')
-            if (u[0] === 'git') {
-                var f = new GitFolder(u[1])
-                var m = await f.getExecutableManifest()
-                if (m.slurm_input_rules) {
-                    providedSlurmInputRules = m.slurm_input_rules
-                }
-                if (m.param_rules) {
-                    providedParamRules = m.param_rules
-                }
-                if (m.require_upload_data) {
-                    requireUploadData = m.require_upload_data
-                }
-            }
-        }
-
-        if (requireUploadData && !job.dataFolder) {
-            throw new Error(`job missing upload data`)
-        }
-
-        JobUtil.validateSlurmConfig(job, providedSlurmInputRules)
-        JobUtil.validateParam(job, providedParamRules)
     }
 
     destroy() {
