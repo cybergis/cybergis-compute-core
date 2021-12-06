@@ -503,7 +503,7 @@ app.post('/job/:jobId/submit', async function (req, res) {
     }
 
     try {
-        await JobUtil.validateJob(job, res.locals.host, res.locals.username)
+        await JobUtil.validateJob(job, res.locals.host, res.locals.username.split('@')[0])
         await supervisor.pushJobToQueue(job)
         // update status
         var connection = await db.connect()

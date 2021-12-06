@@ -19,7 +19,7 @@ export default class JobUtil {
             var jupyterGlobus = jupyterGlobusMap[jupyterHost]
             if (jupyterGlobus) {
                 var validPath = path.join(jupyterGlobus.root_path, username)
-                if (!job.dataFolder.includes(validPath)) {
+                if (job.dataFolder.includes(jupyterGlobus.root_path) && !job.dataFolder.includes(validPath)) {
                     throw new Error('invalid dataFolder path')
                 }
             }
