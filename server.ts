@@ -439,11 +439,6 @@ app.put('/job/:jobId', async function (req, res) {
         return
     }
 
-    if (!res.locals.username) {
-        res.json({ error: "job setting without login is not allowed", messages: [] }); res.status(401)
-        return
-    }
-
     try {
         var job = await guard.validateJobAccessToken(body.accessToken)
     } catch (e) {
@@ -457,7 +452,6 @@ app.put('/job/:jobId', async function (req, res) {
     }
 
     try {
-        await JobUtil.validateJob(job, res.locals.host, res.locals.username)
         var connection = await db.connect()
         await connection.createQueryBuilder()
             .update(Job)
@@ -509,6 +503,7 @@ app.post('/job/:jobId/submit', async function (req, res) {
     }
 
     try {
+        await JobUtil.validateJob(job, res.locals.host, res.locals.username)
         await supervisor.pushJobToQueue(job)
         // update status
         var connection = await db.connect()
