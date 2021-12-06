@@ -96,7 +96,7 @@ export default class JobUtil {
         }
 
         for (var i in globalInputCap) {
-            if (!globalInputCap[i]) slurmCeiling[i] = globalInputCap[i]
+            if (!slurmCeiling[i]) slurmCeiling[i] = globalInputCap[i]
             else if (this.compareSlurmConfig(i, globalInputCap[i], slurmCeiling[i])) {
                 slurmCeiling[i] = globalInputCap[i]
             }
