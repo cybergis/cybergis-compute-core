@@ -21,13 +21,13 @@ export class Job {
     @Column()
     hpc: string
 
-    @Column({nullable: true, default: null})
+    @Column("longtext", {nullable: true, default: null})
     executableFolder: string
 
-    @Column({nullable: true, default: null})
+    @Column("longtext", {nullable: true, default: null})
     dataFolder: string
 
-    @Column({nullable: true, default: null})
+    @Column("longtext", {nullable: true, default: null})
     resultFolder: string
 
     @Column({type: 'simple-json'})
