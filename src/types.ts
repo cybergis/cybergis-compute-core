@@ -165,6 +165,12 @@ export interface hpcConfig {
     }
     slurm_input_rules?: slurmInputRules
     slurm_global_cap: slurm
+    xsede_job_log_credential: XSEDEJobLogCredential
+}
+
+export interface XSEDEJobLogCredential {
+    xsederesourcename: string
+    apikey: string
 }
 
 export interface jupyterGlobusMapConfig {

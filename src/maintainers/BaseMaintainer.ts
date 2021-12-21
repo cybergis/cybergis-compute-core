@@ -1,5 +1,5 @@
 import { Job } from "../models/Job"
-import { maintainerConfig, event, slurm, job_maintainer_updatable } from "../types"
+import { maintainerConfig, event, slurm, job_maintainer_updatable, hpcConfig } from "../types"
 import { BaseFolder, LocalFolder, FileSystem, GlobusFolder } from '../FileSystem'
 import BaseConnector from '../connectors/BaseConnector'
 import SlurmConnector from '../connectors/SlurmConnector'
@@ -21,6 +21,8 @@ class BaseMaintainer {
 
     /** config **/
     public job: Job = undefined
+
+    public hpc: hpcConfig = undefined
 
     public config: maintainerConfig = undefined
 
@@ -84,17 +86,15 @@ class BaseMaintainer {
         this.id = job.id
         this.slurm = job.slurm
         this.db = new DB()
+        var hpc = job.hpc ? job.hpc : this.config.default_hpc
+        this.hpc = hpcConfigMap[hpc]
+        if (!this.hpc) throw new Error("cannot find hpc with name [" + hpc + "]")
         this.onDefine()
 
         this.dataFolder = job.dataFolder ? FileSystem.getFolderByURL(job.dataFolder) : null
-        if (this.dataFolder instanceof GlobusFolder) {
-            var hpc = this.job.hpc
-            if (hpc == undefined) hpc = this.config.default_hpc
-            var hpcConfig = hpcConfigMap[hpc]
-            if (!hpcConfig) throw new Error("cannot find hpc with name [" + hpc + "]")
-            if (!hpcConfig.globus) throw new Error('HPC does not support Globus')
+        if (this.dataFolder instanceof GlobusFolder && !this.hpc.globus) {
+            throw new Error('HPC does not support Globus')
         }
-
         this.resultFolder = job.resultFolder ? FileSystem.getFolderByURL(job.resultFolder) : FileSystem.createLocalFolder()
     }
 
@@ -212,33 +212,15 @@ class BaseMaintainer {
     }
 
     public getSlurmConnector(): SlurmConnector {
-        var hpc = this.job.hpc
-        if (hpc == undefined) hpc = this.config.default_hpc
-        var hpcConfig = hpcConfigMap[hpc]
-        if (hpcConfig == undefined) {
-            throw new Error("cannot find hpc with name [" + hpc + "]")
-        }
-        return new SlurmConnector(this.job, hpcConfig, this)
+        return new SlurmConnector(this.job, this.hpc, this)
     }
 
     public getSingularityConnector(): SingularityConnector {
-        var hpc = this.job.hpc
-        if (hpc == undefined) hpc = this.config.default_hpc
-        var hpcConfig = hpcConfigMap[hpc]
-        if (hpcConfig == undefined) {
-            throw new Error("cannot find hpc with name [" + hpc + "]")
-        }
-        return new SingularityConnector(this.job, hpcConfig, this)
+        return new SingularityConnector(this.job, this.hpc, this)
     }
 
     public getBaseConnector(): BaseConnector {
-        var hpc = this.job.hpc
-        if (hpc == undefined) hpc = this.config.default_hpc
-        var hpcConfig = hpcConfigMap[hpc]
-        if (hpcConfig == undefined) {
-            throw new Error("cannot find hpc with name [" + hpc + "]")
-        }
-        return new BaseConnector(this.job, hpcConfig, this)
+        return new BaseConnector(this.job, this.hpc, this)
     }
 }
 

@@ -1,6 +1,7 @@
 import SingularityConnector from '../connectors/SingularityConnector'
 import BaseMaintainer from './BaseMaintainer'
 import { LocalFolder, GitFolder } from '../FileSystem'
+import XSEDEUtil from '../lib/XSEDEUtil'
 
 export default class CommunityContributionMaintainer extends BaseMaintainer {
 
@@ -38,6 +39,7 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
                 }
                 // ending condition
                 this.emitEvent('JOB_ENDED', 'job [' + this.id + '] finished')
+                XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc, this.job)
             } else if (status == 'ERROR' || status == 'F' || status == 'NF') {
                 // failing condition
                 this.emitEvent('JOB_FAILED', 'job [' + this.id + '] failed with status ' + status)

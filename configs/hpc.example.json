@@ -48,7 +48,11 @@
         "init_sbatch_options": [
             "#SBATCH --partition=shared",
             "#SBATCH --account=TG-EAR190007"
-        ]
+        ],
+        "xsede_job_log_credential": {
+            "xsederesourcename": "",
+            "apikey": ""
+        }
     },
     "bridges_community_gpu": {
         "ip": "bridges2.psc.edu",
