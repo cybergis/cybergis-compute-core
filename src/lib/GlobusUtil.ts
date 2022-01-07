@@ -4,11 +4,10 @@ import PythonUtil from "./PythonUtil"
 import { config } from "../../configs/config"
 import { hpcConfig } from '../types'
 import DB from "../DB"
-import { Job } from '../models/Job'
 const redis = require('redis')
 const { promisify } = require("util")
 
-export class JobGlobusTaskListManager {
+export class GlobusTaskListManager {
     private redis = {
         getValue: null,
         setValue: null,
@@ -17,22 +16,22 @@ export class JobGlobusTaskListManager {
 
     private isConnected = false
 
-    async put(job: Job, taskId: string) {
+    async put(label: string, taskId: string) {
         await this.connect()
-        await this.redis.setValue(`globus_task_${job.id}`, taskId)
+        await this.redis.setValue(`globus_task_${label}`, taskId)
     }
 
-    async get(job: Job): Promise<string> {
+    async get(label: string): Promise<string> {
         await this.connect()
-        var out = await this.redis.getValue(`globus_task_${job.id}`)
+        var out = await this.redis.getValue(`globus_task_${label}`)
         return out ? out : null
     }
 
-    async remove(job: Job, taskId: string) {
+    async remove(label: string, taskId: string) {
         await this.connect()
-        var taskId = await this.get(job)
+        var taskId = await this.get(label)
         if (!taskId) return
-        this.redis.delValue(`globus_task_${job}`)
+        this.redis.delValue(`globus_task_${label}`)
     }
 
     private async connect() {

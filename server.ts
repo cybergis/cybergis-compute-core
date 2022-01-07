@@ -5,7 +5,7 @@ import { FileSystem, GitFolder, GlobusFolder, LocalFolder } from './src/FileSyst
 import Helper from './src/Helper'
 import { hpcConfig, maintainerConfig, containerConfig } from './src/types'
 import { config, containerConfigMap, hpcConfigMap, maintainerConfigMap, jupyterGlobusMap } from './configs/config'
-import GlobusUtil, { JobGlobusTaskListManager } from './src/lib/GlobusUtil'
+import GlobusUtil, { GlobusTaskListManager } from './src/lib/GlobusUtil'
 import express = require('express')
 import { Job } from './src/models/Job'
 import JupyterHub from './src/JupyterHub'
@@ -38,7 +38,7 @@ const guard = new Guard()
 const supervisor = new Supervisor()
 const validator = new Validator()
 const db = new DB()
-const globusTaskList = new JobGlobusTaskListManager()
+const globusTaskList = new GlobusTaskListManager()
 const jupyterHub = new JupyterHub()
 const statistic = new Statistic()
 
@@ -360,15 +360,15 @@ app.get('/file', async function (req: any, res) {
             var dir = await folder.getZip()
             res.download(dir)
         } else if (folder instanceof GlobusFolder) {
-            var taskId = await globusTaskList.get(job)
+            var taskId = await globusTaskList.get(job.id)
             if (!taskId) {
                 var hpcConfig = hpcConfigMap[job.hpc]
                 var from = FileSystem.getGlobusFolderByHPCConfig(hpcConfigMap[job.hpc], `${job.id}/result`)
                 var taskId = await GlobusUtil.initTransfer(from, folder, hpcConfig, job.id)
-                await globusTaskList.put(job, taskId)
+                await globusTaskList.put(job.id, taskId)
             }
             var status = await GlobusUtil.queryTransferStatus(taskId, hpcConfigMap[job.hpc])
-            if (status in ['SUCCEEDED', 'FAILED']) await globusTaskList.remove(job, taskId)
+            if (status in ['SUCCEEDED', 'FAILED']) await globusTaskList.remove(job.id, taskId)
             res.json({ task_id: taskId, status: status })
         }
     } catch (e) {
@@ -376,6 +376,66 @@ app.get('/file', async function (req: any, res) {
         res.status(402)
         return
     }
+})
+
+// globus
+app.post('/globus-util/jupyter/upload', async function (req, res) {
+    var body = req.body
+    var errors = requestErrors(validator.validate(body, schemas.user))
+
+    if (errors.length > 0) {
+        res.json({ error: "invalid input", messages: errors })
+        res.status(402)
+        return
+    }
+
+    if (!res.locals.username) {
+        res.json({ error: "invalid token" })
+        res.status(402)
+        return
+    }
+
+    var jupyterGlobus = jupyterGlobusMap[res.locals.host]
+    if (!jupyterGlobus) {
+        res.json({ error: "unknown host" })
+        res.status(404)
+        return
+    }
+
+    var to = new GlobusFolder(`${jupyterGlobus.endpoint}:${path.join(jupyterGlobus.root_path, res.locals.username.split('@')[0])}`)
+    var from = new GlobusFolder(body.from)
+    var hpcConfig = hpcConfigMap[body.hpc]
+    await GlobusUtil.initTransfer(from, to, hpcConfig)
+})
+
+
+app.post('/globus-util/jupyter/download', async function (req, res) {
+    var body = req.body
+    var errors = requestErrors(validator.validate(body, schemas.user))
+
+    if (errors.length > 0) {
+        res.json({ error: "invalid input", messages: errors })
+        res.status(402)
+        return
+    }
+
+    if (!res.locals.username) {
+        res.json({ error: "invalid token" })
+        res.status(402)
+        return
+    }
+
+    var jupyterGlobus = jupyterGlobusMap[res.locals.host]
+    if (!jupyterGlobus) {
+        res.json({ error: "unknown host" })
+        res.status(404)
+        return
+    }
+
+    var from = new GlobusFolder(`${jupyterGlobus.endpoint}:${path.join(jupyterGlobus.root_path, res.locals.username.split('@')[0])}`)
+    var to = new GlobusFolder(body.to)
+    var hpcConfig = hpcConfigMap[body.hpc]
+    await GlobusUtil.initTransfer(from, to, hpcConfig)
 })
 
 // job
