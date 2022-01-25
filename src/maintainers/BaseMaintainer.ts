@@ -1,5 +1,5 @@
 import { Job } from "../models/Job"
-import { maintainerConfig, event, slurm, job_maintainer_updatable, hpcConfig } from "../types"
+import { maintainerConfig, event, slurm, jobMaintainerUpdatable, hpcConfig } from "../types"
 import { BaseFolder, LocalFolder, FileSystem, GlobusFolder } from '../FileSystem'
 import BaseConnector from '../connectors/BaseConnector'
 import SlurmConnector from '../connectors/SlurmConnector'
@@ -200,7 +200,7 @@ class BaseMaintainer {
         return events
     }
 
-    public async updateJob(job: job_maintainer_updatable) {
+    public async updateJob(job: jobMaintainerUpdatable) {
         var connection = await this.db.connect()
         await connection.createQueryBuilder()
             .update(Job)

@@ -245,11 +245,12 @@ export interface SSH {
     config: SSHConfig
 }
 
-export interface job_maintainer_updatable {
+export interface jobMaintainerUpdatable {
     executableFolder?: string
     dataFolder?: string
     resultFolder?: string
     param?: {[keys: string]: string}
     env?: {[keys: string]: string}
-    slurm?: slurm
+    slurm?: slurm,
+    slurm_id?: string
 }

@@ -40,6 +40,9 @@ export class Job {
     slurm?: slurm
 
     @Column({nullable: true, default: null})
+    slurmId?: string
+
+    @Column({nullable: true, default: null})
     credentialId?: string
 
     @OneToMany(type => Event, (event: Event) => event.job)
