@@ -32,7 +32,7 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
 
                 var params = {
                     xsederesourcename: this.hpc.xsede_job_log_credential.xsederesourcename,
-                    jobid: this.slurm_id,
+                    jobid: this.connector.slurm_id,
                     gatewayuser: this.job.userId,
                     submittime: XSEDEUtil.formateDate(this.job.createdAt),
                     //usage: XSEDEUtil.diffInSeconds(job.finishedAt, job.createdAt),
