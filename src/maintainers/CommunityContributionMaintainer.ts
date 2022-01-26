@@ -4,8 +4,7 @@ import { LocalFolder, GitFolder } from '../FileSystem'
 import XSEDEUtil from '../lib/XSEDEUtil'
 import {config} from "../types";
 import axios from "axios"
-import { Job } from "../models/Job"
-import { hpcConfig } from "../types"
+
 
 export default class CommunityContributionMaintainer extends BaseMaintainer {
 
@@ -27,22 +26,22 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
             //XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc, this.job)
 
 
-            if (hpc.xsede_job_log_credential)
+            if (this.hpc.xsede_job_log_credential)
             {
 
 
             var params = {
-                xsederesourcename: hpc.xsede_job_log_credential.xsederesourcename,
-                jobid: slurm_id,
-                gatewayuser: job.userId,
-                submittime: XSEDEUtil.formateDate(job.createdAt),
+                xsederesourcename: this.hpc.xsede_job_log_credential.xsederesourcename,
+                jobid: this.slurm_id,
+                gatewayuser: this.job.userId,
+                submittime: XSEDEUtil.formateDate(this.job.createdAt),
                 //usage: XSEDEUtil.diffInSeconds(job.finishedAt, job.createdAt),
                 //apikey: hpc.xsede_job_log_credential.apikey
             }
 
             await axios.post(`${XSEDEUtil.jobLogURL}`, params, {headers: {"XA-API-Key": hpc.xsede_job_log_credential.apikey}})
                 .then((response) => {
-                      this.emitEvent('JOB_INIT', response)
+                      this.emitEvent('JOB_INIT', response.toString())
                       })
                   .catch((error) => {
                       this.emitEvent('JOB_INIT', error)
