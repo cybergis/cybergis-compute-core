@@ -2,6 +2,10 @@ import SingularityConnector from '../connectors/SingularityConnector'
 import BaseMaintainer from './BaseMaintainer'
 import { LocalFolder, GitFolder } from '../FileSystem'
 import XSEDEUtil from '../lib/XSEDEUtil'
+import {config} from "../types";
+import axios from "axios"
+import { Job } from "../models/Job"
+import { hpcConfig } from "../types"
 
 export default class CommunityContributionMaintainer extends BaseMaintainer {
 
@@ -20,7 +24,37 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
             this.connector.execExecutableManifestWithinImage(executableManifest, this.slurm)
             await this.connector.submit()
             this.emitEvent('JOB_INIT', 'job [' + this.id + '] is initialized, waiting for job completion')
-            XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc, this.job)
+            //XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc, this.job)
+
+
+            if (hpc.xsede_job_log_credential)
+            {
+
+
+            var params = {
+                xsederesourcename: hpc.xsede_job_log_credential.xsederesourcename,
+                jobid: slurm_id,
+                gatewayuser: job.userId,
+                submittime: XSEDEUtil.formateDate(job.createdAt),
+                //usage: XSEDEUtil.diffInSeconds(job.finishedAt, job.createdAt),
+                //apikey: hpc.xsede_job_log_credential.apikey
+            }
+
+            await axios.post(`${XSEDEUtil.jobLogURL}`, params, {headers: {"XA-API-Key": hpc.xsede_job_log_credential.apikey}})
+                .then((response) => {
+                      this.emitEvent('JOB_INIT', response)
+                      })
+                  .catch((error) => {
+                      this.emitEvent('JOB_INIT', error)
+                  })
+            if (config.is_testing) console.log('XSEDE job logged: ', params)
+            console.error('XSEDE job logged: ', params)
+              }
+
+            }
+
+
+
             this.emitEvent('JOB_INIT', 'job [' + this.id + '] info logged by XSEDE')
         } catch (e) {
             this.emitEvent('JOB_RETRY', 'job [' + this.id + '] encountered system error ' + e.toString())
