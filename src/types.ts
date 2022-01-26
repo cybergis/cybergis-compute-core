@@ -252,5 +252,5 @@ export interface jobMaintainerUpdatable {
     param?: {[keys: string]: string}
     env?: {[keys: string]: string}
     slurm?: slurm,
-    slurm_id?: string
+    slurmId?: string
 }

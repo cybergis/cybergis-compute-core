@@ -52,6 +52,7 @@ ${this.getSBatchTagsFromArray('mail-user', config.mail_user)}
 module purge
 ${this.config.init_sbatch_script ? this.config.init_sbatch_script.join('\n') : ''}
 ${modules}
+echo 'slurm_id: $SLURM_JOB_ID'
 ${cmd}`
     }
 
@@ -133,7 +134,7 @@ ${cmd}`
         }
 
         this.slurm_id = sbatchResult.stdout.split(/[ ]+/).pop().trim()
-        await this.maintainer.updateJob({ slurm_id: this.slurm_id })
+        await this.maintainer.updateJob({ slurmId: this.slurm_id })
         if (this.maintainer != null) this.maintainer.emitEvent('SLURM_SUBMIT_SUCCESS', `slurm job submitted with slurm job id ${this.slurm_id}`)
     }
 

@@ -6,21 +6,22 @@ import { hpcConfig } from "../types"
 export default class XSEDEUtil {
     static jobLogURL = 'https://xsede-xdcdb-api.xsede.org/gateway/v2/job_attributes'
     
-    static async jobLog(slurmId: string, hpc: hpcConfig, job: Job) {
+    static async jobLog(slurm_id: string, hpc: hpcConfig, job: Job) {
         if (!hpc.xsede_job_log_credential) return
 
         try {
             var params = {
                 xsederesourcename: hpc.xsede_job_log_credential.xsederesourcename,
-                jobid: slurmId,
+                jobid: slurm_id,
                 gatewayuser: job.userId,
-                submittime: XSEDEUtil.formateDate(job.createdAt),
-                usage: XSEDEUtil.diffInSeconds(job.finishedAt, job.createdAt),
+                //submittime: XSEDEUtil.formateDate(job.createdAt),
+                //usage: XSEDEUtil.diffInSeconds(job.finishedAt, job.createdAt),
                 apikey: hpc.xsede_job_log_credential.apikey
             }
 
             await axios.get(`${XSEDEUtil.jobLogURL}`, { params })
             if (config.is_testing) console.log('XSEDE job logged: ', params)
+            console.log('XSEDE job logged: ', params)
         } catch(e) {
             // best effort
         }
