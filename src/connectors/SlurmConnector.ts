@@ -52,7 +52,7 @@ ${this.getSBatchTagsFromArray('mail-user', config.mail_user)}
 module purge
 ${this.config.init_sbatch_script ? this.config.init_sbatch_script.join('\n') : ''}
 ${modules}
-echo 'slurm_id: $SLURM_JOB_ID'
+echo slurm_id: ${SLURM_JOB_ID}
 ${cmd}`
     }
 

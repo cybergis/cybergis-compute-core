@@ -21,6 +21,7 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
             await this.connector.submit()
             this.emitEvent('JOB_INIT', 'job [' + this.id + '] is initialized, waiting for job completion')
             XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc, this.job)
+            this.emitEvent('JOB_INIT', 'job [' + this.id + '] info logged by XSEDE')
         } catch (e) {
             this.emitEvent('JOB_RETRY', 'job [' + this.id + '] encountered system error ' + e.toString())
         }
