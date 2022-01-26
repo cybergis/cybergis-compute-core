@@ -14,14 +14,20 @@ export default class XSEDEUtil {
                 xsederesourcename: hpc.xsede_job_log_credential.xsederesourcename,
                 jobid: slurm_id,
                 gatewayuser: job.userId,
-                //submittime: XSEDEUtil.formateDate(job.createdAt),
+                submittime: XSEDEUtil.formateDate(job.createdAt),
                 //usage: XSEDEUtil.diffInSeconds(job.finishedAt, job.createdAt),
-                apikey: hpc.xsede_job_log_credential.apikey
+                //apikey: hpc.xsede_job_log_credential.apikey
             }
 
-            await axios.get(`${XSEDEUtil.jobLogURL}`, { params })
+            await axios.post(`${XSEDEUtil.jobLogURL}`, params, {headers: {"XA-API-Key": hpc.xsede_job_log_credential.apikey}})
+                .then((response) => {
+                      console.error('response: ', response)
+                      })
+                  .catch((error) => {
+                      console.error('response: ', error)
+                  })
             if (config.is_testing) console.log('XSEDE job logged: ', params)
-            console.log('XSEDE job logged: ', params)
+            console.error('XSEDE job logged: ', params)
         } catch(e) {
             // best effort
         }
