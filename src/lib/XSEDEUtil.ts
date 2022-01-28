@@ -15,11 +15,11 @@ export default class XSEDEUtil {
                 jobid: slurmId,
                 gatewayuser: job.userId,
                 submittime: XSEDEUtil.formateDate(job.createdAt),
-                usage: XSEDEUtil.diffInSeconds(job.finishedAt, job.createdAt),
+                // usage: XSEDEUtil.diffInSeconds(job.finishedAt, job.createdAt),
                 apikey: hpc.xsede_job_log_credential.apikey
             }
 
-            await axios.get(`${XSEDEUtil.jobLogURL}`, { params })
+            await axios.post(`${XSEDEUtil.jobLogURL}`, { params })
             if (config.is_testing) console.log('XSEDE job logged: ', params)
         } catch(e) {
             // best effort

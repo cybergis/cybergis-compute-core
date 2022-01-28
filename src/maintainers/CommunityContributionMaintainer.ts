@@ -20,6 +20,7 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
             this.connector.execExecutableManifestWithinImage(executableManifest, this.slurm)
             await this.connector.submit()
             this.emitEvent('JOB_INIT', 'job [' + this.id + '] is initialized, waiting for job completion')
+            XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc, this.job)
         } catch (e) {
             this.emitEvent('JOB_RETRY', 'job [' + this.id + '] encountered system error ' + e.toString())
         }
@@ -39,7 +40,7 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
                 }
                 // ending condition
                 this.emitEvent('JOB_ENDED', 'job [' + this.id + '] finished')
-                XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc, this.job)
+                XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc, this.job) // for backup submit
             } else if (status == 'ERROR' || status == 'F' || status == 'NF') {
                 // failing condition
                 this.emitEvent('JOB_FAILED', 'job [' + this.id + '] failed with status ' + status)
