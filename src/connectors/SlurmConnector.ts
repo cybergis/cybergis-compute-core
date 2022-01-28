@@ -133,7 +133,7 @@ ${cmd}`
         }
 
         this.slurm_id = sbatchResult.stdout.split(/[ ]+/).pop().trim()
-        await this.maintainer.updateJob({ slurm_id: this.slurm_id })
+        await this.maintainer.updateJob({ slurmId: this.slurm_id })
         if (this.maintainer != null) this.maintainer.emitEvent('SLURM_SUBMIT_SUCCESS', `slurm job submitted with slurm job id ${this.slurm_id}`)
     }
 
