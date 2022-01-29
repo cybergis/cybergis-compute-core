@@ -224,7 +224,7 @@ app.get('/user/job', async (req, res) => {
         .getRepository(Job)
         .find({ userId: res.locals.username })
 
-    res.json({ job: jobs })
+    res.json({ job: Helper.job2object(jobs) })
 })
 
 // list info
@@ -487,7 +487,7 @@ app.post('/job', async function (req, res) {
     if (!hpc.is_community_account) job.credentialId = await guard.registerCredential(body.user, body.password)
     await jobRepo.save(job)
 
-    res.json(job)
+    res.json(Helper.job2object(job))
 })
 
 app.put('/job/:jobId', async function (req, res) {

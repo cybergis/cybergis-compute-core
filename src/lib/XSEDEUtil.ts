@@ -19,7 +19,7 @@ export default class XSEDEUtil {
                 apikey: hpc.xsede_job_log_credential.apikey
             }
 
-            await axios.post(`${XSEDEUtil.jobLogURL}`, { params })
+            await axios.post(`${XSEDEUtil.jobLogURL}`, {}, { params })
             if (config.is_testing) console.log('XSEDE job logged: ', params)
         } catch(e) {
             // best effort

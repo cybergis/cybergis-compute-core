@@ -10,12 +10,21 @@ var Helper = {
         return Buffer.from(target).toString('base64')
     },
 
-    job2object(job: Job, exclude = []): Object {
+    job2object(job: Job | Job[], exclude = []): Object | Object[] {
+        if (Array.isArray(job)) {
+            var outArray: Object[] = []
+            for (var i in job) {
+                outArray.push(Helper.job2object(job[i]))
+            }
+            return outArray
+        }
+        //
         var out = {}
         var include = ['id', 'userId', 'secretToken', 'slurmId', 'maintainer', 'hpc', 'executableFolder', 'dataFolder', 'resultFolder', 'param', 'env', 'slurm', 'createdAt', 'updatedAt', 'deletedAt', 'initializedAt', 'finishedAt', 'isFailed', 'events', 'logs']
-        for (var i in job) {
-            if (!exclude.includes(i) && include.includes(i)) {
-                out[i] = job[i]
+        for (var i in include) {
+            if (!exclude.includes(i)) {
+                if (i in job) out[i] = job[i]
+                    else out[i] = null
             }
         }
         return out
