@@ -22,10 +22,10 @@ var Helper = {
         var out = {}
         var include = ['id', 'userId', 'secretToken', 'slurmId', 'maintainer', 'hpc', 'executableFolder', 'dataFolder', 'resultFolder', 'param', 'env', 'slurm', 'createdAt', 'updatedAt', 'deletedAt', 'initializedAt', 'finishedAt', 'isFailed', 'events', 'logs']
         for (var i in include) {
-            if (!exclude.includes(i)) {
-                if (i in job) out[i] = job[i]
-                    else out[i] = null
-            }
+            i = include[i]
+            if (exclude.includes(i)) continue
+            if (i in job) out[i] = job[i]
+                else out[i] = null
         }
         return out
     },
