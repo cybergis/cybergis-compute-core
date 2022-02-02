@@ -40,6 +40,8 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
                 }
                 // ending condition
                 this.emitEvent('JOB_ENDED', 'job [' + this.id + '] finished')
+                var usage = await this.connector.getUsage()
+                this.updateJob(usage)
                 XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc, this.job) // for backup submit
             } else if (status == 'ERROR' || status == 'F' || status == 'NF') {
                 // failing condition

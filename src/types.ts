@@ -253,4 +253,10 @@ export interface jobMaintainerUpdatable {
     env?: {[keys: string]: string}
     slurm?: slurm,
     slurmId?: string
+    nodes?: number
+    cpus?: number
+    cpuTime?: number
+    memory?: number
+    memoryUsage?: number
+    walltime?: number
 }

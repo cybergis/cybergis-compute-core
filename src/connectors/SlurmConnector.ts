@@ -212,6 +212,108 @@ ${cmd}`
         if (providedPath) return path.join(`/job/result`, providedPath)
         else return `/job/result`
     }
+
+    /*
+        Job ID: 558556
+        Cluster: keeling7
+        User/Group: cigi-gisolve/cigi-gisolve-group
+        State: COMPLETED (exit code 0)
+        Nodes: 2
+        Cores per node: 2
+        CPU Utilized: 00:00:02
+        CPU Efficiency: 16.67% of 00:00:12 core-walltime
+        Job Wall-clock time: 00:00:03
+        Memory Utilized: 61.45 MB (estimated maximum)
+        Memory Efficiency: 0.38% of 16.00 GB (4.00 GB/core)
+     */
+
+    async getUsage() {
+        var seffOutput = {
+            nodes: null,
+            cpus: null,
+            cpuTime: null,
+            memory: null,
+            memoryUsage: null,
+            walltime: null
+        }
+
+        try {
+            var seffResult = await this.exec(`seff ${this.slurm_id}`, {}, true, true)
+            if (seffResult.stderr) return seffOutput
+            var tmp = seffResult.stdout.split('\n')
+            //
+            for (var i in tmp) {
+                var j = tmp[i].split(':')
+                var k = j[0].trim()
+                j.shift(); var v = j.join(':').trim()
+                //
+                switch (k) {
+                    case 'Nodes': 
+                        seffOutput.nodes = parseInt(v)
+                    case 'Cores per node': 
+                        seffOutput.cpus = parseInt(v)
+                    case 'CPU Utilized': 
+                        var l = v.split(':'); if (l.length != 3) continue
+                        var seconds = parseInt(l[0]) * 60 * 60 + parseInt(l[1]) * 60 + parseInt(l[2])
+                        seffOutput.cpuTime = seconds
+                    case 'Job Wall-clock time': 
+                        var l = v.split(':'); if (l.length != 3) continue
+                        var seconds = parseInt(l[0]) * 60 * 60 + parseInt(l[1]) * 60 + parseInt(l[2])
+                        seffOutput.walltime = seconds
+                    case 'Memory Utilized': 
+                        v = v.toLowerCase()
+                        var kb = parseFloat(v.substring(0, v.length - 2).trim())
+                        var units = ['kb', 'mb', 'gb', 'tb', 'pb', 'eb']
+                        var isValid = false
+                        for (var i in units) {
+                            if (v.includes(i)) {
+                                isValid = true
+                                break
+                            }
+                        }
+                        if (!isValid) continue
+                        for (var i in units) {
+                            var unit = units[i]
+                            if (v.includes(unit)) break
+                            kb = kb * 1024
+                        }
+                        seffOutput.memoryUsage = kb
+                    case 'Memory Efficiency':
+                        v = v.toLowerCase()
+                        var l = v.split('of')
+                        if (l.length != 2) continue
+                        l = l[1].trim().split('(')
+                        if (l.length != 2) continue
+                        v = l[0].trim()
+                        //
+                        var kb = parseFloat(v.substring(0, v.length - 2).trim())
+                        var units = ['kb', 'mb', 'gb', 'tb', 'pb', 'eb']
+                        var isValid = false
+                        for (var i in units) {
+                            if (v.includes(i)) {
+                                isValid = true
+                                break
+                            }
+                        }
+                        if (!isValid) continue
+                        for (var i in units) {
+                            var unit = units[i]
+                            console.log(unit)
+                            if (v.includes(unit)) break
+                            kb = kb * 1024
+                        }
+                        seffOutput.memory = kb
+                }
+            }
+            //
+            if (seffOutput.cpus && seffOutput.nodes) {
+                seffOutput.cpus = seffOutput.cpus * seffOutput.nodes
+            } else {
+                seffOutput.cpus = null
+            }    
+        } catch {}
+        return seffOutput
+    }
 }
 
 export default SlurmConnector
