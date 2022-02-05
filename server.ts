@@ -227,6 +227,25 @@ app.get('/user/job', async (req, res) => {
     res.json({ job: Helper.job2object(jobs) })
 })
 
+app.get('/user/slurm-usage', async (req, res) => {
+    var body = req.body
+    var errors = requestErrors(validator.validate(body, schemas.user))
+
+    if (errors.length > 0) {
+        res.json({ error: "invalid input", messages: errors })
+        res.status(402)
+        return
+    }
+
+    if (!res.locals.username) {
+        res.json({ error: "invalid token" })
+        res.status(402)
+        return
+    }
+
+    res.json({ slurmUsage: await JobUtil.getUserSlurmUsage(res.locals.username, true) })
+})
+
 // list info
 app.get('/hpc', function (req, res) {
     var parseHPC = (dest: {[key: string]: hpcConfig}) => {

@@ -3,12 +3,59 @@ import { Job } from "../models/Job"
 import { hpcConfigMap, jupyterGlobusMap, maintainerConfigMap } from "../../configs/config"
 import { GitFolder, FileSystem } from '../FileSystem'
 import path = require('path')
+import DB from '../DB'
 
 export default class JobUtil {
     static validateParam(job: Job, paramRules: {[keys: string]: any}) {
         for (var i in paramRules) {
             if (!job.param[i]) {
                 throw new Error(`job missing input param ${i}`)
+            }
+        }
+    }
+
+    static async getUserSlurmUsage(userId: string, format = false) {
+        const db = new DB()
+        const connection = await db.connect()
+        const jobs = await connection.getRepository(Job).find({ userId: userId })
+
+        var userSlurmUsage = {
+            nodes: 0,
+            cpus: 0,
+            cpuTime: 0,
+            memory: 0,
+            memoryUsage: 0,
+            walltime: 0
+        }
+
+        for (var i in jobs) {
+            const job = jobs[i]
+            if (job.nodes) userSlurmUsage.nodes += job.nodes
+            if (job.cpus) userSlurmUsage.cpus += job.cpus
+            if (job.cpuTime) userSlurmUsage.cpuTime += job.cpuTime
+            if (job.memory) userSlurmUsage.memory += job.memory
+            if (job.memoryUsage) userSlurmUsage.memoryUsage += job.memoryUsage
+            if (job.walltime) userSlurmUsage.walltime += job.walltime
+        }  
+
+
+        if (format) {
+            return {
+                nodes: userSlurmUsage.nodes,
+                cpus: userSlurmUsage.cpus,
+                cpuTime: this.secondsToTimeDelta(userSlurmUsage.cpuTime),
+                memory: this.kbToStorageUnit(userSlurmUsage.memory),
+                memoryUsage: this.kbToStorageUnit(userSlurmUsage.memoryUsage),
+                walltime: this.secondsToTimeDelta(userSlurmUsage.walltime)
+            }
+        } else {
+            return {
+                nodes: userSlurmUsage.nodes,
+                cpus: userSlurmUsage.cpus,
+                cpuTime: userSlurmUsage.cpuTime,
+                memory: userSlurmUsage.memory,
+                memoryUsage: userSlurmUsage.memoryUsage,
+                walltime: userSlurmUsage.walltime
             }
         }
     }
@@ -119,7 +166,7 @@ export default class JobUtil {
 
     static compareSlurmConfig(i, a, b) {
         if (slurm_integer_storage_unit_config.includes(i)) {
-            return this.storageUnitToSize(a) < this.storageUnitToSize(b)
+            return this.storageUnitToKB(a) < this.storageUnitToKB(b)
         }
         if (slurm_integer_time_unit_config.includes(i)) {
             return this.timeToSeconds(a) < this.timeToSeconds(b)
@@ -127,17 +174,40 @@ export default class JobUtil {
         return a < b
     }
 
-    static storageUnitToSize(i: string) {
-        i = i.toLowerCase()
+    static storageUnitToKB(i: string) {
+        i = i.toLowerCase().replace(/b/gi, '')
+        if (i.includes('p')) {
+            return parseInt(i.replace('p', '').trim()) * 1024 * 1024 * 1024
+        }
         if (i.includes('g')) {
-            return parseInt(i.replace('g', '')) * 1000 * 1000 * 1000
+            return parseInt(i.replace('g', '').trim()) * 1024 * 1024
         }
         if (i.includes('m')) {
-            return parseInt(i.replace('g', '')) * 1000 * 1000
+            return parseInt(i.replace('m', '').trim()) * 1024
         }
-        if (i.includes('k')) {
-            return parseInt(i.replace('k', '')) * 1000
+    }
+
+    static kbToStorageUnit(i: number) {
+        var units = ['kb', 'mb', 'gb', 'tb', 'pb', 'eb'].reverse()
+        while (units.length > 0) {
+            var unit = units.pop()
+            i = i / 1024
+            if (i < 1024) return `${i}${unit}`
         }
+        return `${i}pb`
+    }
+
+    static secondsToTimeDelta(i: number) {
+        var days = Math.floor(i / (60 * 60 * 24))
+        var hours = Math.floor(i / (60 * 60))
+        var minutes = Math.floor(i / 60)
+        //
+        var format = (j) => {
+            if (j == 0) return '00'
+            else if (j < 10) return `0${j}`
+            else return `${j}`
+        }
+        return `${format(days)}:${format(hours)}:${format(minutes)}`
     }
 
     static unitTimeToSeconds(time: number, unit: string) {
