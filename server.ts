@@ -244,7 +244,7 @@ app.get('/user/slurm-usage', async (req, res) => {
         return
     }
 
-    res.json({ slurmUsage: await JobUtil.getUserSlurmUsage(res.locals.username, true) })
+    res.json(await JobUtil.getUserSlurmUsage(res.locals.username, true))
 })
 
 // list info
