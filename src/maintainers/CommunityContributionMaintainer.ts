@@ -47,6 +47,7 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
                 this.updateJob(usage)
                 XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc, this.job) // for backup submit
                 var contents = await this.connector.getRemoteResultFolderContent()
+                console.log(contents)
                 await this.resultFolderContentManager.put(this.id, contents)
             } else if (status == 'ERROR' || status == 'F' || status == 'NF') {
                 // failing condition
