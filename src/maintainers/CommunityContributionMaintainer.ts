@@ -2,12 +2,15 @@ import SingularityConnector from '../connectors/SingularityConnector'
 import BaseMaintainer from './BaseMaintainer'
 import { LocalFolder, GitFolder } from '../FileSystem'
 import XSEDEUtil from '../lib/XSEDEUtil'
+import { ResultFolderContentManager } from '../lib/JobUtil'
 
 export default class CommunityContributionMaintainer extends BaseMaintainer {
 
     public connector: SingularityConnector
 
     public executableFolder: GitFolder
+
+    public resultFolderContentManager: ResultFolderContentManager = new ResultFolderContentManager()
 
     onDefine() {
         // define connector
@@ -43,6 +46,8 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
                 var usage = await this.connector.getUsage()
                 this.updateJob(usage)
                 XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc, this.job) // for backup submit
+                var contents = await this.connector.getRemoteResultFolderContent()
+                await this.resultFolderContentManager.put(this.id, contents)
             } else if (status == 'ERROR' || status == 'F' || status == 'NF') {
                 // failing condition
                 this.emitEvent('JOB_FAILED', 'job [' + this.id + '] failed with status ' + status)

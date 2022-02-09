@@ -213,6 +213,21 @@ ${cmd}`
         else return `/job/result`
     }
 
+    async getRemoteResultFolderContent() {
+        var findResult = await this.exec(`find . -print`, {cwd: this.getRemoteResultFolderPath()}, true, true)
+        if (findResult.stderr) return []
+        var rawFiles = findResult.stdout.split('\n')
+        var files = ['/']
+        for (var i in rawFiles) {
+            var rawFile = rawFiles[i].trim().replace('./', '').split('/')
+            for (var j in rawFile) {
+                if (rawFile[j].startsWith('.')) continue // ignore invisible files
+            }
+            files.push(`/${rawFile.join('/')}`)
+        }
+        return files
+    }
+
     /*
         Job ID: 558556
         Cluster: keeling7

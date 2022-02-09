@@ -12,7 +12,7 @@ import JupyterHub from './src/JupyterHub'
 import DB from './src/DB'
 import Statistic from './src/Statistic'
 import * as path from 'path'
-import JobUtil from './src/lib/JobUtil'
+import JobUtil, { ResultFolderContentManager } from './src/lib/JobUtil'
 const bodyParser = require('body-parser')
 const Validator = require('jsonschema').Validator;
 const fileUpload = require('express-fileupload')
@@ -39,6 +39,7 @@ const supervisor = new Supervisor()
 const validator = new Validator()
 const db = new DB()
 const globusTaskList = new GlobusTaskListManager()
+const resultFolderContent = new ResultFolderContentManager()
 const jupyterHub = new JupyterHub()
 const statistic = new Statistic()
 
@@ -387,7 +388,7 @@ app.get('/file', async function (req: any, res) {
                 await globusTaskList.put(job.id, taskId)
             }
             var status = await GlobusUtil.queryTransferStatus(taskId, hpcConfigMap[job.hpc])
-            if (status in ['SUCCEEDED', 'FAILED']) await globusTaskList.remove(job.id, taskId)
+            if (status in ['SUCCEEDED', 'FAILED']) await globusTaskList.remove(job.id)
             res.json({ task_id: taskId, status: status })
         }
     } catch (e) {
@@ -634,6 +635,31 @@ app.get('/job/:jobId/events', async function (req, res) {
     }
 
     res.json(job.events)
+})
+
+app.get('/job/:jobId/result-folder-content', async function (req, res) {
+    var body = req.body
+    var errors = requestErrors(validator.validate(body, schemas.getJob))
+
+    if (errors.length > 0) {
+        res.json({ error: "invalid input", messages: errors }); res.status(402)
+        return
+    }
+
+    try {
+        var job = await guard.validateJobAccessToken(body.accessToken, true)
+    } catch (e) {
+        res.json({ error: "invalid access token", messages: [e.toString()] }); res.status(401)
+        return
+    }
+
+    if (job.id != req.params.jobId) {
+        res.json({ error: "invalid access", messages: [] }); res.status(401)
+        return
+    }
+
+    var out = await resultFolderContent.get(job.id)
+    res.json(out ? out : [])
 })
 
 app.get('/job/:jobId/logs', async function (req, res) {

@@ -2,8 +2,58 @@ import { slurm_integer_storage_unit_config, slurm_integer_time_unit_config, slur
 import { Job } from "../models/Job"
 import { hpcConfigMap, jupyterGlobusMap, maintainerConfigMap } from "../../configs/config"
 import { GitFolder, FileSystem } from '../FileSystem'
+import { config } from "../../configs/config"
 import path = require('path')
 import DB from '../DB'
+const redis = require('redis')
+const { promisify } = require("util")
+
+export class ResultFolderContentManager {
+    private redis = {
+        getValue: null,
+        setValue: null,
+        delValue: null,
+    }
+
+    private isConnected = false
+
+    async put(jobId: string, contents: string[]) {
+        await this.connect()
+        await this.redis.setValue(`job_result_folder_content${jobId}`, JSON.stringify(contents))
+    }
+
+    async get(jobId: string): Promise<string> {
+        await this.connect()
+        var out = await this.redis.getValue(`job_result_folder_content${jobId}`)
+        return out ? out : null
+    }
+
+    async remove(jobId: string) {
+        await this.connect()
+        var out = await this.get(jobId)
+        if (!out) return
+        this.redis.delValue(`job_result_folder_content${jobId}`)
+    }
+
+    private async connect() {
+        if (this.isConnected) return
+
+        var client = new redis.createClient({
+            host: config.redis.host,
+            port: config.redis.port
+        })
+
+        if (config.redis.password != null && config.redis.password != undefined) {
+            var redisAuth = promisify(client.auth).bind(client)
+            await redisAuth(config.redis.password)
+        }
+
+        this.redis.getValue = promisify(client.get).bind(client)
+        this.redis.setValue = promisify(client.set).bind(client)
+        this.redis.delValue = promisify(client.del).bind(client)
+        this.isConnected = true
+    }
+}
 
 export default class JobUtil {
     static validateParam(job: Job, paramRules: {[keys: string]: any}) {

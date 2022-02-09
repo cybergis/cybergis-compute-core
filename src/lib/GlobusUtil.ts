@@ -27,10 +27,10 @@ export class GlobusTaskListManager {
         return out ? out : null
     }
 
-    async remove(label: string, taskId: string) {
+    async remove(label: string) {
         await this.connect()
-        var taskId = await this.get(label)
-        if (!taskId) return
+        var out = await this.get(label)
+        if (!out) return
         this.redis.delValue(`globus_task_${label}`)
     }
 
