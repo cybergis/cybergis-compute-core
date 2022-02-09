@@ -419,30 +419,30 @@ app.get('/file/result-folder/globus-download', async function (req: any, res) {
 
     try {
         var to = FileSystem.getFolderByURL(body.downloadTo)
-        if (to instanceof GlobusFolder) {
-            var taskId = await globusTaskList.get(job.id)
-            if (!taskId) {
+        var downloadFromPath = body.downloadFrom
+        if (downloadFromPath[0] == '/') downloadFromPath = downloadFromPath.replace('/', '')
+        var taskId = await globusTaskList.get(job.id, downloadFromPath)
+        if (!taskId) {
+            if (to instanceof GlobusFolder) {
                 var hpcConfig = hpcConfigMap[job.hpc]
-                var downloadFromPath = body.downloadFrom
-                if (downloadFromPath[0] == '/') downloadFromPath = downloadFromPath.replace('/', '')
                 to.path = path.join(to.path, downloadFromPath)
                 downloadFromPath = path.join(`${job.id}/result`, downloadFromPath)
                 var from = FileSystem.getGlobusFolderByHPCConfig(hpcConfigMap[job.hpc], downloadFromPath)
                 var taskId = await GlobusUtil.initTransfer(from, to, hpcConfig, job.id)
-                await globusTaskList.put(job.id, taskId)
+                await globusTaskList.put(job.id, downloadFromPath, taskId)
+            } else {
+                res.json({ error: `invalid file url`, messages: [] })
+                res.status(402); return
             }
-            var status = await GlobusUtil.queryTransferStatus(taskId, hpcConfigMap[job.hpc])
-            if (status in ['SUCCEEDED', 'FAILED']) await globusTaskList.remove(job.id)
-            res.json({ task_id: taskId, status: status })
-        } else {
-            throw Error('invalid file url')
         }
+        var status = await GlobusUtil.queryTransferStatus(taskId, hpcConfigMap[job.hpc])
+        if (status in ['SUCCEEDED', 'FAILED']) await globusTaskList.remove(job.id, downloadFromPath)
+        res.json({ task_id: taskId, status: status })
     } catch (e) {
-        res.json({ error: `cannot get file by url [${body.fileUrl}]`, messages: [e.toString()] })
-        res.status(402)
-        return
-    }
-})
+            res.json({ error: `cannot get file by url [${body.fileUrl}]`, messages: [e.toString()] })
+            res.status(402); return
+        }
+    })
 
 // globus
 app.post('/globus-util/jupyter/upload', async function (req, res) {
