@@ -220,8 +220,8 @@ ${cmd}`
         var files = ['/']
         for (var i in rawFiles) {
             var t = rawFiles[i].trim()
-            if (t[0] == '.') var rawFile = rawFile.replace('./', '').split('/')
-                else var rawFile = rawFile.split('/')
+            if (t[0] == '.') t = t.replace('./', '')
+            var rawFile = t.split('/')
             for (var j in rawFile) {
                 if (rawFile[j].startsWith('.')) continue // ignore invisible files
             }
