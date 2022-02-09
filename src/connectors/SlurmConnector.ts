@@ -318,7 +318,6 @@ ${cmd}`
                         if (!isValid) continue
                         for (var i in units) {
                             var unit = units[i]
-                            console.log(unit)
                             if (v.includes(unit)) break
                             kb = kb * 1024
                         }
