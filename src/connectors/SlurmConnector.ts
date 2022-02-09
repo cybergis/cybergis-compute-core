@@ -36,8 +36,8 @@ ${this.config.init_sbatch_options ? this.config.init_sbatch_options.join('\n') :
 ${config.num_of_node ? `#SBATCH --nodes=${config.num_of_node}` : ''}
 #SBATCH --ntasks=${config.num_of_task}
 #SBATCH --time=${config.time}
-#SBATCH --error=${path.join(this.remote_result_folder_path, "job.stderr")}
-#SBATCH --output=${path.join(this.remote_result_folder_path, "job.stdout")}
+#SBATCH --error=${path.join(this.remote_result_folder_path, 'slurm_log', 'job.stderr')}
+#SBATCH --output=${path.join(this.remote_result_folder_path, 'slurm_log', 'job.stdout')}
 ${config.cpu_per_task ? `#SBATCH --cpus-per-task=${config.cpu_per_task}` : ''}
 ${config.memory_per_gpu ? `#SBATCH --mem-per-gpu=${config.memory_per_gpu}` : ''}
 ${config.memory_per_cpu ? `#SBATCH --mem-per-cpu=${config.memory_per_cpu}` : ''}
@@ -60,6 +60,7 @@ ${cmd}`
         if (this.maintainer != null) this.maintainer.emitEvent('SLURM_UPLOAD', `uploading files`)
         await this.upload(this.maintainer.executableFolder, this.remote_executable_folder_path, true)
         // job.sbatch
+        await this.mkdir(path.join(this.remote_result_folder_path, 'slurm_log'))
         await this.createFile(this.template, path.join(this.remote_executable_folder_path, 'job.sbatch'), {}, true)
         // job.json
         var jobJSON = {
@@ -214,7 +215,7 @@ ${cmd}`
     }
 
     async getRemoteResultFolderContent() {
-        var findResult = await this.exec(`find . -print`, {cwd: this.getRemoteResultFolderPath()}, true, true)
+        var findResult = await this.exec(`find . -type d -print`, {cwd: this.getRemoteResultFolderPath()}, true, true)
         if (findResult.stderr) return []
         var rawFiles = findResult.stdout.split('\n')
         var files = ['/']
