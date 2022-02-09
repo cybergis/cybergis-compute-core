@@ -22,10 +22,10 @@ export class ResultFolderContentManager {
         await this.redis.setValue(`job_result_folder_content${jobId}`, JSON.stringify(contents))
     }
 
-    async get(jobId: string): Promise<string> {
+    async get(jobId: string): Promise<string[]> {
         await this.connect()
         var out = await this.redis.getValue(`job_result_folder_content${jobId}`)
-        return out ? out : null
+        return out ? JSON.parse(out) : null
     }
 
     async remove(jobId: string) {

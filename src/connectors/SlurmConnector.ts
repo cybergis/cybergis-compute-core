@@ -223,7 +223,8 @@ ${cmd}`
             for (var j in rawFile) {
                 if (rawFile[j].startsWith('.')) continue // ignore invisible files
             }
-            files.push(`/${rawFile.join('/')}`)
+            var filePath = `/${rawFile.join('/')}`
+            if (!files.includes(filePath)) files.push(filePath)
         }
         return files
     }
