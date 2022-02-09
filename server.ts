@@ -105,7 +105,7 @@ var schemas = {
             jupyterhubApiToken: { type: 'string' },
             accessToken: { type: 'string' },
         },
-        required: ['accessToken', 'fileUrl']
+        required: ['accessToken']
     },
     downloadResultFolderGlobus: {
         type: 'object',
@@ -115,7 +115,7 @@ var schemas = {
             downloadTo: { type: 'string' },
             downloadFrom: { type: 'string' }
         },
-        required: ['accessToken', 'fileUrl']
+        required: ['accessToken', 'downloadTo', 'downloadFrom']
     }
 }
 
