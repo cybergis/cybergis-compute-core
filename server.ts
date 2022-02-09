@@ -425,6 +425,7 @@ app.get('/file/result-folder/globus-download', async function (req: any, res) {
                 var hpcConfig = hpcConfigMap[job.hpc]
                 var downloadFromPath = body.downloadFrom
                 if (downloadFromPath[0] == '/') downloadFromPath = downloadFromPath.replace('/', '')
+                to.path = path.join(to.path, downloadFromPath)
                 downloadFromPath = path.join(`${job.id}/result`, downloadFromPath)
                 var from = FileSystem.getGlobusFolderByHPCConfig(hpcConfigMap[job.hpc], downloadFromPath)
                 var taskId = await GlobusUtil.initTransfer(from, to, hpcConfig, job.id)
