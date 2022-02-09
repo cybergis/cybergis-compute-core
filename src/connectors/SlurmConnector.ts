@@ -222,9 +222,11 @@ ${cmd}`
             var t = rawFiles[i].trim()
             if (t[0] == '.') t = t.replace('./', '')
             var rawFile = t.split('/')
+            var skipFile = false
             for (var j in rawFile) {
-                if (rawFile[j].startsWith('.')) continue // ignore invisible files
+                if (rawFile[j].startsWith('.')) {skipFile = true; break} // ignore invisible files
             }
+            if (skipFile) continue
             var filePath = `/${rawFile.join('/')}`
             if (!files.includes(filePath)) files.push(filePath)
         }
