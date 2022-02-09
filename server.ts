@@ -421,7 +421,7 @@ app.get('/file/result-folder/globus-download', async function (req: any, res) {
         var to = FileSystem.getFolderByURL(body.downloadTo)
         var downloadFromPath = body.downloadFrom
         if (downloadFromPath[0] == '/') downloadFromPath = downloadFromPath.replace('/', '')
-        var taskId = await globusTaskList.get(job.id, downloadFromPath)
+        var taskId = await globusTaskList.get(job.id)
         if (!taskId) {
             if (to instanceof GlobusFolder) {
                 var hpcConfig = hpcConfigMap[job.hpc]
@@ -429,14 +429,14 @@ app.get('/file/result-folder/globus-download', async function (req: any, res) {
                 downloadFromPath = path.join(`${job.id}/result`, downloadFromPath)
                 var from = FileSystem.getGlobusFolderByHPCConfig(hpcConfigMap[job.hpc], downloadFromPath)
                 var taskId = await GlobusUtil.initTransfer(from, to, hpcConfig, job.id)
-                await globusTaskList.put(job.id, downloadFromPath, taskId)
+                await globusTaskList.put(job.id, taskId)
             } else {
                 res.json({ error: `invalid file url`, messages: [] })
                 res.status(402); return
             }
         }
         var status = await GlobusUtil.queryTransferStatus(taskId, hpcConfigMap[job.hpc])
-        if (status in ['SUCCEEDED', 'FAILED']) await globusTaskList.remove(job.id, downloadFromPath)
+        if (['SUCCEEDED', 'FAILED'].includes(status)) await globusTaskList.remove(job.id)
         res.json({ task_id: taskId, status: status })
     } catch (e) {
             res.json({ error: `cannot get file by url [${body.fileUrl}]`, messages: [e.toString()] })

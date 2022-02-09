@@ -16,22 +16,22 @@ export class GlobusTaskListManager {
 
     private isConnected = false
 
-    async put(jobId: string, subdirectory: string, taskId: string) {
+    async put(label: string, taskId: string) {
         await this.connect()
-        await this.redis.setValue(`globus_task_${jobId}_${subdirectory}`, taskId)
+        await this.redis.setValue(`globus_task_${label}`, taskId)
     }
 
-    async get(jobId: string, subdirectory: string): Promise<string> {
+    async get(label: string): Promise<string> {
         await this.connect()
-        var out = await this.redis.getValue(`globus_task_${jobId}_${subdirectory}`)
+        var out = await this.redis.getValue(`globus_task_${label}`)
         return out ? out : null
     }
 
-    async remove(jobId: string, subdirectory: string) {
+    async remove(label: string) {
         await this.connect()
-        var out = await this.get(jobId, subdirectory)
+        var out = await this.get(label)
         if (!out) return
-        this.redis.delValue(`globus_task_${jobId}_${subdirectory}`)
+        this.redis.delValue(`globus_task_${label}`)
     }
 
     private async connect() {
