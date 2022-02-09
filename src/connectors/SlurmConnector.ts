@@ -183,12 +183,12 @@ ${cmd}`
     }
 
     async getSlurmStdout() {
-        var out = await this.cat(path.join(this.remote_result_folder_path, "job.stdout"), {})
+        var out = await this.cat(path.join(this.remote_result_folder_path, 'slurm_log', 'job.stdout'), {})
         if (this.maintainer && out) this.maintainer.emitLog(out)
     }
 
     async getSlurmStderr() {
-        var out = await this.cat(path.join(this.remote_result_folder_path, "job.stderr"), {})
+        var out = await this.cat(path.join(this.remote_result_folder_path, 'slurm_log', 'job.stderr'), {})
         if (this.maintainer && out) this.maintainer.emitLog(out)
     }
 
