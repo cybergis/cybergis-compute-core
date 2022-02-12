@@ -215,6 +215,7 @@ export interface executableManifest {
     require_upload_data?: boolean
     slurm_input_rules?: slurmInputRules
     param_rules?: {[keys: string]: any}
+    default_result_folder_downloadable_path?: string
 }
 
 export interface containerConfig {
