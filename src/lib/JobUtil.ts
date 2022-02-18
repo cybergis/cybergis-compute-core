@@ -86,8 +86,7 @@ export default class JobUtil {
             if (job.memory) userSlurmUsage.memory += job.memory
             if (job.memoryUsage) userSlurmUsage.memoryUsage += job.memoryUsage
             if (job.walltime) userSlurmUsage.walltime += job.walltime
-        }  
-
+        }
 
         if (format) {
             return {
@@ -251,13 +250,14 @@ export default class JobUtil {
         var days = Math.floor(seconds / (60 * 60 * 24))
         var hours = Math.floor(seconds / (60 * 60) - (days * 24))
         var minutes = Math.floor(seconds / 60 -  (days * 60 * 24) - (hours * 60))
+        var seconds = Math.floor(seconds -  (days * 60 * 60 * 24) - (hours * 60 * 60))
         //
         var format = (j) => {
             if (j == 0) return '00'
             else if (j < 10) return `0${j}`
             else return `${j}`
         }
-        return `${format(days)}:${format(hours)}:${format(minutes)}`
+        return `${format(days)} days, ${format(hours)} hours, ${format(minutes)} minutes, ${format(seconds)} seconds`
     }
 
     static unitTimeToSeconds(time: number, unit: string) {
