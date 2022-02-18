@@ -252,7 +252,8 @@ app.get('/user/slurm-usage', async (req, res) => {
         return
     }
 
-    res.json(await JobUtil.getUserSlurmUsage(res.locals.username, true))
+    var format = req.query.format ? true : false
+    res.json(await JobUtil.getUserSlurmUsage(res.locals.username, format))
 })
 
 // list info
