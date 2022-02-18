@@ -241,16 +241,16 @@ export default class JobUtil {
         var units = ['kb', 'mb', 'gb', 'tb', 'pb', 'eb'].reverse()
         while (units.length > 0) {
             var unit = units.pop()
-            i = i / 1024
             if (i < 1024) return `${i}${unit}`
+            i = i / 1024
         }
         return `${i}pb`
     }
 
-    static secondsToTimeDelta(i: number) {
-        var days = Math.floor(i / (60 * 60 * 24))
-        var hours = Math.floor(i / (60 * 60))
-        var minutes = Math.floor(i / 60)
+    static secondsToTimeDelta(seconds: number) {
+        var days = Math.floor(seconds / (60 * 60 * 24))
+        var hours = Math.floor(seconds / (60 * 60) - (days * 24))
+        var minutes = Math.floor(seconds / 60 -  (days * 60 * 24) - (hours * 60))
         //
         var format = (j) => {
             if (j == 0) return '00'
