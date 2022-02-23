@@ -10,6 +10,7 @@
 | uncertainty_in_spatial_accessibility  | https://github.com/JinwooParkGeographer/Uncertainty-in-Spatial-Accessibility.git |
 | mpi_hello_world                       | https://github.com/cybergis/cybergis-compute-mpi-helloworld.git                  |
 | data_fusion                           | https://github.com/CarnivalBug/data_fusion.git                                   |
+> If you'd like to add your Git project to our supported list, please contact xxx@illinois.edu
 
 ## Supported HPC & Computing Resources
 
