@@ -1,5 +1,15 @@
-# CyberGIS Compute Job Supervisor Server
-v2 is in development. For future features and roadmap, please refer to [CyberGIS HPC Job Supervisor v2 Roadmap](https://github.com/cybergis/job-supervisor/blob/v2/roadmap.md).
+# CyberGIS Compute Core
+**CyberGIS-Compute** is a scalable middleware framework for enabling high-performance and data-intensive geospatial research and education on CyberGISX. 
+
+## Supported Git Projects
+
+## Supported HPC & Computing Resources
+
+| Name                      | Code              | Description                                                                                      |
+|---------------------------|-------------------|--------------------------------------------------------------------------------------------------|
+| Keeling Computing Cluster | keeling_community | University of Illinois HPC for enabling geospatial research and education at the CyberGIS Center |
+| Bridges-2                 | bridges_community | Pittsburgh Supercomputing Center HPC                                                             |
+| XSEDE Expanse             | expanse_community | San Diego Supercomputer Center                                                                   |
 
 ## Content
 - [Server Setup](https://github.com/cybergis/job-supervisor/tree/v2#server-setup)
