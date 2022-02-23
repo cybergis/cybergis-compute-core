@@ -2,27 +2,6 @@
 **CyberGIS-Compute** is a scalable middleware framework for enabling high-performance and data-intensive geospatial research and education on CyberGISX. 
 
 ## Supported Git Projects
-
-
-+--------------------------------------+----------------------------------------------------------------------------------+------+------------+---------------------+---------------------+-----------+
-| id                                   | address                                                                          | sha  | isApproved | createdAt           | updatedAt           | deletedAt |
-+--------------------------------------+----------------------------------------------------------------------------------+------+------------+---------------------+---------------------+-----------+
-| bridge_hello_world                   | https://github.com/cybergis/CyberGIS-Compute-Bridges-2.git                       | NULL |          1 | 2021-08-05 03:22:39 | 2021-08-05 03:22:39 | NULL      |
-| cybergis-compute-modules-test        | https://github.com/alexandermichels/cybergis-compute-modules-test.git            | NULL |          1 | 2021-09-09 10:03:36 | 2021-09-09 10:03:36 | NULL      |
-| data_fusion                          | https://github.com/CarnivalBug/data_fusion.git                                   | NULL |          1 | 2021-09-06 19:59:11 | 2021-09-06 19:59:11 | NULL      |
-| fireabm                              | https://github.com/cybergis/cybergis-compute-fireabm.git                         | NULL |          1 | 2021-08-05 03:20:18 | 2021-08-05 03:20:18 | NULL      |
-| hello_world                          | https://github.com/cybergis/cybergis-compute-hello-world.git                     | NULL |          1 | 2021-08-05 03:21:50 | 2021-08-05 03:21:50 | NULL      |
-| mpi_hello_world                      | https://github.com/cybergis/cybergis-compute-mpi-helloworld.git                  | NULL |          1 | 2021-10-26 12:23:06 | 2021-10-26 12:23:06 | NULL      |
-| spatial_access_covid-19              | https://github.com/cybergis/cybergis-compute-spatial-access-covid-19.git         | NULL |          1 | 2021-08-05 03:23:06 | 2021-08-05 03:23:06 | NULL      |
-| summa3                               | https://github.com/cybergis/cybergis-compute-v2-summa.git                        | NULL |          1 | 2021-11-28 03:22:39 | 2021-11-28 03:22:39 | NULL      |
-| uncertainty_in_spatial_accessibility | https://github.com/JinwooParkGeographer/Uncertainty-in-Spatial-Accessibility.git | NULL |          1 | 2021-09-07 19:28:50 | 2021-09-07 19:28:50 | NULL      |
-| wrfhydro-5.x                         | https://github.com/cybergis/cybergis-compute-v2-wrfhydro.git                     | NULL |          1 | 2022-02-07 19:28:50 | 2022-02-07 19:28:50 | NULL      |
-+--------------------------------------+----------------------------------------------------------------------------------+------+------------+---------------------+---------------------+-----------+
-
-
-
-
-
 | Name                                  | URL                                                                              |
 | hello_world                           | https://github.com/cybergis/cybergis-compute-hello-world.git                     |
 | summa3                                | https://github.com/cybergis/cybergis-compute-v2-summa.git                        |
