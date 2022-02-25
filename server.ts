@@ -371,7 +371,7 @@ app.get('/file', async function (req: any, res) {
                 await globusTaskList.put(job.id, taskId)
             }
             var status = await GlobusUtil.queryTransferStatus(taskId, hpcConfigMap[job.hpc])
-            if (status in ['SUCCEEDED', 'FAILED']) await globusTaskList.remove(job.id)
+            if (['SUCCEEDED', 'FAILED'].includes(status)) await globusTaskList.remove(job.id)
             res.json({ task_id: taskId, status: status })
         }
     } catch (e) {
