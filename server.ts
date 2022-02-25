@@ -116,6 +116,16 @@ var schemas = {
             downloadFrom: { type: 'string' }
         },
         required: ['accessToken', 'downloadTo', 'downloadFrom']
+    },
+
+    getFile: {
+        type: 'object',
+        properties: {
+            jupyterhubApiToken: { type: 'string' },
+            accessToken: { type: 'string' },
+            fileUrl: { type: 'string' }
+        },
+        required: ['accessToken', 'fileUrl']
     }
 }
 
@@ -320,6 +330,55 @@ app.get('/git', async function (req, res) {
         }
     })
     res.json({ git: await parseGit(gits) })
+})
+
+// TODO: remove after new versions, back compatibility
+app.get('/file', async function (req: any, res) {
+    var body = req.body
+    var errors = requestErrors(validator.validate(body, schemas.getFile))
+
+    if (errors.length > 0) {
+        res.json({ error: "invalid input", messages: errors })
+        res.status(402)
+        return
+    }
+
+    try {
+        var job = await guard.validateJobAccessToken(body.accessToken)
+    } catch (e) {
+        res.json({ error: "invalid access token", messages: [e.toString()] })
+        res.status(401)
+        return
+    }
+
+    if (!job.finishedAt) {
+        res.json({ error: `job is not finished, please try it later`, })
+        res.status(402)
+        return
+    }
+
+    try {
+        var folder = FileSystem.getFolderByURL(body.fileUrl, ['local', 'globus'])
+        if (folder instanceof LocalFolder) {
+            var dir = await folder.getZip()
+            res.download(dir)
+        } else if (folder instanceof GlobusFolder) {
+            var taskId = await globusTaskList.get(job.id)
+            if (!taskId) {
+                var hpcConfig = hpcConfigMap[job.hpc]
+                var from = FileSystem.getGlobusFolderByHPCConfig(hpcConfigMap[job.hpc], `${job.id}/result`)
+                var taskId = await GlobusUtil.initTransfer(from, folder, hpcConfig, job.id)
+                await globusTaskList.put(job.id, taskId)
+            }
+            var status = await GlobusUtil.queryTransferStatus(taskId, hpcConfigMap[job.hpc])
+            if (status in ['SUCCEEDED', 'FAILED']) await globusTaskList.remove(job.id)
+            res.json({ task_id: taskId, status: status })
+        }
+    } catch (e) {
+        res.json({ error: `cannot get file by url [${body.fileUrl}]`, messages: [e.toString()] })
+        res.status(402)
+        return
+    }
 })
 
 // file
