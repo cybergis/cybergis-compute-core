@@ -12,7 +12,7 @@ import JupyterHub from './src/JupyterHub'
 import DB from './src/DB'
 import Statistic from './src/Statistic'
 import * as path from 'path'
-import JobUtil from './src/lib/JobUtil'
+import JobUtil, { ResultFolderContentManager } from './src/lib/JobUtil'
 const bodyParser = require('body-parser')
 const Validator = require('jsonschema').Validator;
 const fileUpload = require('express-fileupload')
@@ -39,6 +39,7 @@ const supervisor = new Supervisor()
 const validator = new Validator()
 const db = new DB()
 const globusTaskList = new GlobusTaskListManager()
+const resultFolderContent = new ResultFolderContentManager()
 const jupyterHub = new JupyterHub()
 const statistic = new Statistic()
 
@@ -98,6 +99,24 @@ var schemas = {
         },
         required: ['accessToken']
     },
+    downloadResultFolderLocal: {
+        type: 'object',
+        properties: {
+            jupyterhubApiToken: { type: 'string' },
+            accessToken: { type: 'string' },
+        },
+        required: ['accessToken']
+    },
+    downloadResultFolderGlobus: {
+        type: 'object',
+        properties: {
+            jupyterhubApiToken: { type: 'string' },
+            accessToken: { type: 'string' },
+            downloadTo: { type: 'string' },
+            downloadFrom: { type: 'string' }
+        },
+        required: ['accessToken', 'downloadTo', 'downloadFrom']
+    },
 
     getFile: {
         type: 'object',
@@ -107,7 +126,7 @@ var schemas = {
             fileUrl: { type: 'string' }
         },
         required: ['accessToken', 'fileUrl']
-    }    
+    }
 }
 
 function requestErrors(v) {
@@ -227,6 +246,25 @@ app.get('/user/job', async (req, res) => {
     res.json({ job: Helper.job2object(jobs) })
 })
 
+app.get('/user/slurm-usage', async (req, res) => {
+    var body = req.body
+    var errors = requestErrors(validator.validate(body, schemas.user))
+
+    if (errors.length > 0) {
+        res.json({ error: "invalid input", messages: errors })
+        res.status(402)
+        return
+    }
+
+    if (!res.locals.username) {
+        res.json({ error: "invalid token" })
+        res.status(402)
+        return
+    }
+
+    res.json(await JobUtil.getUserSlurmUsage(res.locals.username, true))
+})
+
 // list info
 app.get('/hpc', function (req, res) {
     var parseHPC = (dest: {[key: string]: hpcConfig}) => {
@@ -294,42 +332,7 @@ app.get('/git', async function (req, res) {
     res.json({ git: await parseGit(gits) })
 })
 
-// file
-app.post('/file', async function (req: any, res) {
-    if (res.statusCode == 402) return
-
-    var body = req.body
-    var errors = requestErrors(validator.validate(body, schemas.getJob))
-
-    if (errors.length > 0) {
-        res.json({ error: "invalid input", messages: errors })
-        res.status(402)
-        return
-    }
-
-    try {
-        var job = await guard.validateJobAccessToken(body.accessToken)
-    } catch (e) {
-        res.json({ error: "invalid access token", messages: [e.toString()] })
-        res.status(401)
-        return
-    }
-
-    try {
-        var maintainerConfig = maintainerConfigMap[job.maintainer]
-        if (maintainerConfig.executable_folder.from_user) {
-            var fileConfig = maintainerConfig.executable_folder.file_config
-            var file: LocalFolder = await FileSystem.createLocalFolder(fileConfig)
-            await file.putFileFromZip(req.files.file.tempFilePath)
-        }
-        res.json({ file: file.getURL() })
-    } catch (e) {
-        res.json({ error: e.toString() })
-        res.status(402)
-        return
-    }
-})
-
+// TODO: remove after new versions, back compatibility
 app.get('/file', async function (req: any, res) {
     var body = req.body
     var errors = requestErrors(validator.validate(body, schemas.getFile))
@@ -368,7 +371,7 @@ app.get('/file', async function (req: any, res) {
                 await globusTaskList.put(job.id, taskId)
             }
             var status = await GlobusUtil.queryTransferStatus(taskId, hpcConfigMap[job.hpc])
-            if (status in ['SUCCEEDED', 'FAILED']) await globusTaskList.remove(job.id, taskId)
+            if (['SUCCEEDED', 'FAILED'].includes(status)) await globusTaskList.remove(job.id)
             res.json({ task_id: taskId, status: status })
         }
     } catch (e) {
@@ -377,6 +380,128 @@ app.get('/file', async function (req: any, res) {
         return
     }
 })
+
+// file
+app.post('/file', async function (req: any, res) {
+    if (res.statusCode == 402) return
+
+    var body = req.body
+    var errors = requestErrors(validator.validate(body, schemas.getJob))
+
+    if (errors.length > 0) {
+        res.json({ error: "invalid input", messages: errors })
+        res.status(402)
+        return
+    }
+
+    try {
+        var job = await guard.validateJobAccessToken(body.accessToken)
+    } catch (e) {
+        res.json({ error: "invalid access token", messages: [e.toString()] })
+        res.status(401)
+        return
+    }
+
+    try {
+        var maintainerConfig = maintainerConfigMap[job.maintainer]
+        if (maintainerConfig.executable_folder.from_user) {
+            var fileConfig = maintainerConfig.executable_folder.file_config
+            var file: LocalFolder = await FileSystem.createLocalFolder(fileConfig)
+            await file.putFileFromZip(req.files.file.tempFilePath)
+        }
+        res.json({ file: file.getURL() })
+    } catch (e) {
+        res.json({ error: e.toString() })
+        res.status(402)
+        return
+    }
+})
+
+app.get('/file/result-folder/direct-download', async function (req: any, res) {
+    var body = req.body
+    var errors = requestErrors(validator.validate(body, schemas.downloadResultFolderLocal))
+
+    if (errors.length > 0) {
+        res.json({ error: "invalid input", messages: errors })
+        res.status(402)
+        return
+    }
+
+    try {
+        var job = await guard.validateJobAccessToken(body.accessToken)
+    } catch (e) {
+        res.json({ error: "invalid access token", messages: [e.toString()] })
+        res.status(401)
+        return
+    }
+
+    if (!job.finishedAt) {
+        res.json({ error: `job is not finished, please try it later`, })
+        res.status(402)
+        return
+    }
+
+    try {
+        var folder = FileSystem.getLocalFolder(job.resultFolder)
+        var dir = await folder.getZip()
+        res.download(dir)
+    } catch (e) {
+        res.json({ error: `cannot get file by url [${body.fileUrl}]`, messages: [e.toString()] })
+        res.status(402)
+        return
+    }
+})
+
+app.get('/file/result-folder/globus-download', async function (req: any, res) {
+    var body = req.body
+    var errors = requestErrors(validator.validate(body, schemas.downloadResultFolderGlobus))
+
+    if (errors.length > 0) {
+        res.json({ error: "invalid input", messages: errors })
+        res.status(402)
+        return
+    }
+
+    try {
+        var job = await guard.validateJobAccessToken(body.accessToken)
+    } catch (e) {
+        res.json({ error: "invalid access token", messages: [e.toString()] })
+        res.status(401)
+        return
+    }
+
+    if (!job.finishedAt) {
+        res.json({ error: `job is not finished, please try it later`, })
+        res.status(402)
+        return
+    }
+
+    try {
+        var to = FileSystem.getFolderByURL(body.downloadTo)
+        var downloadFromPath = body.downloadFrom
+        if (downloadFromPath[0] == '/') downloadFromPath = downloadFromPath.replace('/', '')
+        var taskId = await globusTaskList.get(job.id)
+        if (!taskId) {
+            if (to instanceof GlobusFolder) {
+                var hpcConfig = hpcConfigMap[job.hpc]
+                to.path = path.join(to.path, downloadFromPath)
+                downloadFromPath = path.join(`${job.id}/result`, downloadFromPath)
+                var from = FileSystem.getGlobusFolderByHPCConfig(hpcConfigMap[job.hpc], downloadFromPath)
+                var taskId = await GlobusUtil.initTransfer(from, to, hpcConfig, job.id)
+                await globusTaskList.put(job.id, taskId)
+            } else {
+                res.json({ error: `invalid file url`, messages: [] })
+                res.status(402); return
+            }
+        }
+        var status = await GlobusUtil.queryTransferStatus(taskId, hpcConfigMap[job.hpc])
+        if (['SUCCEEDED', 'FAILED'].includes(status)) await globusTaskList.remove(job.id)
+        res.json({ task_id: taskId, status: status })
+    } catch (e) {
+            res.json({ error: `cannot get file by url [${body.fileUrl}]`, messages: [e.toString()] })
+            res.status(402); return
+        }
+    })
 
 // globus
 app.post('/globus-util/jupyter/upload', async function (req, res) {
@@ -615,6 +740,31 @@ app.get('/job/:jobId/events', async function (req, res) {
     }
 
     res.json(job.events)
+})
+
+app.get('/job/:jobId/result-folder-content', async function (req, res) {
+    var body = req.body
+    var errors = requestErrors(validator.validate(body, schemas.getJob))
+
+    if (errors.length > 0) {
+        res.json({ error: "invalid input", messages: errors }); res.status(402)
+        return
+    }
+
+    try {
+        var job = await guard.validateJobAccessToken(body.accessToken, true)
+    } catch (e) {
+        res.json({ error: "invalid access token", messages: [e.toString()] }); res.status(401)
+        return
+    }
+
+    if (job.id != req.params.jobId) {
+        res.json({ error: "invalid access", messages: [] }); res.status(401)
+        return
+    }
+
+    var out = await resultFolderContent.get(job.id)
+    res.json(out ? out : [])
 })
 
 app.get('/job/:jobId/logs', async function (req, res) {

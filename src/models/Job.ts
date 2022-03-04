@@ -72,6 +72,24 @@ export class Job {
     @Column({default: false})
     isFailed: boolean
 
+    @Column({nullable: true, default: null})
+    nodes: number
+
+    @Column({nullable: true, default: null})
+    cpus: number
+
+    @Column({nullable: true, default: null})
+    cpuTime: number
+
+    @Column({nullable: true, default: null})
+    memory: number
+
+    @Column({nullable: true, default: null})
+    memoryUsage: number
+
+    @Column({nullable: true, default: null})
+    walltime: number
+
     @AfterLoad()
     sortLogs() {
         if (this.logs) {

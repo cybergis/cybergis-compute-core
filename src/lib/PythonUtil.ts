@@ -29,8 +29,6 @@ export default class PythonUtil {
                     }
                 }
             }
-
-            console.log(stdout)
         })
 
         process.stdin.on('readable', () => {

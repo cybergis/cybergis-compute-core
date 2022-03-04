@@ -6,8 +6,9 @@ services:
     volumes:
     - ./:/job_supervisor:rw
     privileged: true
-#    ports:
-#      - "3030:3030"
+    # Dev
+    #ports:
+    #  - "3030:3030"
     sysctls:
       - net.ipv6.conf.all.disable_ipv6=0
     environment:
@@ -24,12 +25,13 @@ services:
     restart: always
     command: --default-authentication-plugin=mysql_native_password
     environment:
-      - MYSQL_ROOT_PASSWORD=XXXXXXXX
+      - MYSQL_ROOT_PASSWORD=XXXXX
       - MYSQL_DATABASE=cybergis_compute
       - MYSQL_USER=cybergis_compute
-      - MYSQL_PASSWORD=XXXXXXXXXX
-  #  ports:
-  #    - "3306:3306"
+      - MYSQL_PASSWORD=XXXXXX
+    # Dev
+    #ports:
+    #  - "3306:3306"
     volumes:
       - ./mysql_data:/var/lib/mysql
 networks:

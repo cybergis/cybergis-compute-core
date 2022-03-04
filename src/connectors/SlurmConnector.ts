@@ -36,8 +36,8 @@ ${this.config.init_sbatch_options ? this.config.init_sbatch_options.join('\n') :
 ${config.num_of_node ? `#SBATCH --nodes=${config.num_of_node}` : ''}
 #SBATCH --ntasks=${config.num_of_task}
 #SBATCH --time=${config.time}
-#SBATCH --error=${path.join(this.remote_result_folder_path, "job.stderr")}
-#SBATCH --output=${path.join(this.remote_result_folder_path, "job.stdout")}
+#SBATCH --error=${path.join(this.remote_result_folder_path, 'slurm_log', 'job.stderr')}
+#SBATCH --output=${path.join(this.remote_result_folder_path, 'slurm_log', 'job.stdout')}
 ${config.cpu_per_task ? `#SBATCH --cpus-per-task=${config.cpu_per_task}` : ''}
 ${config.memory_per_gpu ? `#SBATCH --mem-per-gpu=${config.memory_per_gpu}` : ''}
 ${config.memory_per_cpu ? `#SBATCH --mem-per-cpu=${config.memory_per_cpu}` : ''}
@@ -60,6 +60,7 @@ ${cmd}`
         if (this.maintainer != null) this.maintainer.emitEvent('SLURM_UPLOAD', `uploading files`)
         await this.upload(this.maintainer.executableFolder, this.remote_executable_folder_path, true)
         // job.sbatch
+        await this.mkdir(path.join(this.remote_result_folder_path, 'slurm_log'))
         await this.createFile(this.template, path.join(this.remote_executable_folder_path, 'job.sbatch'), {}, true)
         // job.json
         var jobJSON = {
@@ -182,12 +183,12 @@ ${cmd}`
     }
 
     async getSlurmStdout() {
-        var out = await this.cat(path.join(this.remote_result_folder_path, "job.stdout"), {})
+        var out = await this.cat(path.join(this.remote_result_folder_path, 'slurm_log', 'job.stdout'), {})
         if (this.maintainer && out) this.maintainer.emitLog(out)
     }
 
     async getSlurmStderr() {
-        var out = await this.cat(path.join(this.remote_result_folder_path, "job.stderr"), {})
+        var out = await this.cat(path.join(this.remote_result_folder_path, 'slurm_log', 'job.stderr'), {})
         if (this.maintainer && out) this.maintainer.emitLog(out)
     }
 
@@ -211,6 +212,127 @@ ${cmd}`
     getContainerResultFolderPath(providedPath: string = null) {
         if (providedPath) return path.join(`/job/result`, providedPath)
         else return `/job/result`
+    }
+
+    async getRemoteResultFolderContent() {
+        var findResult = await this.exec(`find . -type d -print`, {cwd: this.getRemoteResultFolderPath()}, true, true)
+        if (findResult.stderr) return []
+        var rawFiles = findResult.stdout.split('\n')
+        var files = ['/']
+        for (var i in rawFiles) {
+            var t = rawFiles[i].trim()
+            if (t[0] == '.') t = t.replace('./', '')
+            var rawFile = t.split('/')
+            var skipFile = false
+            for (var j in rawFile) {
+                if (rawFile[j].startsWith('.')) {skipFile = true; break} // ignore invisible files
+            }
+            if (skipFile) continue
+            var filePath = `/${rawFile.join('/')}`
+            if (!files.includes(filePath)) files.push(filePath)
+        }
+        return files
+    }
+
+    /*
+        Job ID: 558556
+        Cluster: keeling7
+        User/Group: cigi-gisolve/cigi-gisolve-group
+        State: COMPLETED (exit code 0)
+        Nodes: 2
+        Cores per node: 2
+        CPU Utilized: 00:00:02
+        CPU Efficiency: 16.67% of 00:00:12 core-walltime
+        Job Wall-clock time: 00:00:03
+        Memory Utilized: 61.45 MB (estimated maximum)
+        Memory Efficiency: 0.38% of 16.00 GB (4.00 GB/core)
+     */
+
+    async getUsage() {
+        var seffOutput = {
+            nodes: null,
+            cpus: null,
+            cpuTime: null,
+            memory: null,
+            memoryUsage: null,
+            walltime: null
+        }
+
+        try {
+            var seffResult = await this.exec(`seff ${this.slurm_id}`, {}, true, true)
+            if (seffResult.stderr) return seffOutput
+            var tmp = seffResult.stdout.split('\n')
+            //
+            for (var i in tmp) {
+                var j = tmp[i].split(':')
+                var k = j[0].trim()
+                j.shift(); var v = j.join(':').trim()
+                //
+                switch (k) {
+                    case 'Nodes': 
+                        seffOutput.nodes = parseInt(v)
+                    case 'Cores per node': 
+                        seffOutput.cpus = parseInt(v)
+                    case 'CPU Utilized': 
+                        var l = v.split(':'); if (l.length != 3) continue
+                        var seconds = parseInt(l[0]) * 60 * 60 + parseInt(l[1]) * 60 + parseInt(l[2])
+                        seffOutput.cpuTime = seconds
+                    case 'Job Wall-clock time': 
+                        var l = v.split(':'); if (l.length != 3) continue
+                        var seconds = parseInt(l[0]) * 60 * 60 + parseInt(l[1]) * 60 + parseInt(l[2])
+                        seffOutput.walltime = seconds
+                    case 'Memory Utilized': 
+                        v = v.toLowerCase()
+                        var kb = parseFloat(v.substring(0, v.length - 2).trim())
+                        var units = ['kb', 'mb', 'gb', 'tb', 'pb', 'eb']
+                        var isValid = false
+                        for (var i in units) {
+                            if (v.includes(i)) {
+                                isValid = true
+                                break
+                            }
+                        }
+                        if (!isValid) continue
+                        for (var i in units) {
+                            var unit = units[i]
+                            if (v.includes(unit)) break
+                            kb = kb * 1024
+                        }
+                        seffOutput.memoryUsage = kb
+                    case 'Memory Efficiency':
+                        v = v.toLowerCase()
+                        var l = v.split('of')
+                        if (l.length != 2) continue
+                        l = l[1].trim().split('(')
+                        if (l.length != 2) continue
+                        v = l[0].trim()
+                        //
+                        var kb = parseFloat(v.substring(0, v.length - 2).trim())
+                        var units = ['kb', 'mb', 'gb', 'tb', 'pb', 'eb']
+                        var isValid = false
+                        for (var i in units) {
+                            if (v.includes(i)) {
+                                isValid = true
+                                break
+                            }
+                        }
+                        if (!isValid) continue
+                        for (var i in units) {
+                            var unit = units[i]
+                            if (v.includes(unit)) break
+                            kb = kb * 1024
+                        }
+                        seffOutput.memory = kb
+                }
+            }
+            //
+            if (seffOutput.cpus && seffOutput.nodes) {
+                seffOutput.cpus = seffOutput.cpus * seffOutput.nodes
+            } else {
+                seffOutput.cpus = null
+            }    
+        } catch {}
+        return seffOutput
     }
 }
 
