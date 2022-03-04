@@ -3,8 +3,10 @@ services:
   job_supervisor:
     image: zimoxiao/job_supervisor:latest
     restart: on-failure
+    depends_on:
+      - db
     volumes:
-    - ./:/job_supervisor:rw
+      - ./:/job_supervisor:rw
     privileged: true
     # Dev
     #ports:
