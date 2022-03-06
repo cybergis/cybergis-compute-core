@@ -20,17 +20,6 @@ Scalable middleware framework for enabling high-performance and data-intensive g
 | Bridges-2                 | bridges_community | Pittsburgh Supercomputing Center HPC                                                             |
 | XSEDE Expanse             | expanse_community | San Diego Supercomputer Center                                                                   |
 
-## Content
-- [Server Setup](https://github.com/cybergis/cybergis-compute-core/tree/v2#server-setup)
-- [Configurations](https://github.com/cybergis/cybergis-compute-core/tree/v2#configurations)
-- [Development Guide](https://github.com/cybergis/cybergis-compute-core/tree/v2#development-terminologies)
-- [Singularity Hello World Development](https://github.com/cybergis/cybergis-compute-core/tree/v2#singularity-hello-world-development)
-  - [SlrumConnector](https://github.com/cybergis/cybergis-compute-core/tree/v2#slrumconnector)
-  - [SingularityConnector](https://github.com/cybergis/cybergis-compute-core/tree/v2#singularityconnector)
-  - [Write a hello world job!](https://github.com/cybergis/cybergis-compute-core/tree/v2#write-a-hello-world-job)
-
-***
-
 ## Server Setup
 1. Requirements
     - Docker & Docker Compose
@@ -150,40 +139,6 @@ Scalable middleware framework for enabling high-performance and data-intensive g
     }
     ```
 
-***
-
-### Community Contributed Application Design
-**goal**: develop a Git project framework for community developers to read user input (data and parameters) and interact with maintainer. App developers only need to rewrite their existing code to make it work on HPC with job supervisor. Only one generic maintainer is needed.
-
-**components**
-
-	- param.json: an input file that contains
-		1. Executable/data/resulte folders
-		2. Job information
-		3. Parameters
-
-	- app.json: information about the application
-		- app name
-		- accepted params
-		- DockerHub image/tag (optional)
-		- preprocess script
-		- pose process script
-		- main process script
-	- Dockerfile: if provided, build image and deploy on HPC; use when specified
-	- preprocess: a script that runs in single thread before the main process
-	- main process: runs in MPI
-	- pose process: a script that runs in single thread after the main process
-
-***
-
-### Timeline
-- ~~MPI - Slurm processing~~
-- ~~GitHub download~~
-	- ~~write param.json - community contribution~~
-	- ~~read app.json - community contribution~~
-- ~~preprocess & pose process~~
-- ~~Migrate to MySQL - permanent storage~~
-- ~~Collect job statistics - monitor~~
-- ~~Enable FPT upload and download for local folders - large file upload~~
-- ~~User System~~
-- ~~Enable Globus on SDK - large file upload~~
+## Related Documentations
+- [CyberGIS Compute Python SDK](https://github.com/cybergis/cybergis-compute-python-sdk)
+- [CyberGIS Compute Example Hello World Project](https://github.com/cybergis/cybergis-compute-hello-world)
