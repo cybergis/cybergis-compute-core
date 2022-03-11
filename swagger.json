@@ -1,0 +1,125 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "description": "Scalable middleware framework for enabling high-performance and data-intensive geospatial research and education on CyberGISX.",
+    "version": "2.0.0",
+    "title": "CyberGIS Compute",
+    "contact": {
+      "email": "zxiao2@illinois.edu"
+    },
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://cgjobsup.cigi.illinois.edu/v2",
+      "description": "Production server"
+    },
+    {
+      "url": "https://cgjobsup-dev.cigi.illinois.edu",
+      "description": "Development server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "user",
+      "description": "JupyterHub/Lab User"
+    },
+    {
+      "name": "hpc"
+    },
+    {
+      "name": "maintainer"
+    },
+    {
+      "name": "container"
+    },
+    {
+      "name": "git"
+    },
+    {
+      "name": "file"
+    },
+    {
+      "name": "globus-util"
+    },
+    {
+      "name": "job"
+    }
+  ],
+  "paths": {
+    "/user": {
+      "get": {
+        "tags": [
+          "user"
+        ],
+        "summary": "Get user info given token",
+        "security": [
+          {
+            "jupyterhubApiToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "invalid access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "User": {
+        "type": "object",
+        "required": [
+          "username"
+        ],
+        "properties": {
+          "username": {
+            "type": "string"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "messages": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "jupyterhubApiToken": {
+        "type": "apiKey",
+        "name": "jupyterhubApiToken",
+        "in": "query"
+      }
+    }
+  }
+}

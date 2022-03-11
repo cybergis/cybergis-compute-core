@@ -13,6 +13,8 @@ import DB from './src/DB'
 import Statistic from './src/Statistic'
 import * as path from 'path'
 import JobUtil, { ResultFolderContentManager } from './src/lib/JobUtil'
+const swaggerUI = require('swagger-ui-express')
+const swaggerDocument = require('./swagger.json')
 const bodyParser = require('body-parser')
 const Validator = require('jsonschema').Validator;
 const fileUpload = require('express-fileupload')
@@ -142,6 +144,8 @@ function setDefaultValues(data, defaults) {
     }
     return data
 }
+
+app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(swaggerDocument))
 
 // index
 app.get('/', (req, res) => {
