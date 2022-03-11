@@ -84,6 +84,46 @@
           }
         }
       }
+    },
+    "/hpc": {
+      "get": {
+        "tags": [
+          "hpc"
+        ],
+        "summary": "List available HPC on system",
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HPC"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/maintainer": {
+      "get": {
+        "tags": [
+          "maintainer"
+        ],
+        "summary": "List available HPC on system",
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Maintainer"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -96,6 +136,387 @@
         "properties": {
           "username": {
             "type": "string"
+          }
+        }
+      },
+      "Event": {
+        "type": "object",
+        "required": [
+          "id",
+          "jobId",
+          "type",
+          "message",
+          "createdAt",
+          "updatedAt",
+          "deletedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "jobId": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deletedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Log": {
+        "type": "object",
+        "required": [
+          "id",
+          "jobId",
+          "message",
+          "createdAt",
+          "updatedAt",
+          "deletedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "jobId": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deletedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "HPC": {
+        "type": "object",
+        "required": [
+          "ip",
+          "port",
+          "is_community_account",
+          "community_login",
+          "root_path",
+          "init_sbatch_script",
+          "job_pool_capacity",
+          "globus"
+        ],
+        "properties": {
+          "ip": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer"
+          },
+          "is_community_account": {
+            "type": "boolean"
+          },
+          "community_login": {
+            "type": "object",
+            "properties": {
+              "user": {
+                "type": "string"
+              },
+              "use_local_key": {
+                "type": "boolean"
+              },
+              "external_key": {
+                "type": "object",
+                "properties": {
+                  "private_key_path": {
+                    "type": "string"
+                  },
+                  "passphrase": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "root_path": {
+            "type": "string"
+          },
+          "init_sbatch_script": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "job_pool_capacity": {
+            "type": "integer"
+          },
+          "globus": {
+            "type": "object",
+            "properties": {
+              "identity": {
+                "type": "string"
+              },
+              "endpoint": {
+                "type": "string"
+              },
+              "root_path": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Git": {
+        "type": "object",
+        "required": [
+          "id",
+          "address",
+          "sha",
+          "isApproved",
+          "createdAt",
+          "updatedAt",
+          "deletedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "address": {
+            "type": "string"
+          },
+          "sha": {
+            "type": "string"
+          },
+          "isApproved": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deletedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "GlobusTransferRefreshToken": {
+        "type": "object",
+        "required": [
+          "identity",
+          "transferRefreshToken",
+          "createdAt",
+          "updatedAt",
+          "deletedAt"
+        ],
+        "properties": {
+          "identity": {
+            "type": "integer"
+          },
+          "transferRefreshToken": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deletedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Maintainer": {
+        "type": "object",
+        "required": [
+          "hpc",
+          "default_hpc",
+          "job_pool_capacity",
+          "executable_folder",
+          "maintainer"
+        ],
+        "properties": {
+          "hpc": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "default_hpc": {
+            "type": "string"
+          },
+          "job_pool_capacity": {
+            "type": "integer"
+          },
+          "executable_folder": {
+            "type": "object",
+            "properties": {
+              "from_user": {
+                "type": "boolean"
+              },
+              "allowed_protocol": {
+                "type": "string"
+              }
+            }
+          },
+          "maintainer": {
+            "type": "string"
+          }
+        }
+      },
+      "Job": {
+        "type": "object",
+        "required": [
+          "id",
+          "userId",
+          "secretToken",
+          "maintainer",
+          "hpc",
+          "executableFolder",
+          "dataFolder",
+          "resultFolder",
+          "param",
+          "env",
+          "slurm",
+          "slurmId",
+          "credentialId",
+          "initializedAt",
+          "finishedAt",
+          "queuedAt",
+          "isFailed",
+          "nodes",
+          "cpus",
+          "cpuTime",
+          "memory",
+          "memoryUsage",
+          "walltime",
+          "createdAt",
+          "updatedAt",
+          "deletedAt",
+          "logs",
+          "events"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "userId": {
+            "type": "integer"
+          },
+          "secretToken": {
+            "type": "string"
+          },
+          "maintainer": {
+            "type": "string"
+          },
+          "hpc": {
+            "type": "string"
+          },
+          "executableFolder": {
+            "type": "string"
+          },
+          "dataFolder": {
+            "type": "string"
+          },
+          "resultFolder": {
+            "type": "string"
+          },
+          "param": {
+            "type": "object"
+          },
+          "env": {
+            "type": "object"
+          },
+          "slurm": {
+            "type": "string"
+          },
+          "slurmId": {
+            "type": "string"
+          },
+          "credentialId": {
+            "type": "string"
+          },
+          "initializedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finishedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "queuedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "isFailed": {
+            "type": "boolean"
+          },
+          "nodes": {
+            "type": "integer"
+          },
+          "cpus": {
+            "type": "integer"
+          },
+          "cpuTime": {
+            "type": "integer"
+          },
+          "memory": {
+            "type": "integer"
+          },
+          "memoryUsage": {
+            "type": "integer"
+          },
+          "walltime": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deletedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "logs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Log"
+            }
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Event"
+            }
           }
         }
       },
