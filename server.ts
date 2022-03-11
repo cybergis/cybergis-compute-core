@@ -500,6 +500,7 @@ app.get('/file/result-folder/globus-download', async function (req: any, res) {
         }
         var status = await GlobusUtil.queryTransferStatus(taskId, hpcConfigMap[job.hpc])
         if (['SUCCEEDED', 'FAILED'].includes(status)) await globusTaskList.remove(job.id)
+        console.log(`Job Id: ${job.id}, Task Id: ${taskId}, HPC: ${hpcConfigMap[job.hpc].globus.identity} Globus Status: ${status}`)
         res.json({ task_id: taskId, status: status })
     } catch (e) {
             res.json({ error: `cannot get file by url [${body.fileUrl}]`, messages: [e.toString()] })
