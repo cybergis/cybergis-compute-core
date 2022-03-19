@@ -337,13 +337,7 @@ export class GitFolder extends LocalFolder {
                     await exec(`cd ${this.path} && git checkout ${this.git.sha}`)
                 }
             } else {
-                await exec(`cd ${this.path} && git fetch origin`)
-                var { stdout, stderr } = await exec(`cd ${this.path} && git --no-pager diff origin/HEAD --stat-count=1`)
-                if (stdout.trim()) {
-                    rimraf.sync(this.path)
-                    await fs.promises.mkdir(this.path)
-                    await exec(`cd ${this.path} && git clone ${this.git.address} ${this.path}`)
-                }
+                await exec(`cd ${this.path} && git pull`)
             }
 
             await this._readExecutableManifest()

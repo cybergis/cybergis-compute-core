@@ -34,6 +34,7 @@
     "del-cli": "^3.0.1",
     "express": "^4.17.1",
     "express-fileupload": "^1.2.0",
+    "jsdoc": "^3.6.10",
     "jsonschema": "^1.2.6",
     "morgan": "^1.10.0",
     "mysql": "^2.18.1",
