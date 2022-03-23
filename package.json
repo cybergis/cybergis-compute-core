@@ -8,7 +8,7 @@
   },
   "scripts": {
     "prebuild": "del production/",
-    "build": "tsc && node_modules/.bin/jsdoc -c jsdoc.json",
+    "build": "tsc && node_modules/.bin/jsdoc -c jsdoc.json -R README.md",
     "postbuild": "cpy '*' '!production' '!docker-compose.yml' '!environment_dev.yml' '!tsconfig.json' '!config.example.json' '!configs/*.example.json' '!*.md' '!package.json' '!*.sql' '!nginx.conf' '!package-lock.json' '!node_modules' '!*.ts' 'configs/*' '!configs/*.ts' 'src/**/*' '!src/**/*.ts' ./production/ --cwd=./ --no-overwrite --parents"
   },
   "repository": {
