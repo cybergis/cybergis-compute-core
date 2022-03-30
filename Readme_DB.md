@@ -15,7 +15,7 @@ INSERT INTO `gits` (`id`, `address`, `sha`, `isApproved`, `createdAt`, `updatedA
 
 select * from globus_transfer_refresh_token;
 
-INSERT INTO `gits` (`identity`, `transferRefreshToken`, `createdAt`, `updatedAt`, `deletedAt`) VALUES
+INSERT INTO `globus_transfer_refresh_token` (`identity`, `transferRefreshToken`, `createdAt`, `updatedAt`, `deletedAt`) VALUES
 ('apadmana@illinois.edu', 'XXXXXXXXXXXXXX', '2022-03-29 19:28:50', '2022-03-29 19:28:50', NULL);
 
 
