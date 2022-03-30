@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Compute V1 is non-dockerized 
 # dependes on conda env "jobsupdev_v1"
 # runs at port 3000 on host directly
