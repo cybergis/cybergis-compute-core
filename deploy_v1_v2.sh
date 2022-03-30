@@ -11,7 +11,7 @@
 echo "V1 will not get started/restarted by this script! Go to V1 folder and run 'deploy_v1.sh'"
 
 # To deploy/restart V2, give db username and password in docker-compose.yml_v1_v2_coexisting
-# ./deploy_v2.sh 
+# ./deploy_v1_v2.sh 
 
 # To add a new model repo to V2 db:
 # rm docker-compose.yml
