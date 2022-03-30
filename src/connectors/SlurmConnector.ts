@@ -125,8 +125,9 @@ ${cmd}`
         }, true, true))
 
         var failed = false
-        if (!sbatchResult.stdout || sbatchResult.stderr) failed = true
+        if (!sbatchResult.stdout) failed = true
         else if (sbatchResult.stdout.includes('ERROR') || sbatchResult.stdout.includes('WARN')) failed = true
+        else if (!sbatchResult.stdout.includes('Submitted batch job ')) failed = true
 
         if (failed) {
             if (this.maintainer != null) this.maintainer.emitEvent('SLURM_SUBMIT_ERROR', 'cannot submit job ' + this.maintainer.id + ': ' + JSON.stringify(sbatchResult))
