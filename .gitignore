@@ -104,7 +104,7 @@ dist
 
 .DS_Store
 
-configs/*
+configs/*.json
 
 !configs/*.example.json
 !configs/*.ts
