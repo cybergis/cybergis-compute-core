@@ -11,18 +11,18 @@
         "password": null
     },
     "mysql": {
-        "host": "0.0.0.0",
+        "host": "db",
         "port": 3306,
-        "database": "job_supervisor",
-        "username": "username",
-        "password": "password"
+        "database": "cybergis_compute",
+        "username": "cybergis_compute",
+        "password": "XXXXXXXXXXXXXXXXXXXXXXXXXXX"
     },
     "local_file_system": {
         "limit_in_mb": 100,
         "cache_path": "/job_supervisor/data/tmp",
         "root_path": "/job_supervisor/data/root"
     },
-    "globus_client_id": "string",
+    "globus_client_id": "43a03cac-6eb2-4b77-91dd-6c08fc42f3d3",
     "queue_consume_time_period_in_seconds": 3,
     "is_testing": true
 }

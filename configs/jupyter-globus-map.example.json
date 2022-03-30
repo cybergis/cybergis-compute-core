@@ -5,8 +5,13 @@
         "container_home_path": "/home/jovyan/work/"
     },
 
-    "js-156-216.jetstream-cloud.org": {
+    "js-156-75.jetstream-cloud.org": {
         "endpoint": "fcd5acc6-157f-11ec-90b8-41052087bc27",
+        "root_path": "/~/mnt/nfs_folder/notebook_home_data/",
+        "container_home_path": "/home/jovyan/work/"
+    },
+    "js-156-34.jetstream-cloud.org": {
+        "endpoint": "972d3bf6-ac7d-11ec-bf8e-ab28bf5d96bb",
         "root_path": "/~/mnt/nfs_folder/notebook_home_data/",
         "container_home_path": "/home/jovyan/work/"
     }

@@ -11,9 +11,10 @@
                 "passphrase": null
             }
         },
-        "root_path": "/data/keeling/a/cigi-gisolve/scratch/dev",
+        "root_path": "/data/keeling/a/cigi-gisolve/scratch",
         "init_sbatch_script": [
-            "module use /data/cigi/common/cigi-modules"
+            "# module use /data/cigi/common/cigi-modules",
+            "module use gnu/openmpi-4.1.2-gnu-4.8.5"
         ],
         "job_pool_capacity": 10,
         "globus": {
@@ -43,15 +44,16 @@
         },
         "init_sbatch_script": [
             "module load DefaultModules",
-            "module load singularitypro/3.5"
+            "module load singularitypro/3.9"
         ],
         "init_sbatch_options": [
             "#SBATCH --partition=shared",
+            "#SBATCH --nodes=1",
             "#SBATCH --account=TG-EAR190007"
         ],
         "xsede_job_log_credential": {
-            "xsederesourcename": "",
-            "apikey": ""
+            "xsederesourcename": "expanse.sdsc.xsede.org",
+            "apikey": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
         }
     },
     "bridges_community_gpu": {
