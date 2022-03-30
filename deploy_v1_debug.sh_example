@@ -30,6 +30,6 @@ tsc
 node ./server.js
 
 # Linux: access host port from within container
-# host firewall: ufw allow from 172.0.0.0/8 to any port 3000
+# host firewall: ufw allow from 172.16.0.0/12 to any port 3000
 # For docker >= 20.10
 # https://stackoverflow.com/questions/48546124/what-is-linux-equivalent-of-host-docker-internal/67158212#67158212#
