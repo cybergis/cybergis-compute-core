@@ -19,11 +19,12 @@ Docker-Compose 1.29.2
 1. Create a docker network
 
 ```
-# For docker >= 20.10, Port XXXX on the host can be accessed from within container at host.docker.internal
+# For docker >= 20.10, Port XXXX on the host can be accessed from within container at host.docker.internal if using a user-defined bridge network
 # nginx compose file should have
 extra_hosts:
       - "host.docker.internal:host-gateway"
 # see: https://stackoverflow.com/questions/48546124/what-is-linux-equivalent-of-host-docker-internal/67158212#67158212
+
 docker network create -d bridge  my-cybergis-compute-network
 ```
 
@@ -31,6 +32,7 @@ docker network create -d bridge  my-cybergis-compute-network
 # For docker < 20.10: Port XXXX on the host can be accessed from within container at 172.99.99.1:XXXX as the selected ip below
 # the selected ip range is to avoid conflict with existing networks.
 # see: https://stackoverflow.com/questions/31324981/how-to-access-host-port-from-docker-container/31328031#31328031
+
 docker network create -d bridge --subnet=172.30.0.0/16 my-cybergis-compute-network
 ```
 
