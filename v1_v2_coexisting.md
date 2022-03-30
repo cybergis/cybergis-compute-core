@@ -39,5 +39,6 @@ docker network create -d bridge --subnet=172.30.0.0/16 my-cybergis-compute-netwo
 2. Configure firewall on host to allow connections from container to specific port on host
 
 ```
-ufw allow from 172.16.0.0/12 to any port 3000
+# see https://www.cloudaccess.net/cloud-control-panel-ccp/157-dns-management/322-subnet-masks-reference-table.html
+ufw allow from 172.0.0.0/8 to any port 3000
 ```
