@@ -13,6 +13,12 @@ const fileUpload = require('express-fileupload')
 const tmpDir = __dirname + '/data/tmp'
 
 const app = express()
+function middlewareFunEarlier(req,res,next) {
+   console.log(Date(), req.hostname, req.ip, req.ips, req.originalUrl, req.method, req.baseUrl, req.body , req.params , req.query);
+   next();
+}
+
+app.use(middlewareFunEarlier);
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(requestIp.mw({ attributeName: 'ip' }))

@@ -1,9 +1,10 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -48,6 +49,11 @@ var requestIp = require('request-ip');
 var fileUpload = require('express-fileupload');
 var tmpDir = __dirname + '/data/tmp';
 var app = express();
+function middlewareFunEarlier(req, res, next) {
+    console.log(Date(), req.hostname, req.ip, req.ips, req.originalUrl, req.method, req.baseUrl, req.body, req.params, req.query);
+    next();
+}
+app.use(middlewareFunEarlier);
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(requestIp.mw({ attributeName: 'ip' }));
