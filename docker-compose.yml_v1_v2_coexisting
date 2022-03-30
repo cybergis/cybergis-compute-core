@@ -1,5 +1,26 @@
 version: "3.9"
 services:
+  nginx:
+    image: linuxserver/swag:1.22.0-ls107
+    restart: always
+    depends_on:
+      - job_supervisor
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx_v1_v2.conf:/config/nginx/site-confs/default
+      - nginx_volume:/config
+    extra_hosts:
+      # docker > 20.10
+      - "host.docker.internal:host-gateway"
+    environment:
+      # Production
+      - URL=cgjobsup.cigi.illinois.edu
+      # Dev
+      #- URL=cgjobsup-dev.cigi.illinois.edu
+      - EMAIL=help@cybergis.org
+  
   job_supervisor:
     image: zimoxiao/job_supervisor:latest
     restart: on-failure
@@ -27,15 +48,17 @@ services:
     restart: always
     command: --default-authentication-plugin=mysql_native_password
     environment:
-      - MYSQL_ROOT_PASSWORD=XXXXX
+      - MYSQL_ROOT_PASSWORD=wVPBkN1x
       - MYSQL_DATABASE=cybergis_compute
       - MYSQL_USER=cybergis_compute
-      - MYSQL_PASSWORD=XXXXXX
+      - MYSQL_PASSWORD=XyzaDEsb
     # Dev
     #ports:
     #  - "3306:3306"
     volumes:
       - ./mysql_data:/var/lib/mysql
+volumes:
+  nginx_volume:
 networks:
   # use pre-existing network
   default:
