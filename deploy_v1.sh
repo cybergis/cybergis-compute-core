@@ -18,6 +18,11 @@ redis-server --daemonize yes
 
 node ./cli.js background stop-all
 
+export GLOBUS_CLIENT_ID=cc05ae63-8cd8-43de-8721-0eee914c423b
+export GLOBUS_TRANSFER_REFRESH_TOKEN=Ag89GJlrYKzeWd3W0yk8brbzKmPBXpGadlrqqpB3x28NJMY3edfaU5WMxDrGPQaWgDx4jBKwM5kEXoV3GJr4Klp6QqEy0
+export GLOBUS_SOURCE_ENDPOINT_ID=b256c034-1578-11eb-893e-0a5521ff3f4b
+export GLOBUS_DESTINATION_ENDPOINT_ID=fcd5acc6-157f-11ec-90b8-41052087bc27
+
 node ./cli.js serve
 
 # Linux: access host port from within container
