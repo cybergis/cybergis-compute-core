@@ -41,7 +41,7 @@ This is a quick-start tutorial for developers who want to add new models to the 
     
     # activate virtual environment "jobsupdev"
     > ⚠️ all the following steps should be finished under virtual environment "jobsupdev"
-    conda activate jobsupdev
+    conda activate jobsupdev_v1
    
     # checkout major dependency cybergis library (hosted in repo Jupyter-xsede)
     cd ~/jobsupdev
@@ -62,6 +62,9 @@ This is a quick-start tutorial for developers who want to add new models to the 
     > ⚠️ developer should request for a key file and keep it secured
     # !! Do Not share ssh key file with others or commit to GitHub !!
     
+    # install node depdencies
+    npm install
+
     # check dependency
     node ./doctor.js
    
