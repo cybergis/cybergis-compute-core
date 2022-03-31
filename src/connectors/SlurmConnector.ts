@@ -4,6 +4,7 @@ import { slurm } from '../types'
 import { LocalFolder, GlobusFolder, FileSystem } from '../FileSystem'
 import * as path from 'path'
 import GlobusUtil from '../lib/GlobusUtil'
+import { config } from '../../configs/config'
 
 class SlurmConnector extends BaseConnector {
 
@@ -217,7 +218,8 @@ ${cmd}`
 
     async getRemoteResultFolderContent() {
         var findResult = await this.exec(`find . -type d -print`, {cwd: this.getRemoteResultFolderPath()}, true, true)
-        if (findResult.stderr) return []
+        if (config.is_testing) console.log(JSON.stringify(findResult)) // logging
+        if (!findResult.stdout) return []
         var rawFiles = findResult.stdout.split('\n')
         var files = ['/']
         for (var i in rawFiles) {
