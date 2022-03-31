@@ -218,7 +218,7 @@ ${cmd}`
 
     async getRemoteResultFolderContent() {
         var findResult = await this.exec(`find . -type d -print`, {cwd: this.getRemoteResultFolderPath()}, true, true)
-        if (config.is_testing) console.log(JSON.stringify(findResult)) // logging
+        if (config.is_testing && findResult.stderr) console.log(JSON.stringify(findResult)) // logging
         if (!findResult.stdout) return []
         var rawFiles = findResult.stdout.split('\n')
         var files = ['/']
