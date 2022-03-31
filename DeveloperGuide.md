@@ -35,9 +35,12 @@ This is a quick-start tutorial for developers who want to add new models to the 
     cd ~/jobsupdev
     git clone https://github.com/cybergis/job-supervisor.git
     
-    # create conda virtual environment "jobsupdev"
+    # create conda virtual environment "jobsupdev_v1"
     cd job-supervisor
-    conda env create -f environment_dev.yml
+    conda install mamba -n base -c conda-forge
+    mamba env create -f environment_dev_all.yml
+    # if above not working
+    #mamba env create -f environment_dev_.yml
     
     # activate virtual environment "jobsupdev"
     > ⚠️ all the following steps should be finished under virtual environment "jobsupdev"
@@ -71,6 +74,9 @@ This is a quick-start tutorial for developers who want to add new models to the 
     # start Job Supervisor (node.js server) locally
     node ./cli.js serve
     # to stop: node ./cli.js background stop-all
+    
+    # for production deploy
+    ./deploy_v1.sh
    
     # quick checkup
     # open browser and visit http://localhost:3000/
