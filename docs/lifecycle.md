@@ -49,3 +49,6 @@ JAT is an **inefficient** design because validating an `accessToken` requires ha
 For **user** authentication, we use the existing [Jupyter API Token](https://jupyterhub.readthedocs.io/en/stable/reference/rest.html) system. Given the `url` of the Jupyter instance and the `token`, we can ask Jupyter to validate the `token` and get the username. All Jupyter Auth related services are defined in [/src/JupyterHub.ts](https://github.com/cybergis/cybergis-compute-core/blob/v2/src/JupyterHub.ts)
 
 ***
+
+### Queue
+All incoming job submission request will be stored in our database, and labeled as `Job.queuedAt = null`. The `Job` will enter a [redis Queue](https://github.com/cybergis/cybergis-compute-core/blob/v2/src/Queue.ts) waiting to be consumed by **Maintainer Pool**. If there are available capacity in the **Maintainer Pool**, it will `Queue.shift` the job out of the queue, and set `Job.queuedAt = new Date('current date')`.
