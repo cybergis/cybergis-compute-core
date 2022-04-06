@@ -22,7 +22,7 @@ services:
       - EMAIL=help@cybergis.org
   
   job_supervisor:
-    image: zimoxiao/job_supervisor:latest
+    image: cybergisx/job_supervisor_v2:62ca2797cc26
     restart: on-failure
     depends_on:
       - db
