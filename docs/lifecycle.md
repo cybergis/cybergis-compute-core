@@ -51,4 +51,4 @@ For **user** authentication, we use the existing [Jupyter API Token](https://jup
 ***
 
 ### Queue
-All incoming job submission request will be stored in our database, and labeled as `Job.queuedAt = null`. The `Job` will enter a [redis Queue](https://github.com/cybergis/cybergis-compute-core/blob/v2/src/Queue.ts) waiting to be consumed by **Maintainer Pool**. If there are available capacity in the **Maintainer Pool**, it will `Queue.shift` the job out of the queue, and set `Job.queuedAt = new Date('current date')`.
+All incoming job submission requests will be stored in our database, and labeled as `Job.queuedAt = null`. The `Job` will enter a [redis Queue](https://github.com/cybergis/cybergis-compute-core/blob/v2/src/Queue.ts) waiting to be consumed by **Maintainer Pool**. If there are available capacity in the **Maintainer Pool**, it will `Queue.shift` the job out of the queue, and set `Job.queuedAt = new Date('current date')`.
