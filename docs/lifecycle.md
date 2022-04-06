@@ -11,9 +11,17 @@ The server architecture is divided into:
 ***
 
 ## Build Project
-- Before you build you code, you should install all dependencies using `npm i`. 
+- Before you build your code, you should install all dependencies using `npm install`. 
 - Then, simply run `npm run build` to build your project. 
 - All compiled code are under the `/production` folder.
+
+## Models
+We use [TypeORM](https://typeorm.io) to define service related data types in our databases. All models are defined in `/src/models`:
+- [Job.ts](https://github.com/cybergis/cybergis-compute-core/blob/v2/src/models/Job.ts): represents a Job instance
+- [Git.ts](https://github.com/cybergis/cybergis-compute-core/blob/v2/src/models/Git.ts): defines a git project
+- [Log.ts](https://github.com/cybergis/cybergis-compute-core/blob/v2/src/models/Log.ts): represents a log entry (stdout/err) of a particular job.
+- [Event.ts](https://github.com/cybergis/cybergis-compute-core/blob/v2/src/models/Event.ts): represents an event (execution step) of a particular job.
+- [GlobusTransferRefreshToken.ts](https://github.com/cybergis/cybergis-compute-core/blob/v2/src/models/GlobusTransferRefreshToken.ts): represents the refresh token of a Globus entry point, [see doc](https://globus-sdk-python.readthedocs.io/en/stable/authorization.html).
 
 ***
 
@@ -31,12 +39,13 @@ For historical reasons, CyberGIS-Compute Core has two sets of authentication sys
 ***
 
 > ⚠️ JAT should be deprecated due to performance reasons, transition to only Jupyter Auth.
+
 Job Token uses JAT (Job Access Token) as encryption scheme defined in [src/JAT.ts](https://github.com/cybergis/cybergis-compute-core/blob/v2/src/JAT.ts). Both client (SDK) and the server needs to use JAT in order for it to work. The client receives a `secretToken`, and parses it into `accessToken`. The server decodes the `accessToken` using `jat.parseAccessToken(aT)` and get information related to the job (mainly Job ID).
 
 JAT is an **inefficient** design because validating an `accessToken` requires hashing every known `secretToken`s to match. The [Guard](https://github.com/cybergis/cybergis-compute-core/blob/v2/src/Guard.ts) object is designed to cache trusted `accessToken` and return `Job` object when validated.
 
 ***
 
-For **user** authentication, we use the existing [Jupyter API Token](https://jupyterhub.readthedocs.io/en/stable/reference/rest.html) system. Given the `url` of the Jupyter instance and the `token`, we can ask JupyterLab to validate the `token` and get the username. All Jupyter Auth related services are defined in [/src/JupyterHub.ts](https://github.com/cybergis/cybergis-compute-core/blob/v2/src/JupyterHub.ts)
+For **user** authentication, we use the existing [Jupyter API Token](https://jupyterhub.readthedocs.io/en/stable/reference/rest.html) system. Given the `url` of the Jupyter instance and the `token`, we can ask Jupyter to validate the `token` and get the username. All Jupyter Auth related services are defined in [/src/JupyterHub.ts](https://github.com/cybergis/cybergis-compute-core/blob/v2/src/JupyterHub.ts)
 
 ***
