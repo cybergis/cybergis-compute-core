@@ -1,12 +1,6 @@
 # CyberGIS-Compute Core Lifecycle
 The **core** is a middleware server that sits between **JupyterLab Environments** (ex. CyberGISX) and **HPCs**. It bridge the computing power of HPCs with the user-friendly UI of JupyterLab.
 
- to bring the computing power of HPC to 
-
-:
-1. Exposes a set of RESTful APIs to users
-2. Execute commands on HPC according to user's request
-
 ***
 
 The server architecture is divided into:
@@ -17,18 +11,32 @@ The server architecture is divided into:
 ***
 
 ## Build Project
-Before you build you code, you should install all dependencies using `npm i`. Then, simply run `npm run build` to build your project. All compiled code are under the `/production` folder.
+- Before you build you code, you should install all dependencies using `npm i`. 
+- Then, simply run `npm run build` to build your project. 
+- All compiled code are under the `/production` folder.
 
 ***
 
 ## Server Space
 
 ### RESTful APIs
-The RESTful APIs are constructed using [ExpressJS](http://expressjs.com), a lightweight JavaScript web framework. All server code is defined in a single file [/server.ts](https://github.com/cybergis/cybergis-compute-core/blob/v2/server.ts). This file is also responsible for [constructing all the components](https://github.com/cybergis/cybergis-compute-core/blob/7048cebf3aa6b80e6667572ec10b704a102ff790/server.ts#L39) and acts as the entrypoint for CyberGIS-Compute. Just run `node /production/server.js` to start the Compute-Core.
+The RESTful APIs are constructed using [ExpressJS](http://expressjs.com), a lightweight JavaScript web framework. All server code is defined in a single file [/server.ts](https://github.com/cybergis/cybergis-compute-core/blob/v2/server.ts). This file is also responsible for [constructing all the components](https://github.com/cybergis/cybergis-compute-core/blob/7048cebf3aa6b80e6667572ec10b704a102ff790/server.ts#L39) and acts as the entrypoint for CyberGIS-Compute. 
+> Just run `node /production/server.js` to start the Compute-Core.
 
 ### Authorization
-CyberGIS-Compute Core has two sets of authentication systems:
+For historical reasons, CyberGIS-Compute Core has two sets of authentication systems:
 1. Job tokens: represents a job submission.
-2. JupyterLab Auth: native JupyterLab API  token, [see doc](https://jupyterhub.readthedocs.io/en/stable/reference/rest.html).
+2. Jupyter Auth: native Jupyter API token, [see doc](https://jupyterhub.readthedocs.io/en/stable/reference/rest.html).
+
+***
+
+> ⚠️ JAT should be deprecated due to performance reasons, transition to only Jupyter Auth.
+Job Token uses JAT (Job Access Token) as encryption scheme defined in [src/JAT.ts](https://github.com/cybergis/cybergis-compute-core/blob/v2/src/JAT.ts). Both client (SDK) and the server needs to use JAT in order for it to work. The client receives a `secretToken`, and parses it into `accessToken`. The server decodes the `accessToken` using `jat.parseAccessToken(aT)` and get information related to the job (mainly Job ID).
+
+JAT is an **inefficient** design because validating an `accessToken` requires hashing every known `secretToken`s to match. The [Guard](https://github.com/cybergis/cybergis-compute-core/blob/v2/src/Guard.ts) object is designed to cache trusted `accessToken` and return `Job` object when validated.
+
+***
+
+For **user** authentication, we use the existing [Jupyter API Token](https://jupyterhub.readthedocs.io/en/stable/reference/rest.html) system. Given the `url` of the Jupyter instance and the `token`, we can ask JupyterLab to validate the `token` and get the username. All Jupyter Auth related services are defined in [/src/JupyterHub.ts](https://github.com/cybergis/cybergis-compute-core/blob/v2/src/JupyterHub.ts)
 
 ***

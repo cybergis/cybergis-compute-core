@@ -32,7 +32,7 @@ class JupyterHub {
         var t = Helper.btoa(target)
         var i = t.split('@')
         if (i.length != 2) {
-            throw new Error('JupyterHub Token is formatted ')
+            throw new Error('JupyterHub Token is incorrectly formatted ')
         }
         return {
             host: i[0],
