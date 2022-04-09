@@ -1,4 +1,35 @@
 # A Quick Start for Model Developer
+
+## Dockerized Compute V1 (updated on 2022-04-08)
+
+```
+mkdir -p /var/cybergis-compute/v1
+cd /var/cybergis-compute/v1
+git clone -b v1 https://github.com/cybergis/cybergis-compute-core.git
+cd /var/cybergis-compute/v1/cybergis-compute-core
+cp compute_v1.env_example compute_v1.env
+# edit compute_v1.env
+cp config.json_example config.json
+# edit config.json
+# pull submodule: Jupyter-xsede
+git submodule update --init --recursive
+# put key file at /var/cybergis-compute/v1/cybergis-compute-core/key
+docker-compute up -d
+
+# go to v2 and start docker-compose.yml_v1_v2_coexisting
+# test in browser at /
+
+
+# Debugging Mode
+# edit docker-compose.yml to enable port 3000:3000
+docker-compose up
+```
+
+
+
+
+---------------------------------Old Doc--------------------------------
+
 This is a quick-start tutorial for developers who want to add new models to the Job Supervisor (one core component of the CyberGIS Computing Service)
 
 
