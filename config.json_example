@@ -10,7 +10,7 @@
     ],
     "isTesting": true,
     "redis": {
-        "host": "0.0.0.0",
+        "host": "redis_v1",
         "port": 6379,
         "password": null
     }
