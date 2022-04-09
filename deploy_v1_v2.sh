@@ -1,5 +1,14 @@
 #!/bin/bash
 
+
+# As of 2022-04-08
+# Compute V1 and V2 are both being used by user notebooks
+# V1 run at url /, dockerized
+# V2 run at url /v2, dockerized
+# both proxied by same nginx container at docker-compose.yml_v1_v2_coexisting
+# this script deploys/restarts nginx container and V2
+
+# !!!!DEPERCATED!!!!!
 # As of Mar 30, 2022
 # Compute V1 and V2 are both being used by user notebooks
 # V1 run on host port 3000 at url /, no-dockeried
@@ -8,7 +17,7 @@
 # this script deploys/restarts nginx container and V2
 # To restart V1, go to V1 folder and look for script "deploy_v1.sh" and instructions there
 
-echo "V1 will not get started/restarted by this script! Go to V1 folder and run 'deploy_v1.sh'"
+echo "V1 will not get started/restarted by this script! Go to V1 folder and run 'docker-compose up -d' there"
 
 # To deploy/restart V2, give db username and password in docker-compose.yml_v1_v2_coexisting
 # ./deploy_v1_v2.sh 
