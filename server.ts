@@ -42,7 +42,7 @@ const file = new File()
 const validator = new Validator()
 
 file.clearTmpFiles()
-
+/*
 if (!config.isTesting) {
     if (process.platform == "linux") {
         var iptablesRules = []
@@ -85,7 +85,7 @@ if (!config.isTesting) {
         }
     })
 }
-
+*/
 var schemas = {
     manifest: {
         type: 'object',
@@ -159,7 +159,7 @@ function setDefaultValues(data, defaults) {
 
 // index
 app.get('/', (req, res) => {
-    res.json({ message: 'hello world' })
+    res.json({ message: 'Hello World from Compute-V1' })
 })
 
 // guard

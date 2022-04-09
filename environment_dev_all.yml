@@ -203,4 +203,5 @@ dependencies:
     - zict==2.1.0
     - git+https://github.com/UW-Hydro/pysumma.git@7480a12d40742d58629f2742ae7abc92131f831e
     - git+https://github.com/cybergis/job-supervisor-python-sdk.git@7fd2f3fba1b05e4c7f8e341ff2f557e83a3cf40f
+    - git+https://github.com/cybergis/Jupyter-xsede.git@44d05b945ffa6b7ce662a4b45edb1b7bf81373bb
 prefix: /opt/miniconda3/envs/jobsupdev_v1

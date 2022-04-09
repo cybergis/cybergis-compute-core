@@ -128,7 +128,7 @@ var BaseMaintainer = (function () {
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        args.unshift(__dirname + "/python/" + file);
+                        args.unshift("".concat(__dirname, "/python/").concat(file));
                         child = spawn('python3', args);
                         out = {};
                         self = this;

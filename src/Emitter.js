@@ -95,8 +95,8 @@ var Emitter = (function () {
         });
     };
     Emitter.prototype.status = function (uid, jobID) {
-        if (jobID === void 0) { jobID = null; }
         var jobID, jobID;
+        if (jobID === void 0) { jobID = null; }
         return __awaiter(this, void 0, void 0, function () {
             var usrLogs, usrEvents, logIndex, eventIndex, _a, _b, _i, i, logs, i, _c, _d, _e, i, events, i, events, logs, i, i;
             return __generator(this, function (_f) {

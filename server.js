@@ -75,43 +75,6 @@ var supervisor = new Supervisor_1.default();
 var file = new File_1.default();
 var validator = new Validator();
 file.clearTmpFiles();
-if (!config.isTesting) {
-    if (process.platform == "linux") {
-        var iptablesRules = [];
-        var ports = [443, 22];
-        for (var i in ports) {
-            var port = ports[i];
-            for (var j in config.clientIPs) {
-                var clientIP = config.clientIPs[j];
-                iptablesRules.push('INPUT -p tcp -s ' + clientIP + ' --dport ' + port + ' -j ACCEPT');
-            }
-            iptablesRules.push('INPUT -p tcp --dport ' + port + ' -j DROP');
-        }
-        Helper_1.default.setupFirewallRules(iptablesRules, 'linux');
-    }
-    Helper_1.default.onExit(function () {
-        if (process.platform == "linux") {
-            Helper_1.default.teardownFirewallRules(iptablesRules, 'linux');
-        }
-    });
-}
-else {
-    if (process.platform == "linux") {
-        var iptablesRules = [];
-        var ports = [443, 22];
-        for (var i in ports) {
-            var port = ports[i];
-            iptablesRules.push('INPUT -i eth0 -p tcp -m tcp --dport ' + port + ' -j ACCEPT');
-            iptablesRules.push('INPUT -p tcp -m tcp --dport ' + port + ' -j ACCEPT');
-        }
-        Helper_1.default.setupFirewallRules(iptablesRules, 'linux');
-    }
-    Helper_1.default.onExit(function () {
-        if (process.platform == "linux") {
-            Helper_1.default.teardownFirewallRules(iptablesRules, 'linux');
-        }
-    });
-}
 var schemas = {
     manifest: {
         type: 'object',
@@ -178,7 +141,7 @@ function setDefaultValues(data, defaults) {
     return data;
 }
 app.get('/', function (req, res) {
-    res.json({ message: 'hello world' });
+    res.json({ message: 'Hello World from Compute-V1' });
 });
 app.post('/guard/secretToken', function (req, res) {
     return __awaiter(this, void 0, void 0, function () {

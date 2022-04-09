@@ -1,21 +1,25 @@
-version: "3"
+version: "3.9"
 
 services:
-  nginx:
-    image: linuxserver/letsencrypt:0.39.0-ls73
-    volumes:
-      - ./nginx.conf:/config/nginx/site-confs/default
-      - nginx_volume:/config
-    # network_mode is 'host' to allow nginx running inside container to 
-    # access job sub node.js server running on host
-    # Must manually open 80 and 443 on host firewall
-    # Otherwise cert cannot be renewed automatically (Drew 01/01/2020)
-    # ufw allow 80
-    # ufw allow 443 
-    network_mode: host
-    environment:
-      - URL=cgjobsup.cigi.illinois.edu
-      - EMAIL=zimox2@illinois.edu
+ compute_v1:
+   restart: always
+   image: cybergisx/job_supervisor_v1:34f97bfeadad
+   depends_on:
+     - redis_v1
+   #ports:
+   #  - "3000:3000"
+   env_file:
+     - ./compute_v1.env
+   volumes:
+     - ./:/job_supervisor
+   entrypoint: /bin/bash -c "cd /job_supervisor && ./docker-entrypoint.sh" 
+ 
+ redis_v1:
+   restart: always
+   image: redis@sha256:69a3ab2516b560690e37197b71bc61ba245aafe4525ebdece1d8a0bc5669e3e2
 
-volumes:
-  nginx_volume:
+networks:
+  # use pre-existing network
+  default:
+    name: my-cybergis-compute-network
+    external: true

@@ -84,7 +84,7 @@ var File = (function () {
     File.prototype.store = function (uid, destName, tempFilePath) {
         var e_1, _a, e_2, _b;
         return __awaiter(this, void 0, void 0, function () {
-            var fileID, userDir, dir, dest, uploadFileConfig, zipContainFiles, zip, zip_1, zip_1_1, entry, fileName, baseFile, e_1_1, i, e_3, zip_2, zip_2_1, entry, filePath, type, f, fileName, baseFile, fileDir, writeFile, createDir, e_2_1;
+            var fileID, userDir, dir, dest, uploadFileConfig, zipContainFiles, zip, zip_1, zip_1_1, entry, fileName, baseFile, e_1_1, i, e_3, _loop_1, zip_2, zip_2_1, e_2_1;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
@@ -169,56 +169,59 @@ var File = (function () {
                         _c.label = 16;
                     case 16:
                         _c.trys.push([16, 21, 22, 27]);
+                        _loop_1 = function () {
+                            var entry = zip_2_1.value;
+                            var filePath = entry.path;
+                            var type = entry.type;
+                            var f = filePath.split('/');
+                            var fileName = f.pop();
+                            var baseFile = f[1];
+                            var fileDir = f.slice(1).join('/');
+                            var writeFile = function () {
+                                if (type === 'File' && !uploadFileConfig.ignore.includes(fileName)) {
+                                    entry.pipe(fs.createWriteStream(dir + '/' + fileDir + '/' + fileName));
+                                }
+                            };
+                            var createDir = function () {
+                                if (!fs.existsSync(dir + '/' + fileDir)) {
+                                    fs.promises.mkdir(dir + '/' + fileDir, { recursive: true });
+                                }
+                            };
+                            if (baseFile != undefined) {
+                                if (uploadFileConfig.ignoreEverythingExceptMustHave) {
+                                    if (uploadFileConfig.mustHave.includes(baseFile)) {
+                                        createDir();
+                                        writeFile();
+                                    }
+                                    else {
+                                        entry.autodrain();
+                                    }
+                                }
+                                else {
+                                    createDir();
+                                    writeFile();
+                                }
+                            }
+                            else {
+                                if (uploadFileConfig.ignoreEverythingExceptMustHave) {
+                                    if (uploadFileConfig.mustHave.includes(fileName)) {
+                                        writeFile();
+                                    }
+                                    else {
+                                        entry.autodrain();
+                                    }
+                                }
+                                else {
+                                    writeFile();
+                                }
+                            }
+                        };
                         zip_2 = __asyncValues(zip);
                         _c.label = 17;
                     case 17: return [4, zip_2.next()];
                     case 18:
                         if (!(zip_2_1 = _c.sent(), !zip_2_1.done)) return [3, 20];
-                        entry = zip_2_1.value;
-                        filePath = entry.path;
-                        type = entry.type;
-                        f = filePath.split('/');
-                        fileName = f.pop();
-                        baseFile = f[1];
-                        fileDir = f.slice(1).join('/');
-                        writeFile = function () {
-                            if (type === 'File' && !uploadFileConfig.ignore.includes(fileName)) {
-                                entry.pipe(fs.createWriteStream(dir + '/' + fileDir + '/' + fileName));
-                            }
-                        };
-                        createDir = function () {
-                            if (!fs.existsSync(dir + '/' + fileDir)) {
-                                fs.promises.mkdir(dir + '/' + fileDir, { recursive: true });
-                            }
-                        };
-                        if (baseFile != undefined) {
-                            if (uploadFileConfig.ignoreEverythingExceptMustHave) {
-                                if (uploadFileConfig.mustHave.includes(baseFile)) {
-                                    createDir();
-                                    writeFile();
-                                }
-                                else {
-                                    entry.autodrain();
-                                }
-                            }
-                            else {
-                                createDir();
-                                writeFile();
-                            }
-                        }
-                        else {
-                            if (uploadFileConfig.ignoreEverythingExceptMustHave) {
-                                if (uploadFileConfig.mustHave.includes(fileName)) {
-                                    writeFile();
-                                }
-                                else {
-                                    entry.autodrain();
-                                }
-                            }
-                            else {
-                                writeFile();
-                            }
-                        }
+                        _loop_1();
                         _c.label = 19;
                     case 19: return [3, 17];
                     case 20: return [3, 27];
