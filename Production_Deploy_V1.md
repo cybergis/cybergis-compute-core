@@ -23,6 +23,8 @@ docker-compute up -d
 # Debugging Mode
 # edit docker-compose.yml to enable port 3000:3000
 docker-compose up
+
+docker logs --follow XXXXXXXXXXXXX
 ```
 
 
