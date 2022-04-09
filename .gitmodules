@@ -1,0 +1,3 @@
+[submodule "Jupyter-xsede"]
+	path = Jupyter-xsede
+	url = https://github.com/cybergis/Jupyter-xsede.git
