@@ -6,7 +6,7 @@
     "server_port": 3030,
     "server_ip": "0.0.0.0",
     "redis": {
-        "host": "127.0.0.1",
+        "host": "redis_v2",
         "port": 6379,
         "password": null
     },
