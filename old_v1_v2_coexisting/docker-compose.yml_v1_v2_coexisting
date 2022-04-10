@@ -16,9 +16,9 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       # Production
-      - URL=cgjobsup.cigi.illinois.edu
+      #- URL=cgjobsup.cigi.illinois.edu
       # Dev
-      #- URL=cgjobsup-dev.cigi.illinois.edu
+      - URL=cgjobsup-dev.cigi.illinois.edu
       - EMAIL=help@cybergis.org
   
   job_supervisor:
@@ -30,8 +30,8 @@ services:
       - ./:/job_supervisor:rw
     privileged: true
     # Dev
-    #ports:
-    #  - "3030:3030"
+    ports:
+      - "3030:3030"
     sysctls:
       - net.ipv6.conf.all.disable_ipv6=0
     environment:
@@ -48,13 +48,13 @@ services:
     restart: always
     command: --default-authentication-plugin=mysql_native_password
     environment:
-      - MYSQL_ROOT_PASSWORD=wVPBkN1x
+      - MYSQL_ROOT_PASSWORD=123456
       - MYSQL_DATABASE=cybergis_compute
       - MYSQL_USER=cybergis_compute
-      - MYSQL_PASSWORD=XyzaDEsb
+      - MYSQL_PASSWORD=123456
     # Dev
-    #ports:
-    #  - "3306:3306"
+    ports:
+      - "3306:3306"
     volumes:
       - ./mysql_data:/var/lib/mysql
 volumes:
