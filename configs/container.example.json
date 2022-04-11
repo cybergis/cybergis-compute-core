@@ -5,7 +5,7 @@
         "hpc_path": {
             "keeling_community": "/data/keeling/a/cigi-gisolve/simages/python.sif",
             "expanse_community": "/home/cybergis/SUMMA_IMAGE/python.sif",
-            "bridges_community": "/jet/home/cybergis/image/python.sif"
+            "bridges_community_gpu": "/jet/home/cybergis/image/python.sif"
         }
     },
     "cybergisx-0.4": {
@@ -13,7 +13,8 @@
         "dockerhub": "",
         "hpc_path": {
             "expanse_community": "/home/cybergis/SUMMA_IMAGE/cybergisx_0.4.simg",
-            "keeling_community": "/data/keeling/a/cigi-gisolve/simages/cybergisx_0.4.simg"
+            "keeling_community": "/data/keeling/a/cigi-gisolve/simages/cybergisx_0.4.simg",
+	    "bridges_community_gpu": "/jet/home/cybergis/image/cybergisx_0.4.simg"
         }
     },
     "cjw-eb": {
@@ -51,6 +52,18 @@
        "hpc_path": {
             "keeling_community": "/data/keeling/a/cigi-gisolve/simages/wrfhydro_bionic.simg",
             "expanse_community": "/home/cybergis/SUMMA_IMAGE/wrfhydro_bionic.simg"
+        }
+    },
+    "datafusion": {
+        "dockerfile": "",
+        "dockerhub": "",
+        "hpc_path": {
+            "bridges_community_gpu": "/jet/home/cybergis/image/fusion_env_v1.sif"
+        },
+        "mount": {
+            "bridges_community_gpu": {
+                "/jet/home/cybergis/data/datafusion": "/datafusion"
+            }
         }
     }
 }
