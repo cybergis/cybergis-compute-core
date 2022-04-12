@@ -1,4 +1,4 @@
-import {Entity, Column, OneToMany, PrimaryColumn, AfterLoad} from "typeorm"
+import {Entity, Column, OneToMany, PrimaryColumn, AfterLoad, DeleteDateColumn, BeforeInsert, BeforeUpdate} from "typeorm"
 import {credential, slurm} from "../types"
 import {Event} from "./Event"
 import {Log} from "./Log"
@@ -21,22 +21,31 @@ export class Job {
     @Column()
     hpc: string
 
-    @Column("longtext", {nullable: true, default: null})
+    @Column("text", {nullable: true, default: null})
     executableFolder: string
 
-    @Column("longtext", {nullable: true, default: null})
+    @Column("text", {nullable: true, default: null})
     dataFolder: string
 
-    @Column("longtext", {nullable: true, default: null})
+    @Column("text", {nullable: true, default: null})
     resultFolder: string
 
-    @Column({type: 'simple-json'})
+    @Column({ type: "text", nullable: true, default: null, transformer: {
+        to: (i: {[keys: string]: string} | null | undefined): string => i ? JSON.stringify(i) : null,
+        from: (i: string | null | undefined): {[keys: string]: string} => i ? JSON.parse(i) : null
+    }})
     param: {[keys: string]: string}
 
-    @Column({type: 'simple-json'})
+    @Column({ type: "text", nullable: true, default: null, transformer: {
+        to: (i: {[keys: string]: string} | null | undefined): string => i ? JSON.stringify(i) : null,
+        from: (i: string | null | undefined): {[keys: string]: string} => i ? JSON.parse(i) : null
+    }})
     env: {[keys: string]: string}
 
-    @Column({type: 'simple-json', nullable: true})
+    @Column({ type: "text", nullable: true, default: null, transformer: {
+        to: (i: slurm | null | undefined): string => i ? JSON.stringify(i) : null,
+        from: (i: string | null | undefined): slurm => i ? JSON.parse(i) : null
+    }})
     slurm?: slurm
 
     @Column({nullable: true, default: null})
@@ -51,23 +60,51 @@ export class Job {
     @OneToMany(type => Log, (log: Log) => log.job)
     logs: Log[]
 
-    @Column({type: 'timestamp', nullable: true, default: () => 'CURRENT_TIMESTAMP'})
+    @Column({type: 'bigint', transformer: {
+        to: (i: Date | null | undefined): number => i ? i.getTime() : null,
+        from: (i: number | null | undefined): Date => i ? new Date(i) : null
+    }})
     createdAt: Date
 
-    @Column({type: 'timestamp', nullable: true, default: () => 'CURRENT_TIMESTAMP'})
+    @Column({type: 'bigint', nullable: true, transformer: {
+        to: (i: Date | null | undefined): number => i ? i.getTime() : null,
+        from: (i: number | null | undefined): Date => i ? new Date(i) : null
+    }})
     updatedAt: Date
 
-    @Column({type: 'timestamp', nullable: true, default: null})
+    @DeleteDateColumn({type: 'bigint', nullable: true, transformer: {
+        to: (i: Date | null | undefined): number => i ? i.getTime() : null,
+        from: (i: number | null | undefined): Date => i ? new Date(i) : null
+    }})
     deletedAt: Date
 
-    @Column({type: 'timestamp', nullable: true, default: null})
+    @Column({type: 'bigint', nullable: true, transformer: {
+        to: (i: Date | null | undefined): number => i ? i.getTime() : null,
+        from: (i: number | null | undefined): Date => i ? new Date(i) : null
+    }})
     initializedAt: Date
 
-    @Column({type: 'timestamp', nullable: true, default: null})
+    @Column({type: 'bigint', nullable: true, transformer: {
+        to: (i: Date | null | undefined): number => i ? i.getTime() : null,
+        from: (i: number | null | undefined): Date => i ? new Date(i) : null
+    }})
     finishedAt: Date
 
-    @Column({type: 'timestamp', nullable: true, default: null})
+    @Column({type: 'bigint', nullable: true, transformer: {
+        to: (i: Date | null | undefined): number => i ? i.getTime() : null,
+        from: (i: number | null | undefined): Date => i ? new Date(i) : null
+    }})
     queuedAt: Date
+
+    @BeforeInsert()
+    async setCreatedAt() {
+        this.createdAt = new Date()
+    }
+
+    @BeforeUpdate()
+    async setUpdatedAt() {
+        return this.updatedAt = new Date()
+    }
 
     @Column({default: false})
     isFailed: boolean

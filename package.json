@@ -7,6 +7,7 @@
     "test": "test"
   },
   "scripts": {
+    "test": "jest",
     "prebuild": "del production/",
     "build": "tsc && node_modules/.bin/jsdoc -c jsdoc.json -R README.md",
     "postbuild": "cpy '*' '!production' '!docker-compose.yml' '!environment_dev.yml' '!tsconfig.json' '!config.example.json' '!configs/*.example.json' '!*.md' '!package.json' '!*.sql' '!nginx.conf' '!package-lock.json' '!node_modules' '!*.ts' 'configs/*' '!configs/*.ts' 'src/**/*' '!src/**/*.ts' ./production/ --cwd=./ --no-overwrite --parents"
@@ -27,6 +28,7 @@
     "@types/validator": "^13.1.3",
     "axios": "^0.21.4",
     "better-docs": "^2.7.2",
+    "better-sqlite3": "^7.5.1",
     "body-parser": "^1.19.0",
     "child-process-async": "^1.0.1",
     "commander": "^6.2.1",
@@ -51,6 +53,9 @@
     "y18n": "^3.2.2"
   },
   "devDependencies": {
-    "@types/node": "^14.14.39"
+    "@types/jest": "^27.4.1",
+    "@types/node": "^14.14.39",
+    "jest": "^27.5.1",
+    "ts-jest": "^27.1.4"
   }
 }

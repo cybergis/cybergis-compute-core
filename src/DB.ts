@@ -6,6 +6,8 @@ import { ConnectionOptions, getConnection, Connection, createConnection } from '
 import { Git } from './models/Git'
 import { GlobusTransferRefreshToken } from './models/GlobusTransferRefreshToken'
 
+const entities = [Event, Log, Job, Git, GlobusTransferRefreshToken]
+
 /**
  * Connection helper class as a wrapper around TypeORM Connection
  */
@@ -22,7 +24,7 @@ class DB {
         synchronize: true,
         logging: false,
         migrationsRun: true,
-        entities: [Event, Log, Job, Git, GlobusTransferRefreshToken],
+        entities: entities,
         cache: {
             type: "redis",
             options: {
@@ -39,7 +41,17 @@ class DB {
      * @param {boolean} withCache [use Redis cache to buffer data]
      */
     constructor(withCache = true) {
-        if (!withCache) {
+        if (config.is_jest) {
+            this.config = {
+                name: 'default',
+                type: "better-sqlite3",
+                database: ":memory:",
+                dropSchema: true,
+                synchronize: true,
+                logging: false,
+                entities
+            }
+        } else if (!withCache) {
             this.config = {
                 name: 'default',
                 type: 'mysql',
@@ -51,7 +63,7 @@ class DB {
                 synchronize: true,
                 logging: false,
                 migrationsRun: true,
-                entities: [Event, Log, Job, Git, GlobusTransferRefreshToken]
+                entities: entities
             }
         }
     }
@@ -73,6 +85,18 @@ class DB {
      */
     async close() {
         await (await this.connect()).close()
+    }
+
+    async clearAll() {
+        try {
+          for (const entity of entities) {
+            const connection = await this.connect()
+            const repository = await connection.getRepository(entity)
+            await repository.clear()
+          }
+        } catch (error) {
+          throw new Error(`ERROR: Cleaning test db: ${error}`);
+        }
     }
 }
 
