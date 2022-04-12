@@ -1,0 +1,28 @@
+{
+    "local_key": {
+        "private_key_path": "/dir/to/privatekey",
+        "passphrase": null
+    },
+    "server_port": 3030,
+    "server_ip": "0.0.0.0",
+    "redis": {
+        "host": "redis_v2",
+        "port": 6379,
+        "password": null
+    },
+    "mysql": {
+        "host": "db_v2",
+        "port": 3306,
+        "database": "cybergis_compute",
+        "username": "cybergis_compute",
+        "password": "XXXXXXXXXXXXXXXXXXXXXXX"
+    },
+    "local_file_system": {
+        "limit_in_mb": 100,
+        "cache_path": "/job_supervisor/data/tmp",
+        "root_path": "/job_supervisor/data/root"
+    },
+    "globus_client_id": "XXXXXXXXXXXXXXXXXXXXXXXXXXX",
+    "queue_consume_time_period_in_seconds": 3,
+    "is_testing": true
+}
