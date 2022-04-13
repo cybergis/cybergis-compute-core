@@ -76,7 +76,7 @@
             "root_path": "/jet/home/cybergis/data"
         },
         "init_sbatch_options": [
-            "#SBATCH --partition=GPU"
+            "#SBATCH --partition=GPU-shared"
         ]
     }
 }
