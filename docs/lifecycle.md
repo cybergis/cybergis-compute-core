@@ -52,3 +52,29 @@ For **user** authentication, we use the existing [Jupyter API Token](https://jup
 
 ### Queue
 All incoming job submission requests will be stored in our database, and labeled as `Job.queuedAt = null`. The `Job` will enter a [redis Queue](https://github.com/cybergis/cybergis-compute-core/blob/v2/src/Queue.ts) waiting to be consumed by **Maintainer Pool**. If there is available capacity in the **Maintainer Pool**, it will `Queue.shift` the job out of the queue, and set `Job.queuedAt = new Date('current date')`.
+
+***
+
+## Maintainer
+One of the design goals of this project is to allocate and manipulate complex computational resources with simple API calls. The **maintainer system** is designed to automate the HPC submission process according to user input.
+
+### Defining A Simple Maintainer Process
+A maintainer reads from the following user input, and perform automated tasks accordingly:
+- `BaseMaintainer.job: Job`: the job object that describes:
+   1. `executableFolder: string`: where the code locates
+   2. `dataFolder: string`: where the uploaded data locates
+   3. `resultFolder: string`: where the downloadable data locates
+   4. `param: {[keys: string]: string}`: key-value of user input parameters
+- `BaseMaintainer.hpc: hpc`: describes the HPC where the job locates
+- `BaseMaintainer.slurm: slurm`: describes the computing resources allocation on a Slurm system
+
+During the lifecycle of a maintainer process, the automated script will update the `BaseMaintainer.job` state using `BaseMaintainer.updateJob` and emit events/logs.
+
+### Maintainer Lifecycle
+The completion of a job has three stages:
+1. `onDefine`: the maintainer configures itself before the lifecycle starts
+2. `onInit`: the maintainer upload and initiates the job onto a remote HPC.
+3. `onMaintain`: the maintainer checks the status of the job, logs necessary runtime information, and terminate the job if complete.
+
+> ⚠️ note that automation in `onDefine` and `onInit` only runs once, while `onMaintain` will constantly be running in a loop until complete.
+
