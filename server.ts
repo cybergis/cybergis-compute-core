@@ -159,6 +159,19 @@ app.get('/statistic', async (req, res) => {
     res.json({ runtime_in_seconds: await statistic.getRuntimeTotal() })
 })
 
+/**
+ * /:
+ *  get:
+ *      description: Get the runtime for a specific job.
+ *      responses:
+ *          200:
+ *              descrption: Returns the runtime for the specified job.
+ *          401:
+ *              description: Returns a list of errors rasied when validating the job access token.
+ *          402:
+ *              description: Returns a list of errors with the format of the req body.
+ *              
+ */
 app.get('/statistic/job/:jobId', async (req, res) => {
     var body = req.body
     var errors = requestErrors(validator.validate(body, schemas.getJob))
@@ -179,6 +192,16 @@ app.get('/statistic/job/:jobId', async (req, res) => {
 })
 
 // user
+/**
+ * /:
+ *  get:
+ *      description: Returns the current user's username. 
+ *      responses:
+ *          200:
+ *              description: Returns the current user's username.
+ *          402:
+ *              description: Returns a list of errors with the format of the req body if there are any, or "invalid token" if there is no user logged in.
+ */
 app.get('/user', (req, res) => {
     var body = req.body
     var errors = requestErrors(validator.validate(body, schemas.user))
@@ -227,6 +250,16 @@ app.get('/user/jupyter-globus', (req, res) => {
     })
 })
 
+/**
+ * /:
+ *  get:
+ *      descrption: Return a dictionary of attributes of the current user's job.
+ *  responses:
+ *      200:
+ *          description: Return a dictionary of attributes of the current user's job.
+ *      402:
+ *          description: Returns a list of errors with the format of the req body if there are any, or "invalid token" if there is no user logged in.      
+ */
 app.get('/user/job', async (req, res) => {
     var body = req.body
     var errors = requestErrors(validator.validate(body, schemas.user))
