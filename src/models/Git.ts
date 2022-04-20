@@ -1,6 +1,8 @@
 import { Entity, Column, PrimaryColumn, DeleteDateColumn, BeforeInsert, BeforeUpdate } from "typeorm"
 
 @Entity({name: "gits"})
+
+/** Class representing a git action. */
 export class Git {
     @PrimaryColumn()
     id: string
@@ -32,11 +34,23 @@ export class Git {
     }})
     deletedAt: Date
 
+    /**
+     * Set the createdAt time to the current time.
+     * 
+     * @async
+     * @return {Date} date - Date this job was created.
+     */
     @BeforeInsert()
     async setCreatedAt() {
         this.createdAt = new Date()
     }
 
+    /**
+     * Set the updatedAt time to the current time.
+     * 
+     * @async
+     * @return {Date} date - Date this job was last updated.
+     */
     @BeforeUpdate()
     async setUpdatedAt() {
         return this.updatedAt = new Date()

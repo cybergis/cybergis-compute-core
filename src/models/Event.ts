@@ -1,6 +1,7 @@
 import {Entity, Column, PrimaryGeneratedColumn, ManyToOne, DeleteDateColumn, BeforeInsert, BeforeUpdate} from "typeorm"
 import {Job} from "./Job"
 
+/** Class representing a job event. */
 @Entity({name: "events"})
 export class Event {
     @PrimaryGeneratedColumn()
@@ -36,11 +37,23 @@ export class Event {
     }})
     deletedAt: Date
 
+    /**
+     * Set the createdAt time to the current time.
+     * 
+     * @async
+     * @return {Date} date - Date this job was created.
+     */
     @BeforeInsert()
     async setCreatedAt() {
         this.createdAt = new Date()
     }
 
+    /**
+     * Set the updatedAt time to the current time.
+     * 
+     * @async
+     * @return {Date} date - Date this job was last updated.
+     */
     @BeforeUpdate()
     async setUpdatedAt() {
         return this.updatedAt = new Date()

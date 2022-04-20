@@ -4,6 +4,7 @@ import {Event} from "./Event"
 import {Log} from "./Log"
 import BaseMaintainer from "../maintainers/BaseMaintainer"
 
+/** Class representing a job. */
 @Entity({name: "jobs"})
 export class Job {
     @PrimaryColumn()
@@ -96,11 +97,23 @@ export class Job {
     }})
     queuedAt: Date
 
+    /**
+     * Set the createdAt time to the current time.
+     * 
+     * @async
+     * @return {Date} date - Date this job was created.
+     */
     @BeforeInsert()
     async setCreatedAt() {
         this.createdAt = new Date()
     }
 
+    /**
+     * Set the updatedAt time to the current time.
+     * 
+     * @async
+     * @return {Date} date - Date this job was last updated.
+     */
     @BeforeUpdate()
     async setUpdatedAt() {
         return this.updatedAt = new Date()
@@ -127,6 +140,11 @@ export class Job {
     @Column({nullable: true, default: null})
     walltime: number
 
+    /**
+     * Sorts the logs in the order that they were created
+     * 
+     * @return {None} None - Updates this.logs
+     */
     @AfterLoad()
     sortLogs() {
         if (this.logs) {
@@ -138,6 +156,11 @@ export class Job {
         }
     }
 
+    /**
+     * Sorts the events in the order that they were created
+     * 
+     * @return {None} None - Updates this.events
+     */
     @AfterLoad()
     sortEvents() {
         if (this.events) {
