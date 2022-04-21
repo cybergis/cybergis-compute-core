@@ -14,7 +14,7 @@ import Statistic from './src/Statistic'
 import * as path from 'path'
 import JobUtil, { ResultFolderContentManager } from './src/lib/JobUtil'
 const swaggerUI = require('swagger-ui-express')
-const swaggerDocument = require('./swagger.json')
+const swaggerDocument = require('../production/swagger.json')
 const bodyParser = require('body-parser')
 const Validator = require('jsonschema').Validator;
 const fileUpload = require('express-fileupload')
@@ -198,9 +198,11 @@ app.get('/user', (req, res) => {
 })
 
 /**
-  * /:
+  * @openapi
+  * /user/jupyter-globus:
   *  get:
   *      description: Returns the jupyter-globus endpoint, root path and container home path
+  *      responses:
   *          200:
   *              description: Returns the jupyter-globus endpoint, root path and container home path.
   *          402:
@@ -239,11 +241,13 @@ app.get('/user/jupyter-globus', (req, res) => {
 })
 
 /**
-  * /:
+  * @openapi
+  * /user/job:
   *  get:
-  *      description: Returns all of the jobs for the currrent user.
+  *      description: Returns all of the jobs for the current user.
+  *      responses:
   *          200:
-  *              description: Returns all of the jobs for the currrent user.
+  *              description: Returns all of the jobs for the current user.
   *          402:
   *              description: Returns a list of errors with the format of the req body along with "invalid input" if there are any, or "invalid token" if there is no user logged in.
   */
@@ -273,11 +277,13 @@ app.get('/user/job', async (req, res) => {
 })
 
 /**
-  * /:
+  * @openapi
+  * /user/slurm-usage:
   *  get:
   *      description: Returns slurm usage for the current user
+  *      responses:
   *          200:
-  *              description: Returns slurm usage for the current user/
+  *              description: Returns slurm usage for the current user
   *          402:
   *              description: Returns a list of errors with the format of the req body along with "invalid input" if there are any, or "invalid token" if there is no user logged in.
   */
