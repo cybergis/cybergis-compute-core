@@ -76,5 +76,10 @@ The completion of a job has three stages:
 2. `onInit`: the maintainer upload and initiates the job onto a remote HPC.
 3. `onMaintain`: the maintainer checks the status of the job, logs necessary runtime information, and terminate the job if complete.
 
-> ⚠️ note that automation in `onDefine` and `onInit` only runs once, while `onMaintain` will constantly be running in a loop until complete.
+> ⚠️ note that automation in `onDefine` and `onInit` only runs once, while `onMaintain` will be called multiple times in a loop until complete.
 
+### Maintainer Supervisor
+Each user job request corresponds with a single maintainer process. A [Maintainer Supervisor](https://github.com/cybergis/cybergis-compute-core/blob/v2/src/Supervisor.ts)) is responsible for:
+1. maintain a fixed amount of worker (defined in `Supervisor.jobPoolCapacities`) processes running in the system.
+2. remove the job from the system once the job exited (if job emits `JOB_ENDED` or `JOB_FAILED` events)
+3. Once there are available spaces (jobs running < capacity), try to 
