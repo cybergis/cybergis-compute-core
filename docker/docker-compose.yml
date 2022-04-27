@@ -4,7 +4,7 @@ services:
   nginx:
     image: linuxserver/letsencrypt:0.39.0-ls73
     volumes:
-      - ./nginx.conf:/config/nginx/site-confs/default
+      - ./docker/nginx.conf:/config/nginx/site-confs/default
       - nginx_volume:/config
     restart: always
     ports:
@@ -19,6 +19,7 @@ services:
     restart: on-failure
     volumes:
     - ./:/job_supervisor:rw
+    command: ["/job_supervisor/docker/docker-entrypoint.sh"]
     privileged: true
     ports:
       - "3030:3030"
