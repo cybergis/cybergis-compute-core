@@ -9,8 +9,8 @@
   "scripts": {
     "test": "jest",
     "prebuild": "del production/",
-    "build": "tsc",
-    "postbuild": "cpy '*' '!production' '!docker-compose.yml' '!environment_dev.yml' '!tsconfig.json' '!config.example.json' '!configs/*.example.json' '!*.md' '!package.json' '!*.sql' '!nginx.conf' '!package-lock.json' '!node_modules' '!*.ts' 'configs/*' '!configs/*.ts' 'src/**/*' '!src/**/*.ts' ./production/ --cwd=./ --no-overwrite --parents && node ./production/tools/generate-swagger.js && node_modules/.bin/jsdoc -c jsdoc.json -R README.md"
+    "build": "tsc && typeorm-uml -d production/uml.png && node ./production/tools/generate-swagger.js",
+    "postbuild": "cpy '*' '!production' '!docker-compose.yml' '!*.sh' '!tsconfig.json' '!*.example.json' '!*.md' '!package.json' '!*.conf' '!package-lock.json' '!node_modules' '!*.ts' 'configs/*' '!configs/*.ts' 'src/**/*' '!src/**/*.ts' ./production/ --cwd=./ --no-overwrite --parents && node_modules/.bin/jsdoc -c jsdoc.json -R README.md"
   },
   "repository": {
     "type": "git",
@@ -49,6 +49,7 @@
     "swagger-jsdoc": "^6.2.1",
     "swagger-ui-express": "^4.3.0",
     "typeorm": "^0.2.34",
+    "typeorm-uml": "^1.6.5",
     "util": "^0.12.3",
     "validator": "^13.5.2",
     "y18n": "^3.2.2"
