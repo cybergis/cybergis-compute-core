@@ -26,6 +26,11 @@ print("job complete!")
         this.connector = this.getSingularityConnector()
     }
 
+    /**
+     * On maintainer initialization, set executableFolder and give it to the connector. Log event reflecting if the job was initialized or encountered a system error.
+     * 
+     * @async
+     */
     async onInit() {
         try {
             var replacements = {content: "hello world"}
@@ -38,6 +43,11 @@ print("job complete!")
         }
     }
 
+    /**
+     * If the job is complete, clear executable files and get slurm stdout, and if it encounters an error, update the event log to reflect this.
+     * 
+     * @async
+     */
     async onMaintain() {
         try {
             var status = await this.connector.getStatus()
@@ -56,14 +66,23 @@ print("job complete!")
         }
     }
 
+    /**
+     * Pause the connector
+     */
     async onPause() {
         await this.connector.pause()
     }
 
+    /**
+     * Resume the connector
+     */
     async onResume() {
         await this.connector.resume()
     }
 
+    /**
+     * Cancel the connector
+     */
     async onCancel() {
         await this.connector.cancel()
     }

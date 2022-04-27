@@ -114,31 +114,67 @@ class BaseMaintainer {
     protected events: Array<event> = []
 
     /** lifecycle interfaces **/
+    /**
+     * Throw execption when ondefine not implemented
+     * 
+     * @throws {NotImplementedError} - Ondefine is not implemented
+     */
     onDefine() {
         throw new NotImplementedError("onDefine not implemented")
     }
 
+    /**
+     * Throw execption when oninit not implemented
+     * 
+     * @throws {NotImplementedError} - Oninit is not implemented
+     */
     async onInit() {
         throw new NotImplementedError("onInit not implemented")
     }
 
+    /**
+     * Throw execption when onmaintain not implemented
+     * 
+     * @throws {NotImplementedError} - Onmaintain is not implemented
+     */
     async onMaintain() {
         throw new NotImplementedError("onMaintain not implemented")
     }
 
+    /**
+     * Throw execption when onpause not implemented
+     * 
+     * @throws {NotImplementedError} - Onpause is not implemented
+     */
     async onPause() {
         throw new NotImplementedError("onPause not implemented")
     }
 
+    /**
+     * Throw execption when onresume not implemented
+     * 
+     * @throws {NotImplementedError} - Onresume is not implemented
+     */
     async onResume() {
         throw new NotImplementedError("onResume not implemented")
     }
 
+    /**
+     * Throw execption when oncancel not implemented
+     * 
+     * @throws {NotImplementedError} - Oncancel is not implemented
+     */
     async onCancel() {
         throw new NotImplementedError("onCancel not implemented")
     }
 
     /** emitters **/
+    /**
+     * Update this.events with the new event, and this.isInit or this.isEnd as appropriate
+     * 
+     * @param {string} type - Type of event to be recorded
+     * @param {string} message - Message associated with the event
+     */
     emitEvent(type: string, message: string) {
         if (type === 'JOB_INIT') this.isInit = true
         if (type === 'JOB_ENDED' || type === 'JOB_FAILED') this.isEnd = true
@@ -148,11 +184,21 @@ class BaseMaintainer {
         })
     }
 
+    /**
+     * Update this.events with the new event
+     * 
+     * @param {string} message - Message associated with the event
+     */
     emitLog(message: string) {
         this.logs.push(message)
     }
 
     /** supervisor interfaces **/
+    /**
+     * Initialize job in the maintainer. If the job has been retried too many times, terminate and update events.
+     * 
+     * @async
+     */
     async init() {
         if (this._lock) return
         this._lock = true
@@ -167,6 +213,11 @@ class BaseMaintainer {
         this._lock = false
     }
 
+    /**
+     * Ensure that the job is still running, and if the runtime has exceeded the maintain threshold, terminate and update events.
+     * 
+     * @async
+     */
     async maintain() {
         if (this._lock) return
         this._lock = true
@@ -188,18 +239,37 @@ class BaseMaintainer {
         this._lock = false
     }
 
+    /**
+     * Clear all logs in this.logs
+     * 
+     * @async
+     * @return {Object} - List of jobs that were just deleted.
+     */
     dumpLogs() {
         var logs = this.logs
         this.logs = []
         return logs
     }
 
+    /**
+     * Clear all events in this.events
+     * 
+     * @async
+     * @return {Object} - List of events that were just deleted.
+     */
     dumpEvents() {
         var events = this.events
         this.events = []
         return events
     }
 
+    /**
+     * Update this job to reflect the information in the passed job.
+     * 
+     * @async
+     * @public
+     * @param {jobMaintainerUpdatable} job - New information to update this job with.
+     */
     public async updateJob(job: jobMaintainerUpdatable) {
         var connection = await this.db.connect()
         await connection.createQueryBuilder()
@@ -211,14 +281,32 @@ class BaseMaintainer {
         this.job = await jobRepo.findOne(this.id)
     }
 
+    /**
+     * Return the slurm connector associated with this job and hpc.
+     * 
+     * @public
+     * @returns {SlurmConnector} - The slurm connector associated with this job.
+     */
     public getSlurmConnector(): SlurmConnector {
         return new SlurmConnector(this.job, this.hpc, this)
     }
 
+    /**
+     * Return the singularity connector associated with this job and hpc.
+     * 
+     * @public
+     * @returns {SingularityConnector} - The singularity connector associated with this job.
+     */
     public getSingularityConnector(): SingularityConnector {
         return new SingularityConnector(this.job, this.hpc, this)
     }
 
+    /**
+     * Return the base connector associated with this job and hpc.
+     * 
+     * @public
+     * @returns {BaseConnector} - The base connector associated with this job.
+     */
     public getBaseConnector(): BaseConnector {
         return new BaseConnector(this.job, this.hpc, this)
     }
