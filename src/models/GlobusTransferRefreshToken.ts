@@ -1,5 +1,6 @@
 import {Entity, Column, OneToMany, PrimaryColumn, DeleteDateColumn, BeforeInsert, BeforeUpdate} from "typeorm"
 
+/** Class representing a globus transfer refresh token. */
 @Entity({name: "globus_transfer_refresh_token"})
 export class GlobusTransferRefreshToken {
     @PrimaryColumn()
@@ -26,11 +27,23 @@ export class GlobusTransferRefreshToken {
     }})
     deletedAt: Date
 
+    /**
+     * Set the createdAt time to the current time.
+     * 
+     * @async
+     * @return {Date} date - Date this job was created.
+     */
     @BeforeInsert()
     async setCreatedAt() {
         this.createdAt = new Date()
     }
 
+    /**
+     * Set the updatedAt time to the current time.
+     * 
+     * @async
+     * @return {Date} date - Date this job was last updated.
+     */
     @BeforeUpdate()
     async setUpdatedAt() {
         return this.updatedAt = new Date()

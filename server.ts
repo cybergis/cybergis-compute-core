@@ -220,6 +220,17 @@ app.get('/user', (req, res) => {
     res.json({ username: res.locals.username })
 })
 
+/**
+  * /:
+  *  get:
+  *      description: Returns the jupyter-globus endpoint, root path and container home path
+  *          200:
+  *              description: Returns the jupyter-globus endpoint, root path and container home path.
+  *          402:
+  *              description: Returns a list of errors with the format of the req body along with "invalid input" if there are any, or "invalid token" if there is no user logged in.
+  *          404:
+  *              description: Returns "unknown host" if jupyter-globus cannot be found in local hosts.
+  */
 app.get('/user/jupyter-globus', (req, res) => {
     var body = req.body
     var errors = requestErrors(validator.validate(body, schemas.user))
@@ -251,15 +262,14 @@ app.get('/user/jupyter-globus', (req, res) => {
 })
 
 /**
- * /:
- *  get:
- *      descrption: Return a dictionary of attributes of the current user's job.
- *  responses:
- *      200:
- *          description: Return a dictionary of attributes of the current user's job.
- *      402:
- *          description: Returns a list of errors with the format of the req body if there are any, or "invalid token" if there is no user logged in.      
- */
+  * /:
+  *  get:
+  *      description: Returns all of the jobs for the currrent user.
+  *          200:
+  *              description: Returns all of the jobs for the currrent user.
+  *          402:
+  *              description: Returns a list of errors with the format of the req body along with "invalid input" if there are any, or "invalid token" if there is no user logged in.
+  */
 app.get('/user/job', async (req, res) => {
     var body = req.body
     var errors = requestErrors(validator.validate(body, schemas.user))
@@ -285,6 +295,15 @@ app.get('/user/job', async (req, res) => {
     res.json({ job: Helper.job2object(jobs) })
 })
 
+/**
+  * /:
+  *  get:
+  *      description: Returns slurm usage for the current user
+  *          200:
+  *              description: Returns slurm usage for the current user/
+  *          402:
+  *              description: Returns a list of errors with the format of the req body along with "invalid input" if there are any, or "invalid token" if there is no user logged in.
+  */
 app.get('/user/slurm-usage', async (req, res) => {
     var body = req.body
     var errors = requestErrors(validator.validate(body, schemas.user))
