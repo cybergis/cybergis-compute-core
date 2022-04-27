@@ -20,6 +20,11 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
         this.connector = this.getSingularityConnector()
     }
 
+    /**
+     * On maintainer initialization, set executableManifest, and give it to the conncetor. Update the event log to reflect the job being initialized or encountering a system error.
+     * 
+     * @async
+     */
     async onInit() {
         try {
             this.executableManifest = await this.executableFolder.getExecutableManifest()
@@ -32,6 +37,11 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
         }
     }
 
+    /**
+     * If the job is complete, download the results to the remote result folder path, and if it encounters an error, update the event log to reflect this.
+     * 
+     * @async
+     */
     async onMaintain() {
         try {
             var status = await this.connector.getStatus()
@@ -69,14 +79,23 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
         }
     }
 
+    /**
+     * Pause the connector
+     */
     async onPause() {
         await this.connector.pause()
     }
 
+    /**
+     * Resume the connector
+     */
     async onResume() {
         await this.connector.resume()
     }
 
+    /**
+     * Cancel the connector
+     */
     async onCancel() {
         await this.connector.cancel()
     }
