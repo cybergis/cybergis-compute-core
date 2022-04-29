@@ -8,6 +8,9 @@ import DB from '../DB'
 const redis = require('redis')
 const { promisify } = require("util")
 
+/**
+ * Some comment
+ */
 export class ResultFolderContentManager {
     private redis = {
         getValue: null,
@@ -85,8 +88,8 @@ export default class JobUtil {
      * Ensure the job has all the nessecary input parameters
      * 
      * @static
-     * @param {Job} job - This job
-     * @param {[keys: string]} paramRules - Parameter rules for this job
+     * @param job - This job
+     * @param paramRules - Parameter rules for this job
      * @throws Job must have a complete parameter list
      */
     static validateParam(job: Job, paramRules: {[keys: string]: any}) {

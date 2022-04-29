@@ -9,6 +9,7 @@
         "skipLibCheck": true,
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
+        "removeComments": true
     },
     "include": [
         "**/*",

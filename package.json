@@ -1,5 +1,5 @@
 {
-  "name": "job-supervisor",
+  "name": "cybergis-compute-core",
   "version": "1.0.0",
   "description": "",
   "main": "cli.js",
@@ -8,6 +8,7 @@
   },
   "scripts": {
     "test": "jest -c ./test/jest.config.js",
+    "tsdoc": "typedoc --entryPointStrategy expand ./src  --out ./production/tsdoc",
     "prebuild": "del production/",
     "build": "tsc && typeorm-uml -d production/uml.png && node ./production/tools/generate-swagger.js",
     "postbuild": "cpy '*' '!production' '!docker-compose.yml' '!*.sh' '!tsconfig.json' '!*.example.json' '!*.md' '!package.json' '!*.conf' '!package-lock.json' '!node_modules' '!*.ts' 'configs/*' '!configs/*.ts' 'src/**/*' '!src/**/*.ts' ./production/ --cwd=./ --no-overwrite --parents && node_modules/.bin/jsdoc -c jsdoc.json -R README.md"
@@ -48,6 +49,7 @@
     "rimraf": "^3.0.2",
     "swagger-jsdoc": "^6.2.1",
     "swagger-ui-express": "^4.3.0",
+    "typedoc": "^0.22.15",
     "typeorm": "^0.2.34",
     "typeorm-uml": "^1.6.5",
     "util": "^0.12.3",
