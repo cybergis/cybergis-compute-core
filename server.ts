@@ -23,14 +23,14 @@ app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(requestIp.mw({ attributeName: 'ip' }))
 app.use(fileUpload({
-    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+    limits: { fileSize: 1000 * 1024 * 1024 }, // 1000MB also see nginx client_max_body_size
     useTempFiles: true,
     abortOnLimit: true,
     tempFileDir: tmpDir,
     safeFileNames: true,
     limitHandler: (req, res, next) => {
         res.json({
-            error: "file too large"
+            error: "file too large (max 1GB)"
         })
         res.status(402)
     }

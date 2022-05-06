@@ -21,4 +21,4 @@ EOT
 
 tsc
 # run server
-node ./server.js
+LOGLEVEL=DEBUG DEBUG_LEVEL=DEBUG node ./server.js

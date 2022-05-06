@@ -58,14 +58,14 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(requestIp.mw({ attributeName: 'ip' }));
 app.use(fileUpload({
-    limits: { fileSize: 50 * 1024 * 1024 },
+    limits: { fileSize: 1000 * 1024 * 1024 },
     useTempFiles: true,
     abortOnLimit: true,
     tempFileDir: tmpDir,
     safeFileNames: true,
     limitHandler: function (req, res, next) {
         res.json({
-            error: "file too large"
+            error: "file too large (max 1GB)"
         });
         res.status(402);
     }
