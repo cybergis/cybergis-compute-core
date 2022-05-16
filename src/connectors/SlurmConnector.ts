@@ -7,7 +7,7 @@ import GlobusUtil from '../lib/GlobusUtil'
 import { config } from '../../configs/config'
 
 class SlurmConnector extends BaseConnector {
-
+x
     public slurm_id: string
 
     public modules: Array<string> = []
@@ -16,10 +16,21 @@ class SlurmConnector extends BaseConnector {
 
     public isContainer = false
 
+    /**
+     * Registers all of the specified modules
+     * 
+     * @param{Array} modules - Array of strings
+     */
     registerModules(modules: Array<string>) {
         this.modules = this.modules.concat(modules)
     }
 
+    /**
+     * Creates slurm string with specified configuation
+     * 
+     * @param{string} cmd - command that needs to be executed
+     * @param{slurm} config - slurm configuration
+     */
     prepare(cmd: string, config: slurm) {
         config = Object.assign({
             time: '01:00:00',
@@ -56,6 +67,10 @@ ${modules}
 ${cmd}`
     }
 
+    /**
+     * @async
+     * submited the job
+     */
     async submit() {
         // executable folder
         if (this.maintainer != null) this.maintainer.emitEvent('SLURM_UPLOAD', `uploading files`)
@@ -148,6 +163,11 @@ ${cmd}`
     // squeue: https://slurm.schedmd.com/squeue.html
     // ['JOBID', 'PARTITION', 'NAME', 'USER', 'ST', 'TIME', 'NODES', 'NODELIST(REASON)']
     // ['3142135', 'node', 'singular', 'cigi-gis', 'R', '0:11', '1', 'keeling-b08']
+    
+    /**
+     * @async
+     * checks job status
+     */
     async getStatus() {
         try {
             var squeueResult = await this.exec(`squeue --job ${this.slurm_id}`, {}, true, true)
@@ -172,28 +192,55 @@ ${cmd}`
         }
     }
 
+    /**
+     * @async
+     * cancels the job
+     */
     async cancel() {
         await this.exec(`scancel ${this.slurm_id}`, {}, true)
     }
 
+    /**
+     * @async
+     * pauses the job
+     */
     async pause() {
         await this.exec(`scontrol suspend ${this.slurm_id}`, {}, true)
     }
 
+    /**
+     * @async
+     * resumes the job
+     */
     async resume() {
         await this.exec(`scontrol resume ${this.slurm_id}`, {}, true)
     }
 
+    /**
+     * @async
+     * gets SlurmStdOut
+     */
     async getSlurmStdout() {
         var out = await this.cat(path.join(this.remote_result_folder_path, 'slurm_log', 'job.stdout'), {})
         if (this.maintainer && out) this.maintainer.emitLog(out)
     }
 
+    /**
+     * @async
+     * gets SlurmStderr
+     */
     async getSlurmStderr() {
         var out = await this.cat(path.join(this.remote_result_folder_path, 'slurm_log', 'job.stderr'), {})
         if (this.maintainer && out) this.maintainer.emitLog(out)
     }
 
+    /**
+     * Get sbatch tags
+     * 
+     * @param{string} tag - sbatch tags 
+     * @param{string[]} vals - values of sbatch tags
+     * @return{string} - sbatch string 
+     */
     private getSBatchTagsFromArray(tag: string, vals: string[]) {
         if (!vals) return ``
         var out = ``
@@ -201,21 +248,46 @@ ${cmd}`
         return out
     }
 
+    /**
+     * Get Container executable folder path
+     * 
+     * @param{string} providedPath - specified path 
+     * @return{string} - executable path
+     */
     getContainerExecutableFolderPath(providedPath: string = null) {
         if (providedPath) return path.join(`/job/executable`, providedPath)
         else return `/job/executable` 
     }
 
+    /**
+     * Get Container data folder path
+     * 
+     * @param{string} providedPath - specified path 
+     * @return{string} - executable path
+     */
     getContainerDataFolderPath(providedPath: string = null) {
         if (providedPath) return path.join(`/job/data`, providedPath)
         else return `/job/data` 
     }
 
+    /**
+     * Get Container result folder path
+     * 
+     * @param{string} providedPath - specified path 
+     * @return{string} - executable path
+     */
     getContainerResultFolderPath(providedPath: string = null) {
         if (providedPath) return path.join(`/job/result`, providedPath)
         else return `/job/result`
     }
 
+    /**
+     * @async
+     * Get remote results folder content
+     * 
+     * @param{string} providedPath - specified path 
+     * @return{string[]} - file content
+     */
     async getRemoteResultFolderContent() {
         var findResult = await this.exec(`find . -type d -print`, {cwd: this.getRemoteResultFolderPath()}, true, true)
         if (config.is_testing && findResult.stderr) console.log(JSON.stringify(findResult)) // logging
@@ -250,7 +322,12 @@ ${cmd}`
         Memory Utilized: 61.45 MB (estimated maximum)
         Memory Efficiency: 0.38% of 16.00 GB (4.00 GB/core)
      */
-
+    
+        /**
+     * Get job usage
+     * 
+     * @return{Object} - usage dictionary
+     */
     async getUsage() {
         var seffOutput = {
             nodes: null,

@@ -3,15 +3,32 @@ import { slurm, executableManifest } from '../types'
 import { containerConfigMap } from '../../configs/config'
 
 class SingularityConnector extends SlurmConnector {
+    /**
+     * Connects the singularity container to the hpc enivironment
+     */
     private volumeBinds: {[keys: string]: string} = {}
 
     public isContainer = true
 
+    /**
+     * Executes specified command within specified image
+     * 
+     * @param{string} image - docker image
+     * @param{string} cmd - command to be executed
+     * @param{slurm} config - slurm configuration
+     */
     execCommandWithinImage(image: string, cmd: string, config: slurm) {
         cmd = `srun --mpi=pmi2 singularity exec ${this._getVolumeBindCMD()} ${image} ${cmd}`
         super.prepare(cmd, config)
     }
 
+    /**
+     * Executes specified manifest within image
+     * 
+     * @param{executableManifest} manifest - manifest that needs toe be executed
+     * @param{slurm} config - slurm configuration
+     * @throw{Error} - thrown when container is not supported
+     */
     execExecutableManifestWithinImage(manifest: executableManifest, config: slurm) {
         var container = containerConfigMap[manifest.container]
         if (!container) throw new Error(`unknown container ${manifest.container}`)
@@ -49,12 +66,23 @@ class SingularityConnector extends SlurmConnector {
         super.prepare(cmd, config)
     }
 
+    /**
+     * Runs singularity image
+     * 
+     * @param{string} image - singularity image
+     * @param{slurm} config - slurm configuration
+     */
     runImage(image: string, config: slurm) {
         var jobENV = this._getJobENV()
         var cmd = `srun --mpi=pmi2 ${jobENV.join(' ')} singularity run ${this._getVolumeBindCMD()} ${image}`
         super.prepare(cmd, config)
     }
 
+    /**
+     * Registers volumeBinds
+     * 
+     * @param{{[keys: string]: string}} volumeBinds - volumeBinds that need to be registered
+     */
     registerContainerVolumeBinds(volumeBinds: {[keys: string]: string}) {
         for (var from in volumeBinds) {
             var to = volumeBinds[from]
@@ -62,6 +90,12 @@ class SingularityConnector extends SlurmConnector {
         }
     }
 
+    /**
+     * Returns volumeBinds
+     * 
+     * @param{executableManifest} manifest - manifest containing volumeBinds
+     * @return{{[keys: string]: string}} volumeBinds
+     */
     private _getVolumeBindCMD(manifest: executableManifest | null = null) {
         this.volumeBinds[this.getRemoteExecutableFolderPath()] = this.getContainerExecutableFolderPath()
         this.volumeBinds[this.getRemoteResultFolderPath()] = this.getContainerResultFolderPath()
@@ -88,6 +122,11 @@ class SingularityConnector extends SlurmConnector {
         return `--bind ${bindCMD.join(',')}`
     }
 
+    /**
+     * Returns job environment
+     * 
+     * @return{string[]} jobENV - jobenvironment variables
+     */
     private _getJobENV(): string[] {
         var jobJSON = {
             job_id: this.maintainer.job.id,
