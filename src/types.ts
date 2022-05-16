@@ -135,6 +135,7 @@ export interface config {
     local_file_system: localFileSystem
     queue_consume_time_period_in_seconds: number
     is_testing: boolean
+    is_jest: boolean // reserve only for jest testing
 }
 
 export interface externalKey {

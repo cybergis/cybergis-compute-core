@@ -3,6 +3,16 @@ import { config } from "../../configs/config"
 
 export default class PythonUtil {
 
+    /**
+     * Runs the specified python file. The person running this file can provide user input.
+     * 
+     * @static
+     * @async
+     * @param {string} file - Path of the file to run
+     * @param {string[]} args - Arguments to be passed when running the file.
+     * @param {string[]} returnTags - Items to be returned
+     * @returns {Promise} - Values returned by the function that correspond the the ones passed in returnTags
+     */
     static async runInteractive(file: string, args: string[] = [], returnTags: string[] = []) {
         args.unshift(`${__dirname}/python/${file}`)
         const child = spawn('python3', args)
@@ -43,6 +53,16 @@ export default class PythonUtil {
         })
     }
 
+    /**
+     * Runs the specified python file.
+     * 
+     * @static
+     * @async
+     * @param {string} file - Path of the file to run
+     * @param {string[]} args - Arguments to be passed when running the file.
+     * @param {string[]} returnTags - Items to be returned
+     * @returns {Promise} - Values returned by the function that correspond the the ones passed in returnTags
+     */
     static async run(file: string, args: string[] = [], returnTags: string[] = []): Promise<any> {
         args.unshift(`${__dirname}/python/${file}`)
         const child = spawn('python3', args)

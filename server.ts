@@ -14,7 +14,7 @@ import Statistic from './src/Statistic'
 import * as path from 'path'
 import JobUtil, { ResultFolderContentManager } from './src/lib/JobUtil'
 const swaggerUI = require('swagger-ui-express')
-const swaggerDocument = require('./swagger.json')
+const swaggerDocument = require('../production/swagger.json')
 const bodyParser = require('body-parser')
 const Validator = require('jsonschema').Validator;
 const fileUpload = require('express-fileupload')
@@ -159,6 +159,19 @@ app.get('/statistic', async (req, res) => {
     res.json({ runtime_in_seconds: await statistic.getRuntimeTotal() })
 })
 
+/**
+ * /:
+ *  get:
+ *      description: Get the runtime for a specific job.
+ *      responses:
+ *          200:
+ *              descrption: Returns the runtime for the specified job.
+ *          401:
+ *              description: Returns a list of errors rasied when validating the job access token.
+ *          402:
+ *              description: Returns a list of errors with the format of the req body.
+ *              
+ */
 app.get('/statistic/job/:jobId', async (req, res) => {
     var body = req.body
     var errors = requestErrors(validator.validate(body, schemas.getJob))
@@ -179,6 +192,16 @@ app.get('/statistic/job/:jobId', async (req, res) => {
 })
 
 // user
+/**
+ * /:
+ *  get:
+ *      description: Returns the current user's username. 
+ *      responses:
+ *          200:
+ *              description: Returns the current user's username.
+ *          402:
+ *              description: Returns a list of errors with the format of the req body if there are any, or "invalid token" if there is no user logged in.
+ */
 app.get('/user', (req, res) => {
     var body = req.body
     var errors = requestErrors(validator.validate(body, schemas.user))
@@ -197,6 +220,19 @@ app.get('/user', (req, res) => {
     res.json({ username: res.locals.username })
 })
 
+/**
+  * @openapi
+  * /user/jupyter-globus:
+  *  get:
+  *      description: Returns the jupyter-globus endpoint, root path and container home path
+  *      responses:
+  *          200:
+  *              description: Returns the jupyter-globus endpoint, root path and container home path.
+  *          402:
+  *              description: Returns a list of errors with the format of the req body along with "invalid input" if there are any, or "invalid token" if there is no user logged in.
+  *          404:
+  *              description: Returns "unknown host" if jupyter-globus cannot be found in local hosts.
+  */
 app.get('/user/jupyter-globus', (req, res) => {
     var body = req.body
     var errors = requestErrors(validator.validate(body, schemas.user))
@@ -227,6 +263,17 @@ app.get('/user/jupyter-globus', (req, res) => {
     })
 })
 
+/**
+  * @openapi
+  * /user/job:
+  *  get:
+  *      description: Returns all of the jobs for the current user.
+  *      responses:
+  *          200:
+  *              description: Returns all of the jobs for the current user.
+  *          402:
+  *              description: Returns a list of errors with the format of the req body along with "invalid input" if there are any, or "invalid token" if there is no user logged in.
+  */
 app.get('/user/job', async (req, res) => {
     var body = req.body
     var errors = requestErrors(validator.validate(body, schemas.user))
@@ -252,6 +299,17 @@ app.get('/user/job', async (req, res) => {
     res.json({ job: Helper.job2object(jobs) })
 })
 
+/**
+  * @openapi
+  * /user/slurm-usage:
+  *  get:
+  *      description: Returns slurm usage for the current user
+  *      responses:
+  *          200:
+  *              description: Returns slurm usage for the current user
+  *          402:
+  *              description: Returns a list of errors with the format of the req body along with "invalid input" if there are any, or "invalid token" if there is no user logged in.
+  */
 app.get('/user/slurm-usage', async (req, res) => {
     var body = req.body
     var errors = requestErrors(validator.validate(body, schemas.user))
@@ -271,7 +329,15 @@ app.get('/user/slurm-usage', async (req, res) => {
     res.json(await JobUtil.getUserSlurmUsage(res.locals.username, true))
 })
 
-// list info
+/**
+  * @openapi
+  * /hpc:
+  *  get:
+  *      description: Returns current hpcConfig
+  *      responses:
+  *          200:
+  *              description: Returns current hpcConfig
+  */
 app.get('/hpc', function (req, res) {
     var parseHPC = (dest: {[key: string]: hpcConfig}) => {
         var out = {}
@@ -288,6 +354,15 @@ app.get('/hpc', function (req, res) {
     res.json({ hpc: parseHPC(hpcConfigMap) })
 })
 
+/**
+  * @openapi
+  * /maintainer:
+  *  get:
+  *      description: Returns current maintainerConfig
+  *      responses:
+  *          200:
+  *              description: Returns current maintainerConfig
+  */
 app.get('/maintainer', function (req, res) {
     var parseMaintainer = (dest: {[key: string]: maintainerConfig}) => {
         var out = {}
@@ -300,6 +375,15 @@ app.get('/maintainer', function (req, res) {
     res.json({ maintainer: parseMaintainer(maintainerConfigMap) })
 })
 
+/**
+  * @openapi
+  * /maintainer:
+  *  get:
+  *      description: Returns current containerConfig
+  *      responses:
+  *          200:
+  *              description: Returns current containerConfig
+  */
 app.get('/container', function (req, res) {
     var parseContainer = (dest: {[key: string]: containerConfig}) => {
         var out = {}

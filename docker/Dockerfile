@@ -10,4 +10,4 @@ RUN set -xe; \
     apk add --no-cache openconnect -X http://dl-cdn.alpinelinux.org/alpine/edge/community
 EXPOSE 3030
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
-CMD ["/job_supervisor/docker-entrypoint.sh"]
+CMD ["/job_supervisor/docker/docker-entrypoint.sh"]

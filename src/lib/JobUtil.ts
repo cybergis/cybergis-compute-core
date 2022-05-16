@@ -8,6 +8,9 @@ import DB from '../DB'
 const redis = require('redis')
 const { promisify } = require("util")
 
+/**
+ * Some comment
+ */
 export class ResultFolderContentManager {
     private redis = {
         getValue: null,
@@ -17,17 +20,37 @@ export class ResultFolderContentManager {
 
     private isConnected = false
 
+     /**
+     * Set the value of the job result folder to the contents passed
+     * 
+     * @async
+     * @param {string} jobId - This job
+     * @param {string[]} contents - Contents to be listed in the result folder
+     */
     async put(jobId: string, contents: string[]) {
         await this.connect()
         await this.redis.setValue(`job_result_folder_content${jobId}`, JSON.stringify(contents))
     }
 
+    /**
+     * Return the parsed contents of the results folder
+     * 
+     * @async
+     * @param {string} jobId - This job
+     * @returns {string[]} - Contents of the results folder
+     */
     async get(jobId: string): Promise<string[]> {
         await this.connect()
         var out = await this.redis.getValue(`job_result_folder_content${jobId}`)
         return out ? JSON.parse(out) : null
     }
 
+    /**
+     * Delete the result folder content associated with this job
+     * 
+     * @async
+     * @param {string} jobId - This job
+     */
     async remove(jobId: string) {
         await this.connect()
         var out = await this.get(jobId)
@@ -35,6 +58,11 @@ export class ResultFolderContentManager {
         this.redis.delValue(`job_result_folder_content${jobId}`)
     }
 
+    /**
+     * Connect with host
+     * 
+     * @async
+     */
     private async connect() {
         if (this.isConnected) return
 
@@ -56,6 +84,14 @@ export class ResultFolderContentManager {
 }
 
 export default class JobUtil {
+    /**
+     * Ensure the job has all the nessecary input parameters
+     * 
+     * @static
+     * @param job - This job
+     * @param paramRules - Parameter rules for this job
+     * @throws Job must have a complete parameter list
+     */
     static validateParam(job: Job, paramRules: {[keys: string]: any}) {
         for (var i in paramRules) {
             if (!job.param[i]) {
@@ -63,7 +99,15 @@ export default class JobUtil {
             }
         }
     }
-
+    /**
+     * Get the total slurm usage of the indicated user
+     * 
+     * @static
+     * @async
+     * @param {string} userID - User to collect slurm usage from
+     * @param {boolean} format - Whether or not the cputume, memory, memoryusage, and walltime are already formatted
+     * @returns {Object} - Total slurm usage of the indicated user
+     */
     static async getUserSlurmUsage(userId: string, format = false) {
         const db = new DB()
         const connection = await db.connect()
@@ -108,7 +152,16 @@ export default class JobUtil {
             }
         }
     }
-
+    /**
+     * Ensure this job has valid input data and slurm config rules
+     * 
+     * @static
+     * @async
+     * @param {Job} job - This job
+     * @param {string} jupyterHost - Jupyter host for this job
+     * @param {string} username - Username of the user who submitted this job
+     * @throws - DataFolder must have a valid path, the job must have upload data, and there must be an executable folder in the maintainerConfig
+     */
     static async validateJob(job: Job, jupyterHost: string, username: string) {
         // validate input data
         if (job.dataFolder) {
@@ -156,7 +209,14 @@ export default class JobUtil {
         JobUtil.validateSlurmConfig(job, providedSlurmInputRules)
         JobUtil.validateParam(job, providedParamRules)
     }
-
+    /**
+     * Set the slurm rules for this job, and ensure that those rules don't exceed the default slurm ceiling
+     * 
+     * @static
+     * @param {Job} job - This job
+     * @param {slurmInputRules} slurmInputRules - Slurm input rules associated with this job
+     * @throws - Slurm input rules associated with this job must not exceed the default slurm ceiling
+     */
     static validateSlurmConfig(job: Job, slurmInputRules: slurmInputRules) {
         var slurmCeiling = {}
         var globalInputCap = hpcConfigMap[job.hpc].slurm_global_cap
@@ -213,6 +273,15 @@ export default class JobUtil {
         }
     }
 
+    /**
+     * Return true if the slurm config exceeds the threshold of the slurm ceiling.
+     * 
+     * @static
+     * @param {string} i - Slurm field that a and b are associated with
+     * @param {string} a - Storage or projected time for this job from the slurm ceiling
+     * @param {string} b - Storage or projected time for this job for this job
+     * @return {boolean} - If the slurm config exceeds the threshold of the slurm ceiling
+     */
     static compareSlurmConfig(i, a, b) {
         if (slurm_integer_storage_unit_config.includes(i)) {
             return this.storageUnitToKB(a) < this.storageUnitToKB(b)
@@ -223,6 +292,13 @@ export default class JobUtil {
         return a < b
     }
 
+    /**
+     * Turns the passed amount of storage into kb
+     * 
+     * @static
+     * @param {string} i - Amount of storage in original unit
+     * @return {number} - Storage in kb
+     */
     static storageUnitToKB(i: string) {
         i = i.toLowerCase().replace(/b/gi, '')
         if (i.includes('p')) {
@@ -236,6 +312,13 @@ export default class JobUtil {
         }
     }
 
+    /**
+     * Turns the passed amount of storage into the most convenient unit.
+     * 
+     * @static
+     * @param {number} i - Amount of storage in kb
+     * @return {string} - Storage in most convenient unit (kb, mb, gb, tb, pb, eb)
+     */
     static kbToStorageUnit(i: number) {
         var units = ['kb', 'mb', 'gb', 'tb', 'pb', 'eb'].reverse()
         while (units.length > 0) {
@@ -245,7 +328,13 @@ export default class JobUtil {
         }
         return `${i}pb`
     }
-
+    /**
+     * Turns the passed time into a string specifying each unit 
+     * 
+     * @static
+     * @param {number} seconds - Time in seconds
+     * @return {string} - Passed time converted into dayds, hours, minutes, seconds format
+     */
     static secondsToTimeDelta(seconds: number) {
         var days = Math.floor(seconds / (60 * 60 * 24))
         var hours = Math.floor(seconds / (60 * 60) - (days * 24))
@@ -259,14 +348,27 @@ export default class JobUtil {
         }
         return `${format(days)} days, ${format(hours)} hours, ${format(minutes)} minutes, ${format(seconds)} seconds`
     }
-
+    /**
+     * Turns the passed time into seconds
+     * 
+     * @static
+     * @param {number} time - Time in specified unit
+     * @param {string} unit - Unit the passed time is in
+     * @return {int} - Passed time converted into seconds
+     */
     static unitTimeToSeconds(time: number, unit: string) {
         if (unit == 'Minutes') return time * 60
         if (unit == 'Hours') return time * 60 * 60
         if (unit == 'Days') return time * 60 * 60 * 24
         return 0
     }
-
+    /**
+     * Turns passed seconds time into days-hours:minutes:seconds format
+     * 
+     * @static
+     * @param {number} seconds - Time in seconds
+     * @return {int} time - Passed seconds time converted to days-hours:minutes:seconds format.
+     */
     static secondsToTime(seconds: number) {
         var days = Math.floor(seconds / (60 * 60 * 24))
         var hours = Math.floor(seconds / (60 * 60) - (days * 24))
@@ -287,6 +389,13 @@ export default class JobUtil {
         }
     }
 
+    /**
+     * Turns passed days-hours:minutes:seconds time into seconds format
+     * 
+     * @static
+     * @param {string} raw - Time in days-hours:minutes:seconds format.
+     * @return {int} - Passed days-hours:minutes:seconds time converted to seconds.
+     */
     static timeToSeconds(raw: string) {
         var i = raw.split(':')
         if (i.length == 1) {

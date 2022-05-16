@@ -8,7 +8,7 @@
     ],
     "source": {
         "include": ["."],
-        "includePattern": ".(jsx|js|ts|tsx)$",
+        "includePattern": ".(ts|tsx)$",
         "excludePattern": "(node_modules|production)"
     },
     "opts": {

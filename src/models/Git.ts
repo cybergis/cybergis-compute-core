@@ -1,6 +1,8 @@
-import { Entity, Column, PrimaryColumn } from "typeorm"
+import { Entity, Column, PrimaryColumn, DeleteDateColumn, BeforeInsert, BeforeUpdate } from "typeorm"
 
 @Entity({name: "gits"})
+
+/** Class representing a git action. */
 export class Git {
     @PrimaryColumn()
     id: string
@@ -14,12 +16,43 @@ export class Git {
     @Column({default: false})
     isApproved: boolean
 
-    @Column({type: 'timestamp', default: () => 'CURRENT_TIMESTAMP'})
+    @Column({type: 'bigint', transformer: {
+        to: (i: Date | null | undefined): number => i ? i.getTime() : null,
+        from: (i: number | null | undefined): Date => i ? new Date(i) : null
+    }})
     createdAt: Date
 
-    @Column({type: 'timestamp', default: () => 'CURRENT_TIMESTAMP'})
+    @Column({type: 'bigint', nullable: true, transformer: {
+        to: (i: Date | null | undefined): number => i ? i.getTime() : null,
+        from: (i: number | null | undefined): Date => i ? new Date(i) : null
+    }})
     updatedAt: Date
 
-    @Column({type: 'timestamp', default: null})
+    @DeleteDateColumn({type: 'bigint', nullable: true, transformer: {
+        to: (i: Date | null | undefined): number => i ? i.getTime() : null,
+        from: (i: number | null | undefined): Date => i ? new Date(i) : null
+    }})
     deletedAt: Date
+
+    /**
+     * Set the createdAt time to the current time.
+     * 
+     * @async
+     * @return {Date} date - Date this job was created.
+     */
+    @BeforeInsert()
+    async setCreatedAt() {
+        this.createdAt = new Date()
+    }
+
+    /**
+     * Set the updatedAt time to the current time.
+     * 
+     * @async
+     * @return {Date} date - Date this job was last updated.
+     */
+    @BeforeUpdate()
+    async setUpdatedAt() {
+        return this.updatedAt = new Date()
+    }
 }

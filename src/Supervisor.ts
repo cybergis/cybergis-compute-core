@@ -159,6 +159,7 @@ class Supervisor {
             // emit events & logs
             var events = job.maintainerInstance.dumpEvents()
             var logs = job.maintainerInstance.dumpLogs()
+            // TODO: no need to dump events or logs outside the maintainer
             for (var j in events) self.emitter.registerEvents(job, events[j].type, events[j].message)
             for (var j in logs) self.emitter.registerLogs(job, logs[j])
 
