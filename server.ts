@@ -329,7 +329,15 @@ app.get('/user/slurm-usage', async (req, res) => {
     res.json(await JobUtil.getUserSlurmUsage(res.locals.username, true))
 })
 
-// list info
+/**
+  * @openapi
+  * /hpc:
+  *  get:
+  *      description: Returns current hpcConfig
+  *      responses:
+  *          200:
+  *              description: Returns current hpcConfig
+  */
 app.get('/hpc', function (req, res) {
     var parseHPC = (dest: {[key: string]: hpcConfig}) => {
         var out = {}
@@ -346,6 +354,15 @@ app.get('/hpc', function (req, res) {
     res.json({ hpc: parseHPC(hpcConfigMap) })
 })
 
+/**
+  * @openapi
+  * /maintainer:
+  *  get:
+  *      description: Returns current maintainerConfig
+  *      responses:
+  *          200:
+  *              description: Returns current maintainerConfig
+  */
 app.get('/maintainer', function (req, res) {
     var parseMaintainer = (dest: {[key: string]: maintainerConfig}) => {
         var out = {}
@@ -358,6 +375,15 @@ app.get('/maintainer', function (req, res) {
     res.json({ maintainer: parseMaintainer(maintainerConfigMap) })
 })
 
+/**
+  * @openapi
+  * /maintainer:
+  *  get:
+  *      description: Returns current containerConfig
+  *      responses:
+  *          200:
+  *              description: Returns current containerConfig
+  */
 app.get('/container', function (req, res) {
     var parseContainer = (dest: {[key: string]: containerConfig}) => {
         var out = {}
