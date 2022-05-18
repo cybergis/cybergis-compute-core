@@ -47,13 +47,14 @@
             "module load singularitypro/3.9"
         ],
         "init_sbatch_options": [
+            "#SBATCH --constraint=lustre",
             "#SBATCH --partition=shared",
             "#SBATCH --nodes=1",
             "#SBATCH --account=TG-EAR190007"
         ],
         "xsede_job_log_credential": {
             "xsederesourcename": "expanse.sdsc.xsede.org",
-            "apikey": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+            "apikey": "cybergisjupyterf-93822479703396e9a441a0915b834b1d"
         }
     },
     "bridges_community_gpu": {
@@ -76,7 +77,7 @@
             "root_path": "/jet/home/cybergis/data"
         },
         "init_sbatch_options": [
-            "#SBATCH --partition=GPU-shared"
+            "#SBATCH --partition=GPU"
         ]
     }
 }
