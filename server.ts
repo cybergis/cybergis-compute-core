@@ -145,7 +145,7 @@ function setDefaultValues(data, defaults) {
     return data
 }
 
-app.use('/js-docs', express.static('production/jsdoc'))
+app.use('/ts-docs', express.static('production/tsdoc'))
 
 app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(swaggerDocument))
 
