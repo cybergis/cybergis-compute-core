@@ -33,10 +33,10 @@ describe('test Emitter.getEvents', () => {
         const createdEvent = await TestHelper.createEvent(job, eventType, eventMessage)
         const queriedEvents = await emitter.getEvents(job.id)
         //
-        expect(queriedEvents.length == 1)
-        expect(queriedEvents[0].jobId == job.id)
-        expect(queriedEvents[0].id == createdEvent.id)
-        expect(queriedEvents[0].type == createdEvent.type)
+        expect(queriedEvents.length).toEqual(1)
+        expect(queriedEvents[0].jobId).toEqual(job.id)
+        expect(queriedEvents[0].id).toEqual(createdEvent.id)
+        expect(queriedEvents[0].type).toEqual(createdEvent.type)
     })
 
     test('get events', async () => {
@@ -47,8 +47,8 @@ describe('test Emitter.getEvents', () => {
         //
         expect(queriedEvents.length == eventsCount)
         for (var i = 0; i < eventsCount; i++) {
-            expect(queriedEvents[i].jobId == job.id)
-            expect(queriedEvents[i].type == `${eventType}_${i}`)
+            expect(queriedEvents[i].jobId).toEqual(job.id)
+            expect(queriedEvents[i].type).toEqual(`${eventType}_${i}`)
         }
     })
 })
@@ -61,10 +61,10 @@ describe('test Emitter.getLogs', () => {
         const createdLog = await TestHelper.createLog(job, logMessage)
         const queriedLogs = await emitter.getLogs(job.id)
         //
-        expect(queriedLogs.length == 1)
-        expect(queriedLogs[0].jobId == job.id)
-        expect(queriedLogs[0].id == createdLog.id)
-        expect(queriedLogs[0].message == createdLog.message)
+        expect(queriedLogs.length).toEqual(1)
+        expect(queriedLogs[0].jobId).toEqual(job.id)
+        expect(queriedLogs[0].id).toEqual(createdLog.id)
+        expect(queriedLogs[0].message).toEqual(createdLog.message)
     })
 
     test('get logs', async () => {
@@ -75,8 +75,8 @@ describe('test Emitter.getLogs', () => {
         //
         expect(queriedLogs.length == logsCount)
         for (var i = 0; i < logsCount; i++) {
-            expect(queriedLogs[i].jobId == job.id)
-            expect(queriedLogs[i].message == `${logMessage}_${i}`)
+            expect(queriedLogs[i].jobId).toEqual(job.id)
+            expect(queriedLogs[i].message).toEqual(`${logMessage}_${i}`)
         }
     })
 })
@@ -89,11 +89,11 @@ describe('test Emitter.registerLogs', () => {
         await emitter.registerLogs(job, `${logMessage}_register_${0}`)
         await emitter.registerLogs(job, `${logMessage}_register_${1}`)
         const queriedLogs = await emitter.getLogs(job.id)
-        expect(queriedLogs.length == 2)
-        expect(queriedLogs[0].jobId == job.id)
-        expect(queriedLogs[1].jobId == job.id)
-        expect(queriedLogs[0].message == `${logMessage}_register_${0}`)
-        expect(queriedLogs[1].message == `${logMessage}_register_${1}`)
+        expect(queriedLogs.length).toEqual(2)
+        expect(queriedLogs[0].jobId).toEqual(job.id)
+        expect(queriedLogs[1].jobId).toEqual(job.id)
+        expect(queriedLogs[0].message).toEqual(`${logMessage}_register_${0}`)
+        expect(queriedLogs[1].message).toEqual(`${logMessage}_register_${1}`)
     })
 })
 
@@ -105,10 +105,10 @@ describe('test Emitter.registerEvents', () => {
         await emitter.registerEvents(job, `${logType}_register_${0}`, `${logMessage}_register_${0}`)
         await emitter.registerEvents(job, `${logType}_register_${1}`, `${logMessage}_register_${1}`)
         const queriedEvents = await emitter.getEvents(job.id)
-        expect(queriedEvents.length == 2)
-        expect(queriedEvents[0].jobId == job.id)
-        expect(queriedEvents[1].jobId == job.id)
-        expect(queriedEvents[0].type == `${logMessage}_register_${0}`)
-        expect(queriedEvents[1].type == `${logMessage}_register_${1}`)
+        expect(queriedEvents.length).toEqual(2)
+        expect(queriedEvents[0].jobId).toEqual(job.id)
+        expect(queriedEvents[1].jobId).toEqual(job.id)
+        expect(queriedEvents[0].type).toEqual(`${logMessage}_register_${0}`)
+        expect(queriedEvents[1].type).toEqual(`${logMessage}_register_${1}`)
     })
 })

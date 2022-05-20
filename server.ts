@@ -90,7 +90,7 @@ var schemas = {
             user: { type: 'string' },
             password: { type: 'string' }
         },
-        required: ['maintainer']
+        required: []
     },
 
     getJob: {
@@ -664,7 +664,7 @@ app.post('/job', async function (req, res) {
         return
     }
 
-    var maintainerName = body.maintainer
+    var maintainerName = body.maintainer ?? 'community_contribution'
     var maintainer = maintainerConfigMap[maintainerName]
     if (maintainer === undefined) {
         res.json({ error: "unrecognized maintainer", message: null }); res.status(401)
