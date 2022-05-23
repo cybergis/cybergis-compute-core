@@ -18,7 +18,7 @@ services:
     image: zimoxiao/job_supervisor:latest
     restart: on-failure
     volumes:
-    - ./:/job_supervisor:rw
+    - ../:/job_supervisor:rw
     command: ["/job_supervisor/docker/docker-entrypoint.sh"]
     privileged: true
     ports:
