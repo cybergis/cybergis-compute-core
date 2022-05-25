@@ -8,12 +8,17 @@
   },
   "scripts": {
     "test": "jest -c ./test/jest.config.js",
+
     "tsdoc": "typedoc --entryPointStrategy expand ./src  --out ./production/tsdoc",
     "uml": "typeorm-uml -d production/uml.png",
     "swagger": "node ./production/tools/generate-swagger.js",
-    "prebuild": "del production/",
+    "doc-gen": "npm run tsdoc && npm run uml && npm run swagger",
+
+    "cpy": "cp -r ./configs ./production && cp ./*.json ./production",
+
+    "prebuild": "rm -rf ./production",
     "build": "tsc",
-    "postbuild": "cpy '*' '!production' '!docker-compose.yml' '!*.sh' '!tsconfig.json' '!*.example.json' '!*.md' '!package.json' '!*.conf' '!package-lock.json' '!node_modules' '!*.ts' 'configs/*' '!configs/*.ts' 'src/**/*' '!src/**/*.ts' ./production/ --cwd=./ --no-overwrite --parents && npm run tsdoc && npm run uml && npm run swagger"
+    "postbuild": "npm run cpy && npm run doc-gen"
   },
   "repository": {
     "type": "git",
