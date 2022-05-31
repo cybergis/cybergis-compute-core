@@ -1,14 +1,12 @@
 import Queue from "./Queue"
 import Emitter from "./Emitter"
 import { Job } from "./models/Job"
-import { slurmInputRules, SSH, SSHConfig, stringInputRule, stringOptionRule, integerRule } from './types'
+import { SSH } from './types'
 import { config, maintainerConfigMap, hpcConfigMap } from '../configs/config'
-import { FileSystem, GitFolder } from './FileSystem'
+import connectionPool from "./connectors/ConnectionPool"
 import * as events from 'events'
-import NodeSSH = require('node-ssh')
 import DB from "./DB"
-
-type actions = 'stop' | 'resume' | 'cancel'
+import NodeSSH = require('node-ssh')
 
 class Supervisor {
 
@@ -16,11 +14,7 @@ class Supervisor {
 
     private jobPoolCapacities: {[keys: string]: number } = {}
 
-    private jobCommunitySSHCounters: {[keys: string]: number } = {}
-
     private jobPoolCounters: {[keys: string]: number} = {}
-
-    public jobSSHPool: {[keys: string]: SSH} = {}
 
     private queues: {[keys: string]: Queue} = {}
 
@@ -32,41 +26,13 @@ class Supervisor {
 
     private queueConsumeTimePeriodInSeconds = config.queue_consume_time_period_in_seconds
 
-    private actionQueue: {[keys: string]: actions[]} = {}
-
     constructor() {
         for (var hpcName in hpcConfigMap) {
             var hpcConfig = hpcConfigMap[hpcName]
-
             // register job pool & queues
             this.jobPoolCapacities[hpcName] = hpcConfig.job_pool_capacity
             this.jobPoolCounters[hpcName] = 0
             this.queues[hpcName] = new Queue(hpcName)
-
-            if (!hpcConfig.is_community_account) continue
-
-            // register community account SSH
-            this.jobCommunitySSHCounters[hpcName] = 0
-
-            var sshConfig: SSHConfig = {
-                host: hpcConfig.ip,
-                port: hpcConfig.port,
-                username: hpcConfig.community_login.user
-            }
-
-            if (hpcConfig.community_login.use_local_key) {
-                sshConfig.privateKey = config.local_key.private_key_path
-                if (config.local_key.passphrase) sshConfig.passphrase = config.local_key.passphrase
-            } else {
-                sshConfig.privateKey = hpcConfig.community_login.external_key.private_key_path
-                if (hpcConfig.community_login.external_key.passphrase)
-                    sshConfig.passphrase = hpcConfig.community_login.external_key.passphrase
-            }
-
-            this.jobSSHPool[hpcName] = {
-                connection: new NodeSSH(),
-                config: sshConfig
-            }
         }
 
         this.createMaintainerMaster()
@@ -83,7 +49,7 @@ class Supervisor {
                     if (!job) continue
                     var maintainer = require(`./maintainers/${maintainerConfigMap[job.maintainer].maintainer}`).default // typescript compilation hack
                     try {
-                        job.maintainerInstance = new maintainer(job, self)
+                        job.maintainerInstance = new maintainer(job)
                     } catch(e) {
                         // log error and skip job
                         self.emitter.registerEvents(job, 'JOB_INIT_ERROR', `job [${job.id}] failed to initialized with error ${e.toString()}`)
@@ -100,17 +66,20 @@ class Supervisor {
 
                     // manage ssh pool
                     if (job.maintainerInstance.connector.config.is_community_account) {
-                        self.jobCommunitySSHCounters[job.hpc]++
+                        connectionPool[job.hpc].counter++
                     } else {
-                        var hpcConfig = hpcConfigMap[job.hpc]
-                        self.jobSSHPool[job.id] = {
-                            connection: new NodeSSH(),
-                            config: {
-                                host: hpcConfig.ip,
-                                port: hpcConfig.port,
-                                username: job.credential.user,
-                                password: job.credential.password,
-                                readyTimeout: 1000
+                        const hpcConfig = hpcConfigMap[job.hpc]
+                        connectionPool[job.id] = {
+                            counter: 1,
+                            ssh: {
+                                connection: new NodeSSH(),
+                                config: {
+                                    host: hpcConfig.ip,
+                                    port: hpcConfig.port,
+                                    username: job.credential.user,
+                                    password: job.credential.password,
+                                    readyTimeout: 1000
+                                }
                             }
                         }
                     }
@@ -138,9 +107,9 @@ class Supervisor {
             // get ssh connector from pool
             var ssh: SSH
             if (job.maintainerInstance.connector.config.is_community_account) {
-                ssh = self.jobSSHPool[job.hpc]
+                ssh = connectionPool[job.hpc].ssh
             } else {
-                ssh = self.jobSSHPool[job.id]
+                ssh = connectionPool[job.id].ssh
             }
 
             // connect ssh & run
@@ -167,13 +136,13 @@ class Supervisor {
             if (job.maintainerInstance.isEnd) {
                 // exit or deflag ssh pool
                 if (job.maintainerInstance.connector.config.is_community_account) {
-                    self.jobCommunitySSHCounters[job.hpc]--
-                    if (self.jobCommunitySSHCounters[job.hpc] === 0) {
+                    connectionPool[job.hpc].counter--
+                    if (connectionPool[job.hpc].counter === 0) {
                         if (ssh.connection.isConnected()) await ssh.connection.dispose()
                     }
                 } else {
                     if (ssh.connection.isConnected()) await ssh.connection.dispose()
-                    delete self.jobSSHPool[job.id]
+                    delete connectionPool[job.id]
                 }
 
                 // emit event

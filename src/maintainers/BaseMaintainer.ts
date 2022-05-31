@@ -61,7 +61,7 @@ class BaseMaintainer {
     public appParam: {[keys: string]: string} = {}
 
     /** constructor **/
-    constructor(job: Job, supervisor: Supervisor) {
+    constructor(job: Job) {
         for (var i in this.envParamValidators) {
             var val = job.env[i]
             if (val != undefined) {
@@ -80,7 +80,6 @@ class BaseMaintainer {
             this.executableFolder = FileSystem.createLocalFolder()
         }
 
-        this.supervisor = supervisor
         this.job = job
         this.config = maintainerConfig
         this.id = job.id
@@ -288,7 +287,7 @@ class BaseMaintainer {
      * @returns {SlurmConnector} - The slurm connector associated with this job.
      */
     public getSlurmConnector(): SlurmConnector {
-        return new SlurmConnector(this.job, this.hpc, this)
+        return new SlurmConnector(this.job.hpc, this.job.id, this, this.job.env)
     }
 
     /**
@@ -298,7 +297,7 @@ class BaseMaintainer {
      * @returns {SingularityConnector} - The singularity connector associated with this job.
      */
     public getSingularityConnector(): SingularityConnector {
-        return new SingularityConnector(this.job, this.hpc, this)
+        return new SingularityConnector(this.job.hpc, this.job.id, this, this.job.env)
     }
 
     /**
@@ -308,7 +307,7 @@ class BaseMaintainer {
      * @returns {BaseConnector} - The base connector associated with this job.
      */
     public getBaseConnector(): BaseConnector {
-        return new BaseConnector(this.job, this.hpc, this)
+        return new BaseConnector(this.job.hpc, this.job.id, this, this.job.env)
     }
 }
 

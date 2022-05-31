@@ -1,10 +1,11 @@
-import { Job } from "../models/Job"
 import { options, hpcConfig, SSH } from "../types"
 import { ConnectorError } from '../errors'
 import BaseMaintainer from '../maintainers/BaseMaintainer'
-import { LocalFolder } from '../FileSystem'
 import DB from "../DB"
 import * as path from 'path'
+import connectionPool from "./ConnectionPool"
+import { hpcConfigMap } from "../../configs/config"
+import FileUtil from "../lib/FileUtil"
 
 class BaseConnector {
     /**
@@ -14,7 +15,7 @@ class BaseConnector {
     public maintainer: BaseMaintainer
 
     /** properties **/
-    public jobID: string
+    public jobId: string
 
     public hpcName: string
 
@@ -31,11 +32,10 @@ class BaseConnector {
 
     protected envCmd = '#!/bin/bash\n'
 
-    constructor(job: Job, hpcConfig: hpcConfig, maintainer: BaseMaintainer, env: {[keys: string]: any} = {}) {
-
-        this.jobID = job.id
-        this.hpcName = job.hpc
-        this.config = hpcConfig
+    constructor(hpcName: string, jobId: string = null, maintainer: BaseMaintainer = null, env: {[keys: string]: any} = {}) {
+        this.hpcName = hpcName
+        this.jobId = jobId
+        this.config = hpcConfigMap[hpcName]
         this.maintainer = maintainer
 
         var envCmd = 'source /etc/profile;'
@@ -55,9 +55,9 @@ class BaseConnector {
      */
     ssh(): SSH {
         if (this.config.is_community_account) {
-            return this.maintainer.supervisor.jobSSHPool[this.hpcName]
+            return connectionPool[this.hpcName].ssh
         } else {
-            return this.maintainer.supervisor.jobSSHPool[this.jobID]
+            return connectionPool[this.jobId].ssh
         }
     }
     /**
@@ -125,24 +125,24 @@ class BaseConnector {
      * @aysnc
      * Uncompresses the specified zip file to the Local folder
      * 
-     * @param{string} from - input file string
-     * @param{LocalFolder} to - output folder
+     * @param {string} from - input file string
+     * @param {string} to - output folder
      * @param {boolean} muteEvent - set to True if you want to mute maintauner emitted Event
      * @throws {ConnectorError} - Thrown if maintainer emits 'SSH_SCP_DOWNLOAD_ERROR'
      */
-    async download(from: string, to: LocalFolder, muteEvent = false) {
+    async download(from: string, to: string, muteEvent = false) {
         if (to == undefined) throw new ConnectorError('please init input file first')
         var fromZipFilePath = from.endsWith('.zip') ? from : `${from}.zip`
-        var toZipFilePath = `${to.path}.zip`
+        var toZipFilePath = `${to}.zip`
         await this.zip(from, fromZipFilePath)
 
         try {
-            if (this.maintainer && !muteEvent) this.maintainer.emitEvent('SSH_SCP_DOWNLOAD', `get file from ${from} to ${to.path}`)
-            await this.ssh().connection.getFile(toZipFilePath, fromZipFilePath)
+            if (this.maintainer && !muteEvent) this.maintainer.emitEvent('SSH_SCP_DOWNLOAD', `get file from ${from} to ${to}`)
+            await this.ssh().connection.getFile(to, fromZipFilePath)
             await this.rm(fromZipFilePath)
-            await to.putFileFromZip(toZipFilePath)
+            await FileUtil.putFileFromZip(to, toZipFilePath)
         } catch (e) {
-            var error = `unable to get file from ${from} to ${to.path}: ` + e.toString()
+            var error = `unable to get file from ${from} to ${to}: ` + e.toString()
             if (this.maintainer && !muteEvent) this.maintainer.emitEvent('SSH_SCP_DOWNLOAD_ERROR', error)
             throw new ConnectorError(error)
         }
@@ -151,22 +151,20 @@ class BaseConnector {
      * @aysnc
      * Compresses the contents of the LocalFolder to the specified zip file 
      * 
-     * @param{string} from - input file string
-     * @param{LocalFolder} to - output folder
+     * @param {string} from - input file string
+     * @param {string} to - output folder
      * @param {boolean} muteEvent - set to True if you want to mute maintauner emitted Event
      * @throws {ConnectorError} - Thrown if maintainer emits 'SSH_SCP_DOWNLOAD_ERROR'
      */
-    async upload(from: LocalFolder, to: string, muteEvent = false) {
-        if (from == undefined) throw new ConnectorError('please init input file first')
-        var fromZipFilePath = await from.getZip()
+    async upload(from: string, to: string, muteEvent = false) {
         var toZipFilePath = to.endsWith('.zip') ? to : `${to}.zip`
         var toFilePath = to.endsWith('.zip') ? to.replace('.zip', '') : to
 
         try {
-            if (this.maintainer && !muteEvent) this.maintainer.emitEvent('SSH_SCP_UPLOAD', `put file from ${from.path} to ${to}`)
-            await this.ssh().connection.putFile(fromZipFilePath, toZipFilePath)
+            if (this.maintainer && !muteEvent) this.maintainer.emitEvent('SSH_SCP_UPLOAD', `put file from ${from} to ${toFilePath}`)
+            await this.ssh().connection.putFile(from, toZipFilePath)
         } catch (e) {
-            var error = `unable to put file from ${fromZipFilePath} to ${toZipFilePath}: ` + e.toString()
+            var error = `unable to put file from ${from} to ${toZipFilePath}: ` + e.toString()
             if (this.maintainer && !muteEvent) this.maintainer.emitEvent('SSH_SCP_UPLOAD_ERROR', error)
             throw new ConnectorError(error)
         }

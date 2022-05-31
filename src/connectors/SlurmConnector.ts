@@ -43,7 +43,7 @@ x
 
         // https://researchcomputing.princeton.edu/support/knowledge-base/slurm
         this.template = `#!/bin/bash
-#SBATCH --job-name=${this.jobID}
+#SBATCH --job-name=${this.jobId}
 ${this.config.init_sbatch_options ? this.config.init_sbatch_options.join('\n') : ''}
 ${config.num_of_node ? `#SBATCH --nodes=${config.num_of_node}` : ''}
 #SBATCH --ntasks=${config.num_of_task}
@@ -99,11 +99,11 @@ ${cmd}`
             }
 
             if (this.maintainer.dataFolder instanceof GlobusFolder) {
-                var to = FileSystem.getGlobusFolderByHPCConfig(this.config, `${this.jobID}/data`)
+                var to = FileSystem.getGlobusFolderByHPCConfig(this.config, `${this.jobId}/data`)
 
                 try {
                     if (this.maintainer != null) this.maintainer.emitEvent('GLOBUS_TRANSFER_INIT', `initializing Globus job`)
-                    var taskId = await GlobusUtil.initTransfer(this.maintainer.dataFolder, to, this.config, this.jobID)
+                    var taskId = await GlobusUtil.initTransfer(this.maintainer.dataFolder, to, this.config, this.jobId)
                     if (this.maintainer != null) this.maintainer.emitEvent('GLOBUS_TRANSFER_INIT_SUCCESS', `initialized Globus job with task ID ${taskId}`)
                 } catch (e) {
                     if (this.maintainer != null) this.maintainer.emitEvent('GLOBUS_TRANSFER_INIT_FAILED', `cannot initialize Globus job`)

@@ -1,6 +1,6 @@
-import { ConnectConfig } from 'ssh2';
-import { Prompt } from 'ssh2-streams';
 import NodeSSH = require('node-ssh')
+import { ConnectConfig } from 'ssh2'
+import { Prompt } from 'ssh2-streams'
 
 type unit = 'GB' | 'MB' | 'Minutes' | 'Hours' | 'Days' | 'None'
 
@@ -155,6 +155,7 @@ export interface hpcConfig {
     is_community_account: boolean
     community_login: communityLogin
     root_path: string
+    data_path: string
     job_pool_capacity: number
     init_sbatch_script: string[]
     init_sbatch_options: string[]
@@ -261,4 +262,9 @@ export interface jobMaintainerUpdatable {
     memory?: number
     memoryUsage?: number
     walltime?: number
+}
+
+export interface GlobusFile {
+    endpoint?: string
+    path?: string
 }

@@ -689,11 +689,11 @@ app.post('/job', async function (req, res) {
         return
     }
 
-    var connection = await db.connect()
-    var jobRepo = connection.getRepository(Job)
+    const connection = await db.connect()
+    const jobRepo = connection.getRepository(Job)
 
     var job: Job = new Job()
-    job.id = guard.generateID()
+    job.id = Helper.generateId()
     job.userId = res.locals.username ? res.locals.username : null
     job.secretToken = await guard.issueJobSecretToken()
     job.maintainer = maintainerName

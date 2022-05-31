@@ -93,7 +93,7 @@ class Guard {
     }
 
     async registerCredential(user: string, password: string): Promise<string> {
-        var credentialId = this.generateID()
+        var credentialId = Helper.generateId()
         this.credentialManager.add(credentialId, {
             id: credentialId,
             user: user,
@@ -136,10 +136,6 @@ class Guard {
         var date = this.jat.getDate()
         var rawAccessToken = this.jat.parseAccessToken(accessToken)
         this.authenticatedAccessTokenCache[date][rawAccessToken.hash] = job
-    }
-
-    generateID(): string {
-        return Math.round((new Date()).getTime() / 1000) + Helper.randomStr(5)
     }
 
     private async clearCache() {
