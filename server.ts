@@ -398,6 +398,15 @@ app.get('/container', function (req, res) {
     res.json({ container: parseContainer(containerConfigMap) })
 })
 
+/**
+  * @openapi
+  * /maintainer:
+  *  get:
+  *      description: Returns code git repo
+  *      responses:
+  *          200:
+  *              description: Returns code git repo
+  */
 app.get('/git', async function (req, res) {
     var parseGit = async (dest: Git[]) => {
         var out = {}
@@ -422,7 +431,23 @@ app.get('/git', async function (req, res) {
     res.json({ git: await parseGit(gits) })
 })
 
-// TODO: remove after new versions, back compatibility
+/**
+  * @openapi
+  * /file:
+  *  get:
+  *      description: Returns file/folder at specified file url
+  *      responses:
+  *          200:
+  *              description: Returns file at specified file url
+  *          402:
+  *              description: invalid input
+  *          401:
+  *              description: invalid access token
+  *          402:
+  *              description: job is not finished, please try it later
+  *          402 :
+  *              description: cannot get file at specified url
+  */
 app.get('/file', async function (req: any, res) {
     var body = req.body
     var errors = requestErrors(validator.validate(body, schemas.getFile))
@@ -746,6 +771,7 @@ app.put('/job/:jobId', async function (req, res) {
     res.json(Helper.job2object(job))
 })
 
+
 app.post('/job/:jobId/submit', async function (req, res) {
     var body = req.body
     var errors = requestErrors(validator.validate(body, schemas.getJob))
@@ -789,6 +815,9 @@ app.post('/job/:jobId/submit', async function (req, res) {
             .where('id = :id', { id:  job.id })
             .set({ queuedAt: job.queuedAt })
             .execute()
+        if (job.hpc == "dummy_hpc") {
+            job.finishedAt = new Date()
+        }
     } catch (e) {
         res.json({ error: e.toString() }); res.status(402)
         return
