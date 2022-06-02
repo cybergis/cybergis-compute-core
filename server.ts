@@ -496,7 +496,21 @@ app.get('/file', async function (req: any, res) {
     }
 })
 
-// file
+/**
+  * @openapi
+  * /file:
+  *  get:
+  *      description: Upload fil
+  *      responses:
+  *          200:
+  *              description: Returns url of uploaded file
+  *          402:
+  *              description: invalid input
+  *          401:
+  *              description: invalid access token
+  *          402:
+  *              description: Upload failed
+  */
 app.post('/file', async function (req: any, res) {
     if (res.statusCode == 402) return
 
@@ -532,6 +546,23 @@ app.post('/file', async function (req: any, res) {
     }
 })
 
+/**
+  * @openapi
+  * /file:
+  *  get:
+  *      description: Returns compressed directory at specified url
+  *      responses:
+  *          200:
+  *              description: Returns compressed directory
+  *          402:
+  *              description: invalid input
+  *          401:
+  *              description: invalid access token
+  *          402:
+  *              description: job is not finished, please try it later
+  *          402 :
+  *              description: cannot get folder at specified url
+  */
 app.get('/file/result-folder/direct-download', async function (req: any, res) {
     var body = req.body
     var errors = requestErrors(validator.validate(body, schemas.downloadResultFolderLocal))
@@ -567,6 +598,25 @@ app.get('/file/result-folder/direct-download', async function (req: any, res) {
     }
 })
 
+/**
+  * @openapi
+  * /file:
+  *  get:
+  *      description: Returns compressed directory at specified globus url
+  *      responses:
+  *          200:
+  *              description: Returns compressed globus directory
+  *          402:
+  *              description: invalid input
+  *          401:
+  *              description: invalid access token
+  *          402:
+  *              description: job is not finished, please try it later
+  *          402:
+  *              description: invalid url
+  *          402 :
+  *              description: cannot get folder at specified url
+  */
 app.get('/file/result-folder/globus-download', async function (req: any, res) {
     var body = req.body
     var errors = requestErrors(validator.validate(body, schemas.downloadResultFolderGlobus))
@@ -619,7 +669,7 @@ app.get('/file/result-folder/globus-download', async function (req: any, res) {
         }
     })
 
-// globus
+
 app.post('/globus-util/jupyter/upload', async function (req, res) {
     var body = req.body
     var errors = requestErrors(validator.validate(body, schemas.user))
