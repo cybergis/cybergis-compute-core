@@ -80,7 +80,7 @@
             "#SBATCH --partition=GPU"
         ]
     },
-    "dummy_hpc": {
+    "instant_hpc": {
         "ip": "bridges2.psc.edu",
         "port": 22,
         "is_community_account": true,
