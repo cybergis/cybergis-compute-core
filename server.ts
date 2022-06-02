@@ -865,8 +865,8 @@ app.post('/job/:jobId/submit', async function (req, res) {
             .where('id = :id', { id:  job.id })
             .set({ queuedAt: job.queuedAt })
             .execute()
+        job.finishedAt = new Date()
         if (job.hpc == "instant_hpc") {
-            job.finishedAt = new Date()
             await connection.createQueryBuilder()
             .update(Job)
             .where('id = :id', { id:  job.id })
