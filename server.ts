@@ -815,8 +815,13 @@ app.post('/job/:jobId/submit', async function (req, res) {
             .where('id = :id', { id:  job.id })
             .set({ queuedAt: job.queuedAt })
             .execute()
-        if (job.hpc == "dummy_hpc") {
+        if (job.hpc == "instant_hpc") {
             job.finishedAt = new Date()
+            await connection.createQueryBuilder()
+            .update(Job)
+            .where('id = :id', { id:  job.id })
+            .set({ finishedAt: job.finishedAt, isFailed: job.isFailed })
+            .execute()
         }
     } catch (e) {
         res.json({ error: e.toString() }); res.status(402)
