@@ -860,17 +860,15 @@ app.post('/job/:jobId/submit', async function (req, res) {
         // update status
         var connection = await db.connect()
         job.queuedAt = new Date()
+        const updateJobTo: any = { queuedAt: job.queuedAt }
+        if (job.hpc == 'instant_hpc') {
+            updateJobTo.finishedAt = new Date()
+            updateJobTo.isFailed = false
+        }
         await connection.createQueryBuilder()
             .update(Job)
             .where('id = :id', { id:  job.id })
-            .set({ queuedAt: job.queuedAt })
-            .execute()
-        job.finishedAt = new Date()
-        if (job.hpc == "instant_hpc") {
-            await connection.createQueryBuilder()
-            .update(Job)
-            .where('id = :id', { id:  job.id })
-            .set({ finishedAt: job.finishedAt, isFailed: job.isFailed })
+            .set(updateJobTo)
             .execute()
         }
     } catch (e) {
