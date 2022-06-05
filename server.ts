@@ -870,7 +870,6 @@ app.post('/job/:jobId/submit', async function (req, res) {
             .where('id = :id', { id:  job.id })
             .set(updateJobTo)
             .execute()
-        }
     } catch (e) {
         res.json({ error: e.toString() }); res.status(402)
         return
