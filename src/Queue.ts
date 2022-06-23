@@ -1,7 +1,7 @@
 import { Job } from './models/Job'
 import { config } from '../configs/config'
 import DB from './DB'
-import { CredentialManager } from './Guard'
+import { CredentialManager } from './SSHCredentialGuard'
 import { promisify } from 'util'
 const redis = require('redis')
 
@@ -76,7 +76,9 @@ class Queue {
     private async getJobById(id: string): Promise<Job> {
         var connection = await this.db.connect()
         var jobRepo = connection.getRepository(Job)
-        var job = await jobRepo.findOne(id)
+        var job = await jobRepo.findOne(id, {
+            relations: ['executableFile', 'dataFile', 'resultFile']
+        })
 
         if (!job) return null
 

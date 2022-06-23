@@ -1,7 +1,6 @@
 import { slurm_integer_storage_unit_config, slurm_integer_time_unit_config, slurmInputRules, slurm_integer_configs } from '../types'
 import { Job } from "../models/Job"
 import { hpcConfigMap, jupyterGlobusMap, maintainerConfigMap } from "../../configs/config"
-import { GitFolder, FileSystem } from '../FileSystem'
 import { config } from "../../configs/config"
 import path = require('path')
 import DB from '../DB'
@@ -99,6 +98,7 @@ export default class JobUtil {
             }
         }
     }
+
     /**
      * Get the total slurm usage of the indicated user
      * 
@@ -162,48 +162,17 @@ export default class JobUtil {
      * @param {string} username - Username of the user who submitted this job
      * @throws - DataFolder must have a valid path, the job must have upload data, and there must be an executable folder in the maintainerConfig
      */
-    static async validateJob(job: Job, jupyterHost: string, username: string) {
-        // validate input data
-        if (job.dataFolder) {
-            var jupyterGlobus = jupyterGlobusMap[jupyterHost]
-            if (jupyterGlobus) {
-                var validPath = path.join(jupyterGlobus.root_path, username)
-                if (job.dataFolder.includes(jupyterGlobus.root_path) && !job.dataFolder.includes(validPath)) {
-                    throw new Error('invalid dataFolder path')
-                }
-            }
-        }
-
+    static async validateJob(job: Job) {
         // create slurm config rules
-        var providedSlurmInputRules: slurmInputRules = {}
-        var providedParamRules: {[keys: string]: any} = {}
-        var requireUploadData = false
-        const maintainerConfig = maintainerConfigMap[job.maintainer]
-        if (maintainerConfig.executable_folder.from_user) {
-            var u = job.executableFolder.split('://')
-            if (u[0] === 'git') {
-                var f = new GitFolder(u[1])
-                var m = await f.getExecutableManifest()
-                if (m.slurm_input_rules) {
-                    providedSlurmInputRules = m.slurm_input_rules
-                }
-                if (m.param_rules) {
-                    providedParamRules = m.param_rules
-                }
-                if (m.require_upload_data) {
-                    requireUploadData = m.require_upload_data
-                }
-            }
-        }
+        const providedSlurmInputRules: slurmInputRules = {}
+        const providedParamRules: {[keys: string]: any} = {}
+        const requireUploadData = false
 
-        if (requireUploadData && !job.dataFolder) {
-            throw new Error(`job missing upload data`)
+        if (requireUploadData && !job.localDataFolder && !job.remoteDataFolder) {
+            throw new Error(`job missing data file`)
         }
-
-        if (maintainerConfig.executable_folder.from_user) {
-            if (job.executableFolder == undefined) throw new Error('no file provided')
-            var file = FileSystem.getFolderByURL(job.executableFolder, maintainerConfig.executable_folder.allowed_protocol)
-            file.validate()
+        if (job.localExecutableFolder == undefined) {
+            throw new Error('job missing executable file')
         }
 
         JobUtil.validateSlurmConfig(job, providedSlurmInputRules)

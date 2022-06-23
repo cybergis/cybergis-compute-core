@@ -3,7 +3,7 @@ import { spawn } from "child_process"
 import { FileNotExistError } from "../errors"
 import * as path from 'path'
 
-export default class FileUtil {
+export default class registerUtil {
     static async isZipped(filePath: string): Promise<boolean> {
         try {
             await fs.promises.access(filePath + '.zip', fs.constants.F_OK)

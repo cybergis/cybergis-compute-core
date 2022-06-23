@@ -1,6 +1,5 @@
 import { Job } from "../models/Job"
 import { maintainerConfig, event, slurm, jobMaintainerUpdatable, hpcConfig } from "../types"
-import { BaseFolder, LocalFolder, FileSystem, GlobusFolder } from '../FileSystem'
 import BaseConnector from '../connectors/BaseConnector'
 import SlurmConnector from '../connectors/SlurmConnector'
 import validator from 'validator'
@@ -69,17 +68,6 @@ class BaseMaintainer {
             }
         }
         const maintainerConfig = maintainerConfigMap[job.maintainer]
-        if (maintainerConfig.executable_folder.from_user) {
-            var folder = FileSystem.getFolderByURL(job.executableFolder)
-            if (folder instanceof LocalFolder) {
-                this.executableFolder = folder
-            } else {
-                throw new Error('executable folder must be local folder')
-            }
-        } else {
-            this.executableFolder = FileSystem.createLocalFolder()
-        }
-
         this.job = job
         this.config = maintainerConfig
         this.id = job.id
@@ -89,23 +77,10 @@ class BaseMaintainer {
         this.hpc = hpcConfigMap[hpc]
         if (!this.hpc) throw new Error("cannot find hpc with name [" + hpc + "]")
         this.onDefine()
-
-        this.dataFolder = job.dataFolder ? FileSystem.getFolderByURL(job.dataFolder) : null
-        if (this.dataFolder instanceof GlobusFolder && !this.hpc.globus) {
-            throw new Error('HPC does not support Globus')
-        }
-        this.resultFolder = job.resultFolder ? FileSystem.getFolderByURL(job.resultFolder) : FileSystem.createLocalFolder()
     }
 
     /** HPC connectors **/
     public connector: BaseConnector | SlurmConnector = undefined
-
-    /** files **/
-    public dataFolder: BaseFolder = undefined
-
-    public resultFolder: BaseFolder = undefined
-
-    public executableFolder: LocalFolder = undefined
 
     /** data **/
     protected logs: Array<string> = []

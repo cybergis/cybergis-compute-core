@@ -5,7 +5,7 @@ import DB from "../DB"
 import * as path from 'path'
 import connectionPool from "./ConnectionPool"
 import { hpcConfigMap } from "../../configs/config"
-import FileUtil from "../lib/FileUtil"
+import FileUtil from "../lib/FolderUtil"
 
 class BaseConnector {
     /**
@@ -40,13 +40,13 @@ class BaseConnector {
 
         var envCmd = 'source /etc/profile;'
         for (var i in env) {
-            var v = env[i]
+            const v = env[i]
             envCmd += `export ${i}=${v};\n`
         }
         this.envCmd = envCmd
-        this.remote_executable_folder_path = path.join(this.config.root_path, this.maintainer.id, 'executable')
-        this.remote_data_folder_path = path.join(this.config.root_path, this.maintainer.id, 'data')
-        this.remote_result_folder_path = path.join(this.config.root_path, this.maintainer.id, 'result')
+        this.remote_executable_folder_path = null
+        this.remote_data_folder_path = null
+        this.remote_result_folder_path = null
     }
 
     /** actions **/
@@ -78,11 +78,11 @@ class BaseConnector {
             stderr: string | null
         }
 
-        var out: out = {
+        const out: out = {
             stdout: null,
             stderr: null
         }
-        var maintainer = this.maintainer
+        const maintainer = this.maintainer
 
         options = Object.assign({
             cwd: this.config.root_path
@@ -111,7 +111,7 @@ class BaseConnector {
         }, options)
 
         for (var i in commands) {
-            var command = commands[i].trim()
+            const command = commands[i].trim()
             if (this.maintainer && !muteEvent) this.maintainer.emitEvent('SSH_RUN', 'running command [' + command + ']')
             await this.ssh().connection.execCommand(this.envCmd + command, opt)
             if (out.stderr && !continueOnError) break // behavior similar to &&
@@ -132,8 +132,8 @@ class BaseConnector {
      */
     async download(from: string, to: string, muteEvent = false) {
         if (to == undefined) throw new ConnectorError('please init input file first')
-        var fromZipFilePath = from.endsWith('.zip') ? from : `${from}.zip`
-        var toZipFilePath = `${to}.zip`
+        const fromZipFilePath = from.endsWith('.zip') ? from : `${from}.zip`
+        const toZipFilePath = `${to}.zip`
         await this.zip(from, fromZipFilePath)
 
         try {
@@ -157,14 +157,14 @@ class BaseConnector {
      * @throws {ConnectorError} - Thrown if maintainer emits 'SSH_SCP_DOWNLOAD_ERROR'
      */
     async upload(from: string, to: string, muteEvent = false) {
-        var toZipFilePath = to.endsWith('.zip') ? to : `${to}.zip`
-        var toFilePath = to.endsWith('.zip') ? to.replace('.zip', '') : to
+        const toZipFilePath = to.endsWith('.zip') ? to : `${to}.zip`
+        const toFilePath = to.endsWith('.zip') ? to.replace('.zip', '') : to
 
         try {
             if (this.maintainer && !muteEvent) this.maintainer.emitEvent('SSH_SCP_UPLOAD', `put file from ${from} to ${toFilePath}`)
             await this.ssh().connection.putFile(from, toZipFilePath)
         } catch (e) {
-            var error = `unable to put file from ${from} to ${toZipFilePath}: ` + e.toString()
+            const error = `unable to put file from ${from} to ${toZipFilePath}: ` + e.toString()
             if (this.maintainer && !muteEvent) this.maintainer.emitEvent('SSH_SCP_UPLOAD_ERROR', error)
             throw new ConnectorError(error)
         }
@@ -183,7 +183,7 @@ class BaseConnector {
      */
     // getters
     async homeDirectory(options: options = {}) {
-        var out = await this.exec('cd ~;pwd;', options)
+        const out = await this.exec('cd ~;pwd;', options)
         return out.stdout
     }
 
@@ -195,7 +195,7 @@ class BaseConnector {
      * @return{Object} - returns command execution output
      */
     async whoami(options: options = {}) {
-        var out = await this.exec('whoami;', options)
+        const out = await this.exec('whoami;', options)
         return out.stdout
     }
 
@@ -210,7 +210,7 @@ class BaseConnector {
     async pwd(path: string = undefined, options: options = {}) {
         var cmd = 'pwd;'
         if (path) cmd  = 'cd ' + path + ';' + cmd
-        var out = await this.exec(cmd, options)
+        const out = await this.exec(cmd, options)
         return out.stdout
     }
 
@@ -225,7 +225,7 @@ class BaseConnector {
     async ls(path: string = undefined, options: options = {}) {
         var cmd = 'ls;'
         if (path) cmd  = 'cd ' + path + ';' + cmd
-        var out = await this.exec(cmd, options)
+        const out = await this.exec(cmd, options)
         return out.stdout
     }
 
@@ -239,7 +239,7 @@ class BaseConnector {
      */
     async cat(path: string, options: options = {}) {
         var cmd = 'cat ' + path
-        var out = await this.exec(cmd, options)
+        const out = await this.exec(cmd, options)
         return out.stdout
     }
 
@@ -255,7 +255,7 @@ class BaseConnector {
      */
     async rm(path: string, options: options = {}, muteEvent = false) {
         if (this.maintainer && !muteEvent) this.maintainer.emitEvent('SSH_RM', `removing ${path}`)
-        var out = await this.exec(`rm -rf ${path};`, options)
+        const out = await this.exec(`rm -rf ${path};`, options)
         return out.stdout
     }
 
@@ -270,7 +270,7 @@ class BaseConnector {
      */
     async mkdir(path: string, options: options = {}, muteEvent = false) {
         if (this.maintainer && !muteEvent) this.maintainer.emitEvent('SSH_MKDIR', `removing ${path}`)
-        var out = await this.exec(`mkdir -p ${path};`, options)
+        const out = await this.exec(`mkdir -p ${path};`, options)
         return out.stdout
     }
 
@@ -286,7 +286,7 @@ class BaseConnector {
      */
     async zip(from: string, to: string, options: options = {}, muteEvent = false) {
         if (this.maintainer && !muteEvent) this.maintainer.emitEvent('SSH_ZIP', `zipping ${from} to ${to}`)
-        var out = await this.exec(`zip -q -r ${to} . ${path.basename(from)}`, Object.assign({
+        const out = await this.exec(`zip -q -r ${to} . ${path.basename(from)}`, Object.assign({
             cwd: from
         }, options))
         return out.stdout
@@ -304,7 +304,7 @@ class BaseConnector {
      */
     async unzip(from: string, to: string, options: options = {}, muteEvent = false) {
         if (this.maintainer && !muteEvent) this.maintainer.emitEvent('SSH_UNZIP', `unzipping ${from} to ${to}`)
-        var out = await this.exec(`unzip -o -q ${from} -d ${to}`, options)
+        const out = await this.exec(`unzip -o -q ${from} -d ${to}`, options)
         return out.stdout  
     }
     
@@ -321,7 +321,7 @@ class BaseConnector {
     async tar(from: string, to: string, options: options = {}, muteEvent = false) {
         if (this.maintainer && !muteEvent) this.maintainer.emitEvent('SSH_TAR', `taring ${from} to ${to}`)
         to = to.endsWith('.tar') ? to : to + '.tar'
-        var out = await this.exec(`tar cf ${to} *`, Object.assign({
+        const out = await this.exec(`tar cf ${to} *`, Object.assign({
             cwd: from
         }, options))
         return out.stdout
@@ -339,7 +339,7 @@ class BaseConnector {
      */
     async untar(from: string, to: string, options: options = {}, muteEvent = false) {
         if (this.maintainer && !muteEvent) this.maintainer.emitEvent('SSH_UNTAR', `untaring ${from} to ${to}`)
-        var out = await this.exec(`tar -C ${to} -xvf ${from}`, options)
+        const out = await this.exec(`tar -C ${to} -xvf ${from}`, options)
         return out.stdout
     }
 
@@ -360,44 +360,60 @@ class BaseConnector {
         } else {
             content = content.replace(/(["'])/g, "\\$1")
         }
-        var out = await this.exec(`touch ${path}; echo "${content}" >> ${path}`, options, true)
+        const out = await this.exec(`touch ${path}; echo "${content}" >> ${path}`, options, true)
         return out.stdout
     }
 
     /**
-     * @aysnc
      * gets remote executable folder path
      * 
      * @param(string) providedPath - specified path
      * @return(Object) returns - command execution output
      */
     getRemoteExecutableFolderPath(providedPath: string = null): string {
+        if (this.remote_executable_folder_path == null) throw new Error('need to set remote_executable_folder_path')
         if (providedPath) return path.join(this.remote_executable_folder_path, providedPath)
         else return this.remote_executable_folder_path
     }
 
     /**
-     * @aysnc
      * gets remote data folder path
      * 
      * @param(string) providedPath - specified path
      * @return(Object) returns - command execution output
      */
     getRemoteDataFolderPath(providedPath: string = null): string {
+        if (this.remote_data_folder_path == null) throw new Error('need to set remote_data_folder_path')
         if (providedPath) return path.join(this.remote_data_folder_path, providedPath)
         else return this.remote_data_folder_path
     }
     
     /**
-     * @aysnc
      * gets remote result folder path
      * 
      * @param(string) providedPath - specified path
      * @return(Object) returns - command execution output
      */
     getRemoteResultFolderPath(providedPath: string = null): string {
+        if (this.remote_result_folder_path == null) throw new Error('need to set remote_result_folder_path')
         if (providedPath) return path.join(this.remote_result_folder_path, providedPath)
         else return this.remote_result_folder_path
+    }
+
+    /**
+     * 
+     * @param providedPath 
+     */
+    setRemoteExecutableFolderPath(providedPath: string) {
+        this.remote_executable_folder_path = providedPath
+    }
+
+    setRemoteDataFolderPath(providedPath: string) {
+        this.remote_data_folder_path = providedPath
+    }
+
+    setRemoteResultFolderPath(providedPath: string) {
+        this.remote_result_folder_path = providedPath
     }
 }
 

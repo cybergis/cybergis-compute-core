@@ -13,14 +13,19 @@ class JupyterHub {
 
     public async getUsername(token: string) {
         var t = this._decodeToken(token)
-        try {
-            var res = await axios.get(`https://${path.join(t.host, this.basePath, '/user')}`, {
-                headers: { 'Authorization': `token ${t.token}` }
-            })
-            return `${res.data.name}@${t.host}`
-        } catch(e) {
-            return undefined
+        const protocols = ['https', 'http']
+        var user = undefined
+        for (var i in protocols) {
+            const protocol = protocols[i]
+            try {
+                const res = await axios.get(`${protocol}://${path.join(t.host, this.basePath, '/user')}`, {
+                    headers: { 'Authorization': `token ${t.token}` }
+                })
+                user = `${res.data.name}@${t.host}`
+                break
+            } catch {}
         }
+        return user
     }
 
     public async getHost(token: string) {

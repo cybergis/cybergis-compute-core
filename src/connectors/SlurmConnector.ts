@@ -1,10 +1,9 @@
 import { ConnectorError } from '../errors'
 import BaseConnector from './BaseConnector'
 import { slurm } from '../types'
-import { LocalFolder, GlobusFolder, FileSystem } from '../FileSystem'
 import * as path from 'path'
-import GlobusUtil from '../lib/GlobusUtil'
 import { config } from '../../configs/config'
+import { FolderUploaderHelper } from '../FolderUploader'
 
 class SlurmConnector extends BaseConnector {
 x
@@ -31,7 +30,8 @@ x
      * @param{string} cmd - command that needs to be executed
      * @param{slurm} config - slurm configuration
      */
-    prepare(cmd: string, config: slurm) {
+    async prepare(cmd: string, config: slurm) {
+        // prepare sbatch script
         config = Object.assign({
             time: '01:00:00',
             num_of_task: 1,
@@ -40,7 +40,6 @@ x
 
         var modules = ``
         if (config.modules) for (var i in config.modules) modules += `module load ${config.modules[i]}\n`
-
         // https://researchcomputing.princeton.edu/support/knowledge-base/slurm
         this.template = `#!/bin/bash
 #SBATCH --job-name=${this.jobId}
@@ -72,12 +71,10 @@ ${cmd}`
      * submited the job
      */
     async submit() {
-        // executable folder
-        if (this.maintainer != null) this.maintainer.emitEvent('SLURM_UPLOAD', `uploading files`)
-        await this.upload(this.maintainer.executableFolder, this.remote_executable_folder_path, true)
-        // job.sbatch
+        // create job.sbatch
         await this.mkdir(path.join(this.remote_result_folder_path, 'slurm_log'))
-        await this.createFile(this.template, path.join(this.remote_executable_folder_path, 'job.sbatch'), {}, true)
+        await this.createFile(this.template, path.join(this.getRemoteExecutableFolderPath(), 'job.sbatch'), {}, true)
+
         // job.json
         var jobJSON = {
             job_id: this.maintainer.job.id,
@@ -90,56 +87,11 @@ ${cmd}`
             data_folder: this.isContainer ? this.getContainerDataFolderPath() : this.getRemoteDataFolderPath(),
             result_folder: this.isContainer ? this.getContainerResultFolderPath() : this.getRemoteResultFolderPath()
         }
-        await this.createFile(jobJSON, path.join(this.remote_executable_folder_path, 'job.json'))
+        await this.createFile(jobJSON, path.join(this.getRemoteExecutableFolderPath(), 'job.json'))
 
-        // data folder
-        if (this.maintainer.dataFolder) {
-            if (this.maintainer.dataFolder instanceof LocalFolder) {
-                await this.upload(this.maintainer.dataFolder, this.remote_data_folder_path, true)
-            }
-
-            if (this.maintainer.dataFolder instanceof GlobusFolder) {
-                var to = FileSystem.getGlobusFolderByHPCConfig(this.config, `${this.jobId}/data`)
-
-                try {
-                    if (this.maintainer != null) this.maintainer.emitEvent('GLOBUS_TRANSFER_INIT', `initializing Globus job`)
-                    var taskId = await GlobusUtil.initTransfer(this.maintainer.dataFolder, to, this.config, this.jobId)
-                    if (this.maintainer != null) this.maintainer.emitEvent('GLOBUS_TRANSFER_INIT_SUCCESS', `initialized Globus job with task ID ${taskId}`)
-                } catch (e) {
-                    if (this.maintainer != null) this.maintainer.emitEvent('GLOBUS_TRANSFER_INIT_FAILED', `cannot initialize Globus job`)
-                    throw new Error(e)
-                }
-
-                var monitorTransfer = async (): Promise<string> => {
-                    try {
-                        var status = await GlobusUtil.monitorTransfer(taskId, this.config)
-                        return status
-                    } catch (e) { 
-                        return await monitorTransfer() // recursive
-                    }
-                }
-
-                var status = await monitorTransfer()
-                if (status === 'FAILED') {
-                    if (this.maintainer != null) this.maintainer.emitEvent('GLOBUS_TRANSFER_FAILED', `Globus job with task ID ${taskId} failed`)
-                    throw new Error('Globus transfer failed')
-                } else {
-                    if (this.maintainer != null) this.maintainer.emitEvent('GLOBUS_TRANSFER_COMPLETE', `Globus job with task ID ${taskId} is complete`)
-                }
-            }
-        } else {
-            await this.mkdir(this.remote_data_folder_path, {}, true)
-        }
-
-        // result folder
-        if (this.maintainer != null) this.maintainer.emitEvent('SLURM_MKDIR_RESULT', `creating result folder`)
-        await this.mkdir(this.remote_result_folder_path, {}, true)
-
+        // submit
         if (this.maintainer != null) this.maintainer.emitEvent('SLURM_SUBMIT', `submitting slurm job`)
-        var sbatchResult = (await this.exec(`sbatch job.sbatch`, {
-            cwd: this.remote_executable_folder_path
-        }, true, true))
-
+        const sbatchResult = await this.exec(`sbatch job.sbatch`, { cwd: this.getRemoteExecutableFolderPath() }, true, true)
         var failed = false
         if (!sbatchResult.stdout) failed = true
         else if (sbatchResult.stdout.includes('ERROR') || sbatchResult.stdout.includes('WARN')) failed = true

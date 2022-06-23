@@ -1,8 +1,8 @@
-import {Entity, Column, PrimaryColumn, DeleteDateColumn, BeforeInsert, BeforeUpdate} from "typeorm"
+import {Entity, Column, PrimaryColumn, DeleteDateColumn} from "typeorm"
 
 /** Class representing a job event. */
-@Entity({name: "files"})
-export class File {
+@Entity({name: "folders"})
+export class Folder {
     @PrimaryColumn()
     id: string
 
@@ -11,6 +11,9 @@ export class File {
 
     @Column()
     hpc: string
+
+    @Column({ nullable: true })
+    userId: string
 
     @Column({type: 'bigint', transformer: {
         to: (i: Date | null | undefined): number => i ? i.getTime() : null,

@@ -1,6 +1,7 @@
 import NodeSSH = require('node-ssh')
 import { ConnectConfig } from 'ssh2'
 import { Prompt } from 'ssh2-streams'
+import { Folder } from './models/Folder'
 
 type unit = 'GB' | 'MB' | 'Minutes' | 'Hours' | 'Days' | 'None'
 
@@ -187,16 +188,9 @@ export interface fileConfig {
     ignore_everything_except_must_have: boolean
 }
 
-export interface executableFolder {
-    from_user: boolean
-    allowed_protocol: 'git' | 'local' | Array<string>
-    file_config: fileConfig
-}
-
 export interface maintainerConfig {
     hpc: string[]
     default_hpc: string
-    executable_folder: executableFolder
     maintainer: string
 }
 
@@ -249,9 +243,6 @@ export interface SSH {
 }
 
 export interface jobMaintainerUpdatable {
-    executableFolder?: string
-    dataFolder?: string
-    resultFolder?: string
     param?: {[keys: string]: string}
     env?: {[keys: string]: string}
     slurm?: slurm,
@@ -262,9 +253,23 @@ export interface jobMaintainerUpdatable {
     memory?: number
     memoryUsage?: number
     walltime?: number
+    remoteResultFolder?: Folder
 }
 
-export interface GlobusFile {
+export interface GlobusFolder {
+    type?: string
     endpoint?: string
     path?: string
 }
+
+export interface GitFolder {
+    type?: string
+    gitId?: string
+}
+
+export interface LocalFolder {
+    type?: string
+    localPath?: string
+}
+
+export type NeedUploadFolder = GlobusFolder | GitFolder | LocalFolder

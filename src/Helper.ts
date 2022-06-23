@@ -34,15 +34,6 @@ var Helper = {
         return out
     },
 
-    prepareDataForDB(data, properties) {
-        var out = {}
-        for (var i in properties) {
-            var property = properties[i]
-            if (data[property]) out[property] = data[property]
-        }
-        return out
-    },
-
     randomStr(length): string {
         var result = ''
         var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'

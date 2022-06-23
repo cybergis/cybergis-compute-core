@@ -1,8 +1,9 @@
-import {Entity, Column, OneToMany, PrimaryColumn, AfterLoad, DeleteDateColumn, BeforeInsert, BeforeUpdate} from "typeorm"
-import {credential, slurm} from "../types"
+import {Entity, Column, OneToMany, PrimaryColumn, AfterLoad, DeleteDateColumn, BeforeInsert, BeforeUpdate, ManyToOne} from "typeorm"
+import {credential, GitFolder, GlobusFolder, LocalFolder, NeedUploadFolder, slurm} from "../types"
 import {Event} from "./Event"
 import {Log} from "./Log"
 import BaseMaintainer from "../maintainers/BaseMaintainer"
+import { Folder } from "./Folder"
 
 /** Class representing a job. */
 @Entity({name: "jobs"})
@@ -14,22 +15,31 @@ export class Job {
     userId?: string
 
     @Column()
-    secretToken: string
-
-    @Column()
     maintainer: string
 
     @Column()
     hpc: string
 
-    @Column("text", {nullable: true, default: null})
-    executableFolder: string
+    @ManyToOne(type => Folder, { onDelete: 'CASCADE', nullable: true })
+    remoteExecutableFolder: Folder
 
-    @Column("text", {nullable: true, default: null})
-    dataFolder: string
+    @ManyToOne(type => Folder, { onDelete: 'CASCADE', nullable: true })
+    remoteDataFolder: Folder
 
-    @Column("text", {nullable: true, default: null})
-    resultFolder: string
+    @ManyToOne(type => Folder, { onDelete: 'CASCADE', nullable: true })
+    remoteResultFolder: Folder
+
+    @Column({ type: "text", nullable: true, default: null, transformer: {
+        to: (i: LocalFolder | GitFolder | GlobusFolder | null | undefined): string => i ? JSON.stringify(i) : null,
+        from: (i: string | null | undefined | object): LocalFolder | GitFolder | GlobusFolder => typeof i == 'string' ? JSON.parse(i) : i
+    }})
+    localExecutableFolder: LocalFolder | GitFolder | GlobusFolder
+
+    @Column({ type: "text", nullable: true, default: null, transformer: {
+        to: (i: NeedUploadFolder | null | undefined): string => i ? JSON.stringify(i) : null,
+        from: (i: string | null | undefined | object): NeedUploadFolder => typeof i == 'string' ? JSON.parse(i) : i
+    }})
+    localDataFolder: NeedUploadFolder
 
     @Column({ type: "text", nullable: true, default: null, transformer: {
         to: (i: {[keys: string]: string} | null | undefined): string => i ? JSON.stringify(i) : null,

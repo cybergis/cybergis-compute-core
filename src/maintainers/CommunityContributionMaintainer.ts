@@ -1,15 +1,16 @@
 import SingularityConnector from '../connectors/SingularityConnector'
 import BaseMaintainer from './BaseMaintainer'
-import { LocalFolder, GitFolder } from '../FileSystem'
 import XSEDEUtil from '../lib/XSEDEUtil'
 import { ResultFolderContentManager } from '../lib/JobUtil'
-import { executableManifest } from '../types'
+import { executableManifest, GitFolder } from '../types'
+import GitUtil from '../lib/GitUtil'
+import { Git } from '../models/Git'
+import { Folder } from '../models/Folder'
+import { FolderUploaderHelper } from '../FolderUploader'
 
 export default class CommunityContributionMaintainer extends BaseMaintainer {
 
     public connector: SingularityConnector
-
-    public executableFolder: GitFolder
 
     public resultFolderContentManager: ResultFolderContentManager = new ResultFolderContentManager()
 
@@ -21,14 +22,46 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
     }
 
     /**
-     * On maintainer initialization, set executableManifest, and give it to the conncetor. Update the event log to reflect the job being initialized or encountering a system error.
+     * On maintainer initialization, set executableManifest, and give it to the connector. Update the event log to reflect the job being initialized or encountering a system error.
      * 
      * @async
      */
     async onInit() {
         try {
-            this.executableManifest = await this.executableFolder.getExecutableManifest()
-            this.connector.execExecutableManifestWithinImage(this.executableManifest, this.slurm)
+            // check if local executable file is git
+            const localExecutableFolder = this.job.localExecutableFolder
+            if (localExecutableFolder.type) throw new Error('community contribution currently don\'t accept non-git code')
+
+            // get executable manifest
+            const connection = await this.db.connect()
+            const git = await connection.getRepository(Git).findOne((localExecutableFolder as GitFolder).gitId)
+            if (!git) throw new Error('could not find git repo executable in this job')
+            this.executableManifest = await GitUtil.getExecutableManifest(git)
+
+            // upload executable folder
+            if (!this.job.localDataFolder) throw new Error('job.localDataFolder is required')
+            this.emitEvent('SLURM_UPLOAD_EXECUTABLE', `uploading executable folder`)
+            var uploader = await FolderUploaderHelper.upload(this.job.localExecutableFolder, this.job.hpc, this.job.userId, this.connector)
+            await FolderUploaderHelper.waitUntilComplete(uploader)
+            this.connector.setRemoteExecutableFolderPath(uploader.path)
+
+            // upload data folder
+            if (this.job.localDataFolder) {
+                this.emitEvent('SLURM_UPLOAD_DATA', `uploading data folder`)
+                uploader = await FolderUploaderHelper.upload(this.job.localDataFolder, this.job.hpc, this.job.userId, this.connector)
+                await FolderUploaderHelper.waitUntilComplete(uploader)
+                this.connector.setRemoteExecutableFolderPath(uploader.path)
+            } else if (this.job.remoteDataFolder) {
+                this.connector.setRemoteDataFolderPath(this.job.remoteDataFolder.path)
+            }
+
+            // create empty result folder
+            this.emitEvent('SLURM_CREATE_RESULT', `create result folder`)
+            uploader = await FolderUploaderHelper.upload({ type: 'empty' }, this.job.hpc, this.job.userId, this.connector)
+            this.connector.setRemoteResultFolderPath(uploader.path)
+
+            // submit
+            await this.connector.execExecutableManifestWithinImage(this.executableManifest, this.slurm)
             await this.connector.submit()
             this.emitEvent('JOB_INIT', 'job [' + this.id + '] is initialized, waiting for job completion')
             XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc, this.job)
@@ -38,7 +71,7 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
     }
 
     /**
-     * If the job is complete, download the results to the remote result folder path, and if it encounters an error, update the event log to reflect this.
+     * If the job is complete, download the results to the remote result file path, and if it encounters an error, update the event log to reflect this.
      * 
      * @async
      */
@@ -46,19 +79,24 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
         try {
             var status = await this.connector.getStatus()
             if (status == 'C' || status == 'CD' || status == 'UNKNOWN') {
+                // collect logs
                 await this.connector.getSlurmStdout()
                 await this.connector.getSlurmStderr()
-                if (this.resultFolder instanceof LocalFolder) {
-                    await this.connector.download(this.connector.getRemoteResultFolderPath(), this.resultFolder)
-                    await this.updateJob({
-                        resultFolder: this.resultFolder.getURL()
-                    })
-                }
-                // ending condition
+                // update job usage
                 this.emitEvent('JOB_ENDED', 'job [' + this.id + '] finished')
-                var usage = await this.connector.getUsage()
+                const usage = await this.connector.getUsage()
+                const connection = await this.db.connect()
+                const folder = await connection.getRepository(Folder).save({
+                    path: await this.connector.getRemoteResultFolderPath(),
+                    hpc: this.job.hpc,
+                    userId: this.job.userId
+                })
                 this.updateJob(usage)
+                this.updateJob({ remoteResultFolder: folder })
+                // submit again to XSEDE
                 XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc, this.job) // for backup submit
+                // fetch result folder content
+                // TODO: make this shorter
                 var contents = await this.connector.getRemoteResultFolderContent()
                 var defaultResultFolderDownloadablePath = this.executableManifest.default_result_folder_downloadable_path
                 if (defaultResultFolderDownloadablePath) {

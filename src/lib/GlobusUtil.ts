@@ -1,7 +1,7 @@
 import { GlobusTransferRefreshToken } from '../models/GlobusTransferRefreshToken'
 import PythonUtil from "./PythonUtil"
 import { config } from "../../configs/config"
-import { GlobusFile, hpcConfig } from '../types'
+import { GlobusFolder, hpcConfig } from '../types'
 import DB from "../DB"
 const redis = require('redis')
 const { promisify } = require("util")
@@ -93,10 +93,10 @@ export default class GlobusUtil {
      * @throw{Error} - Thrown if globus query status fails
      * @return{string} - taskId
      */
-    static async initTransfer(from: GlobusFile, to: GlobusFile, hpcConfig: hpcConfig, label: string = ''): Promise<string> {
-        var connection = await this.db.connect()
-        var globusTransferRefreshTokenRepo = connection.getRepository(GlobusTransferRefreshToken)
-        var g = await globusTransferRefreshTokenRepo.findOne(hpcConfig.globus.identity)
+    static async initTransfer(from: GlobusFolder, to: GlobusFolder, hpcConfig: hpcConfig, label: string = ''): Promise<string> {
+        const connection = await this.db.connect()
+        const globusTransferRefreshTokenRepo = connection.getRepository(GlobusTransferRefreshToken)
+        const g = await globusTransferRefreshTokenRepo.findOne(hpcConfig.globus.identity)
 
         try {
             var out = await PythonUtil.run('globus_init.py', [

@@ -11,7 +11,6 @@ export default class TestHelper {
         const job = new Job()
         job.id = id
         job.userId = userId
-        job.secretToken = secretToken
         job.maintainer = maintainer
         job.hpc = hpc
         return await jobRepository.save(job)
