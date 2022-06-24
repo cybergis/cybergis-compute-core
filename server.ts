@@ -71,8 +71,8 @@ var schemas = {
             param: { type: 'object' },
             env: { type: 'object' },
             slurm: { type: 'object' },
-            localExecutableFolder: { type: 'string' },
-            localDataFolder: { type: 'string' },
+            localExecutableFolder: { type: 'object' },
+            localDataFolder: { type: 'object' },
             remoteDataFolder: { type: 'string' },
             remoteExecutableFolder: { type: 'string' }
         },
@@ -479,6 +479,7 @@ app.post('/job', async function (req, res) {
     job.maintainer = maintainerName
     job.hpc = hpcName
     job.param = {}
+    job.slurm = {}
     job.env = {}
     if (!hpc.is_community_account) job.credentialId = await sshCredentialGuard.registerCredential(body.user, body.password)
     await jobRepo.save(job)
@@ -532,7 +533,8 @@ app.post('/job/:jobId/submit', async function (req, res) {
     const jobId = req.params.jobId
 
     try {
-        job = await connection.getRepository(Job).findOneOrFail({ id: jobId, userId: res.locals.username }, { relations: ['resultFile', 'executableFile', 'dataFile'] })
+        const connection = await db.connect()
+        job = await connection.getRepository(Job).findOneOrFail({ id: jobId, userId: res.locals.username }, { relations: ['remoteExecutableFolder', 'remoteDataFolder', 'remoteResultFolder'] })
     } catch (e) {
         res.status(401).json({ error: "invalid access", messages: [e.toString()] }); return
     }

@@ -77,7 +77,7 @@ class Queue {
         var connection = await this.db.connect()
         var jobRepo = connection.getRepository(Job)
         var job = await jobRepo.findOne(id, {
-            relations: ['executableFile', 'dataFile', 'resultFile']
+            relations: ['remoteExecutableFolder', 'remoteDataFolder', 'remoteResultFolder']
         })
 
         if (!job) return null

@@ -1,6 +1,7 @@
 import FolderUtil from "./FolderUtil"
 import { Git } from "../models/Git"
 import { exec } from 'child-process-async'
+import * as fs from 'fs'
 import * as path from 'path'
 import { config } from "../../configs/config"
 import { executableManifest, slurm_configs, slurm_integer_configs, slurm_integer_none_unit_config, slurm_integer_storage_unit_config, slurm_integer_time_unit_config, slurm_string_option_configs } from "../types"

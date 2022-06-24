@@ -121,7 +121,7 @@ class Supervisor {
                 } else {
                     await job.maintainerInstance.init()
                 }
-            } catch (e) { 
+            } catch (e) {
                 if (config.is_testing) console.error(e.stack); continue
             }
 

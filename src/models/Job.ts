@@ -43,19 +43,19 @@ export class Job {
 
     @Column({ type: "text", nullable: true, default: null, transformer: {
         to: (i: {[keys: string]: string} | null | undefined): string => i ? JSON.stringify(i) : null,
-        from: (i: string | null | undefined | object): {[keys: string]: string} => typeof i == 'string' ? JSON.parse(i) : i
+        from: (i: string | null | undefined | object): {[keys: string]: string} => typeof i == 'string' ? JSON.parse(i) : {}
     }})
     param: {[keys: string]: string}
 
     @Column({ type: "text", nullable: true, default: null, transformer: {
         to: (i: {[keys: string]: string} | null | undefined): string => i ? JSON.stringify(i) : null,
-        from: (i: string | null | undefined | object): {[keys: string]: string} => typeof i == 'string' ? JSON.parse(i) : i
+        from: (i: string | null | undefined | object): {[keys: string]: string} => typeof i == 'string' ? JSON.parse(i) : {}
     }})
     env: {[keys: string]: string}
 
     @Column({ type: "text", nullable: true, default: null, transformer: {
         to: (i: slurm | null | undefined): string => i ? JSON.stringify(i) : null,
-        from: (i: string | null | undefined | object): slurm => typeof i == 'string' ? JSON.parse(i) : i
+        from: (i: string | null | undefined | object): slurm => typeof i == 'string' ? JSON.parse(i) : {}
     }})
     slurm?: slurm
 

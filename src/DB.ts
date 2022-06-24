@@ -5,8 +5,9 @@ import { config } from '../configs/config'
 import { ConnectionOptions, getConnection, Connection, createConnection } from 'typeorm'
 import { Git } from './models/Git'
 import { GlobusTransferRefreshToken } from './models/GlobusTransferRefreshToken'
+import { Folder } from './models/Folder'
 
-const entities = [Event, Log, Job, Git, GlobusTransferRefreshToken]
+const entities = [Event, Log, Job, Git, GlobusTransferRefreshToken, Folder]
 
 /**
  * Connection helper class as a wrapper around TypeORM Connection

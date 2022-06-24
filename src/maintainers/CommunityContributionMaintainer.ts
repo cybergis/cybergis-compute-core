@@ -28,15 +28,7 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
      */
     async onInit() {
         try {
-            // check if local executable file is git
-            const localExecutableFolder = this.job.localExecutableFolder
-            if (localExecutableFolder.type) throw new Error('community contribution currently don\'t accept non-git code')
-
-            // get executable manifest
             const connection = await this.db.connect()
-            const git = await connection.getRepository(Git).findOne((localExecutableFolder as GitFolder).gitId)
-            if (!git) throw new Error('could not find git repo executable in this job')
-            this.executableManifest = await GitUtil.getExecutableManifest(git)
 
             // upload executable folder
             if (!this.job.localDataFolder) throw new Error('job.localDataFolder is required')
@@ -44,13 +36,15 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
             var uploader = await FolderUploaderHelper.upload(this.job.localExecutableFolder, this.job.hpc, this.job.userId, this.connector)
             await FolderUploaderHelper.waitUntilComplete(uploader)
             this.connector.setRemoteExecutableFolderPath(uploader.path)
+            this.job.remoteExecutableFolder = await connection.getRepository(Folder).findOne(uploader.id)
 
             // upload data folder
             if (this.job.localDataFolder) {
                 this.emitEvent('SLURM_UPLOAD_DATA', `uploading data folder`)
                 uploader = await FolderUploaderHelper.upload(this.job.localDataFolder, this.job.hpc, this.job.userId, this.connector)
                 await FolderUploaderHelper.waitUntilComplete(uploader)
-                this.connector.setRemoteExecutableFolderPath(uploader.path)
+                this.connector.setRemoteDataFolderPath(uploader.path)
+                this.job.remoteDataFolder = await connection.getRepository(Folder).findOne(uploader.id)
             } else if (this.job.remoteDataFolder) {
                 this.connector.setRemoteDataFolderPath(this.job.remoteDataFolder.path)
             }
@@ -59,6 +53,23 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
             this.emitEvent('SLURM_CREATE_RESULT', `create result folder`)
             uploader = await FolderUploaderHelper.upload({ type: 'empty' }, this.job.hpc, this.job.userId, this.connector)
             this.connector.setRemoteResultFolderPath(uploader.path)
+            this.job.remoteResultFolder = await connection.getRepository(Folder).findOne(uploader.id)
+
+            // update job
+            await this.updateJob({
+                remoteDataFolder: this.job.remoteDataFolder,
+                remoteExecutableFolder: this.job.remoteExecutableFolder,
+                remoteResultFolder: this.job.remoteResultFolder
+            })
+
+            // check if local executable file is git
+            const localExecutableFolder = this.job.localExecutableFolder
+            if (localExecutableFolder.type != 'git') throw new Error('community contribution currently don\'t accept non-git code')
+
+            // get executable manifest
+            const git = await connection.getRepository(Git).findOne((localExecutableFolder as GitFolder).gitId)
+            if (!git) throw new Error('could not find git repo executable in this job')
+            this.executableManifest = await GitUtil.getExecutableManifest(git)
 
             // submit
             await this.connector.execExecutableManifestWithinImage(this.executableManifest, this.slurm)

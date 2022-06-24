@@ -156,7 +156,6 @@ export interface hpcConfig {
     is_community_account: boolean
     community_login: communityLogin
     root_path: string
-    data_path: string
     job_pool_capacity: number
     init_sbatch_script: string[]
     init_sbatch_options: string[]
@@ -254,6 +253,8 @@ export interface jobMaintainerUpdatable {
     memoryUsage?: number
     walltime?: number
     remoteResultFolder?: Folder
+    remoteExecutableFolder?: Folder
+    remoteDataFolder?: Folder
 }
 
 export interface GlobusFolder {

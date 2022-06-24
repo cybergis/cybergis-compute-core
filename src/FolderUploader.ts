@@ -67,8 +67,9 @@ export class EmptyFolderUploader extends BaseFolderUploader {
     }
 
     async upload() {
-        this.path = path.join(this.hpcConfig.data_path, this.id)
+        this.path = path.join(this.hpcConfig.root_path, this.id)
         await this.connector.mkdir(this.path, {}, true)
+        this.isComplete = true
     }
 }
 
@@ -124,7 +125,7 @@ export class LocalFolderUploader extends BaseFolderUploader {
     constructor(from: LocalFolder, hpcName: string, userId: string, connector: Connector = null) {
         super(hpcName, userId)
         this.localPath = from.localPath
-        this.path = path.join(this.hpcConfig.data_path, this.id)
+        this.path = path.join(this.hpcConfig.root_path, this.id)
         this.connector = connector ?? new BaseConnector(hpcName)
     }
 
@@ -136,8 +137,8 @@ export class LocalFolderUploader extends BaseFolderUploader {
         const to = this.path
         await this.connector.upload(from, to, false)
         await FolderUtil.removeZip(from)
-        await FolderUtil.removeFolder(this.localPath)
         await this.register()
+        this.isComplete = true
     }
 }
 
@@ -191,7 +192,15 @@ export class FolderUploaderHelper {
         return uploader
     }
 
-    static async waitUntilComplete(uploader: BaseFolderUploader) {
-        
+    static async waitUntilComplete(uploader: BaseFolderUploader): Promise<boolean> {
+        return new Promise((resolve, reject) => {
+            const intervalThread = setInterval(() => {
+                console.log(uploader.isComplete)
+                if (uploader.isComplete) {
+                    clearInterval(intervalThread)
+                    resolve(true)
+                }
+            }, 5 * 1000)
+        })
     }
 }
