@@ -383,7 +383,7 @@ class BaseConnector {
      * @return(Object) returns - command execution output
      */
     getRemoteDataFolderPath(providedPath: string = null): string {
-        if (this.remote_data_folder_path == null) throw new Error('need to set remote_data_folder_path')
+        if (!this.remote_data_folder_path) return null
         if (providedPath) return path.join(this.remote_data_folder_path, providedPath)
         else return this.remote_data_folder_path
     }

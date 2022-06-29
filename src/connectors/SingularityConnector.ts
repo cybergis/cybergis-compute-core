@@ -99,7 +99,9 @@ class SingularityConnector extends SlurmConnector {
     private _getVolumeBindCMD(manifest: executableManifest | null = null) {
         this.volumeBinds[this.getRemoteExecutableFolderPath()] = this.getContainerExecutableFolderPath()
         this.volumeBinds[this.getRemoteResultFolderPath()] = this.getContainerResultFolderPath()
-        this.volumeBinds[this.getRemoteDataFolderPath()] = this.getContainerDataFolderPath()
+        if (this.getRemoteDataFolderPath()) {
+            this.volumeBinds[this.getRemoteDataFolderPath()] = this.getContainerDataFolderPath()
+        }
 
         if (manifest) {
             var container = containerConfigMap[manifest.container]

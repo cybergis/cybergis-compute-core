@@ -69,6 +69,7 @@ export class EmptyFolderUploader extends BaseFolderUploader {
     async upload() {
         this.path = path.join(this.hpcConfig.root_path, this.id)
         await this.connector.mkdir(this.path, {}, true)
+        await this.register()
         this.isComplete = true
     }
 }
@@ -99,21 +100,25 @@ export class GlobusFolderUploader extends BaseFolderUploader {
     async upload() {
         this.taskId = await GlobusUtil.initTransfer(this.from, this.to, this.hpcConfig)
         this.managerProcess = setInterval(async () => {
+            var isComplete = this.isComplete
+            var isFailed = this.isFailed
             const status = await GlobusUtil.monitorTransfer(this.taskId, this.hpcConfig)
             if (status.includes('FAILED')) {
-                this.isComplete = true
-                this.isFailed = true
+                isComplete = true
+                isFailed = true
             }
             if (status.includes('SUCCEEDED')) {
-                this.isComplete = true
+                isComplete = true
             }
-            if (this.isComplete) {
+            if (isComplete) {
                 clearInterval(this.managerProcess)
-                if (!this.isFailed) {
+                if (!isFailed) {
                     await this.register()
                 }
             }
-        }, 5 * 1000)
+            this.isComplete = isComplete
+            this.isFailed = isFailed
+        }, 2 * 1000)
     }
 }
 
@@ -195,12 +200,11 @@ export class FolderUploaderHelper {
     static async waitUntilComplete(uploader: BaseFolderUploader): Promise<boolean> {
         return new Promise((resolve, reject) => {
             const intervalThread = setInterval(() => {
-                console.log(uploader.isComplete)
                 if (uploader.isComplete) {
                     clearInterval(intervalThread)
                     resolve(true)
                 }
-            }, 5 * 1000)
+            }, 2 * 1000)
         })
     }
 }

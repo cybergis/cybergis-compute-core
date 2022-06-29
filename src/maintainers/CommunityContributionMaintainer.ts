@@ -31,7 +31,7 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
             const connection = await this.db.connect()
 
             // upload executable folder
-            if (!this.job.localDataFolder) throw new Error('job.localDataFolder is required')
+            if (!this.job.localExecutableFolder) throw new Error('job.localExecutableFolder is required')
             this.emitEvent('SLURM_UPLOAD_EXECUTABLE', `uploading executable folder`)
             var uploader = await FolderUploaderHelper.upload(this.job.localExecutableFolder, this.job.hpc, this.job.userId, this.connector)
             await FolderUploaderHelper.waitUntilComplete(uploader)

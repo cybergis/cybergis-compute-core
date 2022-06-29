@@ -17,9 +17,6 @@ export class Git {
     @Column({default: false})
     isApproved: boolean
 
-    @OneToOne(type => Folder, { nullable: null })
-    folder: Folder
-
     @Column({type: 'bigint', transformer: {
         to: (i: Date | null | undefined): number => i ? i.getTime() : null,
         from: (i: number | null | undefined): Date => i ? new Date(i) : null

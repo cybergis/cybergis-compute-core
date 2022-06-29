@@ -1,10 +1,14 @@
-import {Entity, Column, PrimaryColumn, DeleteDateColumn, BeforeInsert, BeforeUpdate} from "typeorm"
+import {Entity, Column, PrimaryColumn, DeleteDateColumn, BeforeInsert, BeforeUpdate, OneToMany} from "typeorm"
+import { Job } from "./Job"
 
 /** Class representing a job event. */
 @Entity({name: "folders"})
 export class Folder {
     @PrimaryColumn()
     id: string
+
+    @Column({ nullable: true })
+    name: string
 
     @Column()
     path: string
@@ -14,6 +18,9 @@ export class Folder {
 
     @Column({ nullable: true })
     userId: string
+
+    @Column({ default: false })
+    isWritable: boolean
 
     @Column({type: 'bigint', transformer: {
         to: (i: Date | null | undefined): number => i ? i.getTime() : null,

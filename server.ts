@@ -93,9 +93,11 @@ var schemas = {
         type: 'object',
         properties: {
             jupyterhubApiToken: { type: 'string' },
-            endpoint: { type: 'string' },
-            path: { type: 'string' }
-        }
+            toEndpoint: { type: 'string' },
+            toPath: { type: 'string' },
+            fromPath: { type: 'string' },
+        },
+        required: ['jupyterhubApiToken', 'toEndpoint', 'toPath']
     }
 }
 
@@ -254,7 +256,7 @@ app.get('/user/job', async (req, res) => {
     }
 
     const connection = await db.connect()
-    const jobs = await connection.getRepository(Job).find({ userId: res.locals.username })
+    const jobs = await connection.getRepository(Job).find({ where: { userId: res.locals.username }, relations: ['remoteDataFolder', 'remoteResultFolder', 'remoteExecutableFolder'] })
     res.json({ job: Helper.job2object(jobs) })
 })
 
@@ -355,6 +357,7 @@ app.get('/git', async function (req, res) {
         var out = {}
         for (var i in dest) {
             try {
+                await GitUtil.refreshGit(dest[i])
                 out[dest[i].id] = await GitUtil.getExecutableManifest(dest[i])
             } catch (e) {
                 console.error(`cannot clone git: ${e.toString()}`)
@@ -364,7 +367,7 @@ app.get('/git', async function (req, res) {
     }
 
     var connection = await db.connect()
-    var gits = await connection.getRepository(Git).find({ order: { id: "DESC" }, relations: ['folder'] })
+    var gits = await connection.getRepository(Git).find({ order: { id: "DESC" } })
     res.json({ git: await parseGit(gits) })
 })
 
@@ -410,11 +413,17 @@ app.post('/folder/:folderId/download/globus-init', async function (req, res) {
         res.status(402).json({ error: "invalid token" }); return
     }
 
+    // get folder
     const folderId = req.params.folderId
     const connection = await db.connect()
     const folder = await connection.getRepository(Folder).findOneOrFail(folderId)
+    if (!folder) throw new Error(`cannot find folder with id ${folderId}`)
+    const existingTransferJob = await globusTaskList.get(folderId)
+    if (existingTransferJob) throw new Error(`a globus job is currently running on folder with id ${folderId}`)
+    // get jupyter globus config
     const jupyterGlobus = jupyterGlobusMap[folder.hpc]
     if (!jupyterGlobus) throw new Error(`cannot find hpc ${folder.hpc}`)
+    // init transfer 
     const from = { path: folder.path, endpoint: jupyterGlobus.endpoint }
     const to = { path: body.path, endpoint: body.endpoint }
     const hpcConfig = hpcConfigMap[folder.hpc]
@@ -423,7 +432,7 @@ app.post('/folder/:folderId/download/globus-init', async function (req, res) {
     res.json({ globus_task_id: globusTaskId })
 })
 
-app.get('/folder/:folderId/download/globus-status/:globusTaskId', async function (req, res) {
+app.get('/folder/:folderId/download/globus-status', async function (req, res) {
     const body = req.body
     const errors = requestErrors(validator.validate(body, schemas.user))
     if (errors.length > 0) {
@@ -433,10 +442,13 @@ app.get('/folder/:folderId/download/globus-status/:globusTaskId', async function
         res.status(402).json({ error: "invalid token" }); return
     }
 
+    // get folder
     const folderId = req.params.folderId
     const connection = await db.connect()
     const folder = await connection.getRepository(Folder).findOneOrFail(folderId)
-    const globusTaskId = req.params.globusTaskId
+    if (!folder) throw new Error(`cannot find folder with id ${folderId}`)
+    // query status
+    const globusTaskId = await globusTaskList.get(folderId)
     const status = await GlobusUtil.queryTransferStatus(globusTaskId, hpcConfigMap[folder.hpc])
     if (['SUCCEEDED', 'FAILED'].includes(status)) await globusTaskList.remove(folderId)
     res.json({ status: status })
@@ -651,7 +663,7 @@ app.get('/job/:jobId', async function (req, res) {
     try {
         const jobId = req.params.jobId
         const connection = await db.connect()
-        const job = await connection.getRepository(Job).findOneOrFail({ id: jobId, userId: res.locals.username })
+        const job = await connection.getRepository(Job).findOneOrFail({ id: jobId, userId: res.locals.username }, { relations: ['remoteExecutableFolder', 'remoteDataFolder', 'remoteResultFolder'] })
         res.json(Helper.job2object(job))
     } catch (e) {
         res.json({ error: "invalid access", messages: [e.toString()] }); res.status(401)

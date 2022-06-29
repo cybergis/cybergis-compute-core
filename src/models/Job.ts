@@ -1,4 +1,4 @@
-import {Entity, Column, OneToMany, PrimaryColumn, AfterLoad, DeleteDateColumn, BeforeInsert, BeforeUpdate, ManyToOne} from "typeorm"
+import {Entity, Column, OneToMany, PrimaryColumn, AfterLoad, DeleteDateColumn, BeforeInsert, BeforeUpdate, ManyToOne, JoinColumn} from "typeorm"
 import {credential, GitFolder, GlobusFolder, LocalFolder, NeedUploadFolder, slurm} from "../types"
 import {Event} from "./Event"
 import {Log} from "./Log"
@@ -13,6 +13,9 @@ export class Job {
 
     @Column({nullable: true, default: null})
     userId?: string
+
+    @Column({nullable: true, default: null})
+    name?: string
 
     @Column()
     maintainer: string
