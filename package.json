@@ -14,7 +14,7 @@
     "swagger": "node ./production/tools/generate-swagger.js",
     "doc-gen": "npm run tsdoc && npm run uml && npm run swagger",
 
-    "cpy": "cp -r ./configs ./production && cp ./*.json ./production",
+    "cpy": "cp -r ./configs ./production && cp ./*.json ./production && cp -r ./src/lib/python ./production/src/lib/python",
 
     "prebuild": "rm -rf ./production",
     "build": "tsc",
