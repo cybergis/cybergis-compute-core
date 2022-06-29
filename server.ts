@@ -663,7 +663,7 @@ app.get('/job/:jobId', async function (req, res) {
     try {
         const jobId = req.params.jobId
         const connection = await db.connect()
-        const job = await connection.getRepository(Job).findOneOrFail({ id: jobId, userId: res.locals.username }, { relations: ['remoteExecutableFolder', 'remoteDataFolder', 'remoteResultFolder'] })
+        const job = await connection.getRepository(Job).findOneOrFail({ id: jobId, userId: res.locals.username }, { relations: ['remoteExecutableFolder', 'remoteDataFolder', 'remoteResultFolder', 'events', 'logs'] })
         res.json(Helper.job2object(job))
     } catch (e) {
         res.json({ error: "invalid access", messages: [e.toString()] }); res.status(401)
