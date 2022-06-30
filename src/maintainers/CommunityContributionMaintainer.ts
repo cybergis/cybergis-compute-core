@@ -34,7 +34,6 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
             if (!this.job.localExecutableFolder) throw new Error('job.localExecutableFolder is required')
             this.emitEvent('SLURM_UPLOAD_EXECUTABLE', `uploading executable folder`)
             var uploader = await FolderUploaderHelper.upload(this.job.localExecutableFolder, this.job.hpc, this.job.userId, this.connector)
-            await FolderUploaderHelper.waitUntilComplete(uploader)
             this.connector.setRemoteExecutableFolderPath(uploader.path)
             this.job.remoteExecutableFolder = await connection.getRepository(Folder).findOne(uploader.id)
 
@@ -42,7 +41,6 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
             if (this.job.localDataFolder) {
                 this.emitEvent('SLURM_UPLOAD_DATA', `uploading data folder`)
                 uploader = await FolderUploaderHelper.upload(this.job.localDataFolder, this.job.hpc, this.job.userId, this.connector)
-                await FolderUploaderHelper.waitUntilComplete(uploader)
                 this.connector.setRemoteDataFolderPath(uploader.path)
                 this.job.remoteDataFolder = await connection.getRepository(Folder).findOne(uploader.id)
             } else if (this.job.remoteDataFolder) {

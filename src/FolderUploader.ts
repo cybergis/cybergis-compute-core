@@ -81,8 +81,6 @@ export class GlobusFolderUploader extends BaseFolderUploader {
 
     private taskId: string
 
-    private managerProcess
-
     constructor(from: GlobusFolder, hpcName: string, userId: string) {
         super(hpcName, userId)
         if (!this.hpcConfig) throw new Error(`cannot find hpcConfig with name ${hpcName}`)
@@ -98,26 +96,19 @@ export class GlobusFolderUploader extends BaseFolderUploader {
 
     async upload() {
         this.taskId = await GlobusUtil.initTransfer(this.from, this.to, this.hpcConfig)
-        this.managerProcess = setInterval(async () => {
-            var isComplete = this.isComplete
-            var isFailed = this.isFailed
-            const status = await GlobusUtil.monitorTransfer(this.taskId, this.hpcConfig)
-            if (status.includes('FAILED')) {
-                isComplete = true
-                isFailed = true
+        const status = await GlobusUtil.monitorTransfer(this.taskId, this.hpcConfig)
+        if (status.includes('FAILED')) {
+            this.isComplete = true
+            this.isFailed = true
+        }
+        if (status.includes('SUCCEEDED')) {
+            this.isComplete = true
+        }
+        if (this.isComplete) {
+            if (!this.isFailed) {
+                await this.register()
             }
-            if (status.includes('SUCCEEDED')) {
-                isComplete = true
-            }
-            if (isComplete) {
-                clearInterval(this.managerProcess)
-                if (!isFailed) {
-                    await this.register()
-                }
-            }
-            this.isComplete = isComplete
-            this.isFailed = isFailed
-        }, 2 * 1000)
+        }
     }
 }
 
@@ -194,16 +185,5 @@ export class FolderUploaderHelper {
                 throw new Error('undefined file type ' + from.type)
         }
         return uploader
-    }
-
-    static async waitUntilComplete(uploader: BaseFolderUploader): Promise<boolean> {
-        return new Promise((resolve, reject) => {
-            const intervalThread = setInterval(() => {
-                if (uploader.isComplete) {
-                    clearInterval(intervalThread)
-                    resolve(true)
-                }
-            }, 2 * 1000)
-        })
     }
 }
