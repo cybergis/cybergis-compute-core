@@ -95,7 +95,7 @@ export class GlobusFolderUploader extends BaseFolderUploader {
     }
 
     async upload() {
-        this.taskId = await GlobusUtil.initTransfer(this.from, this.to, this.hpcConfig)
+        this.taskId = await GlobusUtil.initTransfer(this.from, this.to, this.hpcConfig, this.id)
         const status = await GlobusUtil.monitorTransfer(this.taskId, this.hpcConfig)
         if (status.includes('FAILED')) {
             this.isComplete = true

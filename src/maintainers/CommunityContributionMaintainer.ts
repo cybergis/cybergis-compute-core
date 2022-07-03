@@ -87,6 +87,12 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
     async onMaintain() {
         try {
             var status = await this.connector.getStatus()
+            // failing condition
+            if (status == 'ERROR' || status == 'F' || status == 'NF') {
+                this.emitEvent('JOB_FAILED', 'job [' + this.id + '] failed with status ' + status)
+                return
+            }
+            // complete condition
             if (status == 'C' || status == 'CD' || status == 'UNKNOWN') {
                 // collect logs
                 await this.connector.getSlurmStdout()
@@ -94,14 +100,7 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
                 // update job usage
                 this.emitEvent('JOB_ENDED', 'job [' + this.id + '] finished')
                 const usage = await this.connector.getUsage()
-                const connection = await this.db.connect()
-                const folder = await connection.getRepository(Folder).save({
-                    path: await this.connector.getRemoteResultFolderPath(),
-                    hpc: this.job.hpc,
-                    userId: this.job.userId
-                })
                 this.updateJob(usage)
-                this.updateJob({ remoteResultFolder: folder })
                 // submit again to XSEDE
                 XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc, this.job) // for backup submit
                 // fetch result folder content
@@ -117,9 +116,6 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
                     }
                 }
                 await this.resultFolderContentManager.put(this.id, contents)
-            } else if (status == 'ERROR' || status == 'F' || status == 'NF') {
-                // failing condition
-                this.emitEvent('JOB_FAILED', 'job [' + this.id + '] failed with status ' + status)
             }
         } catch (e) {
             this.emitEvent('JOB_RETRY', 'job [' + this.id + '] encountered system error ' + e.toString())
