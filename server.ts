@@ -431,6 +431,7 @@ app.post('/folder/:folderId/download/globus-init', async function (req, res) {
     }
     // init transfer 
     const fromPath = body.fromPath ? path.join(folder.path, body.fromPath) : folder.path
+    console.log(fromPath)
     const from = { path:  fromPath, endpoint: hpcConfig.globus.endpoint }
     const to = { path: body.toPath, endpoint: body.toEndpoint }
     try {
