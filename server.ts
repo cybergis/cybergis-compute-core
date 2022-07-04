@@ -430,11 +430,15 @@ app.post('/folder/:folderId/download/globus-init', async function (req, res) {
         res.status(403).json({ error: `cannot find hpc ${folder.hpc}` }); return
     }
     // init transfer 
-    const from = { path: folder.path, endpoint: hpcConfig.globus.endpoint }
-    const to = { path: body.path, endpoint: body.endpoint }
-    const globusTaskId = await GlobusUtil.initTransfer(from, to, hpcConfig, `download-folder-${folder.id}`)
-    await globusTaskList.put(folderId, globusTaskId)
-    res.json({ globus_task_id: globusTaskId })
+    const from = { path: body.fromPath ?? folder.path, endpoint: hpcConfig.globus.endpoint }
+    const to = { path: body.toPath, endpoint: body.toEndpoint }
+    try {
+        const globusTaskId = await GlobusUtil.initTransfer(from, to, hpcConfig, `download-folder-${folder.id}`)
+        await globusTaskList.put(folderId, globusTaskId)
+        res.json({ globus_task_id: globusTaskId })
+    } catch (err) {
+        res.status(403).json({ error: `failed to init globus with error: ${err.toString()}` }); return
+    }
 })
 
 app.get('/folder/:folderId/download/globus-status', async function (req, res) {
@@ -456,9 +460,13 @@ app.get('/folder/:folderId/download/globus-status', async function (req, res) {
     }
     // query status
     const globusTaskId = await globusTaskList.get(folderId)
-    const status = await GlobusUtil.queryTransferStatus(globusTaskId, hpcConfigMap[folder.hpc])
-    if (['SUCCEEDED', 'FAILED'].includes(status)) await globusTaskList.remove(folderId)
-    res.json({ status: status })
+    try {
+        const status = await GlobusUtil.queryTransferStatus(globusTaskId, hpcConfigMap[folder.hpc])
+        if (['SUCCEEDED', 'FAILED'].includes(status)) await globusTaskList.remove(folderId)
+        res.json({ status: status })
+    } catch (err) {
+        res.status(403).json({ error: `failed to query globus with error: ${err.toString()}` }); return
+    }
 })
 
 // job
