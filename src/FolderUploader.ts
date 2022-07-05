@@ -43,8 +43,8 @@ export class BaseFolderUploader {
         this.isComplete = false
         this.isFailed = false
         this.db = new DB()
-        this.globusPath = path.join(this.hpcConfig.root_path, this.id)
-        this.hpcPath = path.join(this.hpcConfig.globus.root_path, this.id)
+        this.hpcPath = path.join(this.hpcConfig.root_path, this.id)
+        this.globusPath = path.join(this.hpcConfig.globus.root_path, this.id)
     }
 
     async upload() {
