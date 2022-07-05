@@ -430,7 +430,7 @@ app.post('/folder/:folderId/download/globus-init', async function (req, res) {
         res.status(403).json({ error: `cannot find hpc ${folder.hpc}` }); return
     }
     // init transfer 
-    const fromPath = body.fromPath ? path.join(folder.path, body.fromPath) : folder.path
+    const fromPath = body.fromPath ? path.join(folder.globusPath, body.fromPath) : folder.globusPath
     const from = { path:  fromPath, endpoint: hpcConfig.globus.endpoint }
     const to = { path: body.toPath, endpoint: body.toEndpoint }
     console.log(from, to)

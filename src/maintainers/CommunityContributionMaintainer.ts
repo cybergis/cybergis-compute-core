@@ -34,23 +34,23 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
             if (!this.job.localExecutableFolder) throw new Error('job.localExecutableFolder is required')
             this.emitEvent('SLURM_UPLOAD_EXECUTABLE', `uploading executable folder`)
             var uploader = await FolderUploaderHelper.upload(this.job.localExecutableFolder, this.job.hpc, this.job.userId, this.connector)
-            this.connector.setRemoteExecutableFolderPath(uploader.path)
+            this.connector.setRemoteExecutableFolderPath(uploader.hpcPath)
             this.job.remoteExecutableFolder = await connection.getRepository(Folder).findOne(uploader.id)
 
             // upload data folder
             if (this.job.localDataFolder) {
                 this.emitEvent('SLURM_UPLOAD_DATA', `uploading data folder`)
                 uploader = await FolderUploaderHelper.upload(this.job.localDataFolder, this.job.hpc, this.job.userId, this.connector)
-                this.connector.setRemoteDataFolderPath(uploader.path)
+                this.connector.setRemoteDataFolderPath(uploader.hpcPath)
                 this.job.remoteDataFolder = await connection.getRepository(Folder).findOne(uploader.id)
             } else if (this.job.remoteDataFolder) {
-                this.connector.setRemoteDataFolderPath(this.job.remoteDataFolder.path)
+                this.connector.setRemoteDataFolderPath(this.job.remoteDataFolder.hpcPath)
             }
 
             // create empty result folder
             this.emitEvent('SLURM_CREATE_RESULT', `create result folder`)
             uploader = await FolderUploaderHelper.upload({ type: 'empty' }, this.job.hpc, this.job.userId, this.connector)
-            this.connector.setRemoteResultFolderPath(uploader.path)
+            this.connector.setRemoteResultFolderPath(uploader.hpcPath)
             this.job.remoteResultFolder = await connection.getRepository(Folder).findOne(uploader.id)
 
             // update job
