@@ -126,6 +126,36 @@ async function prepareDataForDB(data, properties) {
     return out
 }
 
+async function initHelloWorldGit() {
+
+    const connection = await db.connect()
+    
+    const helloWorldGit = await connection.getRepository(Git).findOne('hello_world')
+    
+    if (!helloWorldGit) {
+    
+    const git = {
+    
+    id: 'hello_world',
+    
+    address: `https://github.com/cybergis/cybergis-compute-hello-world.git`,
+    
+    isApproved: true,
+    
+    createdAt: new Date(),
+    
+    updatedAt: new Date()
+    
+    }
+    
+    await connection.getRepository(Git).save(git)
+    
+    }
+    
+    }
+    
+initHelloWorldGit()
+
 app.use('/ts-docs', express.static('production/tsdoc'))
 
 app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(swaggerDocument))
