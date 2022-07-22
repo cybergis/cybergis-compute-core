@@ -1,7 +1,7 @@
 import Supervisor from './src/Supervisor'
 import { Git } from './src/models/Git'
 import Helper from './src/Helper'
-import { hpcConfig, maintainerConfig, containerConfig } from './src/types'
+import { hpcConfig, maintainerConfig, containerConfig, folderEditable } from './src/types'
 import { config, containerConfigMap, hpcConfigMap, maintainerConfigMap, jupyterGlobusMap } from './configs/config'
 import GlobusUtil, { GlobusTaskListManager } from './src/lib/GlobusUtil'
 import express = require('express')
@@ -61,6 +61,15 @@ var schemas = {
         type: 'object',
         properties: {
             jupyterhubApiToken: { type: 'string' },
+        },
+        required: ['jupyterhubApiToken']
+    },
+    updateFolder: {
+        type: 'object',
+        properties: {
+            jupyterhubApiToken: { type: 'string' },
+            name: { type: 'string' },
+            isWritable: { type: 'boolean' },
         },
         required: ['jupyterhubApiToken']
     },
@@ -401,6 +410,66 @@ app.get('/folder/:folderId', async function (req, res) {
     const connection = await db.connect()
     const folder = await connection.getRepository(Folder).find({ userId: res.locals.username, id: req.params.folderId })
     res.json(folder)
+})
+
+app.delete('/folder/:folderId', async function (req, res) {
+    const body = req.body
+    const errors = requestErrors(validator.validate(body, schemas.user))
+
+    if (errors.length > 0) {
+        res.status(402).json({ error: "invalid input", messages: errors }); return
+    }
+    if (!res.locals.username) {
+        res.status(402).json({ error: "invalid token" }); return
+    }
+
+    const folderId = req.params.folderId
+    const connection = await db.connect()
+    const folder = await connection.getRepository(Folder).findOne({ userId: res.locals.username, id: folderId})
+    if (!folder) {
+        res.status(404).json({ error: "unknown folder with id " + folderId }); return
+    }
+
+    try {
+        await connection.getRepository(Folder).softDelete(folderId)
+        res.status(200).json({ success: true })
+    } catch (err) {
+        res.status(401).json({ error: "encountered error: " + err.toString() }); return
+    }
+})
+
+app.put('/folder/:folderId', async function (req, res) {
+    const body = req.body
+    const errors = requestErrors(validator.validate(body, schemas.updateFolder))
+
+    if (errors.length > 0) {
+        res.status(402).json({ error: "invalid input", messages: errors }); return
+    }
+    if (!res.locals.username) {
+        res.status(402).json({ error: "invalid token" }); return
+    }
+
+    const folderId = req.params.folderId
+    const connection = await db.connect()
+    const folder = await connection.getRepository(Folder).findOne({ userId: res.locals.username, id: folderId})
+    if (!folder) {
+        res.status(404).json({ error: "unknown folder with id " + folderId }); return
+    }
+
+    if (body.name) folder.name = body.name
+    if (body.isWritable) folder.isWritable = body.isWritable
+    try {
+        await connection.createQueryBuilder()
+            .update(Folder)
+            .where('id = :id', { id:  folderId })
+            .set(await prepareDataForDB(body, ['name', 'isWritable']))
+            .execute()
+
+        const updatedFolder =  await connection.getRepository(Folder).findOne(folderId)
+        res.status(200).json(updatedFolder)
+    } catch (err) {
+        res.status(401).json({ error: "encountered error: " + err.toString() }); return
+    }
 })
 
 app.post('/folder/:folderId/download/globus-init', async function (req, res) {

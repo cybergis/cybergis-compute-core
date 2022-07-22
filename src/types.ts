@@ -273,4 +273,9 @@ export interface LocalFolder {
     localPath?: string
 }
 
+export interface folderEditable {
+    name?: string
+    isWritable?: boolean
+}
+
 export type NeedUploadFolder = GlobusFolder | GitFolder | LocalFolder
