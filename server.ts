@@ -130,7 +130,6 @@ async function initHelloWorldGit() {
 
     const connection = await db.connect()
     const helloWorldGit = await connection.getRepository(Git).findOne('hello_world')
-    console.log(helloWorldGit == undefined)
     if (helloWorldGit == undefined) {
     const git = {
     id: 'hello_world',
