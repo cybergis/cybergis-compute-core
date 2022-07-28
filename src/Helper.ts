@@ -44,6 +44,10 @@ var Helper = {
         return result
     },
 
+    isObjectEmpty(obj): boolean {
+        return Object.keys(obj).length == 0
+    },
+
     consoleEnd: '\x1b[0m',
 
     consoleGreen: '\x1b[32m'

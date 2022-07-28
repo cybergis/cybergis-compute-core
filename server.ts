@@ -1,7 +1,12 @@
 import Supervisor from "./src/Supervisor";
 import { Git } from "./src/models/Git";
 import Helper from "./src/Helper";
-import { hpcConfig, maintainerConfig, containerConfig } from "./src/types";
+import {
+  hpcConfig,
+  maintainerConfig,
+  containerConfig,
+  folderEditable,
+} from "./src/types";
 import {
   config,
   containerConfigMap,
@@ -72,19 +77,28 @@ var schemas = {
     properties: {
       jupyterhubApiToken: { type: "string" },
     },
-    required: ["jupyterhubApiToken"],
-  },
-  updateJob: {
-    type: "object",
-    properties: {
-      jupyterhubApiToken: { type: "string" },
-      param: { type: "object" },
-      env: { type: "object" },
-      slurm: { type: "object" },
-      localExecutableFolder: { type: "object" },
-      localDataFolder: { type: "object" },
-      remoteDataFolder: { type: "string" },
-      remoteExecutableFolder: { type: "string" },
+    updateFolder: {
+      type: "object",
+      properties: {
+        jupyterhubApiToken: { type: "string" },
+        name: { type: "string" },
+        isWritable: { type: "boolean" },
+      },
+      required: ["jupyterhubApiToken"],
+    },
+    updateJob: {
+      type: "object",
+      properties: {
+        jupyterhubApiToken: { type: "string" },
+        param: { type: "object" },
+        env: { type: "object" },
+        slurm: { type: "object" },
+        localExecutableFolder: { type: "object" },
+        localDataFolder: { type: "object" },
+        remoteDataFolder: { type: "string" },
+        remoteExecutableFolder: { type: "string" },
+      },
+      required: ["jupyterhubApiToken"],
     },
     required: ["jupyterhubApiToken"],
   },
@@ -303,16 +317,14 @@ app.get("/user/job", async (req, res) => {
   }
 
   const connection = await db.connect();
-  const jobs = await connection
-    .getRepository(Job)
-    .find({
-      where: { userId: res.locals.username },
-      relations: [
-        "remoteDataFolder",
-        "remoteResultFolder",
-        "remoteExecutableFolder",
-      ],
-    });
+  const jobs = await connection.getRepository(Job).find({
+    where: { userId: res.locals.username },
+    relations: [
+      "remoteDataFolder",
+      "remoteResultFolder",
+      "remoteExecutableFolder",
+    ],
+  });
   res.json({ job: Helper.job2object(jobs) });
 });
 
@@ -469,6 +481,81 @@ app.get("/folder/:folderId", async function (req, res) {
     .getRepository(Folder)
     .find({ userId: res.locals.username, id: req.params.folderId });
   res.json(folder);
+});
+
+app.delete("/folder/:folderId", async function (req, res) {
+  const body = req.body;
+  const errors = requestErrors(validator.validate(body, schemas.user));
+
+  if (errors.length > 0) {
+    res.status(402).json({ error: "invalid input", messages: errors });
+    return;
+  }
+  if (!res.locals.username) {
+    res.status(402).json({ error: "invalid token" });
+    return;
+  }
+
+  const folderId = req.params.folderId;
+  const connection = await db.connect();
+  const folder = await connection
+    .getRepository(Folder)
+    .findOne({ userId: res.locals.username, id: folderId });
+  if (!folder) {
+    res.status(404).json({ error: "unknown folder with id " + folderId });
+    return;
+  }
+
+  try {
+    await connection.getRepository(Folder).softDelete(folderId);
+    res.status(200).json({ success: true });
+  } catch (err) {
+    res.status(401).json({ error: "encountered error: " + err.toString() });
+    return;
+  }
+});
+
+app.put("/folder/:folderId", async function (req, res) {
+  const body = req.body;
+  const errors = requestErrors(validator.validate(body, schemas.updateFolder));
+
+  if (errors.length > 0) {
+    res.status(402).json({ error: "invalid input", messages: errors });
+    return;
+  }
+  if (!res.locals.username) {
+    res.status(402).json({ error: "invalid token" });
+    return;
+  }
+
+  const folderId = req.params.folderId;
+  const connection = await db.connect();
+  const folder = await connection
+    .getRepository(Folder)
+    .findOne({ userId: res.locals.username, id: folderId });
+  if (!folder) {
+    res.status(404).json({ error: "unknown folder with id " + folderId });
+    return;
+  }
+
+  if (body.name) folder.name = body.name;
+  if (body.isWritable) folder.isWritable = body.isWritable;
+  try {
+    await connection
+      .createQueryBuilder()
+      .update(Folder)
+      .where("id = :id", { id: folderId })
+      .set(await prepareDataForDB(body, ["name", "isWritable"]))
+      .execute();
+
+    const updatedFolder = await connection
+      .getRepository(Folder)
+      .findOne(folderId);
+    res.status(200).json(updatedFolder);
+  } catch (err) {
+    res.status(401).json({ error: "encountered error: " + err.toString() });
+    return;
+  }
 });
 
 app.post("/folder/:folderId/download/globus-init", async function (req, res) {
@@ -703,18 +790,16 @@ app.post("/job/:jobId/submit", async function (req, res) {
 
   try {
     const connection = await db.connect();
-    job = await connection
-      .getRepository(Job)
-      .findOneOrFail(
-        { id: jobId, userId: res.locals.username },
-        {
-          relations: [
-            "remoteExecutableFolder",
-            "remoteDataFolder",
-            "remoteResultFolder",
-          ],
-        }
-      );
+    job = await connection.getRepository(Job).findOneOrFail(
+      { id: jobId, userId: res.locals.username },
+      {
+        relations: [
+          "remoteExecutableFolder",
+          "remoteDataFolder",
+          "remoteResultFolder",
+        ],
+      }
+    );
   } catch (e) {
     res.status(401).json({ error: "invalid access", messages: [e.toString()] });
     return;
@@ -865,20 +950,18 @@ app.get("/job/:jobId", async function (req, res) {
   try {
     const jobId = req.params.jobId;
     const connection = await db.connect();
-    const job = await connection
-      .getRepository(Job)
-      .findOneOrFail(
-        { id: jobId, userId: res.locals.username },
-        {
-          relations: [
-            "remoteExecutableFolder",
-            "remoteDataFolder",
-            "remoteResultFolder",
-            "events",
-            "logs",
-          ],
-        }
-      );
+    const job = await connection.getRepository(Job).findOneOrFail(
+      { id: jobId, userId: res.locals.username },
+      {
+        relations: [
+          "remoteExecutableFolder",
+          "remoteDataFolder",
+          "remoteResultFolder",
+          "events",
+          "logs",
+        ],
+      }
+    );
     res.json(Helper.job2object(job));
   } catch (e) {
     res.json({ error: "invalid access", messages: [e.toString()] });
