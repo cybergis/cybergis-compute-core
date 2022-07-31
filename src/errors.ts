@@ -1,34 +1,34 @@
 export class FileFormatError extends Error {
-    constructor(message) {
-        super(message)
-        this.name = "FileFormatError"
-    }
+  constructor(message) {
+    super(message);
+    this.name = "FileFormatError";
+  }
 }
 
 export class FileStructureError extends Error {
-    constructor(message) {
-        super(message)
-        this.name = "FileStructureError"
-    }
+  constructor(message) {
+    super(message);
+    this.name = "FileStructureError";
+  }
 }
 
 export class FileNotExistError extends Error {
-    constructor(message) {
-        super(message)
-        this.name = "FileNotExistError"
-    }
+  constructor(message) {
+    super(message);
+    this.name = "FileNotExistError";
+  }
 }
 
 export class NotImplementedError extends Error {
-    constructor(message) {
-        super(message)
-        this.name = "NotImplementedError"
-    }
+  constructor(message) {
+    super(message);
+    this.name = "NotImplementedError";
+  }
 }
 
 export class ConnectorError extends Error {
-    constructor(message) {
-        super(message)
-        this.name = "ConnectorError"
-    }
+  constructor(message) {
+    super(message);
+    this.name = "ConnectorError";
+  }
 }
