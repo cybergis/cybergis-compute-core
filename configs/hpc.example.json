@@ -79,5 +79,28 @@
         "init_sbatch_options": [
             "#SBATCH --partition=GPU"
         ]
+    },
+    "instant_hpc": {
+        "ip": "bridges2.psc.edu",
+        "port": 22,
+        "is_community_account": true,
+        "community_login": {
+            "user": "cybergis",
+            "use_local_key": false,
+            "external_key": {
+                "private_key_path": "/job_supervisor/keys/cigi-gisolve.key",
+                "passphrase": null
+            }
+        },
+        "root_path": "/jet/home/cybergis/data",
+        "job_pool_capacity": 10,
+        "globus": {
+            "identity": "apadmana@illinois.edu",
+            "endpoint": "8e5f3a0a-542d-11eb-a45a-0e095b4c2e55",
+            "root_path": "/jet/home/cybergis/data"
+        },
+        "init_sbatch_options": [
+            "#SBATCH --partition=GPU-shared"
+        ]
     }
 }

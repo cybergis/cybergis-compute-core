@@ -9,7 +9,7 @@
         "maintainer": "HelloWorldSingularityMaintainer"
     },
     "community_contribution": {
-        "hpc": ["keeling_community", "bridges_community"],
+        "hpc": ["instant_hpc","keeling_community", "bridges_community"],
         "default_hpc": "keeling_community",
         "job_pool_capacity": 5,
         "executable_folder": {
