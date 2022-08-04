@@ -77,28 +77,28 @@ var schemas = {
     properties: {
       jupyterhubApiToken: { type: "string" },
     },
-    updateFolder: {
-      type: "object",
-      properties: {
-        jupyterhubApiToken: { type: "string" },
-        name: { type: "string" },
-        isWritable: { type: "boolean" },
-      },
-      required: ["jupyterhubApiToken"],
+    required: ["jupyterhubApiToken"],
+  },
+  updateFolder: {
+    type: "object",
+    properties: {
+      jupyterhubApiToken: { type: "string" },
+      name: { type: "string" },
+      isWritable: { type: "boolean" },
     },
-    updateJob: {
-      type: "object",
-      properties: {
-        jupyterhubApiToken: { type: "string" },
-        param: { type: "object" },
-        env: { type: "object" },
-        slurm: { type: "object" },
-        localExecutableFolder: { type: "object" },
-        localDataFolder: { type: "object" },
-        remoteDataFolder: { type: "string" },
-        remoteExecutableFolder: { type: "string" },
-      },
-      required: ["jupyterhubApiToken"],
+    required: ["jupyterhubApiToken"],
+  },
+  updateJob: {
+    type: "object",
+    properties: {
+      jupyterhubApiToken: { type: "string" },
+      param: { type: "object" },
+      env: { type: "object" },
+      slurm: { type: "object" },
+      localExecutableFolder: { type: "object" },
+      localDataFolder: { type: "object" },
+      remoteDataFolder: { type: "string" },
+      remoteExecutableFolder: { type: "string" },
     },
     required: ["jupyterhubApiToken"],
   },
@@ -582,11 +582,9 @@ app.post("/folder/:folderId/download/globus-init", async function (req, res) {
   }
   const existingTransferJob = await globusTaskList.get(folderId);
   if (existingTransferJob) {
-    res
-      .status(403)
-      .json({
-        error: `a globus job is currently running on folder with id ${folderId}`,
-      });
+    res.status(403).json({
+      error: `a globus job is currently running on folder with id ${folderId}`,
+    });
     return;
   }
   // get jupyter globus config
