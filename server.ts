@@ -284,18 +284,17 @@ app.get("/user/jupyter-globus", async (req, res) => {
 
   var username_array = res.locals.username.split("@");
   var username = username_array.slice(0, username_array.length - 1).join("@");
-  if (jupyterGlobus.user_mapping in ["iguide-mapping"]) {
-    try {
-      username = await GlobusUtil.mapUsername(
-        username,
-        jupyterGlobus.user_mapping
-      );
-    } catch (err) {
-      res
-        .status(403)
-        .json({ error: `Failed to map jupyter-globus: ${err.toString()}` });
-      return;
-    }
+  console.log(jupyterGlobus.user_mapping)
+  try {
+    username = await GlobusUtil.mapUsername(
+      username,
+      jupyterGlobus.user_mapping
+    );
+  } catch (err) {
+    res
+      .status(403)
+      .json({ error: `Failed to map jupyter-globus: ${err.toString()}` });
+    return;
   }
   res.json({
     endpoint: jupyterGlobus.endpoint,

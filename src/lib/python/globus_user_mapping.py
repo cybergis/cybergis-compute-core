@@ -19,7 +19,7 @@ def username_mapping_iguide_k8s_js2(in_username):
         safe=set(string.ascii_lowercase + string.digits)
     )
     username_mapped = "iguide-claim-{}".format(username_encoded)
-    return username_mapped
+    return username_mapped.lower()
 
 
 if (MAPPING_FUNC == "iguide-mapping"):
