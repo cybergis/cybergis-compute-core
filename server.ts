@@ -282,12 +282,20 @@ app.get("/user/jupyter-globus", (req, res) => {
     return;
   }
 
+  var username = res.locals.username.split("@")[0];
+  if (!jupyterGlobus.direct_user_mapping) {
+    try {
+      const usename = await GlobusUtil.mapIGUIDEusername(username);
+    } catch (err) {
+      res
+        .status(403)
+        .json({ error: `Failed to map jupyter-globus: ${err.toString()}` });
+      return;
+    }
+  }
   res.json({
     endpoint: jupyterGlobus.endpoint,
-    root_path: path.join(
-      jupyterGlobus.root_path,
-      res.locals.username.split("@")[0]
-    ),
+    root_path: path.join(jupyterGlobus.root_path, username),
     container_home_path: jupyterGlobus.container_home_path,
   });
 });
