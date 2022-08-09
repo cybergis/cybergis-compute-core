@@ -263,7 +263,7 @@ app.get("/user", (req, res) => {
  *          404:
  *              description: Returns "unknown host" if jupyter-globus cannot be found in local hosts.
  */
-app.get("/user/jupyter-globus", (req, res) => {
+app.get("/user/jupyter-globus", async (req, res) => {
   var body = req.body;
   var errors = requestErrors(validator.validate(body, schemas.user));
 
@@ -282,10 +282,14 @@ app.get("/user/jupyter-globus", (req, res) => {
     return;
   }
 
-  var username = res.locals.username.split("@")[0];
-  if (!jupyterGlobus.direct_user_mapping) {
+  var username_array = res.locals.username.split("@");
+  var username = username_array.slice(0, username_array.length - 1).join("@");
+  if (jupyterGlobus.user_mapping in ["iguide-mapping"]) {
     try {
-      const usename = await GlobusUtil.mapIGUIDEusername(username);
+      username = await GlobusUtil.mapUsername(
+        username,
+        jupyterGlobus.user_mapping
+      );
     } catch (err) {
       res
         .status(403)
