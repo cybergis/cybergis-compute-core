@@ -111,7 +111,7 @@ export class GlobusFolderUploader extends BaseFolderUploader {
       this.from,
       this.to,
       this.hpcConfig,
-      this.id
+      'upload-folder-'+this.id
     );
     const status = await GlobusUtil.monitorTransfer(
       this.taskId,
