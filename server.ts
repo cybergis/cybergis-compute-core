@@ -585,7 +585,7 @@ app.post("/folder/:folderId/download/globus-init", async function (req, res) {
   }
 
   // get jobId
-  const jobId = req.jobId;
+  const jobId = body.jobId;
 
   // get folder
   const folderId = req.params.folderId;
