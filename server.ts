@@ -116,6 +116,7 @@ var schemas = {
   initGlobusDownload: {
     type: "object",
     properties: {
+      jobId: { type: "string"}
       jupyterhubApiToken: { type: "string" },
       toEndpoint: { type: "string" },
       toPath: { type: "string" },
@@ -583,6 +584,9 @@ app.post("/folder/:folderId/download/globus-init", async function (req, res) {
     return;
   }
 
+  // get jobId
+  const jobId = req.params.jobId;
+
   // get folder
   const folderId = req.params.folderId;
   const connection = await db.connect();
@@ -616,7 +620,7 @@ app.post("/folder/:folderId/download/globus-init", async function (req, res) {
       from,
       to,
       hpcConfig,
-      `download-folder-${folder.id}`
+      `download-folder-${jobId}-${folder.id}`
     );
     await globusTaskList.put(folderId, globusTaskId);
     res.json({ globus_task_id: globusTaskId });
