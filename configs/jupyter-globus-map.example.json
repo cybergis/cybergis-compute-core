@@ -21,7 +21,7 @@
         "comment": "CJW-Dev",
         "endpoint": "fcd5acc6-157f-11ec-90b8-41052087bc27",
         "root_path": "/~/mnt/nfs_folder/notebook_home_data/",
-        "container_home_path": "/home/jovyan/work/",
+        "container_home_path": "/home/jovyan/work/"
     },
     "js-156-34.jetstream-cloud.org": {
         "comment": "CyberGISX on jetstream",
