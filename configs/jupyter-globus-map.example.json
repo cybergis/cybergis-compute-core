@@ -1,4 +1,10 @@
-{
+{   "www.iguide.geoedf.org":{
+        "comment":"IGUIDE",
+        "endpoint":"4ae398fe-17fc-11ed-8db7-9f359c660fbd",
+        "root_path":"/~/mnt/jupyter-data/",
+        "container_home_path":"/home/jovyan/work/",
+        "user_mapping":"iguide-mapping"
+    },
     "cybergisx.cigi.illinois.edu": {
         "comment": "original CyberGISX",
         "endpoint": "418e684e-1260-11ec-ba7d-138ac5bdb19f",
@@ -15,12 +21,12 @@
         "comment": "CJW-Dev",
         "endpoint": "fcd5acc6-157f-11ec-90b8-41052087bc27",
         "root_path": "/~/mnt/nfs_folder/notebook_home_data/",
-        "container_home_path": "/home/jovyan/work/"
+        "container_home_path": "/home/jovyan/work/",
     },
     "js-156-34.jetstream-cloud.org": {
         "comment": "CyberGISX on jetstream",
         "endpoint": "972d3bf6-ac7d-11ec-bf8e-ab28bf5d96bb",
         "root_path": "/~/mnt/nfs_folder/production_data/notebook_home_data/",
-        "container_home_path": "/home/jovyan/work/"
+        "container_home_path": "/home/jovyan/work/",
     }
 }

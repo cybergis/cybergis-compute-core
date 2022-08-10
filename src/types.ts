@@ -216,6 +216,7 @@ export interface jupyterGlobusMapConfig {
   endpoint: string;
   root_path: string;
   container_home_path: string;
+  user_mapping?: string;
 }
 
 export interface fileConfig {

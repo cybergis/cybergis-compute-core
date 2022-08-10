@@ -8,14 +8,11 @@
   },
   "scripts": {
     "test": "jest -c ./test/jest.config.js",
-
     "tsdoc": "typedoc --entryPointStrategy expand ./src  --out ./production/tsdoc",
     "uml": "typeorm-uml -d production/uml.png",
     "swagger": "node ./production/tools/generate-swagger.js",
     "doc-gen": "npm run tsdoc && npm run uml && npm run swagger",
-
     "cpy": "cp -r ./configs ./production && cp ./*.json ./production && cp -r ./src/lib/python ./production/src/lib/python",
-
     "prebuild": "rm -rf ./production",
     "build": "tsc",
     "postbuild": "npm run cpy && npm run doc-gen"

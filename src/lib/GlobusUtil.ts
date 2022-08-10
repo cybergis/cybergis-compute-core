@@ -160,6 +160,21 @@ export default class GlobusUtil {
     return await this._queryStatus(taskId, hpcConfig, "globus_query_status.py");
   }
 
+  static async mapUsername(
+    initial_username: string,
+    mapping_func: string
+  ): Promise<string> {
+    try {
+      var username = await PythonUtil.run(
+        "globus_user_mapping.py",
+        [initial_username, mapping_func],
+        ["mapped_username"]
+      );
+    } catch (e) {
+      throw new Error(`Jupyter-Globus mapping failed with error: ${e}`);
+    }
+    return username["mapped_username"];
+  }
   /**
    * @static
    * @async
