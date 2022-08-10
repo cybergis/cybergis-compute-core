@@ -73,7 +73,7 @@ export class BaseFolderUploader {
 export class EmptyFolderUploader extends BaseFolderUploader {
   protected connector: Connector;
 
-  constructor(hpcName: string, userId: string, connector: Connector) {
+  constructor(hpcName: string, userId: string, jobId: string, connector: Connector) {
     super(hpcName, userId);
     this.connector = connector;
   }
@@ -92,7 +92,9 @@ export class GlobusFolderUploader extends BaseFolderUploader {
 
   private taskId: string;
 
-  constructor(from: GlobusFolder, hpcName: string, userId: string) {
+  private jobId: string;
+
+  constructor(from: GlobusFolder, hpcName: string, userId: string, jobId: string) {
     super(hpcName, userId);
     if (!this.hpcConfig)
       throw new Error(`cannot find hpcConfig with name ${hpcName}`);
@@ -104,6 +106,7 @@ export class GlobusFolderUploader extends BaseFolderUploader {
       endpoint: this.hpcConfig.globus.endpoint,
       path: this.globusPath,
     };
+    this.jobId = jobId
   }
 
   async upload() {
@@ -111,7 +114,7 @@ export class GlobusFolderUploader extends BaseFolderUploader {
       this.from,
       this.to,
       this.hpcConfig,
-      'upload-folder-'+this.id
+      'job-id-'+this.jobId+'-upload-folder-'+this.id
     );
     const status = await GlobusUtil.monitorTransfer(
       this.taskId,
@@ -141,6 +144,7 @@ export class LocalFolderUploader extends BaseFolderUploader {
     from: LocalFolder,
     hpcName: string,
     userId: string,
+    jobId: string,
     connector: Connector = null
   ) {
     super(hpcName, userId);
@@ -170,10 +174,11 @@ export class GitFolderUploader extends LocalFolderUploader {
     from: GitFolder,
     hpcName: string,
     userId: string,
+    jobId: string,
     connector: Connector = null
   ) {
     const localPath = GitUtil.getLocalPath(from.gitId);
-    super({ localPath }, hpcName, userId, connector);
+    super({ localPath }, hpcName, userId, jobId, connector);
     this.gitId = from.gitId;
   }
 
@@ -194,25 +199,26 @@ export class FolderUploaderHelper {
     from: NeedUploadFolder,
     hpcName: string,
     userId: string,
+    jobId: string = "",
     connector: Connector = null
   ) {
     if (!from.type) throw new Error("invalid local file format");
     var uploader: BaseFolderUploader;
     switch (from.type) {
       case "git":
-        uploader = new GitFolderUploader(from, hpcName, userId, connector);
+        uploader = new GitFolderUploader(from, hpcName, userId, jobId, connector);
         await uploader.upload();
         break;
       case "local":
-        uploader = new LocalFolderUploader(from, hpcName, userId, connector);
+        uploader = new LocalFolderUploader(from, hpcName, userId, jobId, connector);
         await uploader.upload();
         break;
       case "globus":
-        uploader = new GlobusFolderUploader(from, hpcName, userId);
+        uploader = new GlobusFolderUploader(from, hpcName, userId, jobId);
         await uploader.upload();
         break;
       case "empty":
-        uploader = new EmptyFolderUploader(hpcName, userId, connector);
+        uploader = new EmptyFolderUploader(hpcName, userId, jobId, connector);
         await uploader.upload();
         break;
       default:
