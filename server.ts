@@ -620,7 +620,7 @@ app.post("/folder/:folderId/download/globus-init", async function (req, res) {
       from,
       to,
       hpcConfig,
-      `download-folder-${jobId}-${folder.id}`
+      `job-id-${jobId}-download-folder-${folder.id}`
     );
     await globusTaskList.put(folderId, globusTaskId);
     res.json({ globus_task_id: globusTaskId });

@@ -11,7 +11,7 @@ var Helper = {
   },
 
   generateId(): string {
-    return Math.round(new Date().getTime() / 1000) + Helper.randomStr(5);
+    return 'upload-folder' + Math.round(new Date().getTime() / 1000) + Helper.randomStr(5);
   },
 
   job2object(job: Job | Job[], exclude = []): Object | Object[] {
