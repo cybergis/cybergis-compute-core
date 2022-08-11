@@ -38,6 +38,7 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
         this.job.localExecutableFolder,
         this.job.hpc,
         this.job.userId,
+        this.job.id,
         this.connector
       );
       this.connector.setRemoteExecutableFolderPath(uploader.hpcPath);
@@ -52,6 +53,7 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
           this.job.localDataFolder,
           this.job.hpc,
           this.job.userId,
+          this.job.id,
           this.connector
         );
         this.connector.setRemoteDataFolderPath(uploader.hpcPath);
@@ -70,6 +72,7 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
         { type: "empty" },
         this.job.hpc,
         this.job.userId,
+        this.job.id,
         this.connector
       );
       this.connector.setRemoteResultFolderPath(uploader.hpcPath);
