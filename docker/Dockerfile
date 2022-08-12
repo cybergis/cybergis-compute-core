@@ -5,7 +5,7 @@ RUN set -ex; \
     python3 python3-dev tzdata pkgconfig build-base \
     git libgit2-dev krb5-dev py-pip py-cryptography openssh \
     zip unzip
-RUN python3 -m pip install globus_sdk
+RUN python3 -m pip install escapism globus_sdk
 RUN set -xe; \
     apk add --no-cache openconnect -X http://dl-cdn.alpinelinux.org/alpine/edge/community
 EXPOSE 3030
