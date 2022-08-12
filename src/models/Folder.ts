@@ -5,25 +5,33 @@ import {
   DeleteDateColumn,
   BeforeInsert,
   BeforeUpdate,
-  OneToOne,
+  OneToMany,
 } from "typeorm";
-import { Folder } from "./Folder";
+import { Job } from "./Job";
 
-@Entity({ name: "gits" })
-
-/** Class representing a git action. */
-export class Git {
+/** Class representing a job event. */
+@Entity({ name: "folders" })
+export class Folder {
   @PrimaryColumn()
   id: string;
 
-  @Column()
-  address: string;
+  @Column({ nullable: true })
+  name: string;
 
-  @Column({ nullable: true, default: null })
-  sha: string;
+  @Column()
+  hpc: string;
+
+  @Column()
+  hpcPath: string;
+
+  @Column()
+  globusPath: string;
+
+  @Column({ nullable: true })
+  userId: string;
 
   @Column({ default: false })
-  isApproved: boolean;
+  isWritable: boolean;
 
   @Column({
     type: "bigint",

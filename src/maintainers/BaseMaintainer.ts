@@ -1,315 +1,315 @@
-import { Job } from "../models/Job"
-import { maintainerConfig, event, slurm, jobMaintainerUpdatable, hpcConfig } from "../types"
-import { BaseFolder, LocalFolder, FileSystem, GlobusFolder } from '../FileSystem'
-import BaseConnector from '../connectors/BaseConnector'
-import SlurmConnector from '../connectors/SlurmConnector'
-import validator from 'validator'
-import { NotImplementedError } from '../errors'
-import { config, hpcConfigMap, maintainerConfigMap } from '../../configs/config'
-import SingularityConnector from "../connectors/SingularityConnector"
-import Supervisor from '../Supervisor'
-import DB from '../DB'
+import { Job } from "../models/Job";
+import {
+  maintainerConfig,
+  event,
+  slurm,
+  jobMaintainerUpdatable,
+  hpcConfig,
+} from "../types";
+import BaseConnector from "../connectors/BaseConnector";
+import SlurmConnector from "../connectors/SlurmConnector";
+import validator from "validator";
+import { NotImplementedError } from "../errors";
+import {
+  config,
+  hpcConfigMap,
+  maintainerConfigMap,
+} from "../../configs/config";
+import SingularityConnector from "../connectors/SingularityConnector";
+import Supervisor from "../Supervisor";
+import DB from "../DB";
 
 class BaseMaintainer {
-    /** parent pointer **/
-    public supervisor: Supervisor
+  /** parent pointer **/
+  public supervisor: Supervisor;
 
-    /** packages **/
-    public validator = validator // https://github.com/validatorjs/validator.js
+  /** packages **/
+  public validator = validator; // https://github.com/validatorjs/validator.js
 
-    public db: DB
+  public db: DB;
 
-    /** config **/
-    public job: Job = undefined
+  /** config **/
+  public job: Job = undefined;
 
-    public hpc: hpcConfig = undefined
+  public hpc: hpcConfig = undefined;
 
-    public config: maintainerConfig = undefined
+  public config: maintainerConfig = undefined;
 
-    public id: string = undefined
+  public id: string = undefined;
 
-    public slurm: slurm = undefined
+  public slurm: slurm = undefined;
 
-    /** mutex **/
-    private _lock = false
+  /** mutex **/
+  private _lock = false;
 
-    /** states **/
-    public isInit = false
+  /** states **/
+  public isInit = false;
 
-    public isEnd = false
+  public isEnd = false;
 
-    public isPaused = false
+  public isPaused = false;
 
-    protected lifeCycleState = {
-        initCounter: 0,
-        createdAt: null,
+  protected lifeCycleState = {
+    initCounter: 0,
+    createdAt: null,
+  };
+
+  /** parameters **/
+  public initRetry = 3;
+
+  public maintainThresholdInHours = 100000; // something super large
+
+  public envParamValidators: { [keys: string]: (val: string) => boolean } =
+    undefined;
+
+  public envParamDefault: { [keys: string]: string } = {};
+
+  public envParam: { [keys: string]: string } = {};
+
+  public appParamValidators = undefined;
+
+  public appParam: { [keys: string]: string } = {};
+
+  /** constructor **/
+  constructor(job: Job) {
+    for (var i in this.envParamValidators) {
+      var val = job.env[i];
+      if (val != undefined) {
+        if (this.envParamValidators[i](val)) this.envParam[i] = val;
+      }
+    }
+    const maintainerConfig = maintainerConfigMap[job.maintainer];
+    this.job = job;
+    this.config = maintainerConfig;
+    this.id = job.id;
+    this.slurm = job.slurm;
+    this.db = new DB();
+    var hpc = job.hpc ? job.hpc : this.config.default_hpc;
+    this.hpc = hpcConfigMap[hpc];
+    if (!this.hpc) throw new Error("cannot find hpc with name [" + hpc + "]");
+    this.onDefine();
+  }
+
+  /** HPC connectors **/
+  public connector: BaseConnector | SlurmConnector = undefined;
+
+  /** data **/
+  protected logs: Array<string> = [];
+
+  protected events: Array<event> = [];
+
+  /** lifecycle interfaces **/
+  /**
+   * Throw execption when ondefine not implemented
+   *
+   * @throws {NotImplementedError} - Ondefine is not implemented
+   */
+  onDefine() {
+    throw new NotImplementedError("onDefine not implemented");
+  }
+
+  /**
+   * Throw execption when oninit not implemented
+   *
+   * @throws {NotImplementedError} - Oninit is not implemented
+   */
+  async onInit() {
+    throw new NotImplementedError("onInit not implemented");
+  }
+
+  /**
+   * Throw execption when onmaintain not implemented
+   *
+   * @throws {NotImplementedError} - Onmaintain is not implemented
+   */
+  async onMaintain() {
+    throw new NotImplementedError("onMaintain not implemented");
+  }
+
+  /**
+   * Throw execption when onpause not implemented
+   *
+   * @throws {NotImplementedError} - Onpause is not implemented
+   */
+  async onPause() {
+    throw new NotImplementedError("onPause not implemented");
+  }
+
+  /**
+   * Throw execption when onresume not implemented
+   *
+   * @throws {NotImplementedError} - Onresume is not implemented
+   */
+  async onResume() {
+    throw new NotImplementedError("onResume not implemented");
+  }
+
+  /**
+   * Throw execption when oncancel not implemented
+   *
+   * @throws {NotImplementedError} - Oncancel is not implemented
+   */
+  async onCancel() {
+    throw new NotImplementedError("onCancel not implemented");
+  }
+
+  /** emitters **/
+  /**
+   * Update this.events with the new event, and this.isInit or this.isEnd as appropriate
+   *
+   * @param {string} type - Type of event to be recorded
+   * @param {string} message - Message associated with the event
+   */
+  emitEvent(type: string, message: string) {
+    if (type === "JOB_INIT") this.isInit = true;
+    if (type === "JOB_ENDED" || type === "JOB_FAILED") this.isEnd = true;
+    this.events.push({
+      type: type,
+      message: message,
+    });
+  }
+
+  /**
+   * Update this.events with the new event
+   *
+   * @param {string} message - Message associated with the event
+   */
+  emitLog(message: string) {
+    this.logs.push(message);
+  }
+
+  /** supervisor interfaces **/
+  /**
+   * Initialize job in the maintainer. If the job has been retried too many times, terminate and update events.
+   *
+   * @async
+   */
+  async init() {
+    if (this._lock) return;
+    this._lock = true;
+
+    if (this.lifeCycleState.initCounter >= this.initRetry) {
+      this.emitEvent(
+        "JOB_FAILED",
+        "initialization counter exceeds " + this.initRetry + " counts"
+      );
+    } else {
+      await this.onInit();
+      this.lifeCycleState.initCounter++;
     }
 
-    /** parameters **/
-    public initRetry = 3
+    this._lock = false;
+  }
 
-    public maintainThresholdInHours = 100000 // something super large
+  /**
+   * Ensure that the job is still running, and if the runtime has exceeded the maintain threshold, terminate and update events.
+   *
+   * @async
+   */
+  async maintain() {
+    if (this._lock) return;
+    this._lock = true;
 
-    public envParamValidators: {[keys: string]: (val: string) => boolean} = undefined
-
-    public envParamDefault: {[keys: string]: string} = {}
-
-    public envParam: {[keys: string]: string} = {}
-
-    public appParamValidators = undefined
- 
-    public appParam: {[keys: string]: string} = {}
-
-    /** constructor **/
-    constructor(job: Job, supervisor: Supervisor) {
-        for (var i in this.envParamValidators) {
-            var val = job.env[i]
-            if (val != undefined) {
-                if (this.envParamValidators[i](val)) this.envParam[i] = val
-            }
-        }
-        const maintainerConfig = maintainerConfigMap[job.maintainer]
-        if (maintainerConfig.executable_folder.from_user) {
-            var folder = FileSystem.getFolderByURL(job.executableFolder)
-            if (folder instanceof LocalFolder) {
-                this.executableFolder = folder
-            } else {
-                throw new Error('executable folder must be local folder')
-            }
-        } else {
-            this.executableFolder = FileSystem.createLocalFolder()
-        }
-
-        this.supervisor = supervisor
-        this.job = job
-        this.config = maintainerConfig
-        this.id = job.id
-        this.slurm = job.slurm
-        this.db = new DB()
-        var hpc = job.hpc ? job.hpc : this.config.default_hpc
-        this.hpc = hpcConfigMap[hpc]
-        if (!this.hpc) throw new Error("cannot find hpc with name [" + hpc + "]")
-        this.onDefine()
-
-        this.dataFolder = job.dataFolder ? FileSystem.getFolderByURL(job.dataFolder) : null
-        if (this.dataFolder instanceof GlobusFolder && !this.hpc.globus) {
-            throw new Error('HPC does not support Globus')
-        }
-        this.resultFolder = job.resultFolder ? FileSystem.getFolderByURL(job.resultFolder) : FileSystem.createLocalFolder()
+    if (this.lifeCycleState.createdAt === null) {
+      this.lifeCycleState.createdAt = Date.now();
     }
 
-    /** HPC connectors **/
-    public connector: BaseConnector | SlurmConnector = undefined
-
-    /** files **/
-    public dataFolder: BaseFolder = undefined
-
-    public resultFolder: BaseFolder = undefined
-
-    public executableFolder: LocalFolder = undefined
-
-    /** data **/
-    protected logs: Array<string> = []
-
-    protected events: Array<event> = []
-
-    /** lifecycle interfaces **/
-    /**
-     * Throw execption when ondefine not implemented
-     * 
-     * @throws {NotImplementedError} - Ondefine is not implemented
-     */
-    onDefine() {
-        throw new NotImplementedError("onDefine not implemented")
+    if (
+      (this.lifeCycleState.createdAt - Date.now()) / (1000 * 60 * 60) >=
+      this.maintainThresholdInHours
+    ) {
+      this.emitEvent(
+        "JOB_FAILED",
+        "maintain time exceeds " + this.maintainThresholdInHours + " hours"
+      );
+    } else {
+      try {
+        await this.onMaintain();
+      } catch (e) {
+        if (config.is_testing) console.error(e.toString()); // ignore error
+      }
     }
 
-    /**
-     * Throw execption when oninit not implemented
-     * 
-     * @throws {NotImplementedError} - Oninit is not implemented
-     */
-    async onInit() {
-        throw new NotImplementedError("onInit not implemented")
-    }
+    this._lock = false;
+  }
 
-    /**
-     * Throw execption when onmaintain not implemented
-     * 
-     * @throws {NotImplementedError} - Onmaintain is not implemented
-     */
-    async onMaintain() {
-        throw new NotImplementedError("onMaintain not implemented")
-    }
+  /**
+   * Clear all logs in this.logs
+   *
+   * @async
+   * @return {Object} - List of jobs that were just deleted.
+   */
+  dumpLogs() {
+    var logs = this.logs;
+    this.logs = [];
+    return logs;
+  }
 
-    /**
-     * Throw execption when onpause not implemented
-     * 
-     * @throws {NotImplementedError} - Onpause is not implemented
-     */
-    async onPause() {
-        throw new NotImplementedError("onPause not implemented")
-    }
+  /**
+   * Clear all events in this.events
+   *
+   * @async
+   * @return {Object} - List of events that were just deleted.
+   */
+  dumpEvents() {
+    var events = this.events;
+    this.events = [];
+    return events;
+  }
 
-    /**
-     * Throw execption when onresume not implemented
-     * 
-     * @throws {NotImplementedError} - Onresume is not implemented
-     */
-    async onResume() {
-        throw new NotImplementedError("onResume not implemented")
-    }
+  /**
+   * Update this job to reflect the information in the passed job.
+   *
+   * @async
+   * @public
+   * @param {jobMaintainerUpdatable} job - New information to update this job with.
+   */
+  public async updateJob(job: jobMaintainerUpdatable) {
+    var connection = await this.db.connect();
+    await connection
+      .createQueryBuilder()
+      .update(Job)
+      .where("id = :id", { id: this.id })
+      .set(job)
+      .execute();
+    var jobRepo = connection.getRepository(Job);
+    this.job = await jobRepo.findOne(this.id);
+  }
 
-    /**
-     * Throw execption when oncancel not implemented
-     * 
-     * @throws {NotImplementedError} - Oncancel is not implemented
-     */
-    async onCancel() {
-        throw new NotImplementedError("onCancel not implemented")
-    }
+  /**
+   * Return the slurm connector associated with this job and hpc.
+   *
+   * @public
+   * @returns {SlurmConnector} - The slurm connector associated with this job.
+   */
+  public getSlurmConnector(): SlurmConnector {
+    return new SlurmConnector(this.job.hpc, this.job.id, this, this.job.env);
+  }
 
-    /** emitters **/
-    /**
-     * Update this.events with the new event, and this.isInit or this.isEnd as appropriate
-     * 
-     * @param {string} type - Type of event to be recorded
-     * @param {string} message - Message associated with the event
-     */
-    emitEvent(type: string, message: string) {
-        if (type === 'JOB_INIT') this.isInit = true
-        if (type === 'JOB_ENDED' || type === 'JOB_FAILED') this.isEnd = true
-        this.events.push({
-            type: type,
-            message: message
-        })
-    }
+  /**
+   * Return the singularity connector associated with this job and hpc.
+   *
+   * @public
+   * @returns {SingularityConnector} - The singularity connector associated with this job.
+   */
+  public getSingularityConnector(): SingularityConnector {
+    return new SingularityConnector(
+      this.job.hpc,
+      this.job.id,
+      this,
+      this.job.env
+    );
+  }
 
-    /**
-     * Update this.events with the new event
-     * 
-     * @param {string} message - Message associated with the event
-     */
-    emitLog(message: string) {
-        this.logs.push(message)
-    }
-
-    /** supervisor interfaces **/
-    /**
-     * Initialize job in the maintainer. If the job has been retried too many times, terminate and update events.
-     * 
-     * @async
-     */
-    async init() {
-        if (this._lock) return
-        this._lock = true
-
-        if (this.lifeCycleState.initCounter >= this.initRetry) {
-            this.emitEvent('JOB_FAILED', 'initialization counter exceeds ' + this.initRetry + ' counts')
-        } else {
-            await this.onInit()
-            this.lifeCycleState.initCounter++
-        }
-
-        this._lock = false
-    }
-
-    /**
-     * Ensure that the job is still running, and if the runtime has exceeded the maintain threshold, terminate and update events.
-     * 
-     * @async
-     */
-    async maintain() {
-        if (this._lock) return
-        this._lock = true
-
-        if (this.lifeCycleState.createdAt === null) {
-            this.lifeCycleState.createdAt = Date.now()
-        }
-
-        if (((this.lifeCycleState.createdAt - Date.now()) / (1000 * 60 * 60)) >= this.maintainThresholdInHours) {
-            this.emitEvent('JOB_FAILED', 'maintain time exceeds ' + this.maintainThresholdInHours + ' hours')
-        } else {
-            try {
-                await this.onMaintain()
-            } catch (e) {
-                if (config.is_testing) console.error(e.toString()) // ignore error
-            }
-        }
-
-        this._lock = false
-    }
-
-    /**
-     * Clear all logs in this.logs
-     * 
-     * @async
-     * @return {Object} - List of jobs that were just deleted.
-     */
-    dumpLogs() {
-        var logs = this.logs
-        this.logs = []
-        return logs
-    }
-
-    /**
-     * Clear all events in this.events
-     * 
-     * @async
-     * @return {Object} - List of events that were just deleted.
-     */
-    dumpEvents() {
-        var events = this.events
-        this.events = []
-        return events
-    }
-
-    /**
-     * Update this job to reflect the information in the passed job.
-     * 
-     * @async
-     * @public
-     * @param {jobMaintainerUpdatable} job - New information to update this job with.
-     */
-    public async updateJob(job: jobMaintainerUpdatable) {
-        var connection = await this.db.connect()
-        await connection.createQueryBuilder()
-            .update(Job)
-            .where('id = :id', { id:  this.id })
-            .set(job)
-            .execute()
-        var jobRepo = connection.getRepository(Job)
-        this.job = await jobRepo.findOne(this.id)
-    }
-
-    /**
-     * Return the slurm connector associated with this job and hpc.
-     * 
-     * @public
-     * @returns {SlurmConnector} - The slurm connector associated with this job.
-     */
-    public getSlurmConnector(): SlurmConnector {
-        return new SlurmConnector(this.job, this.hpc, this)
-    }
-
-    /**
-     * Return the singularity connector associated with this job and hpc.
-     * 
-     * @public
-     * @returns {SingularityConnector} - The singularity connector associated with this job.
-     */
-    public getSingularityConnector(): SingularityConnector {
-        return new SingularityConnector(this.job, this.hpc, this)
-    }
-
-    /**
-     * Return the base connector associated with this job and hpc.
-     * 
-     * @public
-     * @returns {BaseConnector} - The base connector associated with this job.
-     */
-    public getBaseConnector(): BaseConnector {
-        return new BaseConnector(this.job, this.hpc, this)
-    }
+  /**
+   * Return the base connector associated with this job and hpc.
+   *
+   * @public
+   * @returns {BaseConnector} - The base connector associated with this job.
+   */
+  public getBaseConnector(): BaseConnector {
+    return new BaseConnector(this.job.hpc, this.job.id, this, this.job.env);
+  }
 }
 
-export default BaseMaintainer
+export default BaseMaintainer;
