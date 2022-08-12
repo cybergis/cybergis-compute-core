@@ -37,7 +37,7 @@ export class Folder {
     type: "bigint",
     transformer: {
       to: (i: Date | null | undefined): number => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date => (i ? new Date(i) : null),
+      from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
     },
   })
   createdAt: Date;
@@ -47,7 +47,7 @@ export class Folder {
     nullable: true,
     transformer: {
       to: (i: Date | null | undefined): number => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date => (i ? new Date(i) : null),
+      from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
     },
   })
   updatedAt: Date;
@@ -57,7 +57,7 @@ export class Folder {
     nullable: true,
     transformer: {
       to: (i: Date | null | undefined): number => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date => (i ? new Date(i) : null),
+      from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
     },
   })
   deletedAt: Date;
