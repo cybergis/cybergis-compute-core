@@ -29,7 +29,7 @@ export class Git {
     type: "bigint",
     transformer: {
       to: (i: Date | null | undefined): number => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date => (i ? new Date(i) : null),
+      from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
     },
   })
   createdAt: Date;
@@ -39,7 +39,7 @@ export class Git {
     nullable: true,
     transformer: {
       to: (i: Date | null | undefined): number => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date => (i ? new Date(i) : null),
+      from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
     },
   })
   updatedAt: Date;
@@ -49,7 +49,7 @@ export class Git {
     nullable: true,
     transformer: {
       to: (i: Date | null | undefined): number => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date => (i ? new Date(i) : null),
+      from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
     },
   })
   deletedAt: Date;
