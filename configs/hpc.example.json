@@ -54,7 +54,7 @@
         ],
         "xsede_job_log_credential": {
             "xsederesourcename": "expanse.sdsc.xsede.org",
-            "apikey": "cybergisx-39615605a4e6bac3fbfaae432b3c3e05"
+            "apikey": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
         }
     },
     "bridges_community_gpu": {
