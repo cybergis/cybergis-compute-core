@@ -173,6 +173,26 @@
             }
         }
 
+    },
+    "subsetaorcforcingdata-processor": {
+       "dockerfile": "",
+       "dockerhub": "",
+       "hpc_path": {
+            "anvil_community": "/home/x-cybergis/simages/subsetaorcforcingdata-processor.sif"
+        },
+       "mount": {
+            "anvil_community": {
+                "/anvil/projects/x-cis220065/x-cybergis/compute": "/compute_shared"
+            },
+            "expanse_community": {
+                "/expanse/lustre/projects/usu104/cybergis/compute": "/compute_shared"
+            },
+            "keeling_community": {
+                "/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared"
+            }
+        }
+
     }
+
 
 }
