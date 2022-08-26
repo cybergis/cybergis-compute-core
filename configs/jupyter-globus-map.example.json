@@ -23,5 +23,11 @@
         "root_path": "/~/mnt/jupyter-data/",
         "container_home_path": "/home/jovyan/",
         "user_mapping": "iguide-mapping"
+    },
+    "cjw-swarm-master-dev.ear190007.projects.jetstream-cloud.org": {
+        "comment": "CJW-js2-dev",
+        "endpoint": "d45b1832-f3f8-11ec-aede-6f7c2b57b05c",
+        "root_path": "/~/mnt/nfs_folder/notebook_home_data/",
+        "container_home_path": "/home/jovyan/work/"
     }
 }
