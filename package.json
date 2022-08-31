@@ -47,7 +47,7 @@
     "jsonschema": "^1.2.6",
     "morgan": "^1.10.0",
     "mysql": "^2.18.1",
-    "node-ssh": "^10.0.2",
+    "node-ssh": "^13.0.0",
     "readline-promise": "^1.0.5",
     "redis": "^3.1.1",
     "rimraf": "^3.0.2",
