@@ -24,5 +24,6 @@
     },
     "globus_client_id": "43a03cac-6eb2-4b77-91dd-6c08fc42f3d3",
     "queue_consume_time_period_in_seconds": 3,
-    "is_testing": true
+    "is_testing": true,
+    "whitelist": ["jupyterhub:443"]
 }
