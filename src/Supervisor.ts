@@ -6,7 +6,7 @@ import { config, maintainerConfigMap, hpcConfigMap } from "../configs/config";
 import connectionPool from "./connectors/ConnectionPool";
 import * as events from "events";
 import DB from "./DB";
-import NodeSSH = require("node-ssh");
+const { NodeSSH } = require("node-ssh");
 
 class Supervisor {
   private db = new DB();
