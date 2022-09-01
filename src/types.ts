@@ -1,4 +1,4 @@
-import NodeSSH = require("node-ssh");
+const { NodeSSH } = require("node-ssh");
 import { ConnectConfig } from "ssh2";
 import { Prompt } from "ssh2-streams";
 import { Folder } from "./models/Folder";
@@ -281,7 +281,7 @@ export declare type SSHConfig = ConnectConfig & {
 };
 
 export interface SSH {
-  connection: NodeSSH;
+  connection: typeof NodeSSH;
   config: SSHConfig;
 }
 

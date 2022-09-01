@@ -1,4 +1,4 @@
-import NodeSSH = require("node-ssh");
+const { NodeSSH } = require("node-ssh");
 import { SSH, SSHConfig } from "../types";
 import { config, hpcConfigMap } from "../../configs/config";
 
