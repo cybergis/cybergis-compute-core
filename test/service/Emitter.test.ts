@@ -15,7 +15,8 @@ afterEach(async () => {
 
 const jobId = "test-job";
 const userId = "test-user";
-const secretToken = "abcdefg";
+const userPassword = "test-password";
+const jupyterhubApiToken = "abcdefg";
 const maintainer = "community_contribution";
 const hpc = "keeling_community";
 
@@ -31,10 +32,11 @@ describe("test Emitter.getEvents", () => {
   test("simple get event", async () => {
     const job = await TestHelper.createJob(
       jobId,
-      userId,
-      secretToken,
+      jupyterhubApiToken,
       maintainer,
-      hpc
+      hpc,
+      userId,
+      userPassword
     );
     const createdEvent = await TestHelper.createEvent(
       job,
@@ -53,10 +55,11 @@ describe("test Emitter.getEvents", () => {
     const eventsCount = 10;
     const job = await TestHelper.createJob(
       jobId,
-      userId,
-      secretToken,
+      jupyterhubApiToken,
       maintainer,
-      hpc
+      hpc,
+      userId,
+      userPassword
     );
     for (var i = 0; i < eventsCount; i++)
       await TestHelper.createEvent(
@@ -80,10 +83,11 @@ describe("test Emitter.getLogs", () => {
   test("simple get log", async () => {
     const job = await TestHelper.createJob(
       jobId,
-      userId,
-      secretToken,
+      jupyterhubApiToken,
       maintainer,
-      hpc
+      hpc,
+      userId,
+      userPassword
     );
     const createdLog = await TestHelper.createLog(job, logMessage);
     const queriedLogs = await emitter.getLogs(job.id);
@@ -98,10 +102,11 @@ describe("test Emitter.getLogs", () => {
     const logsCount = 10;
     const job = await TestHelper.createJob(
       jobId,
-      userId,
-      secretToken,
+      jupyterhubApiToken,
       maintainer,
-      hpc
+      hpc,
+      userId,
+      userPassword
     );
     for (var i = 0; i < logsCount; i++)
       await TestHelper.createLog(job, `${logMessage}_${i}`);
@@ -121,10 +126,11 @@ describe("test Emitter.registerLogs", () => {
   test("simple register log", async () => {
     const job = await TestHelper.createJob(
       jobId,
-      userId,
-      secretToken,
+      jupyterhubApiToken,
       maintainer,
-      hpc
+      hpc,
+      userId,
+      userPassword
     );
     await emitter.registerLogs(job, `${logMessage}_register_${0}`);
     await emitter.registerLogs(job, `${logMessage}_register_${1}`);
@@ -143,10 +149,11 @@ describe("test Emitter.registerEvents", () => {
   test("simple register events", async () => {
     const job = await TestHelper.createJob(
       jobId,
-      userId,
-      secretToken,
+      jupyterhubApiToken,
       maintainer,
-      hpc
+      hpc,
+      userId,
+      userPassword
     );
     await emitter.registerEvents(
       job,

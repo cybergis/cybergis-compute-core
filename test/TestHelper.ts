@@ -6,10 +6,11 @@ import { Job } from "../src/models/Job";
 export default class TestHelper {
   static async createJob(
     id: string,
-    userId: string,
-    secretToken: string,
+    jupyterhubApiToken: string,
     maintainer: string,
-    hpc: string
+    hpc: string,
+    userId: string,
+    password: string
   ): Promise<Job> {
     const db = new DB();
     const connection = await db.connect();
