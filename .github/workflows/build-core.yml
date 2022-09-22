@@ -3,7 +3,7 @@ name: build-core
 on:
   push:
     branches:
-      - jupyter_globus_issue
+      - "*"
 
 jobs:
   build:
