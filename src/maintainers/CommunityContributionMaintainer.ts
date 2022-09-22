@@ -1,4 +1,5 @@
 import SingularityConnector from "../connectors/SingularityConnector";
+import CVMFSConnector from "../connectors/CVMFSConnector";
 import BaseMaintainer from "./BaseMaintainer";
 import XSEDEUtil from "../lib/XSEDEUtil";
 import { ResultFolderContentManager } from "../lib/JobUtil";
@@ -9,7 +10,7 @@ import { Folder } from "../models/Folder";
 import { FolderUploaderHelper } from "../FolderUploader";
 
 export default class CommunityContributionMaintainer extends BaseMaintainer {
-  public connector: SingularityConnector;
+  public connector: CVMFSConnector;
 
   public resultFolderContentManager: ResultFolderContentManager =
     new ResultFolderContentManager();
@@ -18,7 +19,7 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
 
   onDefine() {
     // define connector
-    this.connector = this.getSingularityConnector();
+    this.connector = this.getCVMFSConnector();
   }
 
   /**

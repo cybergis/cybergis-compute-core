@@ -16,6 +16,7 @@ import {
   maintainerConfigMap,
 } from "../../configs/config";
 import SingularityConnector from "../connectors/SingularityConnector";
+import CVMFSConnector from "../connectors/CVMFSConnector";
 import Supervisor from "../Supervisor";
 import DB from "../DB";
 
@@ -300,6 +301,21 @@ class BaseMaintainer {
       this.job.env
     );
   }
+
+   /**
+   * Return the CVMFS connector associated with this job and hpc.
+   *
+   * @public
+   * @returns {CVMFSConnector} - The singularity connector associated with this job.
+   */
+     public getCVMFSConnector(): CVMFSConnector{
+      return new CVMFSConnector(
+        this.job.hpc,
+        this.job.id,
+        this,
+        this.job.env
+      );
+    }
 
   /**
    * Return the base connector associated with this job and hpc.

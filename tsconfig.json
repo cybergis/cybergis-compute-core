@@ -9,7 +9,8 @@
         "skipLibCheck": true,
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
-        "removeComments": true
+        "removeComments": true,
+        "resolveJsonModule" : true
     },
     "include": [
         "**/*",
