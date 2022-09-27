@@ -464,13 +464,11 @@ app.get("/whitelist", function (req, res) {
     var out = {};
     for (var i in dest) {
       var d: jupyterGlobusMapConfig = JSON.parse(JSON.stringify(dest[i])); // hard copy
-      console.log(d);
-      console.log(i);
-      if (!(i in ["endpoint"])) out[i] = d;
+      out[i] = d.comment;
     }
     return out;
   };
-  res.json({ container: parseHost(jupyterGlobusMap)});
+  res.json({ whitelist: parseHost(jupyterGlobusMap)});
 });
 
 app.get("/git", async function (req, res) {
