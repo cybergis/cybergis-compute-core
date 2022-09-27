@@ -5,7 +5,8 @@ import {
   hpcConfig,
   maintainerConfig,
   containerConfig,
-  folderEditable
+  folderEditable,
+  jupyterGlobusMapConfig
 } from "./src/types";
 import {
   config,
@@ -243,6 +244,13 @@ app.get("/user", (req, res) => {
     res.status(402).json({ error: "invalid input", messages: errors });
     return;
   }
+
+  var jupyterGlobus = jupyterGlobusMap[res.locals.host];
+  if (!jupyterGlobus) {
+    res.status(404).json({ error: "Cannot find jupyterhubHost in whitelist" });
+    return;
+  }
+
   if (!res.locals.username) {
     res.status(402).json({ error: "invalid token" });
     return;
@@ -423,7 +431,7 @@ app.get("/maintainer", function (req, res) {
 
 /**
  * @openapi
- * /maintainer:
+ * /container:
  *  get:
  *      description: Returns current containerConfig
  *      responses:
@@ -439,13 +447,29 @@ app.get("/container", function (req, res) {
     }
     return out;
   };
-  var out_jupyter = {};
-  var hosts = Object.keys(JSON.parse(JSON.stringify(jupyterGlobusMap)));
-  for (var j in hosts){
-    out_jupyter[hosts[j]] = jupyterGlobusMap[hosts[j]].comment;
-  }
-  res.json({ container: parseContainer(containerConfigMap),
-             jupyter_hosts: out_jupyter });
+  res.json({ container: parseContainer(containerConfigMap)});
+});
+
+/**
+ * @openapi
+ * /whitelist:
+ *  get:
+ *      description: Returns current whitelist
+ *      responses:
+ *          200:
+ *              description: Returns current whitelist
+ */
+app.get("whitelist", function (req, res) {
+  var parseHost = (dest: { [key: string]: jupyterGlobusMapConfig }) => {
+    var out = {};
+    for (var i in dest) {
+      var d: jupyterGlobusMapConfig = JSON.parse(JSON.stringify(dest[i])); // hard copy
+      if (!(i in ["endpoint"])) out[i] = d;
+      out[i] = d;
+    }
+    return out;
+  };
+  res.json({ container: parseHost(jupyterGlobusMap)});
 });
 
 app.get("/git", async function (req, res) {
