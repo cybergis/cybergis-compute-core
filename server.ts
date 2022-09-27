@@ -459,7 +459,7 @@ app.get("/container", function (req, res) {
  *          200:
  *              description: Returns current whitelist
  */
-app.get("whitelist", function (req, res) {
+app.get("/whitelist", function (req, res) {
   var parseHost = (dest: { [key: string]: jupyterGlobusMapConfig }) => {
     var out = {};
     for (var i in dest) {
