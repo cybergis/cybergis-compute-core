@@ -464,6 +464,8 @@ app.get("/whitelist", function (req, res) {
     var out = {};
     for (var i in dest) {
       var d: jupyterGlobusMapConfig = JSON.parse(JSON.stringify(dest[i])); // hard copy
+      console.log(d);
+      console.log(i);
       if (!(i in ["endpoint"])) out[i] = d;
     }
     return out;
