@@ -213,6 +213,7 @@ export interface XSEDEJobLogCredential {
 }
 
 export interface jupyterGlobusMapConfig {
+  comment: string;
   endpoint: string;
   root_path: string;
   container_home_path: string;

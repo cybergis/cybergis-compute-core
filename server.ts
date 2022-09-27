@@ -5,7 +5,7 @@ import {
   hpcConfig,
   maintainerConfig,
   containerConfig,
-  folderEditable,
+  folderEditable
 } from "./src/types";
 import {
   config,
@@ -272,14 +272,15 @@ app.get("/user/jupyter-globus", async (req, res) => {
     res.status(402).json({ error: "invalid input", messages: errors });
     return;
   }
-  if (!res.locals.username) {
-    res.status(402).json({ error: "invalid token" });
-    return;
-  }
 
   var jupyterGlobus = jupyterGlobusMap[res.locals.host];
   if (!jupyterGlobus) {
-    res.status(404).json({ error: "unknown host" });
+    res.status(404).json({ error: "Cannot find jupyterhubHost in whitelist" });
+    return;
+  }
+
+  if (!res.locals.username) {
+    res.status(402).json({ error: "invalid token" });
     return;
   }
 
@@ -323,6 +324,13 @@ app.get("/user/job", async (req, res) => {
     res.status(402).json({ error: "invalid input", messages: errors });
     return;
   }
+
+  var jupyterGlobus = jupyterGlobusMap[res.locals.host];
+  if (!jupyterGlobus) {
+    res.status(404).json({ error: "Cannot find jupyterhubHost in whitelist" });
+    return;
+  }
+
   if (!res.locals.username) {
     res.status(402).json({ error: "invalid token" });
     return;
@@ -431,7 +439,13 @@ app.get("/container", function (req, res) {
     }
     return out;
   };
-  res.json({ container: parseContainer(containerConfigMap) });
+  var out_jupyter = {};
+  var hosts = Object.keys(JSON.parse(JSON.stringify(jupyterGlobusMap)));
+  for (var j in hosts){
+    out_jupyter[hosts[j]] = jupyterGlobusMap[hosts[j]].comment;
+  }
+  res.json({ container: parseContainer(containerConfigMap),
+             jupyter_hosts: out_jupyter });
 });
 
 app.get("/git", async function (req, res) {
