@@ -1,7 +1,6 @@
 import SlurmConnector from "./SlurmConnector";
 import { slurm, executableManifest } from "../types";
 import { containerConfigMap } from "../../configs/config";
-import * as config from "../../config.json";
 
 class SingCVMFSConnector extends SlurmConnector {
   /**
@@ -10,30 +9,29 @@ class SingCVMFSConnector extends SlurmConnector {
   private volumeBinds: { [keys: string]: string } = {};
 
   public isContainer = true;
+
   /**
    * Executes specified command within specified image
    *
    * @param{string} image - docker image
    * @param{string} cmd - command to be executed
-   * @param{slurm} config_slurm - slurm configuration
+   * @param{slurm} config - slurm configuration
    */
-  execCommandWithinImage(image: string, cmd: string, config_slurm: slurm) {
-    cmd = `srun --mpi=pmi2 ${
-      config.cvmfs_path
-    } -s exec -cip docker://centos:7 singularity ${this._getVolumeBindCMD()} ${image} ${cmd}`;
-    super.prepare(cmd, config_slurm);
+  execCommandWithinImage(image: string, cmd: string, config: slurm) {
+    cmd = `BASE=$(pwd) && tmp_path="/tmp/cvmfs-$(openssl rand -base64 12)" && mkdir $tmp_path && ./singcvmfs -s exec -B $tmp_path:/tmp/cvmfs,$BASE/script:/script,$BASE/output:/output -cip ${image} ${cmd}`;
+    super.prepare(cmd, config);
   }
 
   /**
    * Executes specified manifest within image
    *
    * @param{executableManifest} manifest - manifest that needs toe be executed
-   * @param{slurm} config_slurm - slurm configuration
+   * @param{slurm} config - slurm configuration
    * @throw{Error} - thrown when container is not supported
    */
   execExecutableManifestWithinImage(
     manifest: executableManifest,
-    config_slurm: slurm
+    config: slurm
   ) {
     var container = containerConfigMap[manifest.container];
     if (!container) throw new Error(`unknown container ${manifest.container}`);
@@ -52,11 +50,9 @@ class SingCVMFSConnector extends SlurmConnector {
         cmd += `${manifest.pre_processing_stage_in_raw_sbatch[i]}\n`;
       }
     } else if (manifest.pre_processing_stage) {
-      cmd += `${jobENV.join(" ")} ${
-        config.cvmfs_path
-      } -s exec -cip docker://centos:7 singularity ${this._getVolumeBindCMD(
-        manifest
-      )} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
+      cmd += `${jobENV.join(
+        " "
+      )} BASE=$(pwd) && tmp_path="/tmp/cvmfs-$(openssl rand -base64 12)" && mkdir $tmp_path && ./singcvmfs -s exec -B $tmp_path:/tmp/cvmfs,$BASE/script:/script,$BASE/output:/output ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
         manifest.pre_processing_stage
       }\"\n\n`;
     }
@@ -66,11 +62,9 @@ class SingCVMFSConnector extends SlurmConnector {
         cmd += `${manifest.execution_stage_in_raw_sbatch[i]}\n`;
       }
     } else {
-      cmd += `${jobENV.join(" ")} srun --unbuffered --mpi=pmi2 ${
-        config.cvmfs_path
-      } -s exec -cip docker://centos:7 singularity ${this._getVolumeBindCMD(
-        manifest
-      )} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
+      cmd += `${jobENV.join(
+        " "
+      )} BASE=$(pwd) && tmp_path="/tmp/cvmfs-$(openssl rand -base64 12)" && mkdir $tmp_path && ./singcvmfs -s exec -B $tmp_path:/tmp/cvmfs,$BASE/script:/script,$BASE/output:/output ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
         manifest.execution_stage
       }"\n\n`;
     }
@@ -80,30 +74,28 @@ class SingCVMFSConnector extends SlurmConnector {
         cmd += `${manifest.post_processing_stage_in_raw_sbatch[i]}\n`;
       }
     } else if (manifest.post_processing_stage) {
-      cmd += `${jobENV.join(" ")} ${
-        config.cvmfs_path
-      } -s exec -cip docker://centos:7 singularity ${this._getVolumeBindCMD(
-        manifest
-      )} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
+      cmd += `${jobENV.join(
+        " "
+      )} BASE=$(pwd) && tmp_path="/tmp/cvmfs-$(openssl rand -base64 12)" && mkdir $tmp_path && ./singcvmfs -s exec -B $tmp_path:/tmp/cvmfs,$BASE/script:/script,$BASE/output:/output ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
         manifest.post_processing_stage
       }\"`;
     }
 
-    super.prepare(cmd, config_slurm);
+    super.prepare(cmd, config);
   }
 
   /**
    * Runs singularity image
    *
    * @param{string} image - singularity image
-   * @param{slurm} config_slurm - slurm configuration
+   * @param{slurm} config - slurm configuration
    */
-  runImage(image: string, config_slurm: slurm) {
+  runImage(image: string, config: slurm) {
     var jobENV = this._getJobENV();
-    var cmd = `srun --mpi=pmi2 ${jobENV.join(" ")} ${
-      config.cvmfs_path
-    } -s -cip docker://centos:7 singularity run ${this._getVolumeBindCMD()} ${image}`;
-    super.prepare(cmd, config_slurm);
+    var cmd = `${jobENV.join(
+      " "
+    )} BASE=$(pwd) && tmp_path="/tmp/cvmfs-$(openssl rand -base64 12)" && mkdir $tmp_path && ./singcvmfs -s exec -B $tmp_path:/tmp/cvmfs,$BASE/script:/script,$BASE/output:/output -cip ${image}`;
+    super.prepare(cmd, config);
   }
 
   /**
