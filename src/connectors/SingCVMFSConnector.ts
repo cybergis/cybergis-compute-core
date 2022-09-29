@@ -3,7 +3,7 @@ import { slurm, executableManifest } from "../types";
 import { containerConfigMap } from "../../configs/config";
 import * as config from "../../config.json";
 
-class CVMFSConnector extends SlurmConnector {
+class SingCVMFSConnector extends SlurmConnector {
   /**
    * Connects the singularity container to the hpc enivironment
    */
@@ -195,4 +195,4 @@ class CVMFSConnector extends SlurmConnector {
   }
 }
 
-export default CVMFSConnector;
+export default SingCVMFSConnector;

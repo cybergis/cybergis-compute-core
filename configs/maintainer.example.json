@@ -16,6 +16,6 @@
             "from_user": true,
             "allowed_protocol": "git"
         },
-        "maintainer": "CommunityContributionMaintainer"
+        "maintainer": "SingCVMFSMaintainer"
     }
 }

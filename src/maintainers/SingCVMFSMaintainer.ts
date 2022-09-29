@@ -1,4 +1,4 @@
-import SingularityConnector from "../connectors/SingularityConnector";
+import SingCVMFSConnector from "../connectors/SingCVMFSConnector";
 import BaseMaintainer from "./BaseMaintainer";
 import XSEDEUtil from "../lib/XSEDEUtil";
 import { ResultFolderContentManager } from "../lib/JobUtil";
@@ -8,8 +8,8 @@ import { Git } from "../models/Git";
 import { Folder } from "../models/Folder";
 import { FolderUploaderHelper } from "../FolderUploader";
 
-class CommunityContributionMaintainer extends BaseMaintainer {
-  public connector: SingularityConnector;
+class SingCVMFSMaintainer extends BaseMaintainer {
+  public connector: SingCVMFSConnector;
 
   public resultFolderContentManager: ResultFolderContentManager =
     new ResultFolderContentManager();
@@ -18,9 +18,8 @@ class CommunityContributionMaintainer extends BaseMaintainer {
 
   onDefine() {
     // define connector
-    this.connector = this.getSingularityConnector();
+    this.connector = this.getSingCVMFSConnector();
   }
-
   /**
    * On maintainer initialization, set executableManifest, and give it to the connector. Update the event log to reflect the job being initialized or encountering a system error.
    *
@@ -204,4 +203,4 @@ class CommunityContributionMaintainer extends BaseMaintainer {
     await this.connector.cancel();
   }
 }
-export default CommunityContributionMaintainer;
+export default SingCVMFSMaintainer;

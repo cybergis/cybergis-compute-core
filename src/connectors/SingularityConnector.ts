@@ -18,7 +18,7 @@ class SingularityConnector extends SlurmConnector {
    * @param{slurm} config - slurm configuration
    */
   execCommandWithinImage(image: string, cmd: string, config: slurm) {
-    cmd = `srun --mpi=pmi2 singularity exec ${this._getVolumeBindCMD()} ${image} ${cmd}`;
+    cmd = `BASE=$(pwd) && tmp_path="/tmp/cvmfs-$(openssl rand -base64 12)" && mkdir $tmp_path && ./singcvmfs -s exec -B $tmp_path:/tmp/cvmfs,$BASE/script:/script,$BASE/output:/output -cip ${image} ${cmd}`;
     super.prepare(cmd, config);
   }
 
@@ -50,9 +50,9 @@ class SingularityConnector extends SlurmConnector {
         cmd += `${manifest.pre_processing_stage_in_raw_sbatch[i]}\n`;
       }
     } else if (manifest.pre_processing_stage) {
-      cmd += `${jobENV.join(" ")} singularity exec ${this._getVolumeBindCMD(
-        manifest
-      )} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
+      cmd += `${jobENV.join(
+        " "
+      )} BASE=$(pwd) && tmp_path="/tmp/cvmfs-$(openssl rand -base64 12)" && mkdir $tmp_path && ./singcvmfs -s exec -B $tmp_path:/tmp/cvmfs,$BASE/script:/script,$BASE/output:/output ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
         manifest.pre_processing_stage
       }\"\n\n`;
     }
@@ -64,9 +64,7 @@ class SingularityConnector extends SlurmConnector {
     } else {
       cmd += `${jobENV.join(
         " "
-      )} srun --unbuffered --mpi=pmi2 singularity exec ${this._getVolumeBindCMD(
-        manifest
-      )} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
+      )} BASE=$(pwd) && tmp_path="/tmp/cvmfs-$(openssl rand -base64 12)" && mkdir $tmp_path && ./singcvmfs -s exec -B $tmp_path:/tmp/cvmfs,$BASE/script:/script,$BASE/output:/output ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
         manifest.execution_stage
       }"\n\n`;
     }
@@ -76,9 +74,9 @@ class SingularityConnector extends SlurmConnector {
         cmd += `${manifest.post_processing_stage_in_raw_sbatch[i]}\n`;
       }
     } else if (manifest.post_processing_stage) {
-      cmd += `${jobENV.join(" ")} singularity exec ${this._getVolumeBindCMD(
-        manifest
-      )} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
+      cmd += `${jobENV.join(
+        " "
+      )} BASE=$(pwd) && tmp_path="/tmp/cvmfs-$(openssl rand -base64 12)" && mkdir $tmp_path && ./singcvmfs -s exec -B $tmp_path:/tmp/cvmfs,$BASE/script:/script,$BASE/output:/output ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
         manifest.post_processing_stage
       }\"`;
     }
@@ -94,9 +92,9 @@ class SingularityConnector extends SlurmConnector {
    */
   runImage(image: string, config: slurm) {
     var jobENV = this._getJobENV();
-    var cmd = `srun --mpi=pmi2 ${jobENV.join(
+    var cmd = `${jobENV.join(
       " "
-    )} singularity run ${this._getVolumeBindCMD()} ${image}`;
+    )} BASE=$(pwd) && tmp_path="/tmp/cvmfs-$(openssl rand -base64 12)" && mkdir $tmp_path && ./singcvmfs -s exec -B $tmp_path:/tmp/cvmfs,$BASE/script:/script,$BASE/output:/output -cip ${image}`;
     super.prepare(cmd, config);
   }
 

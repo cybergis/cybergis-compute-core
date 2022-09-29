@@ -18,13 +18,13 @@ import { Git } from "./models/Git";
 import GitUtil from "./lib/GitUtil";
 import SlurmConnector from "./connectors/SlurmConnector";
 import SingularityConnector from "./connectors/SingularityConnector";
-import CVMFSConnector from "./connectors/CVMFSConnector";
+import SingCVMFSConnector from "./connectors/SingCVMFSConnector";
 
 type Connector =
   | BaseConnector
   | SlurmConnector
   | SingularityConnector
-  | CVMFSConnector;
+  | SingCVMFSConnector;
 
 export class BaseFolderUploader {
   public id: string;
