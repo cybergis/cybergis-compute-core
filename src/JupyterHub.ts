@@ -1,6 +1,7 @@
 import Helper from "./Helper";
 import axios from "axios";
 import * as path from "path";
+import { jupyterGlobusMap } from "../configs/config"; 
 
 declare type decodedToken = {
   host: string;
@@ -13,6 +14,16 @@ class JupyterHub {
   public async getUsername(token: string) {
     var t = this._decodeToken(token);
     const protocols = ["https", "http"];
+    var hosts = Object.keys(JSON.parse(JSON.stringify(jupyterGlobusMap)));
+    var flag = false;
+    for (var j in hosts) {
+      if (t.host == hosts[j]) {
+	flag = true;
+      }
+    }
+    if (!flag) {
+      throw new Error("Cannot find jupyterhubHost in whitelist");
+    }
     var user = undefined;
     for (var i in protocols) {
       const protocol = protocols[i];

@@ -6,6 +6,7 @@ import {
   maintainerConfig,
   containerConfig,
   folderEditable,
+  jupyterGlobusMapConfig
 } from "./src/types";
 import {
   config,
@@ -243,6 +244,13 @@ app.get("/user", (req, res) => {
     res.status(402).json({ error: "invalid input", messages: errors });
     return;
   }
+
+  var jupyterGlobus = jupyterGlobusMap[res.locals.host];
+  if (!jupyterGlobus) {
+    res.status(404).json({ error: "Cannot find jupyterhubHost in whitelist" });
+    return;
+  }
+
   if (!res.locals.username) {
     res.status(402).json({ error: "invalid token" });
     return;
@@ -272,14 +280,15 @@ app.get("/user/jupyter-globus", async (req, res) => {
     res.status(402).json({ error: "invalid input", messages: errors });
     return;
   }
-  if (!res.locals.username) {
-    res.status(402).json({ error: "invalid token" });
-    return;
-  }
 
   var jupyterGlobus = jupyterGlobusMap[res.locals.host];
   if (!jupyterGlobus) {
-    res.status(404).json({ error: "unknown host" });
+    res.status(404).json({ error: "Cannot find jupyterhubHost in whitelist" });
+    return;
+  }
+
+  if (!res.locals.username) {
+    res.status(402).json({ error: "invalid token" });
     return;
   }
 
@@ -323,6 +332,13 @@ app.get("/user/job", async (req, res) => {
     res.status(402).json({ error: "invalid input", messages: errors });
     return;
   }
+
+  var jupyterGlobus = jupyterGlobusMap[res.locals.host];
+  if (!jupyterGlobus) {
+    res.status(404).json({ error: "Cannot find jupyterhubHost in whitelist" });
+    return;
+  }
+
   if (!res.locals.username) {
     res.status(402).json({ error: "invalid token" });
     return;
@@ -415,7 +431,7 @@ app.get("/maintainer", function (req, res) {
 
 /**
  * @openapi
- * /maintainer:
+ * /container:
  *  get:
  *      description: Returns current containerConfig
  *      responses:
@@ -431,7 +447,28 @@ app.get("/container", function (req, res) {
     }
     return out;
   };
-  res.json({ container: parseContainer(containerConfigMap) });
+  res.json({ container: parseContainer(containerConfigMap)});
+});
+
+/**
+ * @openapi
+ * /whitelist:
+ *  get:
+ *      description: Returns current whitelist
+ *      responses:
+ *          200:
+ *              description: Returns current whitelist
+ */
+app.get("/whitelist", function (req, res) {
+  var parseHost = (dest: { [key: string]: jupyterGlobusMapConfig }) => {
+    var out = {};
+    for (var i in dest) {
+      var d: jupyterGlobusMapConfig = JSON.parse(JSON.stringify(dest[i])); // hard copy
+      out[i] = d.comment;
+    }
+    return out;
+  };
+  res.json({ whitelist: parseHost(jupyterGlobusMap)});
 });
 
 app.get("/git", async function (req, res) {
