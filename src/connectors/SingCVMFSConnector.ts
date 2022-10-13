@@ -18,7 +18,7 @@ class SingCVMFSConnector extends SlurmConnector {
    * @param{slurm} config - slurm configuration
    */
   execCommandWithinImage(image: string, cmd: string, config: slurm) {
-    cmd = `BASE=$(pwd) && tmp_path="/tmp/cvmfs-$(openssl rand -base64 12)" && mkdir $tmp_path && ./singcvmfs -s exec -B $tmp_path:/tmp/cvmfs,$BASE/script:/script,$BASE/output:/output -cip ${image} ${cmd}`;
+    cmd = `./singcvmfs -s exec -B $tmp_path:/tmp/cvmfs,$BASE/script:/script,$BASE/output:/output -cip ${image} ${cmd}`;
     super.prepare(cmd, config);
   }
 
@@ -52,7 +52,7 @@ class SingCVMFSConnector extends SlurmConnector {
     } else if (manifest.pre_processing_stage) {
       cmd += `${jobENV.join(
         " "
-      )} BASE=$(pwd) && tmp_path="/tmp/cvmfs-$(openssl rand -base64 12)" && mkdir $tmp_path && ./singcvmfs -s exec -B $tmp_path:/tmp/cvmfs,$BASE/script:/script,$BASE/output:/output ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
+      )} ./singcvmfs -s exec -B $tmp_path:/tmp/cvmfs,$BASE/script:/script,$BASE/output:/output ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
         manifest.pre_processing_stage
       }\"\n\n`;
     }
@@ -64,7 +64,7 @@ class SingCVMFSConnector extends SlurmConnector {
     } else {
       cmd += `${jobENV.join(
         " "
-      )} BASE=$(pwd) && tmp_path="/tmp/cvmfs-$(openssl rand -base64 12)" && mkdir $tmp_path && ./singcvmfs -s exec -B $tmp_path:/tmp/cvmfs,$BASE/script:/script,$BASE/output:/output ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
+      )} ./singcvmfs -s exec -B $tmp_path:/tmp/cvmfs,$BASE/script:/script,$BASE/output:/output ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
         manifest.execution_stage
       }"\n\n`;
     }
@@ -76,11 +76,12 @@ class SingCVMFSConnector extends SlurmConnector {
     } else if (manifest.post_processing_stage) {
       cmd += `${jobENV.join(
         " "
-      )} BASE=$(pwd) && tmp_path="/tmp/cvmfs-$(openssl rand -base64 12)" && mkdir $tmp_path && ./singcvmfs -s exec -B $tmp_path:/tmp/cvmfs,$BASE/script:/script,$BASE/output:/output ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
+      )} ./singcvmfs -s exec -B $tmp_path:/tmp/cvmfs,$BASE/script:/script,$BASE/output:/output ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
         manifest.post_processing_stage
       }\"`;
     }
-
+    console.log(cmd);
+    console.log(config);
     super.prepare(cmd, config);
   }
 
@@ -94,7 +95,7 @@ class SingCVMFSConnector extends SlurmConnector {
     var jobENV = this._getJobENV();
     var cmd = `${jobENV.join(
       " "
-    )} BASE=$(pwd) && tmp_path="/tmp/cvmfs-$(openssl rand -base64 12)" && mkdir $tmp_path && ./singcvmfs -s exec -B $tmp_path:/tmp/cvmfs,$BASE/script:/script,$BASE/output:/output -cip ${image}`;
+    )} ./singcvmfs -s exec -B $tmp_path:/tmp/cvmfs,$BASE/script:/script,$BASE/output:/output -cip ${image}`;
     super.prepare(cmd, config);
   }
 
