@@ -18,7 +18,7 @@ class SingCVMFSConnector extends SlurmConnector {
    * @param{slurm} config - slurm configuration
    */
   execCommandWithinImage(image: string, cmd: string, config: slurm) {
-    cmd = `./singcvmfs -s exec -B $tmp_path:/tmp/cvmfs,$BASE/script:/script,$BASE/output:/output -cip ${image} ${cmd}`;
+    cmd = `singcvmfs -s exec -B $MY_BINDS docker://centos:7 -cip  ${cmd}`;
     super.prepare(cmd, config);
   }
 
