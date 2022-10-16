@@ -52,7 +52,7 @@ class SingCVMFSConnector extends SlurmConnector {
     } else if (manifest.pre_processing_stage) {
       cmd += `${jobENV.join(
         " "
-      )} ./singcvmfs -s exec -B $tmp_path:/tmp/cvmfs,$BASE/script:/script,$BASE/output:/output ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
+      )} singcvmfs -s exec -B $MY_BINDS docker://centos:7 bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
         manifest.pre_processing_stage
       }\"\n\n`;
     }
@@ -64,7 +64,7 @@ class SingCVMFSConnector extends SlurmConnector {
     } else {
       cmd += `${jobENV.join(
         " "
-      )} ./singcvmfs -s exec -B $tmp_path:/tmp/cvmfs,$BASE/script:/script,$BASE/output:/output ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
+      )} singcvmfs -s exec -B $MY_BINDS docker://centos:7 bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
         manifest.execution_stage
       }"\n\n`;
     }
@@ -76,7 +76,7 @@ class SingCVMFSConnector extends SlurmConnector {
     } else if (manifest.post_processing_stage) {
       cmd += `${jobENV.join(
         " "
-      )} ./singcvmfs -s exec -B $tmp_path:/tmp/cvmfs,$BASE/script:/script,$BASE/output:/output ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
+      )} singcvmfs -s exec -B $MY_BINDS docker://centos:7 bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
         manifest.post_processing_stage
       }\"`;
     }
@@ -95,7 +95,7 @@ class SingCVMFSConnector extends SlurmConnector {
     var jobENV = this._getJobENV();
     var cmd = `${jobENV.join(
       " "
-    )} ./singcvmfs -s exec -B $tmp_path:/tmp/cvmfs,$BASE/script:/script,$BASE/output:/output -cip ${image}`;
+    )} singcvmfs -s exec -B $MY_BINDS -cip ${image}`;
     super.prepare(cmd, config);
   }
 

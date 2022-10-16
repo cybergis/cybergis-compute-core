@@ -15,9 +15,12 @@
         "init_sbatch_script": [
             "# module use /data/cigi/common/cigi-modules",
             "module load gnu/openmpi-4.1.2-gnu-4.8.5",
-            "BASE=$(pwd)",
-            "tmp_path=/tmp/cvmfs-$(openssl rand -base64 12)",
-            "mkdir $tmp_path"
+            "source ~/.bashrc  # this adds the `singcvmfs` executable to the path",
+            "export SINGCVMFS_REPOSITORIES=\"grid.cern.ch,cybergis.illinois.edu\"  # required for singcvmfs, specifies repositories",
+            "export BASE=$(pwd)",
+            "export tmp_path=/tmp/cvmfs-$(openssl rand -base64 12)",
+            "mkdir $tmp_path",
+            "export MY_BINDS=\"${tmp_path}:/tmp/cvmfs,${BASE}:/job/executable,${BASE}/result:/job/result"
         ],
         "job_pool_capacity": 10,
         "globus": {
