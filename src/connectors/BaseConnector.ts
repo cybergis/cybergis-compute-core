@@ -438,7 +438,7 @@ class BaseConnector {
       content = content.replace(/(["'])/g, "\\$1");
     }
     const out = await this.exec(
-      `touch ${path}; echo "${content}" >> ${path}`,
+      `touch ${path}; echo '${content}' >> ${path}`,
       options,
       true
     );
