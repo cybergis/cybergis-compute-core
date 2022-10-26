@@ -1,4 +1,5 @@
 import { Job } from "./models/Job";
+import { jupyterGlobusMap } from "../configs/config";
 import * as fs from "fs";
 
 var Helper = {
@@ -70,6 +71,14 @@ var Helper = {
 
   isObjectEmpty(obj): boolean {
     return Object.keys(obj).length == 0;
+  },
+
+  isWhitelisted(host: string): boolean {
+    var jupyterGlobus = jupyterGlobusMap[host]
+    if (!jupyterGlobus) {
+        return false;
+    }
+    return true;
   },
 
   consoleEnd: "\x1b[0m",
