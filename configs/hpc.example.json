@@ -14,7 +14,7 @@
         "root_path": "/data/keeling/a/cigi-gisolve/scratch",
         "init_sbatch_script": [
             "# module use /data/cigi/common/cigi-modules",
-            "module use gnu/openmpi-4.1.2-gnu-4.8.5"
+            "module load gnu/openmpi-4.1.2-gnu-4.8.5"
         ],
         "job_pool_capacity": 10,
         "globus": {
