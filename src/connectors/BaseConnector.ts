@@ -2,7 +2,7 @@ import { options, hpcConfig, SSH } from "../types";
 import { ConnectorError } from "../errors";
 import BaseMaintainer from "../maintainers/BaseMaintainer";
 import DB from "../DB";
-import { existsSync, writeFileSync } from 'fs';
+import { existsSync, unlink, writeFileSync } from 'fs';
 import * as path from "path";
 import connectionPool from "./ConnectionPool";
 import { config, hpcConfigMap } from "../../configs/config";
@@ -433,7 +433,6 @@ class BaseConnector {
    * @param(string) path - specified path with filename
    * @param(Object) options - dictionary with string options
    * @param {boolean} muteEvent - set to True if you want to mute maintauner emitted Event
-   * @return(Object) returns - command execution output
    */
   async createFile(
     content: string | Object,
@@ -462,10 +461,13 @@ class BaseConnector {
     // write the content to the tmp file
     writeFileSync(localPath, contentString, {flag: 'w'});
     // upload the file
-    this.transferFile(localPath, remotePath);
+    await this.transferFile(localPath, remotePath);
     // delete the file
-    const out = await this.exec(`rm -rf ${localPath};`);
-    return out.stdout;
+    unlink(localPath, function (err) {
+        if (err) {
+            console.error(err);
+        }
+    });
   }
 
   /**
