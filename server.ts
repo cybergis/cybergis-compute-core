@@ -245,8 +245,7 @@ app.get("/user", (req, res) => {
     return;
   }
 
-  var jupyterGlobus = jupyterGlobusMap[res.locals.host];
-  if (!jupyterGlobus) {
+  if (!Helper.isWhitelisted(res.locals.host)) {
     res.status(404).json({ error: "Cannot find jupyterhubHost in whitelist" });
     return;
   }
@@ -281,8 +280,7 @@ app.get("/user/jupyter-globus", async (req, res) => {
     return;
   }
 
-  var jupyterGlobus = jupyterGlobusMap[res.locals.host];
-  if (!jupyterGlobus) {
+  if (!Helper.isWhitelisted(res.locals.host)) {
     res.status(404).json({ error: "Cannot find jupyterhubHost in whitelist" });
     return;
   }
@@ -294,6 +292,7 @@ app.get("/user/jupyter-globus", async (req, res) => {
 
   var username_array = res.locals.username.split("@");
   var username = username_array.slice(0, username_array.length - 1).join("@");
+  var jupyterGlobus = jupyterGlobusMap[res.locals.host]
   try {
     username = await GlobusUtil.mapUsername(
       username,
@@ -333,8 +332,7 @@ app.get("/user/job", async (req, res) => {
     return;
   }
 
-  var jupyterGlobus = jupyterGlobusMap[res.locals.host];
-  if (!jupyterGlobus) {
+  if (!Helper.isWhitelisted(res.locals.host)) {
     res.status(404).json({ error: "Cannot find jupyterhubHost in whitelist" });
     return;
   }
