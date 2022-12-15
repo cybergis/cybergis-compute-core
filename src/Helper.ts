@@ -3,18 +3,38 @@ import { jupyterGlobusMap } from "../configs/config";
 import * as fs from "fs";
 
 var Helper = {
+  /**
+   * 
+   * @param target b64 string to be encoded
+   * @returns binary encoding of target
+   */
   btoa(target: string): string {
     return Buffer.from(target, "base64").toString("binary");
   },
 
+  /**
+   * 
+   * @param target binary string to be encoded
+   * @returns b64 encoding of target
+   */
   atob(target: string): string {
     return Buffer.from(target).toString("base64");
   },
 
+  /**
+   * 
+   * @returns random 5 digit ID 
+   */
   generateId(): string {
     return Math.round(new Date().getTime() / 1000) + Helper.randomStr(5);
   },
 
+  /**
+   * 
+   * @param job list of attributes of a job
+   * @param exclude list of attributes to exclude
+   * @returns job object including all attributes in the job list and excluding fields specified in exclude
+   */
   job2object(job: Job | Job[], exclude = []): Object | Object[] {
     if (Array.isArray(job)) {
       var outArray: Object[] = [];
@@ -57,7 +77,11 @@ var Helper = {
     }
     return out;
   },
-
+  /**
+   * 
+   * @param length desired length of the return string
+   * @returns random string of length length
+   */
   randomStr(length): string {
     var result = "";
     var characters =
@@ -69,6 +93,11 @@ var Helper = {
     return result;
   },
 
+  /**
+   * 
+   * @param obj object to check
+   * @returns whether or not that object is empty
+   */
   isObjectEmpty(obj): boolean {
     return Object.keys(obj).length == 0;
   },
