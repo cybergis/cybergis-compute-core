@@ -2,9 +2,10 @@ import { options, hpcConfig, SSH } from "../types";
 import { ConnectorError } from "../errors";
 import BaseMaintainer from "../maintainers/BaseMaintainer";
 import DB from "../DB";
+import { existsSync, unlink, writeFileSync } from 'fs';
 import * as path from "path";
 import connectionPool from "./ConnectionPool";
-import { hpcConfigMap } from "../../configs/config";
+import { config, hpcConfigMap } from "../../configs/config";
 import FileUtil from "../lib/FolderUtil";
 
 class BaseConnector {
@@ -176,6 +177,31 @@ class BaseConnector {
   }
   /**
    * @aysnc
+   * Transfers a file from the local machine to remote machine
+   *
+   * @param {string} from - input file string
+   * @param {string} to - output folder
+   * @param {boolean} muteEvent - set to True if you want to mute maintauner emitted Event
+   * @throws {ConnectorError} - Thrown if maintainer emits 'SSH_SCP_DOWNLOAD_ERROR'
+   */
+  async transferFile(from: string, to: string, muteEvent = false) {
+    try {
+      if (this.maintainer && !muteEvent)
+        this.maintainer.emitEvent(
+          "SSH_SCP_UPLOAD",
+          `put file from ${from} to ${to}`
+        );
+      await this.ssh().connection.putFile(from, to);
+    } catch (e) {
+      const error =
+        `unable to put file from ${from} to ${to}: ` + e.toString();
+      if (this.maintainer && !muteEvent)
+        this.maintainer.emitEvent("SSH_SCP_UPLOAD_ERROR", error);
+      throw new ConnectorError(error);
+    }
+  }
+  /**
+   * @aysnc
    * Compresses the contents of the LocalFolder to the specified zip file
    *
    * @param {string} from - input file string
@@ -186,22 +212,7 @@ class BaseConnector {
   async upload(from: string, to: string, muteEvent = false) {
     const toZipFilePath = to.endsWith(".zip") ? to : `${to}.zip`;
     const toFilePath = to.endsWith(".zip") ? to.replace(".zip", "") : to;
-
-    try {
-      if (this.maintainer && !muteEvent)
-        this.maintainer.emitEvent(
-          "SSH_SCP_UPLOAD",
-          `put file from ${from} to ${toFilePath}`
-        );
-      await this.ssh().connection.putFile(from, toZipFilePath);
-    } catch (e) {
-      const error =
-        `unable to put file from ${from} to ${toZipFilePath}: ` + e.toString();
-      if (this.maintainer && !muteEvent)
-        this.maintainer.emitEvent("SSH_SCP_UPLOAD_ERROR", error);
-      throw new ConnectorError(error);
-    }
-
+    await this.transferFile(from, toZipFilePath);
     await this.unzip(toZipFilePath, toFilePath);
     await this.rm(toZipFilePath);
   }
@@ -422,27 +433,41 @@ class BaseConnector {
    * @param(string) path - specified path with filename
    * @param(Object) options - dictionary with string options
    * @param {boolean} muteEvent - set to True if you want to mute maintauner emitted Event
-   * @return(Object) returns - command execution output
    */
   async createFile(
     content: string | Object,
-    path: string,
+    remotePath: string,
     options: options = {},
     muteEvent = false
   ) {
     if (this.maintainer && !muteEvent)
-      this.maintainer.emitEvent("SSH_CREATE_FILE", `create file to ${path}`);
+      this.maintainer.emitEvent("SSH_CREATE_FILE", `create file to ${remotePath}`);
     if (typeof content != "string") {
-      content = JSON.stringify(content).replace(/(["'])/g, "\\$1");
-    } else {
-      content = content.replace(/(["'])/g, "\\$1");
+      content = JSON.stringify(content)
+    } 
+    // cast to string
+    let contentString : string = String(content);
+    // use the cache dir
+    let tmp_dir: string = config.local_file_system.cache_path
+    // create a new tmp file, loop until we find a new one
+    var tmp_file = ""
+    do {
+      tmp_file = 'tmp-' + (Math.random().toString(36)+'00000000000000000').slice(2, 12)
+      console.log(tmp_file)
     }
-    const out = await this.exec(
-      `touch ${path}; echo '${content}' >> ${path}`,
-      options,
-      true
-    );
-    return out.stdout;
+    while(existsSync(path.join(tmp_dir, tmp_file)));
+    // local path of the file
+    let localPath : string = path.join(tmp_dir, tmp_file);
+    // write the content to the tmp file
+    writeFileSync(localPath, contentString, {flag: 'w'});
+    // upload the file
+    await this.transferFile(localPath, remotePath);
+    // delete the file
+    unlink(localPath, function (err) {
+        if (err) {
+            console.error(err);
+        }
+    });
   }
 
   /**
