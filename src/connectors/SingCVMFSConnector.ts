@@ -18,7 +18,7 @@ class SingCVMFSConnector extends SlurmConnector {
    * @param{slurm} config - slurm configuration
    */
   execCommandWithinImage(image: string, cmd: string, config: slurm) {
-    cmd = `singcvmfs -s exec -B \$MY_BINDS docker://centos:7 -cip  ${cmd}`;
+    cmd = `singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://centos:7 ${cmd}`;
     super.prepare(cmd, config);
   }
 
@@ -52,7 +52,7 @@ class SingCVMFSConnector extends SlurmConnector {
     } else if (manifest.pre_processing_stage) {
       cmd += `${jobENV.join(
         " "
-      )} singcvmfs -s exec -B \$MY_BINDS docker://centos:7 bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
+      )} singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://centos:7 bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
         manifest.pre_processing_stage
       }\"\n\n`;
     }
@@ -64,7 +64,7 @@ class SingCVMFSConnector extends SlurmConnector {
     } else {
       cmd += `${jobENV.join(
         " "
-      )} singcvmfs -s exec -B \$MY_BINDS docker://centos:7 bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
+      )} singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://centos:7 bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
         manifest.execution_stage
       }"\n\n`;
     }
@@ -76,7 +76,7 @@ class SingCVMFSConnector extends SlurmConnector {
     } else if (manifest.post_processing_stage) {
       cmd += `${jobENV.join(
         " "
-      )} singcvmfs -s exec -B \$MY_BINDS docker://centos:7 bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
+      )} singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://centos:7 bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
         manifest.post_processing_stage
       }\"`;
     }
@@ -95,7 +95,7 @@ class SingCVMFSConnector extends SlurmConnector {
     var jobENV = this._getJobENV();
     var cmd = `${jobENV.join(
       " "
-    )} singcvmfs -s exec -B \$MY_BINDS -cip ${image}`;
+    )} singcvmfs -s exec ${this._getVolumeBindCMD()} -cip ${image}`;
     console.log(cmd);
     console.log(config);
     super.prepare(cmd, config);
@@ -120,10 +120,9 @@ class SingCVMFSConnector extends SlurmConnector {
    * @return{{[keys: string]: string}} volumeBinds
    */
   private _getVolumeBindCMD(manifest: executableManifest | null = null) {
-    this.volumeBinds[this.getRemoteExecutableFolderPath()] =
-      this.getContainerExecutableFolderPath();
-    this.volumeBinds[this.getRemoteResultFolderPath()] =
-      this.getContainerResultFolderPath();
+    this.volumeBinds[`$tmp_path`] = this.getContainerCVMFSFolderPath();
+    this.volumeBinds[this.getRemoteExecutableFolderPath()] = this.getContainerExecutableFolderPath();
+    this.volumeBinds[this.getRemoteResultFolderPath()] = this.getContainerResultFolderPath();
     if (this.getRemoteDataFolderPath()) {
       this.volumeBinds[this.getRemoteDataFolderPath()] =
         this.getContainerDataFolderPath();
@@ -147,7 +146,7 @@ class SingCVMFSConnector extends SlurmConnector {
       var to = this.volumeBinds[from];
       bindCMD.push(`${from}:${to}`);
     }
-    return `--bind ${bindCMD.join(",")}`;
+    return `-B ${bindCMD.join(",")}`;
   }
 
   /**
