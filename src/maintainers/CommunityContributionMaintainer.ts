@@ -9,7 +9,7 @@ import { Folder } from "../models/Folder";
 import { FolderUploaderHelper } from "../FolderUploader";
 
 class CommunityContributionMaintainer extends BaseMaintainer {
-  public connector: SingularityConnector;
+  public connector: any;
 
   public resultFolderContentManager: ResultFolderContentManager =
     new ResultFolderContentManager();

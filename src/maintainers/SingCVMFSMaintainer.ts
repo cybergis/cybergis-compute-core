@@ -1,14 +1,7 @@
 import SingCVMFSConnector from "../connectors/SingCVMFSConnector";
-import ComminityMaintainer from "./CommunityMaintainer";
+import CommunityContributionMaintainer from "./CommunityContributionMaintainer";
 
-class SingCVMFSMaintainer extends ComminityMaintainer {
-  public connector: SingCVMFSConnector;
-
-  public resultFolderContentManager: ResultFolderContentManager =
-    new ResultFolderContentManager();
-
-  public executableManifest: executableManifest;
-
+class SingCVMFSMaintainer extends CommunityContributionMaintainer {
   onDefine() {
     // define connector
     this.connector = this.getSingCVMFSConnector();
