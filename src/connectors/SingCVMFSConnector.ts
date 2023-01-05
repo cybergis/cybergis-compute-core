@@ -18,7 +18,7 @@ class SingCVMFSConnector extends SlurmConnector {
    * @param{slurm} config - slurm configuration
    */
   execCommandWithinImage(image: string, cmd: string, config: slurm) {
-    cmd = `singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://centos:7 ${cmd}`;
+    cmd = `srun --mpi=pmi2 singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://centos:7 ${cmd}`;
     super.prepare(cmd, config);
   }
 
@@ -64,7 +64,7 @@ class SingCVMFSConnector extends SlurmConnector {
     } else {
       cmd += `${jobENV.join(
         " "
-      )} singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://centos:7 bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
+      )} srun --unbuffered --mpi=pmi2 singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://centos:7 bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
         manifest.execution_stage
       }"\n\n`;
     }
@@ -93,7 +93,7 @@ class SingCVMFSConnector extends SlurmConnector {
    */
   runImage(image: string, config: slurm) {
     var jobENV = this._getJobENV();
-    var cmd = `${jobENV.join(
+    var cmd = `srun --mpi=pmi2 ${jobENV.join(
       " "
     )} singcvmfs -s exec ${this._getVolumeBindCMD()} -cip ${image}`;
     console.log(cmd);
