@@ -1,4 +1,5 @@
 import SingularityConnector from "../connectors/SingularityConnector";
+import SingCVMFSConnector from "../connectors/SingCVMFSConnector";
 import BaseMaintainer from "./BaseMaintainer";
 import XSEDEUtil from "../lib/XSEDEUtil";
 import { ResultFolderContentManager } from "../lib/JobUtil";
@@ -101,6 +102,11 @@ class CommunityContributionMaintainer extends BaseMaintainer {
       if (!git)
         throw new Error("could not find git repo executable in this job");
       this.executableManifest = await GitUtil.getExecutableManifest(git);
+
+      // modify connector to cvmfs
+      if (! this.executableManifest.is_cvmfs){
+        this.connector = this.getSingCVMFSConnector();
+      }
 
       // submit
       await this.connector.execExecutableManifestWithinImage(
