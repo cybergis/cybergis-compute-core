@@ -104,7 +104,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
       this.executableManifest = await GitUtil.getExecutableManifest(git);
 
       // modify connector to cvmfs
-      if (! this.executableManifest.is_cvmfs){
+      if (this.executableManifest.connector == "SingCVMFSConnector"){
         this.connector = this.getSingCVMFSConnector();
       }
 
