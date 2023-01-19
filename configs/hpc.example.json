@@ -23,7 +23,7 @@
       "root_path": "/"
     },
     "mount": {
-      "/anvil/projects/x-cis220065/x-cybergis/compute": "/compute_shared"
+      "/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared"
     }
   },
   "expanse_community": {
@@ -46,7 +46,7 @@
       "root_path": "/home/cybergis/scratch_folder/"
     },
     "mount": {
-      "/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared"
+      "/expanse/lustre/projects/usu104/cybergis/compute": "/compute_shared"
     },
     "init_sbatch_script": [
       "module load DefaultModules",
