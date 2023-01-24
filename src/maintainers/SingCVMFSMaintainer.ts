@@ -2,7 +2,7 @@ import SingCVMFSConnector from "../connectors/SingCVMFSConnector";
 import CommunityContributionMaintainer from "./CommunityContributionMaintainer";
 
 class SingCVMFSMaintainer extends CommunityContributionMaintainer {
-  onDefine() {
+  async onDefine() {
     // define connector
     this.connector = this.getSingCVMFSConnector();
   }

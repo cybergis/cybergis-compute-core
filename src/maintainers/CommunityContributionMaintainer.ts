@@ -17,9 +17,38 @@ class CommunityContributionMaintainer extends BaseMaintainer {
 
   public executableManifest: executableManifest;
 
-  onDefine() {
-    // define connector
-    this.connector = this.getSingularityConnector();
+  async onDefine() {
+    try {
+      const connection = await this.db.connect();
+
+      // check if local executable file is git
+      const localExecutableFolder = this.job.localExecutableFolder;
+      if (localExecutableFolder.type != "git")
+        throw new Error(
+          "community contribution currently don't accept non-git code"
+        );
+
+      // get executable manifest
+      const git = await connection
+        .getRepository(Git)
+        .findOne((localExecutableFolder as GitFolder).gitId);
+      if (!git)
+        throw new Error("could not find git repo executable in this job");
+      this.executableManifest = await GitUtil.getExecutableManifest(git);
+      
+      if (this.executableManifest.connector == "SingCVMFSConnector"){
+        this.connector = this.getSingCVMFSConnector();
+      }
+      else{
+        this.connector = this.getSingularityConnector();
+      }
+    } catch (e) {
+      this.emitEvent(
+        "JOB_RETRY",
+        "job [" + this.id + "] encountered system error " + e.toString()
+      );
+    }
+
   }
 
   /**
