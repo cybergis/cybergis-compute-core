@@ -28,6 +28,7 @@ for (var i in rawHpc) {
       init_sbatch_options: [],
       description: "none",
       globus: undefined,
+      mount: {},
       slurm_input_rules: {},
     },
     JSON.parse(JSON.stringify(rawHpc[i]))

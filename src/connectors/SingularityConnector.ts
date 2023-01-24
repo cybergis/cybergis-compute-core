@@ -1,6 +1,6 @@
 import SlurmConnector from "./SlurmConnector";
 import { slurm, executableManifest } from "../types";
-import { containerConfigMap } from "../../configs/config";
+import { containerConfigMap, hpcConfigMap } from "../../configs/config";
 
 class SingularityConnector extends SlurmConnector {
   /**
@@ -129,6 +129,14 @@ class SingularityConnector extends SlurmConnector {
     }
 
     if (manifest) {
+      var hpc = hpcConfigMap[this.hpcName];
+      if (hpc) {
+        if (hpc.mount) {
+          for (var i in hpc.mount){
+            this.volumeBinds[i] = hpc.mount[i];
+          }
+        }
+      }
       var container = containerConfigMap[manifest.container];
       if (container) {
         if (container.mount) {

@@ -1,21 +1,21 @@
 {
-    "hello_world_singularity": {
-        "hpc": ["keeling_community"],
-        "default_hpc": "keeling_community",
-        "job_pool_capacity": 5,
-        "executable_folder": {
-            "from_user": false
-        },
-        "maintainer": "HelloWorldSingularityMaintainer"
+  "hello_world_singularity": {
+    "hpc": ["keeling_community"],
+    "default_hpc": "keeling_community",
+    "job_pool_capacity": 5,
+    "executable_folder": {
+      "from_user": false
     },
-    "community_contribution": {
-        "hpc": ["instant_hpc","keeling_community", "bridges_community"],
-        "default_hpc": "keeling_community",
-        "job_pool_capacity": 5,
-        "executable_folder": {
-            "from_user": true,
-            "allowed_protocol": "git"
-        },
-        "maintainer": "CommunityContributionMaintainer"
-    }
+    "maintainer": "HelloWorldSingularityMaintainer"
+  },
+  "community_contribution": {
+    "hpc": ["instant_hpc", "keeling_community", "bridges_community"],
+    "default_hpc": "keeling_community",
+    "job_pool_capacity": 5,
+    "executable_folder": {
+      "from_user": true,
+      "allowed_protocol": "git"
+    },
+    "maintainer": "CommunityContributionMaintainer"
+  }
 }
