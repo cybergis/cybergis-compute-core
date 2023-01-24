@@ -9,15 +9,6 @@
       "anvil_community": "/home/x-cybergis/simages/python.sif"
     },
     "mount": {
-      "anvil_community": {
-        "/anvil/projects/x-cis220065/x-cybergis/compute": "/compute_shared"
-      },
-      "expanse_community": {
-        "/expanse/lustre/projects/usu104/cybergis/compute": "/compute_shared"
-      },
-      "keeling_community": {
-        "/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared"
-      }
     }
   },
   "cybergisx-0.4": {
@@ -30,15 +21,6 @@
       "anvil_community": "/home/x-cybergis/simages/cybergisx_0.4.simg"
     },
     "mount": {
-      "anvil_community": {
-        "/anvil/projects/x-cis220065/x-cybergis/compute": "/compute_shared"
-      },
-      "expanse_community": {
-        "/expanse/lustre/projects/usu104/cybergis/compute": "/compute_shared"
-      },
-      "keeling_community": {
-        "/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared"
-      }
     }
   },
   "cjw-eb": {
@@ -50,18 +32,6 @@
       "anvil_community": "/home/x-cybergis/simages/cjw-eb.simg"
     },
     "mount": {
-      "keeling_community": {
-        "/data/cigi/cybergisx-easybuild": "/data/cigi/cybergisx-easybuild"
-      },
-      "anvil_community": {
-        "/anvil/projects/x-cis220065/x-cybergis/compute": "/compute_shared"
-      },
-      "expanse_community": {
-        "/expanse/lustre/projects/usu104/cybergis/compute": "/compute_shared"
-      },
-      "keeling_community": {
-        "/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared"
-      }
     }
   },
   "mpich": {
@@ -73,16 +43,7 @@
       "anvil_community": "/home/x-cybergis/simages/mpich34.simg"
     },
     "mount": {
-      "anvil_community": {
-        "/anvil/projects/x-cis220065/x-cybergis/compute": "/compute_shared"
-      },
-      "expanse_community": {
-        "/expanse/lustre/projects/usu104/cybergis/compute": "/compute_shared"
-      },
-      "keeling_community": {
-        "/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared"
-      }
-    }
+    } 
   },
   "summa-3.0.3": {
     "dockerfile": "",
@@ -93,16 +54,7 @@
       "anvil_community": "/home/x-cybergis/simages/summa3_xenial.simg"
     },
     "mount": {
-      "anvil_community": {
-        "/anvil/projects/x-cis220065/x-cybergis/compute": "/compute_shared"
-      },
-      "expanse_community": {
-        "/expanse/lustre/projects/usu104/cybergis/compute": "/compute_shared"
-      },
-      "keeling_community": {
-        "/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared"
-      }
-    }
+    } 
   },
   "wrfhydro-5.x": {
     "dockerfile": "",
@@ -113,15 +65,6 @@
       "anvil_community": "/home/x-cybergis/simages/wrfhydro_focal.simg"
     },
     "mount": {
-      "anvil_community": {
-        "/anvil/projects/x-cis220065/x-cybergis/compute": "/compute_shared"
-      },
-      "expanse_community": {
-        "/expanse/lustre/projects/usu104/cybergis/compute": "/compute_shared"
-      },
-      "keeling_community": {
-        "/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared"
-      }
     }
   },
   "datafusion": {
@@ -131,9 +74,6 @@
       "bridges_community_gpu": "/jet/home/cybergis/image/fusion_env_v1.sif"
     },
     "mount": {
-      "bridges_community_gpu": {
-        "/jet/home/cybergis/data/datafusion": "/datafusion"
-      }
     }
   },
   "damfiminput-connector": {
@@ -144,15 +84,6 @@
       "anvil_community": "/home/x-cybergis/simages/damfiminput-connector.sif"
     },
     "mount": {
-      "anvil_community": {
-        "/anvil/projects/x-cis220065/x-cybergis/compute": "/compute_shared"
-      },
-      "expanse_community": {
-        "/expanse/lustre/projects/usu104/cybergis/compute": "/compute_shared"
-      },
-      "keeling_community": {
-        "/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared"
-      }
     }
   },
   "era5input-connector": {
@@ -162,15 +93,6 @@
       "anvil_community": "/home/x-cybergis/simages/era5input-connector.sif"
     },
     "mount": {
-      "anvil_community": {
-        "/anvil/projects/x-cis220065/x-cybergis/compute": "/compute_shared"
-      },
-      "expanse_community": {
-        "/expanse/lustre/projects/usu104/cybergis/compute": "/compute_shared"
-      },
-      "keeling_community": {
-        "/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared"
-      }
     }
   },
   "subsetaorcforcingdata-processor": {
@@ -180,15 +102,6 @@
       "anvil_community": "/home/x-cybergis/simages/subsetaorcforcingdata-processor.sif"
     },
     "mount": {
-      "anvil_community": {
-        "/anvil/projects/x-cis220065/x-cybergis/compute": "/compute_shared"
-      },
-      "expanse_community": {
-        "/expanse/lustre/projects/usu104/cybergis/compute": "/compute_shared"
-      },
-      "keeling_community": {
-        "/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared"
-      }
     }
   },
   "cuahsisubsetterinput-connector": {
@@ -198,15 +111,6 @@
       "anvil_community": "/home/x-cybergis/simages/cuahsisubsetterinput-connector.sif"
     },
     "mount": {
-      "anvil_community": {
-        "/anvil/projects/x-cis220065/x-cybergis/compute": "/compute_shared"
-      },
-      "expanse_community": {
-        "/expanse/lustre/projects/usu104/cybergis/compute": "/compute_shared"
-      },
-      "keeling_community": {
-        "/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared"
-      }
-    }
+    } 
   }
 }
