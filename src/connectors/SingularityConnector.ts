@@ -18,7 +18,12 @@ class SingularityConnector extends SlurmConnector {
    * @param{slurm} config - slurm configuration
    */
   execCommandWithinImage(image: string, cmd: string, config: slurm) {
-    cmd = `srun --mpi=pmi2 singularity exec ${this._getVolumeBindCMD()} ${image} ${cmd}`;
+    if (this.is_cvmfs){
+      cmd = `srun --mpi=pmi2 singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://centos:7 ${cmd}`;
+    }
+    else{
+      cmd = `srun --mpi=pmi2 singularity exec ${this._getVolumeBindCMD()} ${image} ${cmd}`;
+    }
     super.prepare(cmd, config);
   }
 
@@ -50,11 +55,20 @@ class SingularityConnector extends SlurmConnector {
         cmd += `${manifest.pre_processing_stage_in_raw_sbatch[i]}\n`;
       }
     } else if (manifest.pre_processing_stage) {
-      cmd += `${jobENV.join(" ")} singularity exec ${this._getVolumeBindCMD(
-        manifest
-      )} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
-        manifest.pre_processing_stage
-      }\"\n\n`;
+      if (this.is_cvmfs){
+        cmd += `${jobENV.join(
+          " "
+        )} singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://centos:7 bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
+          manifest.pre_processing_stage
+        }\"\n\n`;
+      }
+      else{
+        cmd += `${jobENV.join(" ")} singularity exec ${this._getVolumeBindCMD(
+          manifest
+        )} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
+          manifest.pre_processing_stage
+        }\"\n\n`;
+      }
     }
 
     if (manifest.execution_stage_in_raw_sbatch) {
@@ -62,13 +76,22 @@ class SingularityConnector extends SlurmConnector {
         cmd += `${manifest.execution_stage_in_raw_sbatch[i]}\n`;
       }
     } else {
-      cmd += `${jobENV.join(
-        " "
-      )} srun --unbuffered --mpi=pmi2 singularity exec ${this._getVolumeBindCMD(
-        manifest
-      )} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
-        manifest.execution_stage
-      }"\n\n`;
+      if (this.is_cvmfs){
+        cmd += `${jobENV.join(
+          " "
+        )} srun --unbuffered --mpi=pmi2 singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://centos:7 bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
+          manifest.execution_stage
+        }"\n\n`;
+      }
+      else{
+        cmd += `${jobENV.join(
+          " "
+        )} srun --unbuffered --mpi=pmi2 singularity exec ${this._getVolumeBindCMD(
+          manifest
+        )} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
+          manifest.execution_stage
+        }"\n\n`;
+      }
     }
 
     if (manifest.post_processing_stage_in_raw_sbatch) {
@@ -76,11 +99,21 @@ class SingularityConnector extends SlurmConnector {
         cmd += `${manifest.post_processing_stage_in_raw_sbatch[i]}\n`;
       }
     } else if (manifest.post_processing_stage) {
-      cmd += `${jobENV.join(" ")} singularity exec ${this._getVolumeBindCMD(
-        manifest
-      )} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
-        manifest.post_processing_stage
-      }\"`;
+      if(this.is_cvmfs){
+        cmd += `${jobENV.join(
+          " "
+        )} singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://centos:7 bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
+          manifest.post_processing_stage
+        }\"`;
+      }
+      else{
+        cmd += `${jobENV.join(" ")} singularity exec ${this._getVolumeBindCMD(
+          manifest
+        )} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
+          manifest.post_processing_stage
+        }\"`;
+      }
+
     }
 
     super.prepare(cmd, config);
@@ -94,9 +127,16 @@ class SingularityConnector extends SlurmConnector {
    */
   runImage(image: string, config: slurm) {
     var jobENV = this._getJobENV();
-    var cmd = `srun --mpi=pmi2 ${jobENV.join(
-      " "
-    )} singularity run ${this._getVolumeBindCMD()} ${image}`;
+    if (this.is_cvmfs){
+      var cmd = `srun --mpi=pmi2 ${jobENV.join(
+        " "
+      )} singcvmfs -s exec ${this._getVolumeBindCMD()} -cip ${image}`;
+    }
+    else{
+      var cmd = `srun --mpi=pmi2 ${jobENV.join(
+        " "
+      )} singularity run ${this._getVolumeBindCMD()} ${image}`;
+    }
     super.prepare(cmd, config);
   }
 
@@ -119,6 +159,9 @@ class SingularityConnector extends SlurmConnector {
    * @return{{[keys: string]: string}} volumeBinds
    */
   private _getVolumeBindCMD(manifest: executableManifest | null = null) {
+    if (this.is_cvmfs){
+      this.volumeBinds[`$tmp_path`] = this.getContainerCVMFSFolderPath();
+    }
     this.volumeBinds[this.getRemoteExecutableFolderPath()] =
       this.getContainerExecutableFolderPath();
     this.volumeBinds[this.getRemoteResultFolderPath()] =
@@ -129,11 +172,13 @@ class SingularityConnector extends SlurmConnector {
     }
 
     if (manifest) {
-      var hpc = hpcConfigMap[this.hpcName];
-      if (hpc) {
-        if (hpc.mount) {
-          for (var i in hpc.mount){
-            this.volumeBinds[i] = hpc.mount[i];
+      if (!this.is_cvmfs){
+        var hpc = hpcConfigMap[this.hpcName];
+        if (hpc) {
+          if (hpc.mount) {
+            for (var i in hpc.mount){
+              this.volumeBinds[i] = hpc.mount[i];
+            }
           }
         }
       }
@@ -154,7 +199,12 @@ class SingularityConnector extends SlurmConnector {
       var to = this.volumeBinds[from];
       bindCMD.push(`${from}:${to}`);
     }
-    return `--bind ${bindCMD.join(",")}`;
+    if (this.is_cvmfs){
+      return `-B ${bindCMD.join(",")}`;
+    }
+    else{
+      return `--bind ${bindCMD.join(",")}`;
+    }
   }
 
   /**

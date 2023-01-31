@@ -1,5 +1,6 @@
 import SingularityConnector from "../connectors/SingularityConnector";
-import SingCVMFSConnector from "../connectors/SingCVMFSConnector";
+import SingularityConnector from "../connectors/SingularityConnector";
+import SingularityConnector from "../connectors/SingularityConnector";
 import BaseMaintainer from "./BaseMaintainer";
 import XSEDEUtil from "../lib/XSEDEUtil";
 import { ResultFolderContentManager } from "../lib/JobUtil";
@@ -10,7 +11,7 @@ import { Folder } from "../models/Folder";
 import { FolderUploaderHelper } from "../FolderUploader";
 
 class CommunityContributionMaintainer extends BaseMaintainer {
-  public connector: any;
+  public connector: SingularityConnector;
 
   public resultFolderContentManager: ResultFolderContentManager =
     new ResultFolderContentManager();
@@ -18,6 +19,15 @@ class CommunityContributionMaintainer extends BaseMaintainer {
   public executableManifest: executableManifest;
 
   async onDefine() {
+    this.connector = this.getSingularityConnector();
+  }
+
+  /**
+   * On maintainer initialization, set executableManifest, and give it to the connector. Update the event log to reflect the job being initialized or encountering a system error.
+   *
+   * @async
+   */
+  async onInit() {
     try {
       const connection = await this.db.connect();
 
@@ -37,28 +47,10 @@ class CommunityContributionMaintainer extends BaseMaintainer {
       this.executableManifest = await GitUtil.getExecutableManifest(git);
       
       if (this.executableManifest.connector == "SingCVMFSConnector"){
+        console.log("SingCVMFS Condition Triggered");
         this.connector = this.getSingCVMFSConnector();
+        console.log(this.connector);
       }
-      else{
-        this.connector = this.getSingularityConnector();
-      }
-    } catch (e) {
-      this.emitEvent(
-        "JOB_RETRY",
-        "job [" + this.id + "] encountered system error " + e.toString()
-      );
-    }
-
-  }
-
-  /**
-   * On maintainer initialization, set executableManifest, and give it to the connector. Update the event log to reflect the job being initialized or encountering a system error.
-   *
-   * @async
-   */
-  async onInit() {
-    try {
-      const connection = await this.db.connect();
 
       // upload executable folder
       if (!this.job.localExecutableFolder)
@@ -116,26 +108,6 @@ class CommunityContributionMaintainer extends BaseMaintainer {
         remoteExecutableFolder: this.job.remoteExecutableFolder,
         remoteResultFolder: this.job.remoteResultFolder,
       });
-
-      // check if local executable file is git
-      const localExecutableFolder = this.job.localExecutableFolder;
-      if (localExecutableFolder.type != "git")
-        throw new Error(
-          "community contribution currently don't accept non-git code"
-        );
-
-      // get executable manifest
-      const git = await connection
-        .getRepository(Git)
-        .findOne((localExecutableFolder as GitFolder).gitId);
-      if (!git)
-        throw new Error("could not find git repo executable in this job");
-      this.executableManifest = await GitUtil.getExecutableManifest(git);
-
-      // modify connector to cvmfs
-      if (this.executableManifest.connector == "SingCVMFSConnector"){
-        this.connector = this.getSingCVMFSConnector();
-      }
 
       // submit
       await this.connector.execExecutableManifestWithinImage(

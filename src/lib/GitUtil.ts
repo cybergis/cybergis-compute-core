@@ -56,7 +56,7 @@ export default class GitUtil {
       {
         name: undefined,
         container: undefined,
-        is_cvmfs: undefined,
+        connector: undefined,
         pre_processing_stage: undefined,
         execution_stage: undefined,
         post_processing_stage: undefined,
