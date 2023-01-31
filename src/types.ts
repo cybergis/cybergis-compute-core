@@ -202,6 +202,9 @@ export interface hpcConfig {
     endpoint?: string;
     root_path?: string;
   };
+  mount: {
+    [keys: string]: string;
+  };
   slurm_input_rules?: slurmInputRules;
   slurm_global_cap: slurm;
   xsede_job_log_credential: XSEDEJobLogCredential;
