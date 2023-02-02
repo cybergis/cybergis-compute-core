@@ -8,7 +8,7 @@ import { Git } from "../models/Git";
 import { Folder } from "../models/Folder";
 import { FolderUploaderHelper } from "../FolderUploader";
 
-export default class CommunityContributionMaintainer extends BaseMaintainer {
+class CommunityContributionMaintainer extends BaseMaintainer {
   public connector: SingularityConnector;
 
   public resultFolderContentManager: ResultFolderContentManager =
@@ -17,7 +17,6 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
   public executableManifest: executableManifest;
 
   onDefine() {
-    // define connector
     this.connector = this.getSingularityConnector();
   }
 
@@ -29,6 +28,25 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
   async onInit() {
     try {
       const connection = await this.db.connect();
+
+      // check if local executable file is git
+      const localExecutableFolder = this.job.localExecutableFolder;
+      if (localExecutableFolder.type != "git")
+        throw new Error(
+          "community contribution currently don't accept non-git code"
+        );
+
+      // get executable manifest
+      const git = await connection
+        .getRepository(Git)
+        .findOne((localExecutableFolder as GitFolder).gitId);
+      if (!git)
+        throw new Error("could not find git repo executable in this job");
+      this.executableManifest = await GitUtil.getExecutableManifest(git);
+      
+      if (this.executableManifest.connector == "SingCVMFSConnector"){
+        this.connector = this.getSingCVMFSConnector();
+      }
 
       // upload executable folder
       if (!this.job.localExecutableFolder)
@@ -86,21 +104,6 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
         remoteExecutableFolder: this.job.remoteExecutableFolder,
         remoteResultFolder: this.job.remoteResultFolder,
       });
-
-      // check if local executable file is git
-      const localExecutableFolder = this.job.localExecutableFolder;
-      if (localExecutableFolder.type != "git")
-        throw new Error(
-          "community contribution currently don't accept non-git code"
-        );
-
-      // get executable manifest
-      const git = await connection
-        .getRepository(Git)
-        .findOne((localExecutableFolder as GitFolder).gitId);
-      if (!git)
-        throw new Error("could not find git repo executable in this job");
-      this.executableManifest = await GitUtil.getExecutableManifest(git);
 
       // submit
       await this.connector.execExecutableManifestWithinImage(
@@ -204,3 +207,4 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
     await this.connector.cancel();
   }
 }
+export default CommunityContributionMaintainer;

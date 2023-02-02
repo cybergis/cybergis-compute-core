@@ -20,6 +20,8 @@ class BaseConnector {
 
   public hpcName: string;
 
+  public is_cvmfs: boolean;
+
   public remote_executable_folder_path: string;
 
   public remote_data_folder_path: string;
@@ -37,12 +39,14 @@ class BaseConnector {
     hpcName: string,
     jobId: string = null,
     maintainer: BaseMaintainer = null,
-    env: { [keys: string]: any } = {}
+    env: { [keys: string]: any } = {},
+    is_cvmfs: boolean = false
   ) {
     this.hpcName = hpcName;
     this.jobId = jobId;
     this.config = hpcConfigMap[hpcName];
     this.maintainer = maintainer;
+    this.is_cvmfs = is_cvmfs;
 
     var envCmd = "source /etc/profile;";
     for (var i in env) {
