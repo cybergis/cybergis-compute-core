@@ -1,29 +1,36 @@
 {
-  "keeling_community": {
-    "ip": "keeling.earth.illinois.edu",
-    "port": 22,
-    "is_community_account": true,
-    "community_login": {
-      "user": "cigi-gisolve",
-      "use_local_key": false,
-      "external_key": {
-        "private_key_path": "/job_supervisor/keys/cigi-gisolve.key",
-        "passphrase": null
-      }
-    },
-    "root_path": "/data/keeling/a/cigi-gisolve/scratch",
-    "init_sbatch_script": [
-      "# module use /data/cigi/common/cigi-modules",
-      "module load gnu/openmpi-4.1.2-gnu-4.8.5"
-    ],
-    "job_pool_capacity": 10,
-    "globus": {
-      "identity": "apadmana@illinois.edu",
-      "endpoint": "a1fa3d20-123d-11ec-ba7d-138ac5bdb19f",
-      "root_path": "/"
-    },
-    "mount": {
-      "/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared"
+    "keeling_community": {
+        "ip": "keeling.earth.illinois.edu",
+        "port": 22,
+        "is_community_account": true,
+        "community_login": {
+            "user": "cigi-gisolve",
+            "use_local_key": false,
+            "external_key": {
+                "private_key_path": "/job_supervisor/keys/cigi-gisolve.key",
+                "passphrase": null
+            }
+        },
+        "root_path": "/data/keeling/a/cigi-gisolve/scratch",
+        "init_sbatch_script": [
+            "# module use /data/cigi/common/cigi-modules",
+            "module load gnu/openmpi-4.1.2-gnu-4.8.5",
+            "CYBERGIS_COMPUTE_BASE=$(pwd)",
+            "source ~/.bashrc  # this adds the `singcvmfs` executable to the path",
+            "cd $CYBERGIS_COMPUTE_BASE",
+            "export SINGCVMFS_REPOSITORIES=\"grid.cern.ch,cybergis.illinois.edu\"  # required for singcvmfs, specifies repositories",
+            "export BASE=\"$(pwd)\"",
+            "export tmp_path=\"/tmp/cvmfs-$(openssl rand -hex 12)\"",
+            "mkdir $tmp_path"
+        ],
+        "job_pool_capacity": 10,
+        "globus": {
+            "identity": "apadmana@illinois.edu",
+            "endpoint": "a1fa3d20-123d-11ec-ba7d-138ac5bdb19f",
+            "root_path": "/"
+        },
+	"mount": {
+		"/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared"
     }
   },
   "expanse_community": {
