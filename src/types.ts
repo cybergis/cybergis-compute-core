@@ -267,6 +267,10 @@ export interface containerConfig {
   };
 }
 
+export interface kernelConfig {
+  env: string[];
+}
+
 export interface event {
   type: string;
   message: string;
