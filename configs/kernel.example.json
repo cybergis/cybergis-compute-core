@@ -7,7 +7,9 @@
         "alias python=/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/python3-0.9.0/bin/python",
         "alias python3=/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/python3-0.9.0/bin/python",
         "export PATH=\"/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/python3-0.9.0/bin:$PATH\"",
-        "export MY_PROJ_LIB=\"/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/python3-0.9.0/share/proj\""]
+        "export MY_PROJ_LIB=\"/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/python3-0.9.0/share/proj\"",
+        "source /etc/profile.d/z00_lmod.sh",
+        "module --version"]
     }
   }
   
