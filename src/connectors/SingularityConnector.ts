@@ -1,12 +1,14 @@
 import SlurmConnector from "./SlurmConnector";
 import { slurm, executableManifest } from "../types";
-import { containerConfigMap, hpcConfigMap } from "../../configs/config";
+import { containerConfigMap, hpcConfigMap, kernelConfigMap} from "../../configs/config";
 
 class SingularityConnector extends SlurmConnector {
   /**
    * Connects the singularity container to the hpc enivironment
    */
   private volumeBinds: { [keys: string]: string } = {};
+
+  private kernelBash: string;
 
   public isContainer = true;
 
@@ -245,6 +247,14 @@ class SingularityConnector extends SlurmConnector {
 
     return jobENV;
   }
+
+  /**
+   * Creates a bash script using kernelConfig
+   * @param{executableManifest} manifest - manifest that needs toe be executed
+   */
+  private createBashScript(manifest: executableManifest){
+    this.kernelBash = `!/bin/bash
+    ${kernelConfigMap[manifest.container].env.join("\n")}`}
 }
 
 export default SingularityConnector;
