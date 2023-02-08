@@ -257,9 +257,8 @@ class SingularityConnector extends SlurmConnector {
    * @param{executableManifest} manifest - manifest that needs toe be executed
    */
   async createBashScript(manifest: executableManifest){
-    var kernelBash = `!/bin/bash
-    ${kernelConfigMap[manifest.container].env.join("\n")}`
-  
+    var kernelBash = `#!/bin/bash\n`;
+    kernelBash+= `${kernelConfigMap[manifest.container].env.join("\n")}`
     await this.createFile(
       kernelBash,
       path.join(this.getRemoteExecutableFolderPath(), "kernel_init.sh")
