@@ -61,7 +61,7 @@ class SingularityConnector extends SlurmConnector {
       if (this.is_cvmfs){
         cmd += `${jobENV.join(
           " "
-        )} singcvmfs -s exec ${this._getVolumeBindCMD()} -cip  bash -c \"cd ${this.getContainerExecutableFolderPath()} && bash kernel_init.sh && ${
+        )} singcvmfs -s exec ${this._getVolumeBindCMD()} -cip  bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
           manifest.pre_processing_stage
         }\"\n\n`;
       }
@@ -80,6 +80,7 @@ class SingularityConnector extends SlurmConnector {
       }
     } else {
       if (this.is_cvmfs){
+        this.createBashScript(manifest);
         cmd += `${jobENV.join(
           " "
         )} srun --unbuffered --mpi=pmi2 singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://alexandermichels/compute-cvmfs:0.0.4 bash -c \"cd ${this.getContainerExecutableFolderPath()} && bash kernel_init.sh && ${
@@ -105,7 +106,7 @@ class SingularityConnector extends SlurmConnector {
       if(this.is_cvmfs){
         cmd += `${jobENV.join(
           " "
-        )} singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://alexandermichels/compute-cvmfs:0.0.4 bash -c \"cd ${this.getContainerExecutableFolderPath()} && bash kernel_init.sh && ${
+        )} singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://alexandermichels/compute-cvmfs:0.0.4 bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
           manifest.post_processing_stage
         }\"`;
       }
