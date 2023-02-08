@@ -39,14 +39,16 @@ class SingularityConnector extends SlurmConnector {
     manifest: executableManifest,
     config: slurm
   ) {
-    var container = containerConfigMap[manifest.container];
-    if (!container) throw new Error(`unknown container ${manifest.container}`);
-    var containerPath = container.hpc_path[this.hpcName];
-    if (!containerPath)
-      throw new Error(
-        `container ${manifest.container} is not supported on HPC ${this.hpcName}`
-      );
-    // remove buffer: https://dashboard.hpc.unimelb.edu.au/job_submission/
+    if(!this.is_cvmfs){
+      var container = containerConfigMap[manifest.container];
+      if (!container) throw new Error(`unknown container ${manifest.container}`);
+      var containerPath = container.hpc_path[this.hpcName];
+      if (!containerPath)
+        throw new Error(
+          `container ${manifest.container} is not supported on HPC ${this.hpcName}`
+        );
+      // remove buffer: https://dashboard.hpc.unimelb.edu.au/job_submission/
+    }
 
     var jobENV = this._getJobENV();
     var cmd = ``;
@@ -183,6 +185,7 @@ class SingularityConnector extends SlurmConnector {
           }
         }
       }
+      if (!this.is_cvmfs){
       var container = containerConfigMap[manifest.container];
       if (container) {
         if (container.mount) {
@@ -193,6 +196,7 @@ class SingularityConnector extends SlurmConnector {
           }
         }
       }
+    }
     }
 
     var bindCMD: Array<string> = [];
