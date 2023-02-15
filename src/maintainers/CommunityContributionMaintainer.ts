@@ -18,7 +18,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
 
   public executableManifest: executableManifest;
 
-  async onDefine() {
+  onDefine() {
     this.connector = this.getSingularityConnector();
   }
 
@@ -47,9 +47,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
       this.executableManifest = await GitUtil.getExecutableManifest(git);
       
       if (this.executableManifest.connector == "SingCVMFSConnector"){
-        console.log("SingCVMFS Condition Triggered");
         this.connector = this.getSingCVMFSConnector();
-        console.log(this.connector);
       }
 
       // upload executable folder

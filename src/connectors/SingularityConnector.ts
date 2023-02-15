@@ -1,6 +1,7 @@
 import SlurmConnector from "./SlurmConnector";
 import { slurm, executableManifest } from "../types";
-import { containerConfigMap, hpcConfigMap } from "../../configs/config";
+import { containerConfigMap, hpcConfigMap, kernelConfigMap} from "../../configs/config";
+import * as path from "path";
 
 class SingularityConnector extends SlurmConnector {
   /**
@@ -19,7 +20,7 @@ class SingularityConnector extends SlurmConnector {
    */
   execCommandWithinImage(image: string, cmd: string, config: slurm) {
     if (this.is_cvmfs){
-      cmd = `srun --mpi=pmi2 singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://centos:7 ${cmd}`;
+      cmd = `srun --mpi=pmi2 singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://alexandermichels/compute-cvmfs:0.0.4 ${cmd}`;
     }
     else{
       cmd = `srun --mpi=pmi2 singularity exec ${this._getVolumeBindCMD()} ${image} ${cmd}`;
@@ -38,14 +39,16 @@ class SingularityConnector extends SlurmConnector {
     manifest: executableManifest,
     config: slurm
   ) {
-    var container = containerConfigMap[manifest.container];
-    if (!container) throw new Error(`unknown container ${manifest.container}`);
-    var containerPath = container.hpc_path[this.hpcName];
-    if (!containerPath)
-      throw new Error(
-        `container ${manifest.container} is not supported on HPC ${this.hpcName}`
-      );
-    // remove buffer: https://dashboard.hpc.unimelb.edu.au/job_submission/
+    if(!this.is_cvmfs){
+      var container = containerConfigMap[manifest.container];
+      if (!container) throw new Error(`unknown container ${manifest.container}`);
+      var containerPath = container.hpc_path[this.hpcName];
+      if (!containerPath)
+        throw new Error(
+          `container ${manifest.container} is not supported on HPC ${this.hpcName}`
+        );
+      // remove buffer: https://dashboard.hpc.unimelb.edu.au/job_submission/
+    }
 
     var jobENV = this._getJobENV();
     var cmd = ``;
@@ -58,7 +61,7 @@ class SingularityConnector extends SlurmConnector {
       if (this.is_cvmfs){
         cmd += `${jobENV.join(
           " "
-        )} singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://centos:7 bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
+        )} singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://alexandermichels/compute-cvmfs:0.0.4 bash -c \"cd ${this.getContainerExecutableFolderPath()} && source kernel_init.sh && ${
           manifest.pre_processing_stage
         }\"\n\n`;
       }
@@ -77,9 +80,10 @@ class SingularityConnector extends SlurmConnector {
       }
     } else {
       if (this.is_cvmfs){
+        this.createBashScript(manifest);
         cmd += `${jobENV.join(
           " "
-        )} srun --unbuffered --mpi=pmi2 singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://centos:7 bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
+        )} srun --unbuffered --mpi=pmi2 singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://alexandermichels/compute-cvmfs:0.0.4 bash -c \"cd ${this.getContainerExecutableFolderPath()} && source kernel_init.sh && ${
           manifest.execution_stage
         }"\n\n`;
       }
@@ -102,7 +106,7 @@ class SingularityConnector extends SlurmConnector {
       if(this.is_cvmfs){
         cmd += `${jobENV.join(
           " "
-        )} singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://centos:7 bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
+        )} singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://alexandermichels/compute-cvmfs:0.0.4 bash -c \"cd ${this.getContainerExecutableFolderPath()} && source kernel_init.sh && ${
           manifest.post_processing_stage
         }\"`;
       }
@@ -182,6 +186,7 @@ class SingularityConnector extends SlurmConnector {
           }
         }
       }
+      if (!this.is_cvmfs){
       var container = containerConfigMap[manifest.container];
       if (container) {
         if (container.mount) {
@@ -192,6 +197,7 @@ class SingularityConnector extends SlurmConnector {
           }
         }
       }
+    }
     }
 
     var bindCMD: Array<string> = [];
@@ -244,6 +250,19 @@ class SingularityConnector extends SlurmConnector {
     }
 
     return jobENV;
+  }
+
+  /**
+   * Creates a bash script using kernelConfig
+   * @param{executableManifest} manifest - manifest that needs toe be executed
+   */
+  async createBashScript(manifest: executableManifest){
+    var kernelBash = `#!/bin/bash\n`;
+    kernelBash+= `${kernelConfigMap[manifest.container].env.join("\n")}`
+    await this.createFile(
+      kernelBash,
+      path.join(this.getRemoteExecutableFolderPath(), "kernel_init.sh")
+    );
   }
 }
 
