@@ -113,7 +113,16 @@
     "mount": {
       "/anvil/projects/x-cis220065/x-cybergis/compute": "/compute_shared"
     },
-    "init_sbatch_script": ["module load gcc", "module load openmpi"],
+    "init_sbatch_script": [
+      "module load gcc",
+      "module load openmpi",
+      "CYBERGIS_COMPUTE_BASE=$(pwd)",
+      "source ~/.bashrc  # this adds the `singcvmfs` executable to the path",
+      "cd $CYBERGIS_COMPUTE_BASE",
+      "export SINGCVMFS_REPOSITORIES=\"grid.cern.ch,cybergis.illinois.edu\"  # required for singcvmfs, specifies repositories",
+      "export BASE=\"$(pwd)\"",
+      "export tmp_path=\"/tmp/cvmfs-$(openssl rand -hex 12)\"",
+      "mkdir $tmp_path"],
     "init_sbatch_options": ["#SBATCH --partition=shared", "#SBATCH --nodes=1"]
   }
 }

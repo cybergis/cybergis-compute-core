@@ -1,6 +1,4 @@
 import SingularityConnector from "../connectors/SingularityConnector";
-import SingularityConnector from "../connectors/SingularityConnector";
-import SingularityConnector from "../connectors/SingularityConnector";
 import BaseMaintainer from "./BaseMaintainer";
 import XSEDEUtil from "../lib/XSEDEUtil";
 import { ResultFolderContentManager } from "../lib/JobUtil";

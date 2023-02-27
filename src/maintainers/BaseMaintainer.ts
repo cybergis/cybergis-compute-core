@@ -104,7 +104,7 @@ class BaseMaintainer {
    *
    * @throws {NotImplementedError} - Ondefine is not implemented
    */
-  async onDefine() {
+  onDefine() {
     throw new NotImplementedError("onDefine not implemented");
   }
 
