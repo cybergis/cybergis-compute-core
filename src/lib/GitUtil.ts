@@ -1,3 +1,4 @@
+import DB from "../DB";
 import FolderUtil from "./FolderUtil";
 import { Git } from "../models/Git";
 import { exec } from "child-process-async";
@@ -20,6 +21,17 @@ export default class GitUtil {
     return path.join(config.local_file_system.root_path, gitId);
   }
 
+  static async deleteAndPull(git: Git) {
+    const localPath = this.getLocalPath(git.id);
+    rimraf.sync(localPath);
+    await fs.promises.mkdir(localPath);
+    await exec(`cd ${localPath} && git clone ${git.address} ${localPath}`);
+    if (git.sha) {
+      // if a sha is specified, checkout that commit
+      await exec(`cd ${localPath} && git checkout ${git.sha}`);
+    };
+  }
+
   static async refreshGit(git: Git) {
     const localPath = this.getLocalPath(git.id);
     await FolderUtil.removeZip(localPath);
@@ -30,33 +42,61 @@ export default class GitUtil {
       await exec(`cd ${localPath} && git clone ${git.address} ${localPath}`);
     }
 
-    // update git repo before upload
-    if (git.sha) {
+    //check when last updated
+    var now = new Date();
+    const secsSinceUpdate = (now.getTime() - git.updatedAt.getTime()) / 1000.0;
+    if (secsSinceUpdate > 120) {
+      console.log(`${git.id} is stale, let's update...`);
+      // update git repo before upload
       try {
-        await exec(`cd ${localPath} && git checkout ${git.sha}`);
+        // try checking out the sha or pulling latest
+        if (git.sha) {
+          await exec(`cd ${localPath} && git checkout ${git.sha}`);
+        } else {
+          await exec(`cd ${localPath} && git pull`);
+        }
       } catch {
-        rimraf.sync(localPath);
-        await fs.promises.mkdir(localPath);
-        await exec(`cd ${localPath} && git clone ${git.address} ${localPath}`);
-        await exec(`cd ${localPath} && git checkout ${git.sha}`);
+        // if there is an error, delete and repull
+        await this.deleteAndPull(git);
       }
-    } else {
-      await exec(`cd ${localPath} && git pull`);
+      // call to update the updatedAt timestamp
+      now = new Date();
+      const db = new DB(false);
+      var connection = await db.connect();
+      await connection
+            .createQueryBuilder()
+            .update(Git)
+            .where("id = :id", { id: git.id })
+            .set({'updatedAt' : now})
+            .execute();
     }
+    else {
+      console.log(`${git.id} last updated ${secsSinceUpdate}s ago, skipping update`);
+    };
   }
 
   static async getExecutableManifest(git: Git) {
     const localPath = this.getLocalPath(git.id);
     const executableFolderPath = path.join(localPath, "manifest.json");
-    const rawExecutableManifest = (
-      await fs.promises.readFile(executableFolderPath)
-    ).toString();
+    let rawExecutableManifest;
+    try {
+      rawExecutableManifest = (
+        await fs.promises.readFile(executableFolderPath)
+      ).toString();
+    } catch (e) {
+      // delete, repull, and then read
+      console.log(`Encountered error with manifest: ${e}.\nDeleting and repulling`)
+      await this.deleteAndPull(git);
+      rawExecutableManifest = (
+        await fs.promises.readFile(executableFolderPath)
+      ).toString();
+    }
 
     const executableManifest: executableManifest = Object.assign(
       {
         name: undefined,
         container: undefined,
-        is_cvmfs: undefined,
+        connector: undefined,
         pre_processing_stage: undefined,
         execution_stage: undefined,
         post_processing_stage: undefined,

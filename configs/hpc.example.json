@@ -16,8 +16,8 @@
             "# module use /data/cigi/common/cigi-modules",
             "module load gnu/openmpi-4.1.2-gnu-4.8.5",
             "CYBERGIS_COMPUTE_BASE=$(pwd)",
-	    "source ~/.bashrc  # this adds the `singcvmfs` executable to the path",
-	    "cd $CYBERGIS_COMPUTE_BASE",
+            "source ~/.bashrc  # this adds the `singcvmfs` executable to the path",
+            "cd $CYBERGIS_COMPUTE_BASE",
             "export SINGCVMFS_REPOSITORIES=\"grid.cern.ch,cybergis.illinois.edu\"  # required for singcvmfs, specifies repositories",
             "export BASE=\"$(pwd)\"",
             "export tmp_path=\"/tmp/cvmfs-$(openssl rand -hex 12)\"",
@@ -28,91 +28,101 @@
             "identity": "apadmana@illinois.edu",
             "endpoint": "a1fa3d20-123d-11ec-ba7d-138ac5bdb19f",
             "root_path": "/"
-        }
-    },
-    "expanse_community": {
-        "ip": "login.expanse.sdsc.edu",
-        "port": 22,
-        "is_community_account": true,
-        "community_login": {
-            "user": "cybergis",
-            "use_local_key": false,
-            "external_key": {
-                "private_key_path": "/job_supervisor/keys/cigi-gisolve.key",
-                "passphrase": null
-            }
         },
-        "root_path": "/home/cybergis/scratch_folder/",
-        "job_pool_capacity": 10,
-        "globus": {
-            "identity": "apadmana@illinois.edu",
-            "endpoint": "b256c034-1578-11eb-893e-0a5521ff3f4b",
-            "root_path": "/home/cybergis/scratch_folder/"
-        },
-        "init_sbatch_script": [
-            "module load DefaultModules",
-            "module load singularitypro/3.9"
-        ],
-        "init_sbatch_options": [
-            "#SBATCH --constraint=lustre",
-            "#SBATCH --partition=shared",
-            "#SBATCH --nodes=1",
-            "#SBATCH --account=TG-EAR190007"
-        ],
-        "xsede_job_log_credential": {
-            "xsederesourcename": "expanse.sdsc.xsede.org",
-            "apikey": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-        }
-    },
-    "bridges_community_gpu": {
-        "ip": "bridges2.psc.edu",
-        "port": 22,
-        "is_community_account": true,
-        "community_login": {
-            "user": "cybergis",
-            "use_local_key": false,
-            "external_key": {
-                "private_key_path": "/job_supervisor/keys/cigi-gisolve.key",
-                "passphrase": null
-            }
-        },
-        "root_path": "/jet/home/cybergis/data",
-        "job_pool_capacity": 10,
-        "globus": {
-            "identity": "apadmana@illinois.edu",
-            "endpoint": "8e5f3a0a-542d-11eb-a45a-0e095b4c2e55",
-            "root_path": "/jet/home/cybergis/data"
-        },
-        "init_sbatch_options": [
-            "#SBATCH --partition=GPU-shared"
-        ]
-    },
-    "anvil_community": {
-        "ip": "anvil.rcac.purdue.edu",
-        "port": 22,
-        "is_community_account": true,
-        "community_login": {
-            "user": "x-cybergis",
-            "use_local_key": false,
-            "external_key": {
-                "private_key_path": "/job_supervisor/keys/cigi-gisolve.key",
-                "passphrase": null
-            }
-        },
-        "root_path": "/anvil/scratch/x-cybergis/compute/",
-        "job_pool_capacity": 10,
-        "globus": {
-            "identity": "apadmana@illinois.edu",
-            "endpoint": "4fb6aabc-a900-4ca1-ad62-b33fee950930",
-            "root_path": "/"
-        },
-        "init_sbatch_script": [
-            "module load gcc",
-            "module load openmpi"
-        ],
-        "init_sbatch_options": [
-            "#SBATCH --partition=shared",
-            "#SBATCH --nodes=1"
-        ]
+	"mount": {
+		"/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared"
     }
+  },
+  "expanse_community": {
+    "ip": "login.expanse.sdsc.edu",
+    "port": 22,
+    "is_community_account": true,
+    "community_login": {
+      "user": "cybergis",
+      "use_local_key": false,
+      "external_key": {
+        "private_key_path": "/job_supervisor/keys/cigi-gisolve.key",
+        "passphrase": null
+      }
+    },
+    "root_path": "/home/cybergis/scratch_folder/",
+    "job_pool_capacity": 10,
+    "globus": {
+      "identity": "apadmana@illinois.edu",
+      "endpoint": "b256c034-1578-11eb-893e-0a5521ff3f4b",
+      "root_path": "/home/cybergis/scratch_folder/"
+    },
+    "mount": {
+      "/expanse/lustre/projects/usu104/cybergis/compute": "/compute_shared"
+    },
+    "init_sbatch_script": [
+      "module load DefaultModules",
+      "module load singularitypro/3.9"
+    ],
+    "init_sbatch_options": [
+      "#SBATCH --constraint=lustre",
+      "#SBATCH --partition=shared",
+      "#SBATCH --nodes=1",
+      "#SBATCH --account=TG-EAR190007"
+    ],
+    "xsede_job_log_credential": {
+      "xsederesourcename": "expanse.sdsc.xsede.org",
+      "apikey": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+    }
+  },
+  "bridges_community_gpu": {
+    "ip": "bridges2.psc.edu",
+    "port": 22,
+    "is_community_account": true,
+    "community_login": {
+      "user": "cybergis",
+      "use_local_key": false,
+      "external_key": {
+        "private_key_path": "/job_supervisor/keys/cigi-gisolve.key",
+        "passphrase": null
+      }
+    },
+    "root_path": "/jet/home/cybergis/data",
+    "job_pool_capacity": 10,
+    "globus": {
+      "identity": "apadmana@illinois.edu",
+      "endpoint": "8e5f3a0a-542d-11eb-a45a-0e095b4c2e55",
+      "root_path": "/jet/home/cybergis/data"
+    },
+    "init_sbatch_options": ["#SBATCH --partition=GPU-shared"]
+  },
+  "anvil_community": {
+    "ip": "anvil.rcac.purdue.edu",
+    "port": 22,
+    "is_community_account": true,
+    "community_login": {
+      "user": "x-cybergis",
+      "use_local_key": false,
+      "external_key": {
+        "private_key_path": "/job_supervisor/keys/cigi-gisolve.key",
+        "passphrase": null
+      }
+    },
+    "root_path": "/anvil/scratch/x-cybergis/compute/",
+    "job_pool_capacity": 10,
+    "globus": {
+      "identity": "apadmana@illinois.edu",
+      "endpoint": "4fb6aabc-a900-4ca1-ad62-b33fee950930",
+      "root_path": "/"
+    },
+    "mount": {
+      "/anvil/projects/x-cis220065/x-cybergis/compute": "/compute_shared"
+    },
+    "init_sbatch_script": [
+      "module load gcc",
+      "module load openmpi",
+      "CYBERGIS_COMPUTE_BASE=$(pwd)",
+      "source ~/.bashrc  # this adds the `singcvmfs` executable to the path",
+      "cd $CYBERGIS_COMPUTE_BASE",
+      "export SINGCVMFS_REPOSITORIES=\"grid.cern.ch,cybergis.illinois.edu\"  # required for singcvmfs, specifies repositories",
+      "export BASE=\"$(pwd)\"",
+      "export tmp_path=\"/tmp/cvmfs-$(openssl rand -hex 12)\"",
+      "mkdir $tmp_path"],
+    "init_sbatch_options": ["#SBATCH --partition=shared", "#SBATCH --nodes=1"]
+  }
 }

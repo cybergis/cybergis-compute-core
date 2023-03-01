@@ -1,5 +1,4 @@
 import SingularityConnector from "../connectors/SingularityConnector";
-import SingCVMFSConnector from "../connectors/SingCVMFSConnector";
 import BaseMaintainer from "./BaseMaintainer";
 import XSEDEUtil from "../lib/XSEDEUtil";
 import { ResultFolderContentManager } from "../lib/JobUtil";
@@ -10,7 +9,7 @@ import { Folder } from "../models/Folder";
 import { FolderUploaderHelper } from "../FolderUploader";
 
 class CommunityContributionMaintainer extends BaseMaintainer {
-  public connector: any;
+  public connector: SingularityConnector;
 
   public resultFolderContentManager: ResultFolderContentManager =
     new ResultFolderContentManager();
@@ -18,7 +17,6 @@ class CommunityContributionMaintainer extends BaseMaintainer {
   public executableManifest: executableManifest;
 
   onDefine() {
-    // define connector
     this.connector = this.getSingularityConnector();
   }
 
@@ -30,6 +28,25 @@ class CommunityContributionMaintainer extends BaseMaintainer {
   async onInit() {
     try {
       const connection = await this.db.connect();
+
+      // check if local executable file is git
+      const localExecutableFolder = this.job.localExecutableFolder;
+      if (localExecutableFolder.type != "git")
+        throw new Error(
+          "community contribution currently don't accept non-git code"
+        );
+
+      // get executable manifest
+      const git = await connection
+        .getRepository(Git)
+        .findOne((localExecutableFolder as GitFolder).gitId);
+      if (!git)
+        throw new Error("could not find git repo executable in this job");
+      this.executableManifest = await GitUtil.getExecutableManifest(git);
+      
+      if (this.executableManifest.connector == "SingCVMFSConnector"){
+        this.connector = this.getSingCVMFSConnector();
+      }
 
       // upload executable folder
       if (!this.job.localExecutableFolder)
@@ -87,26 +104,6 @@ class CommunityContributionMaintainer extends BaseMaintainer {
         remoteExecutableFolder: this.job.remoteExecutableFolder,
         remoteResultFolder: this.job.remoteResultFolder,
       });
-
-      // check if local executable file is git
-      const localExecutableFolder = this.job.localExecutableFolder;
-      if (localExecutableFolder.type != "git")
-        throw new Error(
-          "community contribution currently don't accept non-git code"
-        );
-
-      // get executable manifest
-      const git = await connection
-        .getRepository(Git)
-        .findOne((localExecutableFolder as GitFolder).gitId);
-      if (!git)
-        throw new Error("could not find git repo executable in this job");
-      this.executableManifest = await GitUtil.getExecutableManifest(git);
-
-      // modify connector to cvmfs
-      if (this.executableManifest.connector == "SingCVMFSConnector"){
-        this.connector = this.getSingCVMFSConnector();
-      }
 
       // submit
       await this.connector.execExecutableManifestWithinImage(
