@@ -179,6 +179,7 @@ app.use("/ts-docs", express.static("production/tsdoc"));
 app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swaggerDocument));
 
 /**
+ * @openapi
  * /:
  *  get:
  *      description: Get "hello world" from the route directory (Authentication NOT REQUIRED)
@@ -192,7 +193,8 @@ app.get("/", (req, res) => {
 });
 
 /**
- * /:
+ * @openapi
+ * /statistic:
  *  get:
  *      description: Get the runtime of null across available HPC clusters (Authentication NOT REQUIRED)
  *      responses:
@@ -205,7 +207,8 @@ app.get("/statistic", async (req, res) => {
 });
 
 /**
- * /:
+ * @openapi
+ * /statistic/job/:jobId:
  *  get:
  *      description: Get the runtime for a specific job across available HPC clusters (Authentication REQUIRED)
  *      responses:
@@ -243,7 +246,8 @@ app.get("/statistic/job/:jobId", async (req, res) => {
 });
 
 /**
- * /:
+ * @openapi
+ * /user:
  *  get:
  *      description: Returns the current user's username (Authentication REQUIRED)
  *      responses:
@@ -1189,7 +1193,7 @@ app.get("/job/:jobId/logs", async function (req, res) {
 
 /**
  * @openapi
- * /job/:jobId/logs:
+ * /job/:jobId:
  *  get:
  *      description: Gets a dictionary object representing the given job ID that includes information on the job as well as events, logs, and folder information (Authentication REQUIRED)
  *      responses:
