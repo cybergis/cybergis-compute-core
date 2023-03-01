@@ -102,7 +102,7 @@ var Helper = {
     return Object.keys(obj).length == 0;
   },
 
-  isAllowlisted(host: string): boolean {
+  isWhitelisted(host: string): boolean {
     var jupyterGlobus = jupyterGlobusMap[host]
     if (!jupyterGlobus) {
         return false;

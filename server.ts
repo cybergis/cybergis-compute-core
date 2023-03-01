@@ -267,8 +267,8 @@ app.get("/user", (req, res) => {
     return;
   }
 
-  if (!Helper.isAllowlisted(res.locals.host)) {
-    res.status(404).json({ error: "Cannot find jupyterhubHost in allowlist" });
+  if (!Helper.isWhitelisted(res.locals.host)) {
+    res.status(404).json({ error: "Cannot find jupyterhubHost in whitelist" });
     return;
   }
 
@@ -304,8 +304,8 @@ app.get("/user/jupyter-globus", async (req, res) => {
     return;
   }
 
-  if (!Helper.isAllowlisted(res.locals.host)) {
-    res.status(404).json({ error: "Cannot find jupyterhubHost in allowlist" });
+  if (!Helper.isWhitelisted(res.locals.host)) {
+    res.status(404).json({ error: "Cannot find jupyterhubHost in whitelist" });
     return;
   }
 
@@ -358,8 +358,8 @@ app.get("/user/job", async (req, res) => {
     return;
   }
 
-  if (!Helper.isAllowlisted(res.locals.host)) {
-    res.status(404).json({ error: "Cannot find jupyterhubHost in allowlist" });
+  if (!Helper.isWhitelisted(res.locals.host)) {
+    res.status(404).json({ error: "Cannot find jupyterhubHost in whitelist" });
     return;
   }
 
