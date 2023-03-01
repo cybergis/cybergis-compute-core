@@ -885,6 +885,19 @@ app.post("/job", async function (req, res) {
   res.json(Helper.job2object(job));
 });
 
+/**
+ * @openapi
+ * /job/:jobId:
+ *  put:
+ *      description: Updates a job with the given job ID (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns updated job when it is successfully updated
+ *          402:
+ *              description: Returns 'invalid input' and a list of errors with the format of the req body, 'invalid token' if a valid jupyter token authentication is not provided, or an error if the job does not exist
+ *          403:
+ *              description: Returns internal error when there is an exception while updating the job details
+*/
 app.put("/job/:jobId", async function (req, res) {
   const body = req.body;
   const errors = requestErrors(validator.validate(body, schemas.updateJob));
@@ -939,6 +952,19 @@ app.put("/job/:jobId", async function (req, res) {
   }
 });
 
+/**
+ * @openapi
+ * /job/:jobId/submit:
+ *  post:
+ *      description: Submits a job with the given job ID to the HPC (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns when job is successfully submitted
+ *          401:
+ *              description: Returns "submit without login is not allowed" if the user is not logged in, "invalid access" if job folders are not accessible, or "job already submitted or in queue" if the job is already suibmitted
+ *          402:
+ *              description: Returns 'invalid input' and a list of errors with the format of the req body or a list of errors if the job does not successfully submit
+*/
 app.post("/job/:jobId/submit", async function (req, res) {
   const body = req.body;
   const errors = requestErrors(validator.validate(body, schemas.user));
@@ -1001,12 +1027,43 @@ app.post("/job/:jobId/submit", async function (req, res) {
   res.json(Helper.job2object(job));
 });
 
+/**
+ * @openapi
+ * /job/:jobId/pause:
+ *  put:
+ *      description: Not yet implemented
+*/
 app.put("/job/:jobId/pause", async function (req, res) {});
 
+/**
+ * @openapi
+ * /job/:jobId/resume:
+ *  put:
+ *      description: Not yet implemented
+*/
 app.put("/job/:jobId/resume", async function (req, res) {});
 
+/**
+ * @openapi
+ * /job/:jobId/cancel:
+ *  put:
+ *      description: Not yet implemented
+*/
 app.put("/job/:jobId/cancel", async function (req, res) {});
 
+/**
+ * @openapi
+ * /job/:jobId/events:
+ *  get:
+ *      description: Gets an array of the job events for a given job ID (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns array of dictionary objects containing details of each event in the process of ssubmitting and fufilling a a job
+ *          401:
+ *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access token" if the events cannot be accessed
+ *          402:
+ *              description: Returns 'invalid input' and a list of errors with the format of the req body
+*/
 app.get("/job/:jobId/events", async function (req, res) {
   const body = req.body;
   const errors = requestErrors(validator.validate(body, schemas.user));
@@ -1040,12 +1097,27 @@ app.get("/job/:jobId/events", async function (req, res) {
   }
 });
 
+/**
+ * @openapi
+ * /job/:jobId/result-folder-content:
+ *  get:
+ *      description: Gets an array of the directories in the result folder for a given job ID (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns array of dirrectories in the given job's result folder
+ *          401:
+ *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access" if the folder cannot be accessed
+ *          402:
+ *              description: Returns 'invalid input' and a list of errors with the format of the req body
+*/
 app.get("/job/:jobId/result-folder-content", async function (req, res) {
   const body = req.body;
   const errors = requestErrors(validator.validate(body, schemas.user));
 
   if (errors.length > 0) {
-    res.json({ error: "invalid input", messages: errors });
+    res
+      .status(402)
+      .json({ error: "invalid input", messages: errors });
     return;
   }
   if (!res.locals.username) {
@@ -1069,13 +1141,27 @@ app.get("/job/:jobId/result-folder-content", async function (req, res) {
   }
 });
 
+/**
+ * @openapi
+ * /job/:jobId/logs:
+ *  get:
+ *      description: Gets an array of dictionary objects that represent logs for the given job ID (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns array of dictionary objects that represent logs for the given job ID
+ *          401:
+ *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access" if the logs cannot be accessed
+ *          402:
+ *              description: Returns 'invalid input' and a list of errors with the format of the req body
+*/
 app.get("/job/:jobId/logs", async function (req, res) {
   var body = req.body;
   var errors = requestErrors(validator.validate(body, schemas.user));
 
   if (errors.length > 0) {
-    res.json({ error: "invalid input", messages: errors });
-    res.status(402);
+    res
+      .status(402)
+      .json({ error: "invalid input", messages: errors });
     return;
   }
   if (!res.locals.username) {
@@ -1101,6 +1187,19 @@ app.get("/job/:jobId/logs", async function (req, res) {
   }
 });
 
+/**
+ * @openapi
+ * /job/:jobId/logs:
+ *  get:
+ *      description: Gets a dictionary object representing the given job ID that includes information on the job as well as events, logs, and folder information (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns a dictionary object representing the given job ID
+ *          401:
+ *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access" if the job and job information cannot be accessed
+ *          402:
+ *              description: Returns 'invalid input' and a list of errors with the format of the req body
+*/
 app.get("/job/:jobId", async function (req, res) {
   var body = req.body;
   var errors = requestErrors(validator.validate(body, schemas.user));
