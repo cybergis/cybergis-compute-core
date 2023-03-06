@@ -267,8 +267,8 @@ app.get("/user", (req, res) => {
     return;
   }
 
-  if (!Helper.isWhitelisted(res.locals.host)) {
-    res.status(404).json({ error: "Cannot find jupyterhubHost in whitelist" });
+  if (!Helper.isAllowlisted(res.locals.host)) {
+    res.status(404).json({ error: "Cannot find jupyterhubHost in allowlist" });
     return;
   }
 
@@ -304,8 +304,8 @@ app.get("/user/jupyter-globus", async (req, res) => {
     return;
   }
 
-  if (!Helper.isWhitelisted(res.locals.host)) {
-    res.status(404).json({ error: "Cannot find jupyterhubHost in whitelist" });
+  if (!Helper.isAllowlisted(res.locals.host)) {
+    res.status(404).json({ error: "Cannot find jupyterhubHost in allowlist" });
     return;
   }
 
@@ -358,8 +358,8 @@ app.get("/user/job", async (req, res) => {
     return;
   }
 
-  if (!Helper.isWhitelisted(res.locals.host)) {
-    res.status(404).json({ error: "Cannot find jupyterhubHost in whitelist" });
+  if (!Helper.isAllowlisted(res.locals.host)) {
+    res.status(404).json({ error: "Cannot find jupyterhubHost in allowlist" });
     return;
   }
 
@@ -478,7 +478,7 @@ app.get("/container", function (req, res) {
  * @openapi
  * /whitelist:
  *  get:
- *      description: Returns current allowlist (Authentication NOT REQUIRED)
+ *      description: (Use /allowlist instead. /whitelist is being phased out.) Returns current allowlist (Authentication NOT REQUIRED)
  *      responses:
  *          200:
  *              description: Returns current allowlist
@@ -493,6 +493,27 @@ app.get("/whitelist", function (req, res) {
     return out;
   };
   res.json({ whitelist: parseHost(jupyterGlobusMap)});
+});
+
+/**
+ * @openapi
+ * /allowlist:
+ *  get:
+ *      description: Returns current allowlist (Authentication NOT REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns current allowlist
+ */
+app.get("/allowlist", function (req, res) {
+  var parseHost = (dest: { [key: string]: jupyterGlobusMapConfig }) => {
+    var out = {};
+    for (var i in dest) {
+      var d: jupyterGlobusMapConfig = JSON.parse(JSON.stringify(dest[i])); // hard copy
+      out[i] = d.comment;
+    }
+    return out;
+  };
+  res.json({ allowlist: parseHost(jupyterGlobusMap)});
 });
 
 /**
