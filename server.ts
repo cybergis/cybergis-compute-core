@@ -14,8 +14,7 @@ import {
   containerConfigMap,
   hpcConfigMap,
   maintainerConfigMap,
-  jupyterGlobusMap,
-  // announcementMap
+  jupyterGlobusMap
 } from "./configs/config";
 import GlobusUtil, { GlobusTaskListManager } from "./src/lib/GlobusUtil";
 import express = require("express");
@@ -90,14 +89,6 @@ var schemas = {
       isWritable: { type: "boolean" },
     },
     required: ["jupyterhubApiToken"],
-  },
-  updateAnnouncements: {
-    type: "object",
-    properties: {
-      jupyterhubApiToken: { type: "string" },
-      message: { type: "string" },
-    },
-    required: ["jupyterhubApiToken", "message"],
   },
   updateJob: {
     type: "object",

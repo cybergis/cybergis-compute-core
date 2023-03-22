@@ -44,7 +44,12 @@ export default class GitUtil {
 
     //check when last updated
     var now = new Date();
-    const secsSinceUpdate = (now.getTime() - git.updatedAt.getTime()) / 1000.0;
+    // set to a large number so that we update if the check fails
+    var secsSinceUpdate = 1000000;
+    try {
+        // check when last updated if you can. If updatedAt is null this throws error
+        secsSinceUpdate = (now.getTime() - git.updatedAt.getTime()) / 1000.0;
+    } catch {}
     if (secsSinceUpdate > 120) {
       console.log(`${git.id} is stale, let's update...`);
       // update git repo before upload
