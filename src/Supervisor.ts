@@ -62,16 +62,17 @@ class Supervisor {
               "JOB_INIT_ERROR",
               `job [${job.id}] failed to initialized with error ${e.toString()}`
             );
+            job.finishedAt = new Date();
+            var connection = await self.db.connect();
+            await connection
+              .createQueryBuilder()
+              .update(Job)
+              .where("id = :id", { id: job.id })
+              .set({ finishedAt: job.finishedAt })
+              .execute();
+            continue;
           }
-          job.finishedAt = new Date();
-          var connection = await self.db.connect();
-          await connection
-            .createQueryBuilder()
-            .update(Job)
-            .where("id = :id", { id: job.id })
-            .set({ finishedAt: job.finishedAt })
-            .execute();
-          continue;
+          
           self.jobPoolCounters[hpcName]++;
 
           // manage ssh pool
