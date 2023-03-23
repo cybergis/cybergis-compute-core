@@ -17,6 +17,20 @@ export default class Statistic {
         { id: jobId }
       )
       .getRawOne();
+    
+      const finishAt = await connection
+      .getRepository(Job)
+      .createQueryBuilder("job")
+      .select(
+        "job.finishedAt as FINISHED"
+      )
+      .where(
+        "job.finishedAt IS NOT NULL AND job.id = :id",
+        { id: jobId }
+      )
+      .getRawOne();
+
+    console.log("Finish: ", parseInt(finishAt["FINISHED"]))
     if (statistic) {
       return parseInt(statistic["STATISTIC"]);
     } else {
