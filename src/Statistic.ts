@@ -54,7 +54,7 @@ export default class Statistic {
       }
       return out;
     } else {
-      return null;
+      return 5;
     }
   }
 }
