@@ -9,14 +9,15 @@ export default class Statistic {
     const statistic = await connection
       .getRepository(Job)
       .createQueryBuilder("job")
-      .select(
-        "TIMESTAMPDIFF(SECOND,job.initializedAt,job.finishedAt) as STATISTIC"
-      )
       .where(
-        "job.initializedAt IS NOT NULL AND job.finishedAt IS NOT NULL AND job.id = :id",
+        "job.id = :id",
         { id: jobId }
       )
       .getRawOne();
+
+    console.log(statistic)
+
+    return statistic
   }
 
   public async getRuntimeTotal() {
@@ -45,7 +46,7 @@ export default class Statistic {
 
 
 
-    if (true) { // statisticTotal && statisticByHPC
+    if (statisticTotal && statisticByHPC) {
       var out = {
         total: parseInt(statisticTotal["STATISTIC"]),
       };
