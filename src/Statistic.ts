@@ -43,6 +43,13 @@ export default class Statistic {
     console.log(statisticTotal);
     console.log(statisticByHPC);
 
+
+    var out = {
+      total: parseInt(statisticTotal["STATISTIC"]),
+    };
+
+    return out
+
     if (statisticTotal && statisticByHPC) {
       var out = {
         total: parseInt(statisticTotal["STATISTIC"]),
@@ -54,7 +61,7 @@ export default class Statistic {
       }
       return out;
     } else {
-      return 5;
+      return null;
     }
   }
 }
