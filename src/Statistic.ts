@@ -15,9 +15,13 @@ export default class Statistic {
       )
       .getRawOne();
 
-    console.log(statistic)
+    var difference = statistic["job_finishedAt"] - statistic["job_initializedAt"]
+    var secondsDifference = Math.floor(difference/1000);
+    
+    console.log("second diff:")
+    console.log(secondsDifference)
+    return secondsDifference
 
-    return statistic
   }
 
   public async getRuntimeTotal() {
