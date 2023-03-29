@@ -9,28 +9,25 @@ export default class Statistic {
     const statistic = await connection
       .getRepository(Job)
       .createQueryBuilder("job")
+      .select(
+        "ABS(initializedAt - job.finishedAt) as STATISTIC, job.hpc as HPC"
+      )
       .where(
-        "job.id = :id",
+        "job.initializedAt IS NOT NULL AND job.finishedAt IS NOT NULL AND job.id = :id",
         { id: jobId }
       )
       .getRawOne();
-
-    var difference = statistic["job_finishedAt"] - statistic["job_initializedAt"]
-    var secondsDifference = Math.floor(difference/1000);
     
-    console.log("second diff:")
-    console.log(secondsDifference)
-    return secondsDifference
+    return statistic
 
   }
-
   public async getRuntimeTotal() {
     const connection = await this.db.connect();
     const statisticTotal = await connection
       .getRepository(Job)
       .createQueryBuilder("job")
       .select(
-        "SUM(TIMESTAMPDIFF(SECOND,job.initializedAt,job.finishedAt)) as STATISTIC"
+        "SUM(ABS(SECOND,job.initializedAt - job.finishedAt)) as STATISTIC"
       )
       .where("job.initializedAt IS NOT NULL AND job.finishedAt IS NOT NULL")
       .getRawOne();
@@ -39,16 +36,11 @@ export default class Statistic {
       .getRepository(Job)
       .createQueryBuilder("job")
       .select(
-        "SUM(TIMESTAMPDIFF(SECOND,job.initializedAt,job.finishedAt)) as STATISTIC, job.hpc as HPC"
+        "SUM(ABS(job.initializedAt - job.finishedAt)) as STATISTIC, job.hpc as HPC"
       )
       .where("job.initializedAt IS NOT NULL AND job.finishedAt IS NOT NULL")
       .groupBy("hpc")
       .getRawMany();
-
-    console.log(statisticTotal);
-    console.log(statisticByHPC);
-
-
 
     if (statisticTotal && statisticByHPC) {
       var out = {
