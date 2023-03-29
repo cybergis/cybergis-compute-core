@@ -27,7 +27,7 @@ export default class Statistic {
       .getRepository(Job)
       .createQueryBuilder("job")
       .select(
-        "SUM(ABS(SECOND,job.initializedAt - job.finishedAt)) as STATISTIC"
+        "SUM(ABS(job.initializedAt - job.finishedAt)) as STATISTIC"
       )
       .where("job.initializedAt IS NOT NULL AND job.finishedAt IS NOT NULL")
       .getRawOne();
