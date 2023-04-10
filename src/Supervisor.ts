@@ -184,6 +184,17 @@ class Supervisor {
   destroy() {
     clearInterval(this.maintainerMasterThread);
   }
+
+  getJob(jobId: string) {
+    for (var hpc in hpcConfigMap) {
+      for (var i = 0; i < +this.queues[hpc].length; i++) {
+        if (this.queues[hpc][i].id == jobId) {
+          return this.queues[hpc][i];
+        }
+      }
+    }
+    return null;
+  }
 }
 
 export default Supervisor;

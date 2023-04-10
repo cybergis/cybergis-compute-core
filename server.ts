@@ -81,6 +81,14 @@ var schemas = {
     },
     required: ["jupyterhubApiToken"],
   },
+  cancel: {
+    type: "object",
+    properties: {
+      jupyterhubApiToken: { type: "string" },
+      jobId: { type: "string"}
+    },
+    required: ["jupyterhubApiToken", "jobId"],
+  },
   updateFolder: {
     type: "object",
     properties: {
@@ -1080,6 +1088,14 @@ app.post("/job/:jobId/submit", async function (req, res) {
 
 /**
  * @openapi
+ * /clean:
+ *  put:
+ *      description: Not yet implemented
+*/
+app.put("/clean", async function (req, res) {});
+
+/**
+ * @openapi
  * /job/:jobId/pause:
  *  put:
  *      description: Not yet implemented
@@ -1098,9 +1114,51 @@ app.put("/job/:jobId/resume", async function (req, res) {});
  * @openapi
  * /job/:jobId/cancel:
  *  put:
- *      description: Not yet implemented
+ *      description: Cancels a job that is currently in the queue
+ *      responses:
+ *          200:
+ *              description: Job was found in the queue and successfully canceled
+ *          401:
+ *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access token" if the events cannot be accessed
+ *          402:
+ *              description: Returns 'invalid input' and a list of errors with the format of the req body - jobId may be invalid or job may not be in queue
 */
-app.put("/job/:jobId/cancel", async function (req, res) {});
+app.put("/job/:jobId/cancel", async function (req, res) {
+  const body = req.body;
+  const errors = requestErrors(validator.validate(body, schemas.user));
+
+  if (errors.length > 0) {
+    res.status(402).json({ error: "invalid input", messages: errors });
+    return;
+  }
+  if (!res.locals.username) {
+    res
+      .status(401)
+      .json({ error: "submit without login is not allowed", messages: [] });
+    return;
+  }
+  
+  try {
+    const jobId = req.params.jobId;
+    var job = supervisor.getJob(jobId);
+    if (job == null) {
+      res
+        .status(402)
+        .json({ error: "job is not in queue" });
+      return;
+    }
+    job.maintainer.onCancel();
+    res
+      .status(200)
+      .json({ messages: ["job successfully cancelled"] });
+    return;
+  } catch (e) {
+    res
+      .status(402)
+      .json({ error: "invalid jobId", messages: [e.toString()] });
+    return;
+  }
+});
 
 /**
  * @openapi
