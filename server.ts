@@ -27,6 +27,7 @@ import JobUtil, { ResultFolderContentManager } from "./src/lib/JobUtil";
 import GitUtil from "./src/lib/GitUtil";
 import SSHCredentialGuard from "./src/SSHCredentialGuard";
 import { Folder } from "./src/models/Folder";
+import { Console } from "console";
 const swaggerUI = require("swagger-ui-express");
 const swaggerDocument = require("../production/swagger.json");
 const bodyParser = require("body-parser");
@@ -1124,6 +1125,7 @@ app.put("/job/:jobId/resume", async function (req, res) {});
  *              description: Returns 'invalid input' and a list of errors with the format of the req body - jobId may be invalid or job may not be in queue
 */
 app.put("/job/:jobId/cancel", async function (req, res) {
+  console.log("made it to cancel");
   const body = req.body;
   const errors = requestErrors(validator.validate(body, schemas.user));
 

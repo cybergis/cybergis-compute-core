@@ -185,14 +185,19 @@ class Supervisor {
     clearInterval(this.maintainerMasterThread);
   }
 
-  getJob(jobId: string) {
+  getJob(jobId: any) {
+    console.log("getting job");
     for (var hpc in hpcConfigMap) {
+      console.log("checking " + hpc);
       for (var i = 0; i < +this.queues[hpc].length; i++) {
+        console.log("checking if " + jobId + " is " + this.queues[hpc][i].id);
         if (this.queues[hpc][i].id == jobId) {
+          console.log("found it");
           return this.queues[hpc][i];
         }
       }
     }
+    console.log("not found");
     return null;
   }
 }
