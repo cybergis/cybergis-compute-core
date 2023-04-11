@@ -185,7 +185,7 @@ class Supervisor {
     clearInterval(this.maintainerMasterThread);
   }
 
-  getJob(jobId: any) {
+  getJob(jobId: any) : Job {
     console.log("getting job");
     for (var hpc in hpcConfigMap) {
       console.log("checking " + hpc);
