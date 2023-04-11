@@ -1149,7 +1149,7 @@ app.put("/job/:jobId/cancel", async function (req, res) {
         .json({ error: "job is not in queue" });
       return;
     }
-    job.maintainer.onCancel();
+    job.maintainerInstance.onCancel();
     res
       .status(200)
       .json({ messages: ["job successfully cancelled"] });
