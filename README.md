@@ -20,6 +20,29 @@ Scalable middleware framework for enabling high-performance and data-intensive g
 | Bridges-2                 | bridges_community | Pittsburgh Supercomputing Center HPC                                                             |
 | XSEDE Expanse             | expanse_community | San Diego Supercomputer Center                                                                   |
 
+## Kernels supported through CVMFS
+
+- CVMFS option can be activated by using plugging one of these kernels into the `container` field in your `manifest.json` and setting `connector` field to `SingCVMFSConnector`. [Here's](https://github.com/mitkotak/cybergis-compute-examples/blob/main/manifest.json) an example of a manifest.json using CVMFS
+
+    - `cybergisx/python3-0.8.0`
+    - `cybergisx/python3-0.9.0`
+    - `cybergisx/geoai-0.8.0`
+    - `cybergisx/hydro-0.8.0`
+    - `cybergisx/rpy-1.0.0`
+    - `cybergisx/sos-0.8.0`
+    - `cybergisx/ssh-0.8.0`
+    - `cjw/landlab-2021-09`
+    - `cjw/pysumma-2021-06`
+    - `cjw/pysumma-2021-12`
+    - `cjw/python3-2021-09`
+    - `cjw/python3-2021-12`
+    - `cjw/python3-2022-06`
+    - `cjw/python3-2021-06`
+    - `cjw/rhessys-2022-03`
+    - `cjw/taudem-2021-09`
+    - `cjw/taudem-2022-12`
+    - `cjw/wrfhydro-2021-06`
+    - `cjw/wrfhydro-2022-03`
 ## Server Setup
 1. Requirements
     - Docker & Docker Compose
