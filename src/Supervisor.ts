@@ -134,7 +134,7 @@ class Supervisor {
         while (!ssh.connection.isConnected()) {
           setTimeout(() => { ssh.connection.connect(ssh.config); }, ct*1000);
           ct = ct^2;
-          if (ct > 1000000) {
+          if (ct > 100) {
             console.error("Not able to connect to HPC. Please check for potential outages.");
           }
         }
