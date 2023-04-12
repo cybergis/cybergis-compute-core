@@ -96,6 +96,15 @@
       "endpoint": "8e5f3a0a-542d-11eb-a45a-0e095b4c2e55",
       "root_path": "/jet/home/cybergis/data"
     },
+    "init_sbatch_script": [
+      "CYBERGIS_COMPUTE_BASE=$(pwd)",
+      "source ~/.bashrc  # this adds the `singcvmfs` executable to the path",
+      "cd $CYBERGIS_COMPUTE_BASE",
+      "export SINGCVMFS_REPOSITORIES=\"grid.cern.ch,cybergis.illinois.edu\"  # required for singcvmfs, specifies repositories",
+      "export BASE=\"$(pwd)\"",
+      "export tmp_path=\"/tmp/cvmfs-$(openssl rand -hex 12)\"",
+      "mkdir $tmp_path"
+    ],
     "init_sbatch_options": ["#SBATCH --partition=GPU-shared"]
   },
   "anvil_community": {
@@ -130,7 +139,8 @@
       "export SINGCVMFS_REPOSITORIES=\"grid.cern.ch,cybergis.illinois.edu\"  # required for singcvmfs, specifies repositories",
       "export BASE=\"$(pwd)\"",
       "export tmp_path=\"/tmp/cvmfs-$(openssl rand -hex 12)\"",
-      "mkdir $tmp_path"],
+      "mkdir $tmp_path"
+    ],
     "init_sbatch_options": ["#SBATCH --partition=shared", "#SBATCH --nodes=1"]
   }
 }
