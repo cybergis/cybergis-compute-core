@@ -1,36 +1,29 @@
 {
-    "keeling_community": {
-        "ip": "keeling.earth.illinois.edu",
-        "port": 22,
-        "is_community_account": true,
-        "community_login": {
-            "user": "cigi-gisolve",
-            "use_local_key": false,
-            "external_key": {
-                "private_key_path": "/job_supervisor/keys/cigi-gisolve.key",
-                "passphrase": null
-            }
-        },
-        "root_path": "/data/keeling/a/cigi-gisolve/scratch",
-        "init_sbatch_script": [
-            "# module use /data/cigi/common/cigi-modules",
-            "module load gnu/openmpi-4.1.2-gnu-4.8.5",
-            "CYBERGIS_COMPUTE_BASE=$(pwd)",
-            "source ~/.bashrc  # this adds the `singcvmfs` executable to the path",
-            "cd $CYBERGIS_COMPUTE_BASE",
-            "export SINGCVMFS_REPOSITORIES=\"grid.cern.ch,cybergis.illinois.edu\"  # required for singcvmfs, specifies repositories",
-            "export BASE=\"$(pwd)\"",
-            "export tmp_path=\"/tmp/cvmfs-$(openssl rand -hex 12)\"",
-            "mkdir $tmp_path"
-        ],
-        "job_pool_capacity": 10,
-        "globus": {
-            "identity": "apadmana@illinois.edu",
-            "endpoint": "a1fa3d20-123d-11ec-ba7d-138ac5bdb19f",
-            "root_path": "/"
-        },
-	"mount": {
-		"/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared"
+  "keeling_community": {
+    "ip": "keeling.earth.illinois.edu",
+    "port": 22,
+    "is_community_account": true,
+    "community_login": {
+      "user": "cigi-gisolve",
+      "use_local_key": false,
+      "external_key": {
+        "private_key_path": "/job_supervisor/keys/cigi-gisolve.key",
+        "passphrase": null
+      }
+    },
+    "root_path": "/data/keeling/a/cigi-gisolve/scratch",
+    "init_sbatch_script": [
+      "# module use /data/cigi/common/cigi-modules",
+      "module load gnu/openmpi-4.1.2-gnu-4.8.5"
+    ],
+    "job_pool_capacity": 10,
+    "globus": {
+      "identity": "apadmana@illinois.edu",
+      "endpoint": "69c2ebd2-c731-11ed-9921-cb2cff506ca5",
+      "root_path": "/"
+    },
+    "mount": {
+      "/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared"
     }
   },
   "expanse_community": {
@@ -45,12 +38,12 @@
         "passphrase": null
       }
     },
-    "root_path": "/home/cybergis/scratch_folder/",
+    "root_path": "/home/cybergis/scratch_folder/shared/",
     "job_pool_capacity": 10,
     "globus": {
       "identity": "apadmana@illinois.edu",
-      "endpoint": "b256c034-1578-11eb-893e-0a5521ff3f4b",
-      "root_path": "/home/cybergis/scratch_folder/"
+      "endpoint": "e3447d43-58de-4c05-82ff-72fb129aa633",
+      "root_path": "/"
     },
     "mount": {
       "/expanse/lustre/projects/usu104/cybergis/compute": "/compute_shared"
@@ -107,11 +100,12 @@
     "job_pool_capacity": 10,
     "globus": {
       "identity": "apadmana@illinois.edu",
-      "endpoint": "4fb6aabc-a900-4ca1-ad62-b33fee950930",
+      "endpoint": "57b5b1f2-4bc5-41b9-a0e1-5337f5a9df4f",
       "root_path": "/"
     },
     "mount": {
-      "/anvil/projects/x-cis220065/x-cybergis/compute": "/compute_shared"
+      "/anvil/projects/x-cis220065/x-cybergis/compute": "/compute_shared",
+      "/anvil/scratch/x-cybergis/compute": "/compute_scratch"
     },
     "init_sbatch_script": [
       "module load gcc",
