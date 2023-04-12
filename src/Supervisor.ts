@@ -35,6 +35,7 @@ class Supervisor {
       this.jobPoolCapacities[hpcName] = hpcConfig.job_pool_capacity;
       this.jobPoolCounters[hpcName] = 0;
       this.queues[hpcName] = new Queue(hpcName);
+      this.runningJobs[hpcName] = new Array<Job>;
     }
 
     this.createMaintainerMaster();
