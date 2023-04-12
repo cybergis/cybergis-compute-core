@@ -58,6 +58,7 @@ class Supervisor {
           try {
             job.maintainerInstance = new maintainer(job);
             this.runningJobs[job.hpc].push(job);
+            console.log(`Added job to running jobs: ${job.id}`);
           } catch (e) {
             // log error and skip job
             self.emitter.registerEvents(
@@ -173,6 +174,7 @@ class Supervisor {
         const index = this.runningJobs[job.hpc].indexOf(job, 0);
         if (index > -1) {
           this.runningJobs[job.hpc].splice(index, 1);
+          console.log(`Removed job from running jobs: ${job.id}`);
         }
 
         // exit loop
@@ -195,14 +197,18 @@ class Supervisor {
   }
 
   getJob(jobId: any) : Job {
+    console.log("getting job");
     for (var hpc in hpcConfigMap) {
+      console.log(`looking in ${hpc}`);
       for (var i = 0; i < +this.queues[hpc].length; i++) {
-        if (this.queues[hpc][i].id == jobId) {
+        console.log(`Queue: checking is ${this.queues[hpc][i].id.toString()}`);
+        if (this.queues[hpc][i].id.toString() == jobId.toString()) {
           return this.queues[hpc][i];
         }
       }
       for (var i = 0; i < this.runningJobs[hpc].length; i++) {
-        if (this.runningJobs[hpc][i].id == jobId) {
+        console.log(`RunningJobs: checking is ${this.runningJobs[hpc][i].id.toString()}`);
+        if (this.runningJobs[hpc][i].id == jobId.toString()) {
           return this.runningJobs[hpc][i];
         }
       }
