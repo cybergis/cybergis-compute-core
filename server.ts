@@ -1146,7 +1146,7 @@ app.put("/job/:jobId/cancel", async function (req, res) {
     if (job == null) {
       res
         .status(402)
-        .json({ error: "job is not in queue" });
+        .json({ error: "job is not in queue or running jobs" });
       return;
     }
     job.maintainerInstance.onCancel();

@@ -17,6 +17,8 @@ class Supervisor {
 
   private queues: { [keys: string]: Queue } = {};
 
+  private runningJobs: { [keys: string]: Array<Job> } = {};
+
   private emitter = new Emitter();
 
   private maintainerMasterThread = null;
@@ -55,6 +57,7 @@ class Supervisor {
           }`).default; // typescript compilation hack
           try {
             job.maintainerInstance = new maintainer(job);
+            this.runningJobs[job.hpc].push(job);
           } catch (e) {
             // log error and skip job
             self.emitter.registerEvents(
@@ -166,6 +169,12 @@ class Supervisor {
         // emit event
         this.maintainerMasterEventEmitter.emit("job_end", job.hpc, job.id);
 
+        // remove from running jobs
+        const index = this.runningJobs[job.hpc].indexOf(job, 0);
+        if (index > -1) {
+          this.runningJobs[job.hpc].splice(index, 1);
+        }
+
         // exit loop
         return;
       }
@@ -186,18 +195,19 @@ class Supervisor {
   }
 
   getJob(jobId: any) : Job {
-    console.log("getting job");
     for (var hpc in hpcConfigMap) {
-      console.log("checking " + hpc);
       for (var i = 0; i < +this.queues[hpc].length; i++) {
-        console.log("checking if " + jobId + " is " + this.queues[hpc][i].id);
         if (this.queues[hpc][i].id == jobId) {
-          console.log("found it");
           return this.queues[hpc][i];
         }
       }
+      for (var i = 0; i < this.runningJobs[hpc].length; i++) {
+        if (this.runningJobs[hpc][i].id == jobId) {
+          return this.runningJobs[hpc][i];
+        }
+      }
     }
-    console.log("not found");
+    console.log("Supervisor getJob(" + jobId + "): job not found");
     return null;
   }
 }
