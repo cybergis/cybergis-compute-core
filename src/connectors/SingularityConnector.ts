@@ -2,6 +2,7 @@ import SlurmConnector from "./SlurmConnector";
 import { slurm, executableManifest } from "../types";
 import { containerConfigMap, hpcConfigMap, kernelConfigMap} from "../../configs/config";
 import * as path from "path";
+import { kernelConfig } from "../types";
 
 class SingularityConnector extends SlurmConnector {
   /**
@@ -49,78 +50,81 @@ class SingularityConnector extends SlurmConnector {
         );
       // remove buffer: https://dashboard.hpc.unimelb.edu.au/job_submission/
     }
+    console.log("Looping through all kernels");
+    for (var kernel in kernelConfigMap){
+      console.log("Kernel: ", kernel);
+      var jobENV = this._getJobENV();
+      var cmd = ``;
 
-    var jobENV = this._getJobENV();
-    var cmd = ``;
-
-    if (manifest.pre_processing_stage_in_raw_sbatch) {
-      for (var i in manifest.pre_processing_stage_in_raw_sbatch) {
-        cmd += `${manifest.pre_processing_stage_in_raw_sbatch[i]}\n`;
-      }
-    } else if (manifest.pre_processing_stage) {
-      if (this.is_cvmfs){
-        cmd += `${jobENV.join(
-          " "
-        )} singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://alexandermichels/compute-cvmfs:0.0.5 bash -c \"cd ${this.getContainerExecutableFolderPath()} && source kernel_init.sh && ${
-          manifest.pre_processing_stage
-        }\"\n\n`;
-      }
-      else{
-        cmd += `${jobENV.join(" ")} singularity exec ${this._getVolumeBindCMD(
-          manifest
-        )} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
-          manifest.pre_processing_stage
-        }\"\n\n`;
-      }
-    }
-
-    if (manifest.execution_stage_in_raw_sbatch) {
-      for (var i in manifest.execution_stage_in_raw_sbatch) {
-        cmd += `${manifest.execution_stage_in_raw_sbatch[i]}\n`;
-      }
-    } else {
-      if (this.is_cvmfs){
-        this.createBashScript(manifest);
-        cmd += `${jobENV.join(
-          " "
-        )} srun --unbuffered --mpi=pmi2 singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://alexandermichels/compute-cvmfs:0.0.5 bash -c \"cd ${this.getContainerExecutableFolderPath()} && source kernel_init.sh && ${
-          manifest.execution_stage
-        }"\n\n`;
-      }
-      else{
-        cmd += `${jobENV.join(
-          " "
-        )} srun --unbuffered --mpi=pmi2 singularity exec ${this._getVolumeBindCMD(
-          manifest
-        )} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
-          manifest.execution_stage
-        }"\n\n`;
-      }
-    }
-
-    if (manifest.post_processing_stage_in_raw_sbatch) {
-      for (var i in manifest.post_processing_stage_in_raw_sbatch) {
-        cmd += `${manifest.post_processing_stage_in_raw_sbatch[i]}\n`;
-      }
-    } else if (manifest.post_processing_stage) {
-      if(this.is_cvmfs){
-        cmd += `${jobENV.join(
-          " "
-        )} singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://alexandermichels/compute-cvmfs:0.0.5 bash -c \"cd ${this.getContainerExecutableFolderPath()} && source kernel_init.sh && ${
-          manifest.post_processing_stage
-        }\"`;
-      }
-      else{
-        cmd += `${jobENV.join(" ")} singularity exec ${this._getVolumeBindCMD(
-          manifest
-        )} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
-          manifest.post_processing_stage
-        }\"`;
+      if (manifest.pre_processing_stage_in_raw_sbatch) {
+        for (var i in manifest.pre_processing_stage_in_raw_sbatch) {
+          cmd += `${manifest.pre_processing_stage_in_raw_sbatch[i]}\n`;
+        }
+      } else if (manifest.pre_processing_stage) {
+        if (this.is_cvmfs){
+          cmd += `${jobENV.join(
+            " "
+          )} singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://alexandermichels/compute-cvmfs:0.0.5 bash -c \"cd ${this.getContainerExecutableFolderPath()} && source kernel_init.sh && ${
+            manifest.pre_processing_stage
+          }\"\n\n`;
+        }
+        else{
+          cmd += `${jobENV.join(" ")} singularity exec ${this._getVolumeBindCMD(
+            manifest
+          )} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
+            manifest.pre_processing_stage
+          }\"\n\n`;
+        }
       }
 
-    }
+      if (manifest.execution_stage_in_raw_sbatch) {
+        for (var i in manifest.execution_stage_in_raw_sbatch) {
+          cmd += `${manifest.execution_stage_in_raw_sbatch[i]}\n`;
+        }
+      } else {
+        if (this.is_cvmfs){
+          this.createBashScript(manifest, kernel);
+          cmd += `${jobENV.join(
+            " "
+          )} srun --unbuffered --mpi=pmi2 singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://alexandermichels/compute-cvmfs:0.0.5 bash -c \"cd ${this.getContainerExecutableFolderPath()} && source kernel_init.sh && ${
+            manifest.execution_stage
+          }"\n\n`;
+        }
+        else{
+          cmd += `${jobENV.join(
+            " "
+          )} srun --unbuffered --mpi=pmi2 singularity exec ${this._getVolumeBindCMD(
+            manifest
+          )} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
+            manifest.execution_stage
+          }"\n\n`;
+        }
+      }
 
-    super.prepare(cmd, config);
+      if (manifest.post_processing_stage_in_raw_sbatch) {
+        for (var i in manifest.post_processing_stage_in_raw_sbatch) {
+          cmd += `${manifest.post_processing_stage_in_raw_sbatch[i]}\n`;
+        }
+      } else if (manifest.post_processing_stage) {
+        if(this.is_cvmfs){
+          cmd += `${jobENV.join(
+            " "
+          )} singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://alexandermichels/compute-cvmfs:0.0.5 bash -c \"cd ${this.getContainerExecutableFolderPath()} && source kernel_init.sh && ${
+            manifest.post_processing_stage
+          }\"`;
+        }
+        else{
+          cmd += `${jobENV.join(" ")} singularity exec ${this._getVolumeBindCMD(
+            manifest
+          )} ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && ${
+            manifest.post_processing_stage
+          }\"`;
+        }
+
+      }
+
+      super.prepare(cmd, config);
+  }
   }
 
   /**
@@ -256,9 +260,9 @@ class SingularityConnector extends SlurmConnector {
    * Creates a bash script using kernelConfig
    * @param{executableManifest} manifest - manifest that needs toe be executed
    */
-  async createBashScript(manifest: executableManifest){
+  async createBashScript(manifest: executableManifest, kernel: string){
     var kernelBash = `#!/bin/bash\n`;
-    kernelBash+= `${kernelConfigMap[manifest.container].env.join("\n")}`
+    kernelBash+= `${kernelConfigMap[kernel].env.join("\n")}`
     await this.createFile(
       kernelBash,
       path.join(this.getRemoteExecutableFolderPath(), "kernel_init.sh")
