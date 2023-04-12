@@ -14,7 +14,14 @@
     "root_path": "/data/keeling/a/cigi-gisolve/scratch",
     "init_sbatch_script": [
       "# module use /data/cigi/common/cigi-modules",
-      "module load gnu/openmpi-4.1.2-gnu-4.8.5"
+      "module load gnu/openmpi-4.1.2-gnu-4.8.5",
+      "CYBERGIS_COMPUTE_BASE=$(pwd)",
+      "source ~/.bashrc  # this adds the `singcvmfs` executable to the path",
+      "cd $CYBERGIS_COMPUTE_BASE",
+      "export SINGCVMFS_REPOSITORIES=\"grid.cern.ch,cybergis.illinois.edu\"  # required for singcvmfs, specifies repositories",
+      "export BASE=\"$(pwd)\"",
+      "export tmp_path=\"/tmp/cvmfs-$(openssl rand -hex 12)\"",
+      "mkdir $tmp_path"
     ],
     "job_pool_capacity": 10,
     "globus": {
@@ -50,7 +57,14 @@
     },
     "init_sbatch_script": [
       "module load DefaultModules",
-      "module load singularitypro/3.9"
+      "module load singularitypro/3.9",
+      "CYBERGIS_COMPUTE_BASE=$(pwd)",
+      "source ~/.bashrc  # this adds the `singcvmfs` executable to the path",
+      "cd $CYBERGIS_COMPUTE_BASE",
+      "export SINGCVMFS_REPOSITORIES=\"grid.cern.ch,cybergis.illinois.edu\"  # required for singcvmfs, specifies repositories",
+      "export BASE=\"$(pwd)\"",
+      "export tmp_path=\"/tmp/cvmfs-$(openssl rand -hex 12)\"",
+      "mkdir $tmp_path"
     ],
     "init_sbatch_options": [
       "#SBATCH --constraint=lustre",
