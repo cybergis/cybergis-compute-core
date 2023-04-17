@@ -1118,7 +1118,7 @@ app.put("/job/:jobId/resume", async function (req, res) {});
  *      description: Cancels a job that is currently in the queue
  *      responses:
  *          200:
- *              description: Job was found in the queue and successfully canceled
+ *              description: Job was found successfully added to the queue to be canceled
  *          401:
  *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access token" if the events cannot be accessed
  *          402:
@@ -1142,17 +1142,16 @@ app.put("/job/:jobId/cancel", async function (req, res) {
   
   try {
     const jobId = req.params.jobId;
-    var job = supervisor.getJob(jobId);
+    var job = supervisor.getJob(jobId)[0];
     if (job == null) {
       res
         .status(402)
         .json({ error: "job is not in queue or running jobs" });
       return;
     }
-    job.maintainerInstance.onCancel();
     res
       .status(200)
-      .json({ messages: ["job successfully cancelled"] });
+      .json({ messages: ["job successfully added to cancel queue"] });
     return;
   } catch (e) {
     res
