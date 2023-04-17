@@ -1142,7 +1142,7 @@ app.put("/job/:jobId/cancel", async function (req, res) {
   
   try {
     const jobId = req.params.jobId;
-    var job = supervisor.getJob(jobId)[0];
+    var job = supervisor.cancelJob(jobId);
     if (job == null) {
       res
         .status(402)

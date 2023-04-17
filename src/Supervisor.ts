@@ -220,8 +220,8 @@ class Supervisor {
     clearInterval(this.maintainerMasterThread);
   }
 
-  getJob(jobId: any) : Job {
-    console.log("getting job");
+  cancelJob(jobId: any) : Job {
+    console.log(`cancelJob(${jobId}) looking for job`);
     var toReturn = null;
     var hpcToAdd = null;
     for (var hpc in hpcConfigMap) {
@@ -242,7 +242,7 @@ class Supervisor {
       }
     }
     if (toReturn != null) {
-      this.cancelJobs[hpc].push(toReturn)
+      this.cancelJobs[hpcToAdd].push(toReturn)
     } else {
       console.log("Supervisor getJob(" + jobId + "): job not found");
     }
