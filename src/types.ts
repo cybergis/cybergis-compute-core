@@ -248,6 +248,7 @@ export interface maintainerConfig {
 export interface executableManifest {
   name: string;
   container: string;
+  connector?: string;
   pre_processing_stage?: string;
   execution_stage: string;
   post_processing_stage?: string;
@@ -274,6 +275,10 @@ export interface containerConfig {
       [keys: string]: string;
     };
   };
+}
+
+export interface kernelConfig {
+  env: string[];
 }
 
 export interface event {

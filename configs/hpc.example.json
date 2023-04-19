@@ -14,12 +14,19 @@
     "root_path": "/data/keeling/a/cigi-gisolve/scratch",
     "init_sbatch_script": [
       "# module use /data/cigi/common/cigi-modules",
-      "module load gnu/openmpi-4.1.2-gnu-4.8.5"
+      "module load gnu/openmpi-4.1.2-gnu-4.8.5",
+      "CYBERGIS_COMPUTE_BASE=$(pwd)",
+      "source ~/.bashrc  # this adds the `singcvmfs` executable to the path",
+      "cd $CYBERGIS_COMPUTE_BASE",
+      "export SINGCVMFS_REPOSITORIES=\"grid.cern.ch,cybergis.illinois.edu\"  # required for singcvmfs, specifies repositories",
+      "export BASE=\"$(pwd)\"",
+      "export tmp_path=\"/tmp/cvmfs-$(openssl rand -hex 12)\"",
+      "mkdir $tmp_path"
     ],
     "job_pool_capacity": 10,
     "globus": {
       "identity": "apadmana@illinois.edu",
-      "endpoint": "a1fa3d20-123d-11ec-ba7d-138ac5bdb19f",
+      "endpoint": "69c2ebd2-c731-11ed-9921-cb2cff506ca5",
       "root_path": "/"
     },
     "mount": {
@@ -38,19 +45,26 @@
         "passphrase": null
       }
     },
-    "root_path": "/home/cybergis/scratch_folder/",
+    "root_path": "/home/cybergis/scratch_folder/shared/",
     "job_pool_capacity": 10,
     "globus": {
       "identity": "apadmana@illinois.edu",
-      "endpoint": "b256c034-1578-11eb-893e-0a5521ff3f4b",
-      "root_path": "/home/cybergis/scratch_folder/"
+      "endpoint": "e3447d43-58de-4c05-82ff-72fb129aa633",
+      "root_path": "/"
     },
     "mount": {
       "/expanse/lustre/projects/usu104/cybergis/compute": "/compute_shared"
     },
     "init_sbatch_script": [
       "module load DefaultModules",
-      "module load singularitypro/3.9"
+      "module load singularitypro/3.9",
+      "CYBERGIS_COMPUTE_BASE=$(pwd)",
+      "source ~/.bashrc  # this adds the `singcvmfs` executable to the path",
+      "cd $CYBERGIS_COMPUTE_BASE",
+      "export SINGCVMFS_REPOSITORIES=\"grid.cern.ch,cybergis.illinois.edu\"  # required for singcvmfs, specifies repositories",
+      "export BASE=\"$(pwd)\"",
+      "export tmp_path=\"/tmp/cvmfs-$(openssl rand -hex 12)\"",
+      "mkdir $tmp_path"
     ],
     "init_sbatch_options": [
       "#SBATCH --constraint=lustre",
@@ -82,6 +96,15 @@
       "endpoint": "8e5f3a0a-542d-11eb-a45a-0e095b4c2e55",
       "root_path": "/jet/home/cybergis/data"
     },
+    "init_sbatch_script": [
+      "CYBERGIS_COMPUTE_BASE=$(pwd)",
+      "source ~/.bashrc  # this adds the `singcvmfs` executable to the path",
+      "cd $CYBERGIS_COMPUTE_BASE",
+      "export SINGCVMFS_REPOSITORIES=\"grid.cern.ch,cybergis.illinois.edu\"  # required for singcvmfs, specifies repositories",
+      "export BASE=\"$(pwd)\"",
+      "export tmp_path=\"/tmp/cvmfs-$(openssl rand -hex 12)\"",
+      "mkdir $tmp_path"
+    ],
     "init_sbatch_options": ["#SBATCH --partition=GPU-shared"]
   },
   "anvil_community": {
@@ -100,13 +123,24 @@
     "job_pool_capacity": 10,
     "globus": {
       "identity": "apadmana@illinois.edu",
-      "endpoint": "4fb6aabc-a900-4ca1-ad62-b33fee950930",
+      "endpoint": "57b5b1f2-4bc5-41b9-a0e1-5337f5a9df4f",
       "root_path": "/"
     },
     "mount": {
-      "/anvil/projects/x-cis220065/x-cybergis/compute": "/compute_shared"
+      "/anvil/projects/x-cis220065/x-cybergis/compute": "/compute_shared",
+      "/anvil/scratch/x-cybergis/compute": "/compute_scratch"
     },
-    "init_sbatch_script": ["module load gcc", "module load openmpi"],
+    "init_sbatch_script": [
+      "module load gcc",
+      "module load openmpi",
+      "CYBERGIS_COMPUTE_BASE=$(pwd)",
+      "source ~/.bashrc  # this adds the `singcvmfs` executable to the path",
+      "cd $CYBERGIS_COMPUTE_BASE",
+      "export SINGCVMFS_REPOSITORIES=\"grid.cern.ch,cybergis.illinois.edu\"  # required for singcvmfs, specifies repositories",
+      "export BASE=\"$(pwd)\"",
+      "export tmp_path=\"/tmp/cvmfs-$(openssl rand -hex 12)\"",
+      "mkdir $tmp_path"
+    ],
     "init_sbatch_options": ["#SBATCH --partition=shared", "#SBATCH --nodes=1"]
   }
 }

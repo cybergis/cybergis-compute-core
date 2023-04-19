@@ -19,7 +19,10 @@ import GitUtil from "./lib/GitUtil";
 import SlurmConnector from "./connectors/SlurmConnector";
 import SingularityConnector from "./connectors/SingularityConnector";
 
-type Connector = BaseConnector | SlurmConnector | SingularityConnector;
+type Connector =
+  | BaseConnector
+  | SlurmConnector
+  | SingularityConnector
 
 export class BaseFolderUploader {
   public id: string;
@@ -73,7 +76,12 @@ export class BaseFolderUploader {
 export class EmptyFolderUploader extends BaseFolderUploader {
   protected connector: Connector;
 
-  constructor(hpcName: string, userId: string, jobId: string, connector: Connector) {
+  constructor(
+    hpcName: string,
+    userId: string,
+    jobId: string,
+    connector: Connector
+  ) {
     super(hpcName, userId);
     this.connector = connector;
   }
@@ -94,7 +102,12 @@ export class GlobusFolderUploader extends BaseFolderUploader {
 
   private jobId: string;
 
-  constructor(from: GlobusFolder, hpcName: string, userId: string, jobId: string) {
+  constructor(
+    from: GlobusFolder,
+    hpcName: string,
+    userId: string,
+    jobId: string
+  ) {
     super(hpcName, userId);
     if (!this.hpcConfig)
       throw new Error(`cannot find hpcConfig with name ${hpcName}`);
@@ -106,7 +119,7 @@ export class GlobusFolderUploader extends BaseFolderUploader {
       endpoint: this.hpcConfig.globus.endpoint,
       path: this.globusPath,
     };
-    this.jobId = jobId
+    this.jobId = jobId;
   }
 
   async upload() {
@@ -114,7 +127,7 @@ export class GlobusFolderUploader extends BaseFolderUploader {
       this.from,
       this.to,
       this.hpcConfig,
-      'job-id-'+this.jobId+'-upload-folder-'+this.id
+      "job-id-" + this.jobId + "-upload-folder-" + this.id
     );
     const status = await GlobusUtil.monitorTransfer(
       this.taskId,
@@ -206,11 +219,23 @@ export class FolderUploaderHelper {
     var uploader: BaseFolderUploader;
     switch (from.type) {
       case "git":
-        uploader = new GitFolderUploader(from, hpcName, userId, jobId, connector);
+        uploader = new GitFolderUploader(
+          from,
+          hpcName,
+          userId,
+          jobId,
+          connector
+        );
         await uploader.upload();
         break;
       case "local":
-        uploader = new LocalFolderUploader(from, hpcName, userId, jobId, connector);
+        uploader = new LocalFolderUploader(
+          from,
+          hpcName,
+          userId,
+          jobId,
+          connector
+        );
         await uploader.upload();
         break;
       case "globus":

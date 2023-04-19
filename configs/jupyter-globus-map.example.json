@@ -1,32 +1,32 @@
 {
   "cybergisx.cigi.illinois.edu": {
     "comment": "original CyberGISX",
-    "endpoint": "418e684e-1260-11ec-ba7d-138ac5bdb19f",
+    "endpoint": "28220014-cff1-11ed-96f7-e54704575ba0",
     "root_path": "/~/data/cigi/cybergis-jupyter/production_data/notebook_home_data/",
     "container_home_path": "/home/jovyan/work/"
   },
   "hsdocs-dev.cigi.illinois.edu": {
     "comment": "original CyberGISX dev",
-    "endpoint": "418e684e-1260-11ec-ba7d-138ac5bdb19f",
+    "endpoint": "28220014-cff1-11ed-96f7-e54704575ba0",
     "root_path": "/~/data/cigi/cybergis-jupyter/production_data/notebook_home_data",
     "container_home_path": "/home/jovyan/work/"
   },
   "js2-155-137.jetstream-cloud.org": {
     "comment": "CJW-js2",
-    "endpoint": "d45b1832-f3f8-11ec-aede-6f7c2b57b05c",
+    "endpoint": "52bc63ec-cfeb-11ed-96f7-e54704575ba0",
     "root_path": "/~/mnt/nfs_folder/notebook_home_data/",
     "container_home_path": "/home/jovyan/work/"
   },
-  "www.iguide.geoedf.org": {
+  "jupyter.iguide.illinois.edu": {
     "comment": "IGUIDE on js2 k8s",
-    "endpoint": "4ae398fe-17fc-11ed-8db7-9f359c660fbd",
+    "endpoint": "888b0be2-cffd-11ed-8ea8-fdf94a47aaa3",
     "root_path": "/~/mnt/jupyter-data/",
     "container_home_path": "/home/jovyan/",
     "user_mapping": "iguide-mapping"
   },
   "cjw-swarm-master-dev.ear190007.projects.jetstream-cloud.org": {
     "comment": "CJW-js2-dev",
-    "endpoint": "d45b1832-f3f8-11ec-aede-6f7c2b57b05c",
+    "endpoint": "52bc63ec-cfeb-11ed-96f7-e54704575ba0",
     "root_path": "/~/mnt/nfs_folder/notebook_home_data/",
     "container_home_path": "/home/jovyan/work/"
   }
