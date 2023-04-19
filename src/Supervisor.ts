@@ -80,6 +80,7 @@ class Supervisor {
               .execute();
             continue;
           }
+          
           self.jobPoolCounters[hpcName]++;
 
           // manage ssh pool
