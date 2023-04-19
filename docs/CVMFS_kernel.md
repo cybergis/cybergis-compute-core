@@ -1,5 +1,7 @@
 # Adding CVMFS Kernels
 
+- Assumes that you have a working singcvmfs executable.
+
 - Any new kernels need to be added to `configs/kernel.example.json`.
 
 - The key represents the name of the kernel that you would like the user to use in their `manifest.json`.
