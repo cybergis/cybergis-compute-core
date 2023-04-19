@@ -49,6 +49,8 @@ class BaseMaintainer {
 
   public isPaused = false;
 
+  public jobOnHpc = false;
+
   protected lifeCycleState = {
     initCounter: 0,
     createdAt: null,

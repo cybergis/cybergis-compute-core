@@ -108,6 +108,7 @@ export default class CommunityContributionMaintainer extends BaseMaintainer {
         this.slurm
       );
       await this.connector.submit();
+      this.jobOnHpc = true;
       this.emitEvent(
         "JOB_INIT",
         "job [" + this.id + "] is initialized, waiting for job completion"

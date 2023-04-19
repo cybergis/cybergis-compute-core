@@ -27,6 +27,7 @@ import JobUtil, { ResultFolderContentManager } from "./src/lib/JobUtil";
 import GitUtil from "./src/lib/GitUtil";
 import SSHCredentialGuard from "./src/SSHCredentialGuard";
 import { Folder } from "./src/models/Folder";
+import { Console } from "console";
 const swaggerUI = require("swagger-ui-express");
 const swaggerDocument = require("../production/swagger.json");
 const bodyParser = require("body-parser");
@@ -80,6 +81,14 @@ var schemas = {
       jupyterhubApiToken: { type: "string" },
     },
     required: ["jupyterhubApiToken"],
+  },
+  cancel: {
+    type: "object",
+    properties: {
+      jupyterhubApiToken: { type: "string" },
+      jobId: { type: "string"}
+    },
+    required: ["jupyterhubApiToken", "jobId"],
   },
   updateFolder: {
     type: "object",
@@ -1080,6 +1089,14 @@ app.post("/job/:jobId/submit", async function (req, res) {
 
 /**
  * @openapi
+ * /clean:
+ *  put:
+ *      description: Not yet implemented
+*/
+app.put("/clean", async function (req, res) {});
+
+/**
+ * @openapi
  * /job/:jobId/pause:
  *  put:
  *      description: Not yet implemented
@@ -1098,9 +1115,51 @@ app.put("/job/:jobId/resume", async function (req, res) {});
  * @openapi
  * /job/:jobId/cancel:
  *  put:
- *      description: Not yet implemented
+ *      description: Cancels a job that is currently in the queue
+ *      responses:
+ *          200:
+ *              description: Job was found successfully added to the queue to be canceled
+ *          401:
+ *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access token" if the events cannot be accessed
+ *          402:
+ *              description: Returns 'invalid input' and a list of errors with the format of the req body - jobId may be invalid or job may not be in queue
 */
-app.put("/job/:jobId/cancel", async function (req, res) {});
+app.put("/job/:jobId/cancel", async function (req, res) {
+  console.log("made it to cancel");
+  const body = req.body;
+  const errors = requestErrors(validator.validate(body, schemas.user));
+
+  if (errors.length > 0) {
+    res.status(402).json({ error: "invalid input", messages: errors });
+    return;
+  }
+  if (!res.locals.username) {
+    res
+      .status(401)
+      .json({ error: "submit without login is not allowed", messages: [] });
+    return;
+  }
+  
+  try {
+    const jobId = req.params.jobId;
+    var job = supervisor.cancelJob(jobId);
+    if (job == null) {
+      res
+        .status(402)
+        .json({ error: "job is not in queue or running jobs" });
+      return;
+    }
+    res
+      .status(200)
+      .json({ messages: ["job successfully added to cancel queue"] });
+    return;
+  } catch (e) {
+    res
+      .status(402)
+      .json({ error: "invalid jobId", messages: [e.toString()] });
+    return;
+  }
+});
 
 /**
  * @openapi
