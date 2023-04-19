@@ -131,6 +131,7 @@ class Supervisor {
       // connect ssh & run
       try {
         var ct = 2;
+        console.log("try to connect");
         while (!ssh.connection.isConnected()) {
           console.log(ct);
           setTimeout(() => { ssh.connection.connect(ssh.config); }, ct*1000);
@@ -152,6 +153,7 @@ class Supervisor {
         if (config.is_testing) console.error(e.stack);
         continue;
       }
+      console.log("post connection");
 
       // emit events & logs
       var events = job.maintainerInstance.dumpEvents();
