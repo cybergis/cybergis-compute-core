@@ -223,6 +223,16 @@ export interface jupyterGlobusMapConfig {
   user_mapping?: string;
 }
 
+export interface announcement {
+  poster: string;
+  message: string;
+  time_stamp: string;
+}
+
+export interface announcementsConfig {
+  announcements: announcement[];
+}
+
 export interface fileConfig {
   ignore: string[];
   must_have: string[];

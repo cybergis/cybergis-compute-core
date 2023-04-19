@@ -6,14 +6,15 @@ import {
   maintainerConfig,
   containerConfig,
   folderEditable,
-  jupyterGlobusMapConfig
+  jupyterGlobusMapConfig,
+  announcementsConfig
 } from "./src/types";
 import {
   config,
   containerConfigMap,
   hpcConfigMap,
   maintainerConfigMap,
-  jupyterGlobusMap,
+  jupyterGlobusMap
 } from "./configs/config";
 import GlobusUtil, { GlobusTaskListManager } from "./src/lib/GlobusUtil";
 import express = require("express");
@@ -514,6 +515,31 @@ app.get("/allowlist", function (req, res) {
     return out;
   };
   res.json({ allowlist: parseHost(jupyterGlobusMap)});
+});
+
+/**
+ * @openapi
+ * /announcement:
+ *  get:
+ *      description: Returns list of current announcements (Authentication NOT REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns array of current announcements
+ */
+app.get("/announcement", function (req, res) {
+
+  var fs = require('fs');
+  fs.readFile('./configs/announcement.json', 'utf8', function(err, data){
+    var parseHost = (dest: { [key: string]: announcementsConfig }) => {
+      var out = {};
+      for (var i in dest) {
+        var d: announcementsConfig = JSON.parse(JSON.stringify(dest[i])); // hard copy
+        out[i] = d;
+      }
+      return out;
+    };
+    res.json(parseHost(JSON.parse(data)));
+  });
 });
 
 /**

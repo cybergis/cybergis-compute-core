@@ -1,0 +1,14 @@
+{
+  "announcements": [
+      {
+          "poster" : "jtsiv1",
+          "message" : "test",
+          "time_stamp" : "2023-03-08T17:08:29Z"
+      },
+      {
+          "poster" : "jtsiv1",
+          "message" : "test2",
+          "time_stamp" : "2023-03-08T17:18:46Z"
+      }
+  ]
+}
