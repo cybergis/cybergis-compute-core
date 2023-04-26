@@ -131,28 +131,33 @@ class Supervisor {
       // connect ssh & run
       try {
         var ct = 2;
+        var exit = false;
         console.log("try to connect");
-        while (!ssh.connection.isConnected()) {
+        while (!ssh.connection.isConnected() && !exit) {
           console.log(ct);
           setTimeout(() => { ssh.connection.connect(ssh.config); }, ct*1000);
           ct **= 2;
           if (ct > 100) {
             console.error("Not able to connect to HPC. Please check for potential outages.");
             this.maintainerMasterEventEmitter.emit("job_end", job.hpc, job.id);
+            exit = true;
             // emit job over event - this.maintainerMasterEventEmitter.emit("job_end", job.hpc, job.id); ??
           }
         }
-        console.log("connected to hpc");
-        await ssh.connection.execCommand("echo"); // test connection
-        if (job.maintainerInstance.isInit) {
-          await job.maintainerInstance.maintain();
-        } else {
-          await job.maintainerInstance.init();
+        if (!exit) {
+          console.log("connected to hpc");
+          await ssh.connection.execCommand("echo"); // test connection
+          if (job.maintainerInstance.isInit) {
+            await job.maintainerInstance.maintain();
+          } else {
+            await job.maintainerInstance.init();
+          }
         }
-      } catch (e) {
-        if (config.is_testing) console.error(e.stack);
-        continue;
-      }
+        } catch (e) {
+          if (config.is_testing) console.error(e.stack);
+          continue;
+        }
+        
       console.log("post connection");
 
       // emit events & logs
