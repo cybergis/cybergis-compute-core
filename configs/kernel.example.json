@@ -1,0 +1,248 @@
+{ "cybergisx/python3-0.8.0": {
+  "env": [
+    "source /etc/profile.d/z00_lmod.sh",
+    "module --version",
+    "module use /cvmfs/cybergis.illinois.edu/software/easybuild/modules/all",
+    "module use /cvmfs/cybergis.illinois.edu/software/metamodules",
+    "module load cybergisx/0.8.0",
+    "alias python=/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/python3-0.8.0/bin/python",
+    "alias python3=/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/python3-0.8.0/bin/python",
+    "export PATH=\"/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/python3-0.8.0/bin:$PATH\"",
+    "export MY_PROJ_LIB=\"/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/python3-0.8.0/share/proj\""
+  ]
+},
+"cybergisx/python3-0.9.0": {
+  "env": [
+    "source /etc/profile.d/z00_lmod.sh",
+    "module --version",
+    "module use /cvmfs/cybergis.illinois.edu/software/easybuild/modules/all",
+    "module use /cvmfs/cybergis.illinois.edu/software/metamodules",
+    "module load cybergisx/0.8.0",
+    "alias python=/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/python3-0.9.0/bin/python",
+    "alias python3=/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/python3-0.9.0/bin/python",
+    "export PATH=\"/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/python3-0.9.0/bin:$PATH\"",
+    "export MY_PROJ_LIB=\"/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/python3-0.9.0/share/proj\""
+  ]
+},
+"cybergisx/geoai-0.8.0": {
+  "env": [
+    "source /etc/profile.d/z00_lmod.sh",
+    "module --version",
+    "module use /cvmfs/cybergis.illinois.edu/software/easybuild/modules/all",
+    "module use /cvmfs/cybergis.illinois.edu/software/metamodules",
+    "module load cybergisx/0.8.0",
+    "alias python=/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/geoai-0.8.0/bin/python",
+    "alias python3=/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/geoai-0.8.0/bin/python",
+    "export PATH=\"/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/geoai-0.8.0/bin:$PATH\"",
+    "export MY_PROJ_LIB=\"/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/geoai-0.8.0/share/proj\""
+  ]
+},
+"cybergisx/hydro-0.8.0": {
+  "env": [
+    "source /etc/profile.d/z00_lmod.sh",
+    "module --version",
+    "module use /cvmfs/cybergis.illinois.edu/software/easybuild/modules/all",
+    "module use /cvmfs/cybergis.illinois.edu/software/metamodules",
+    "module load cybergisx/0.8.0",
+    "alias python=/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/hydro-0.8.0/bin/python",
+    "alias python3=/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/hydro-0.8.0/bin/python",
+    "export PATH=\"/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/hydro-0.8.0/bin:$PATH\"",
+    "export MY_PROJ_LIB=\"/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/hydro-0.8.0/share/proj\""
+  ]
+},
+"cybergisx/rpy-1.0.0":{
+  "env":[
+    "source /etc/profile.d/z00_lmod.sh",
+    "module --version",
+    "module use /cvmfs/cybergis.illinois.edu/software/easybuild/modules/all",
+    "module use /cvmfs/cybergis.illinois.edu/software/metamodules",
+    "module load cybergisx/0.8.0",
+    "alias python=/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/rpy-1.0.0/bin/python",
+    "alias python3=/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/rpy-1.0.0/bin/python",
+    "export PATH=\"/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/rpy-1.0.0/bin/python:$PATH\"",
+    "export MY_PROJ_LIB=\"/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/rpy-1.0.0/share/proj\""
+  ]
+},
+"cybergisx/sos-0.8.0":{
+  "env":[
+    "source /etc/profile.d/z00_lmod.sh",
+    "module --version",
+    "module use /cvmfs/cybergis.illinois.edu/software/easybuild/modules/all",
+    "module use /cvmfs/cybergis.illinois.edu/software/metamodules",
+    "module load cybergisx/0.8.0",
+    "alias python=/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/sos-0.8.0/bin/python",
+    "alias python3=/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/sos-0.8.0/bin/python",
+    "export PATH=\"/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/sos-0.8.0/bin/python:$PATH\"",
+    "export MY_PROJ_LIB=\"/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/sos-0.8.0/share/proj\""
+  ]
+},
+"cybergisx/ssh-0.8.0":{
+  "env":[
+    "source /etc/profile.d/z00_lmod.sh",
+    "module --version",
+    "module use /cvmfs/cybergis.illinois.edu/software/easybuild/modules/all",
+    "module use /cvmfs/cybergis.illinois.edu/software/metamodules",
+    "module load cybergisx/0.8.0",
+    "alias python=/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/ssh-0.8.0/bin/python",
+    "alias python3=/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/ssh-0.8.0/bin/python",
+    "export PATH=\"/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/ssh-0.8.0/bin/python:$PATH\"",
+    "export MY_PROJ_LIB=\"/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/ssh-0.8.0/share/proj\""
+  ] 
+},
+"cjw/landlab-2021-09":{
+  "env":[
+    "source /etc/profile.d/z00_lmod.sh",
+    "module --version",
+    "module use /cvmfs/cybergis.illinois.edu/software/easybuild/modules/all",
+    "module use /cvmfs/cybergis.illinois.edu/software/metamodules",
+    "module load cjw/2021-09",
+    "alias python=/cvmfs/cybergis.illinois.edu/software/conda/cjw/landlab-2021-06/bin/python",
+    "alias python3=/cvmfs/cybergis.illinois.edu/software/conda/cjw/landlab-2021-06/bin/python",
+    "export PATH=\"/cvmfs/cybergis.illinois.edu/software/conda/cjw/landlab-2021-06/bin/python:$PATH\"",
+    "export MY_PROJ_LIB=\"/cvmfs/cybergis.illinois.edu/software/conda/cjw/landlab-2021-06/share/proj\""
+  ]
+},
+"cjw/pysumma-2021-06":{
+  "env":[
+    "source /etc/profile.d/z00_lmod.sh",
+    "module --version",
+    "module use /cvmfs/cybergis.illinois.edu/software/easybuild/modules/all",
+    "module use /cvmfs/cybergis.illinois.edu/software/metamodules",
+    "module load cjw/2021-09",
+    "alias python=/cvmfs/cybergis.illinois.edu/software/conda/cjw/pysumma-2021-06/bin/python",
+    "alias python3=/cvmfs/cybergis.illinois.edu/software/conda/cjw/pysumma-2021-06/bin/python",
+    "export PATH=\"/cvmfs/cybergis.illinois.edu/software/conda/cjw/pysumma-2021-06/bin/python:$PATH\"",
+    "export MY_PROJ_LIB=\"/cvmfs/cybergis.illinois.edu/software/conda/cjw/pysumma-2021-06/share/proj\""
+  ]
+},
+"cjw/pysumma-2021-12":{
+  "env":[
+    "source /etc/profile.d/z00_lmod.sh",
+    "module --version",
+    "module use /cvmfs/cybergis.illinois.edu/software/easybuild/modules/all",
+    "module use /cvmfs/cybergis.illinois.edu/software/metamodules",
+    "module load cjw/2021-09",
+    "alias python=/cvmfs/cybergis.illinois.edu/software/conda/cjw/pysumma-2021-12/bin/python",
+    "alias python3=/cvmfs/cybergis.illinois.edu/software/conda/cjw/pysumma-2021-12/bin/python",
+    "export PATH=\"/cvmfs/cybergis.illinois.edu/software/conda/cjw/pysumma-2021-12/bin/python:$PATH\"",
+    "export MY_PROJ_LIB=\"/cvmfs/cybergis.illinois.edu/software/conda/cjw/pysumma-2021-12/share/proj\""
+  ]
+},
+"cjw/python3-2021-09":{
+  "env":[
+    "source /etc/profile.d/z00_lmod.sh",
+    "module --version",
+    "module use /cvmfs/cybergis.illinois.edu/software/easybuild/modules/all",
+    "module use /cvmfs/cybergis.illinois.edu/software/metamodules",
+    "module load cjw/2021-09",
+    "alias python=/cvmfs/cybergis.illinois.edu/software/conda/cjw/base-2021-06/bin/python",
+    "alias python3=/cvmfs/cybergis.illinois.edu/software/conda/cjw/base-2021-06/bin/python",
+    "export PATH=\"/cvmfs/cybergis.illinois.edu/software/conda/cjw/base-2021-06/bin/python:$PATH\"",
+    "export MY_PROJ_LIB=\"/cvmfs/cybergis.illinois.edu/software/conda/cjw/landlab-2021-12/share/proj\""
+  ]
+},
+"cjw/python3-2021-12":{
+  "env":[
+    "source /etc/profile.d/z00_lmod.sh",
+    "module --version",
+    "module use /cvmfs/cybergis.illinois.edu/software/easybuild/modules/all",
+    "module use /cvmfs/cybergis.illinois.edu/software/metamodules",
+    "module load cjw/2021-09",
+    "alias python=/cvmfs/cybergis.illinois.edu/software/conda/cjw/python3-2021-12/bin/python",
+    "alias python3=/cvmfs/cybergis.illinois.edu/software/conda/cjw/python3-2021-12/bin/python",
+    "export PATH=\"/cvmfs/cybergis.illinois.edu/software/conda/cjw/python3-2021-12/bin/python:$PATH\"",
+    "export MY_PROJ_LIB=\"/cvmfs/cybergis.illinois.edu/software/conda/cjw/python3-2021-12/share/proj\""
+  ]
+},
+"cjw/python3-2022-06":{
+  "env":[
+    "source /etc/profile.d/z00_lmod.sh",
+    "module --version",
+    "module use /cvmfs/cybergis.illinois.edu/software/easybuild/modules/all",
+    "module use /cvmfs/cybergis.illinois.edu/software/metamodules",
+    "module load cjw/2022-03",
+    "alias python=/cvmfs/cybergis.illinois.edu/software/conda/cjw/python3-2022-06/bin/python",
+    "alias python3=/cvmfs/cybergis.illinois.edu/software/conda/cjw/python3-2022-06/bin/python",
+    "export PATH=\"/cvmfs/cybergis.illinois.edu/software/conda/cjw/python3-2022-06/bin/python:$PATH\"",
+    "export MY_PROJ_LIB=\"/cvmfs/cybergis.illinois.edu/software/conda/cjw/python3-2022-06/share/proj\""
+  ]
+},
+"cjw/python3-2021-06":{
+  "env":[
+    "source /etc/profile.d/z00_lmod.sh",
+    "module --version",
+    "module use /cvmfs/cybergis.illinois.edu/software/easybuild/modules/all",
+    "module use /cvmfs/cybergis.illinois.edu/software/metamodules",
+    "module load cjw/2021-09",
+    "alias python=/cvmfs/cybergis.illinois.edu/software/conda/cjw/pyrhessys-2021-06/bin/python",
+    "alias python3=/cvmfs/cybergis.illinois.edu/software/conda/cjw/pyrhessys-2021-06/bin/python",
+    "export PATH=\"/cvmfs/cybergis.illinois.edu/software/conda/cjw/pyrhessys-2021-06/bin/python:$PATH\"",
+    "export MY_PROJ_LIB=\"/cvmfs/cybergis.illinois.edu/software/conda/cjw/pyrhessys-2021-06/share/proj\""
+  ]
+},
+"cjw/rhessys-2022-03":{
+  "env":[
+    "source /etc/profile.d/z00_lmod.sh",
+    "module --version",
+    "module use /cvmfs/cybergis.illinois.edu/software/easybuild/modules/all",
+    "module use /cvmfs/cybergis.illinois.edu/software/metamodules",
+    "module load cjw/2022-03",
+    "alias python=/cvmfs/cybergis.illinois.edu/software/conda/cjw/pyrhessys-2022-03/bin/python",
+    "alias python3=/cvmfs/cybergis.illinois.edu/software/conda/cjw/pyrhessys-2022-03/bin/python",
+    "export PATH=\"/cvmfs/cybergis.illinois.edu/software/conda/cjw/pyrhessys-2022-03/bin/python:$PATH\"",
+    "export MY_PROJ_LIB=\"/cvmfs/cybergis.illinois.edu/software/conda/cjw/pyrhessys-2022-03/share/proj\""
+  ]
+},
+"cjw/taudem-2021-09":{
+  "env":[
+    "source /etc/profile.d/z00_lmod.sh",
+    "module --version",
+    "module use /cvmfs/cybergis.illinois.edu/software/easybuild/modules/all",
+    "module use /cvmfs/cybergis.illinois.edu/software/metamodules",
+    "module load cjw/2021-09",
+    "alias python=/cvmfs/cybergis.illinois.edu/software/conda/cjw/taudem-2021-06/bin/python",
+    "alias python3=/cvmfs/cybergis.illinois.edu/software/conda/cjw/taudem-2021-06/bin/python",
+    "export PATH=\"/cvmfs/cybergis.illinois.edu/software/conda/cjw/taudem-2021-06/bin/python:$PATH\"",
+    "export MY_PROJ_LIB=\"/cvmfs/cybergis.illinois.edu/software/conda/cjw/taudem-2021-06/share/proj\""
+  ]
+},
+"cjw/taudem-2022-12":{
+  "env":[
+    "source /etc/profile.d/z00_lmod.sh",
+    "module --version",
+    "module use /cvmfs/cybergis.illinois.edu/software/easybuild/modules/all",
+    "module use /cvmfs/cybergis.illinois.edu/software/metamodules",
+    "module load cjw/2021-09",
+    "alias python=/cvmfs/cybergis.illinois.edu/software/conda/cjw/taudem-2022-12/bin/python",
+    "alias python3=/cvmfs/cybergis.illinois.edu/software/conda/cjw/taudem-2022-12/bin/python",
+    "export PATH=\"/cvmfs/cybergis.illinois.edu/software/conda/cjw/taudem-2022-12/bin/python:$PATH\"",
+    "export MY_PROJ_LIB=\"/cvmfs/cybergis.illinois.edu/software/conda/cjw/taudem-2022-12/share/proj\""
+  ]
+},
+"cjw/wrfhydro-2021-06":{
+  "env":[
+    "source /etc/profile.d/z00_lmod.sh",
+    "module --version",
+    "module use /cvmfs/cybergis.illinois.edu/software/easybuild/modules/all",
+    "module use /cvmfs/cybergis.illinois.edu/software/metamodules",
+    "module load cjw/2021-09",
+    "alias python=/cvmfs/cybergis.illinois.edu/software/conda/cjw/wrfhydro-2021-06/bin/python",
+    "alias python3=/cvmfs/cybergis.illinois.edu/software/conda/cjw/wrfhydro-2021-06/bin/python",
+    "export PATH=\"/cvmfs/cybergis.illinois.edu/software/conda/cjw/wrfhydro-2021-06/bin/python:$PATH\"",
+    "export MY_PROJ_LIB=\"/cvmfs/cybergis.illinois.edu/software/conda/cjw/wrfhydro-2021-06/share/proj\""
+  ]
+},
+"cjw/wrfhydro-2022-03":{
+  "env":[
+    "source /etc/profile.d/z00_lmod.sh",
+    "module --version",
+    "module use /cvmfs/cybergis.illinois.edu/software/easybuild/modules/all",
+    "module use /cvmfs/cybergis.illinois.edu/software/metamodules",
+    "module load cjw/2022-03",
+    "alias python=/cvmfs/cybergis.illinois.edu/software/conda/cjw/wrfhydro-2022-03/bin/python",
+    "alias python3=/cvmfs/cybergis.illinois.edu/software/conda/cjw/wrfhydro-2022-03/bin/python",
+    "export PATH=\"/cvmfs/cybergis.illinois.edu/software/conda/cjw/wrfhydro-2022-03/bin/python:$PATH\"",
+    "export MY_PROJ_LIB=\"/cvmfs/cybergis.illinois.edu/software/conda/cjw/wrfhydro-2022-03/share/proj\""
+  ]
+}
+}

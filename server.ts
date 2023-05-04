@@ -6,14 +6,15 @@ import {
   maintainerConfig,
   containerConfig,
   folderEditable,
-  jupyterGlobusMapConfig
+  jupyterGlobusMapConfig,
+  announcementsConfig
 } from "./src/types";
 import {
   config,
   containerConfigMap,
   hpcConfigMap,
   maintainerConfigMap,
-  jupyterGlobusMap,
+  jupyterGlobusMap
 } from "./configs/config";
 import GlobusUtil, { GlobusTaskListManager } from "./src/lib/GlobusUtil";
 import express = require("express");
@@ -26,6 +27,7 @@ import JobUtil, { ResultFolderContentManager } from "./src/lib/JobUtil";
 import GitUtil from "./src/lib/GitUtil";
 import SSHCredentialGuard from "./src/SSHCredentialGuard";
 import { Folder } from "./src/models/Folder";
+import { Console } from "console";
 const swaggerUI = require("swagger-ui-express");
 const swaggerDocument = require("../production/swagger.json");
 const bodyParser = require("body-parser");
@@ -79,6 +81,14 @@ var schemas = {
       jupyterhubApiToken: { type: "string" },
     },
     required: ["jupyterhubApiToken"],
+  },
+  cancel: {
+    type: "object",
+    properties: {
+      jupyterhubApiToken: { type: "string" },
+      jobId: { type: "string"}
+    },
+    required: ["jupyterhubApiToken", "jobId"],
   },
   updateFolder: {
     type: "object",
@@ -178,27 +188,46 @@ app.use("/ts-docs", express.static("production/tsdoc"));
 
 app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swaggerDocument));
 
-// index
+/**
+ * @openapi
+ * /:
+ *  get:
+ *      description: Get "hello world" from the route directory (Authentication NOT REQUIRED)
+ *      responses:
+ *          200:
+ *              descrption: Successfuly returns "hello world"
+ *
+ */
 app.get("/", (req, res) => {
   res.json({ message: "hello world" });
 });
 
-// statistic
+/**
+ * @openapi
+ * /statistic:
+ *  get:
+ *      description: Get the runtime of null across available HPC clusters (Authentication NOT REQUIRED)
+ *      responses:
+ *          200:
+ *              descrption: Returns JSON containing runtime in seconds total and per cluster (null here becauise no job referenced)
+ *
+ */
 app.get("/statistic", async (req, res) => {
   res.json({ runtime_in_seconds: await statistic.getRuntimeTotal() });
 });
 
 /**
- * /:
+ * @openapi
+ * /statistic/job/:jobId:
  *  get:
- *      description: Get the runtime for a specific job.
+ *      description: Get the runtime for a specific job across available HPC clusters (Authentication REQUIRED)
  *      responses:
  *          200:
- *              descrption: Returns the runtime for the specified job.
+ *              descrption: Returns JSON containing runtime in seconds total and per cluster
  *          401:
  *              description: Returns a list of errors rasied when validating the job access token.
  *          402:
- *              description: Returns a list of errors with the format of the req body.
+ *              description: Returns 'invalid input' and a list of errors with the format of the req body or 'invalid token' if a valid jupyter token is not provided
  *
  */
 app.get("/statistic/job/:jobId", async (req, res) => {
@@ -227,14 +256,17 @@ app.get("/statistic/job/:jobId", async (req, res) => {
 });
 
 /**
- * /:
+ * @openapi
+ * /user:
  *  get:
- *      description: Returns the current user's username.
+ *      description: Returns the current user's username (Authentication REQUIRED)
  *      responses:
  *          200:
- *              description: Returns the current user's username.
+ *              description: Returns the current user's username
  *          402:
- *              description: Returns a list of errors with the format of the req body if there are any, or "invalid token" if there is no user logged in.
+ *              description: Returns 'invalid input' and a list of errors with the format of the req body or 'invalid token' if a valid jupyter token authentication is not provided
+ *          404:
+ *              description: Returns an error if the user's username is not in the allowlist
  */
 app.get("/user", (req, res) => {
   var body = req.body;
@@ -245,8 +277,8 @@ app.get("/user", (req, res) => {
     return;
   }
 
-  if (!Helper.isWhitelisted(res.locals.host)) {
-    res.status(404).json({ error: "Cannot find jupyterhubHost in whitelist" });
+  if (!Helper.isAllowlisted(res.locals.host)) {
+    res.status(404).json({ error: "Cannot find jupyterhubHost in allowlist" });
     return;
   }
 
@@ -262,14 +294,16 @@ app.get("/user", (req, res) => {
  * @openapi
  * /user/jupyter-globus:
  *  get:
- *      description: Returns the jupyter-globus endpoint, root path and container home path
+ *      description: Returns jupyter-globus information incuding the endpoint, root path, and container home path (Authentication REQUIRED)
  *      responses:
  *          200:
- *              description: Returns the jupyter-globus endpoint, root path and container home path.
+ *              description: Returns the jupyter-globus endpoint, root path and container home path as a single dictionary
  *          402:
- *              description: Returns a list of errors with the format of the req body along with "invalid input" if there are any, or "invalid token" if there is no user logged in.
+ *              description: Returns 'invalid input' and a list of errors with the format of the req body or 'invalid token' if a valid jupyter token authentication is not provided
+ *          403:
+ *              description: Returns an error if the current user does not map to a jupyter-globus user
  *          404:
- *              description: Returns "unknown host" if jupyter-globus cannot be found in local hosts.
+ *              description: Returns an error if the user's username is not in the allowlist
  */
 app.get("/user/jupyter-globus", async (req, res) => {
   var body = req.body;
@@ -280,8 +314,8 @@ app.get("/user/jupyter-globus", async (req, res) => {
     return;
   }
 
-  if (!Helper.isWhitelisted(res.locals.host)) {
-    res.status(404).json({ error: "Cannot find jupyterhubHost in whitelist" });
+  if (!Helper.isAllowlisted(res.locals.host)) {
+    res.status(404).json({ error: "Cannot find jupyterhubHost in allowlist" });
     return;
   }
 
@@ -316,12 +350,14 @@ app.get("/user/jupyter-globus", async (req, res) => {
  * @openapi
  * /user/job:
  *  get:
- *      description: Returns all of the jobs for the current user.
+ *      description: Returns a list of all of the current user's jobs (Authentication REQUIRED)
  *      responses:
  *          200:
- *              description: Returns all of the jobs for the current user.
+ *              description: Returns all of the jobs for the current user in a list of dictionary objects representing each job
  *          402:
- *              description: Returns a list of errors with the format of the req body along with "invalid input" if there are any, or "invalid token" if there is no user logged in.
+ *              description: Returns 'invalid input' and a list of errors with the format of the req body or 'invalid token' if a valid jupyter token authentication is not provided
+ *          404:
+ *              description: Returns an error if the user's username is not in the allowlist
  */
 app.get("/user/job", async (req, res) => {
   var body = req.body;
@@ -332,8 +368,8 @@ app.get("/user/job", async (req, res) => {
     return;
   }
 
-  if (!Helper.isWhitelisted(res.locals.host)) {
-    res.status(404).json({ error: "Cannot find jupyterhubHost in whitelist" });
+  if (!Helper.isAllowlisted(res.locals.host)) {
+    res.status(404).json({ error: "Cannot find jupyterhubHost in allowlist" });
     return;
   }
 
@@ -358,12 +394,12 @@ app.get("/user/job", async (req, res) => {
  * @openapi
  * /user/slurm-usage:
  *  get:
- *      description: Returns slurm usage for the current user
+ *      description: Returns dictionary object of slurm usage for the current user (Authentication REQUIRED)
  *      responses:
  *          200:
- *              description: Returns slurm usage for the current user
+ *              description: Returns dictionary object of slurm usage for the current user
  *          402:
- *              description: Returns a list of errors with the format of the req body along with "invalid input" if there are any, or "invalid token" if there is no user logged in.
+ *              description: Returns 'invalid input' and a list of errors with the format of the req body or 'invalid token' if a valid jupyter token authentication is not provided
  */
 app.get("/user/slurm-usage", async (req, res) => {
   var body = req.body;
@@ -385,10 +421,10 @@ app.get("/user/slurm-usage", async (req, res) => {
  * @openapi
  * /hpc:
  *  get:
- *      description: Returns current hpcConfig
+ *      description: Returns current hpc configurations for existing linked hpc clusters as a dictionary (Authentication NOT REQUIRED)
  *      responses:
  *          200:
- *              description: Returns current hpcConfig
+ *              description: Returns current hpc configurations for existing linked hpc clusters as a dictionaruy
  */
 app.get("/hpc", function (req, res) {
   var parseHPC = (dest: { [key: string]: hpcConfig }) => {
@@ -410,10 +446,10 @@ app.get("/hpc", function (req, res) {
  * @openapi
  * /maintainer:
  *  get:
- *      description: Returns current maintainerConfig
+ *      description: Returns current maintainer configurations as a dictionary object (Authentication NOT REQUIRED)
  *      responses:
  *          200:
- *              description: Returns current maintainerConfig
+ *              description: Returns current maintainer configurations as a dictionary object
  */
 app.get("/maintainer", function (req, res) {
   var parseMaintainer = (dest: { [key: string]: maintainerConfig }) => {
@@ -431,10 +467,10 @@ app.get("/maintainer", function (req, res) {
  * @openapi
  * /container:
  *  get:
- *      description: Returns current containerConfig
+ *      description: Returns current container configurations as a dictionary object (Authentication NOT REQUIRED)
  *      responses:
  *          200:
- *              description: Returns current containerConfig
+ *              description: Returns current container configurations as a dictionary object 
  */
 app.get("/container", function (req, res) {
   var parseContainer = (dest: { [key: string]: containerConfig }) => {
@@ -452,10 +488,10 @@ app.get("/container", function (req, res) {
  * @openapi
  * /whitelist:
  *  get:
- *      description: Returns current whitelist
+ *      description: (Use /allowlist instead. /whitelist is being phased out.) Returns current allowlist (Authentication NOT REQUIRED)
  *      responses:
  *          200:
- *              description: Returns current whitelist
+ *              description: Returns current allowlist
  */
 app.get("/whitelist", function (req, res) {
   var parseHost = (dest: { [key: string]: jupyterGlobusMapConfig }) => {
@@ -469,6 +505,61 @@ app.get("/whitelist", function (req, res) {
   res.json({ whitelist: parseHost(jupyterGlobusMap)});
 });
 
+/**
+ * @openapi
+ * /allowlist:
+ *  get:
+ *      description: Returns current allowlist (Authentication NOT REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns current allowlist
+ */
+app.get("/allowlist", function (req, res) {
+  var parseHost = (dest: { [key: string]: jupyterGlobusMapConfig }) => {
+    var out = {};
+    for (var i in dest) {
+      var d: jupyterGlobusMapConfig = JSON.parse(JSON.stringify(dest[i])); // hard copy
+      out[i] = d.comment;
+    }
+    return out;
+  };
+  res.json({ allowlist: parseHost(jupyterGlobusMap)});
+});
+
+/**
+ * @openapi
+ * /announcement:
+ *  get:
+ *      description: Returns list of current announcements (Authentication NOT REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns array of current announcements
+ */
+app.get("/announcement", function (req, res) {
+
+  var fs = require('fs');
+  fs.readFile('./configs/announcement.json', 'utf8', function(err, data){
+    var parseHost = (dest: { [key: string]: announcementsConfig }) => {
+      var out = {};
+      for (var i in dest) {
+        var d: announcementsConfig = JSON.parse(JSON.stringify(dest[i])); // hard copy
+        out[i] = d;
+      }
+      return out;
+    };
+    res.json(parseHost(JSON.parse(data)));
+  });
+});
+
+/**
+ * @openapi
+ * /git:
+ *  get:
+ *      description: Returns collection of acceptable git jobs (Authentication NOT REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns JSON dictionary of git jobs including specs for each job
+ */
 app.get("/git", async function (req, res) {
   var parseGit = async (dest: Git[]) => {
     var out = {};
@@ -490,6 +581,17 @@ app.get("/git", async function (req, res) {
   res.json({ git: await parseGit(gits) });
 });
 
+/**
+ * @openapi
+ * /folder:
+ *  get:
+ *      description: Returns list of folders stored as dictionary objects (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns list of folders as dictionary objects with metadata
+ *          402:
+ *              description: Returns 'invalid input' and a list of errors with the format of the req body or 'invalid token' if a valid jupyter token authentication is not provided
+ */
 app.get("/folder", async function (req, res) {
   const body = req.body;
   const errors = requestErrors(validator.validate(body, schemas.user));
@@ -510,6 +612,17 @@ app.get("/folder", async function (req, res) {
   res.json({ folder: folder });
 });
 
+/**
+ * @openapi
+ * /folder/:folderId:
+ *  get:
+ *      description: Returns a specific folder stored as a dictionary object (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns a folder as a dictionary object with metadata
+ *          402:
+ *              description: Returns 'invalid input' and a list of errors with the format of the req body or 'invalid token' if a valid jupyter token authentication is not provided
+ */
 app.get("/folder/:folderId", async function (req, res) {
   const body = req.body;
   const errors = requestErrors(validator.validate(body, schemas.user));
@@ -530,6 +643,21 @@ app.get("/folder/:folderId", async function (req, res) {
   res.json(folder);
 });
 
+/**
+ * @openapi
+ * /folder/:folderId:
+ *  delete:
+ *      description: Deletes an ID specified folder (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Deletes the folder specified by the ID
+ *          401:
+ *              description: Returns "encountered error" when the folder deletion throws an exception
+ *          402:
+ *              description: Returns 'invalid input' and a list of errors with the format of the req body or 'invalid token' if a valid jupyter token authentication is not provided
+ *          404:
+ *              description: Returns "unknown folder with id" when the specified folder is not found
+ */
 app.delete("/folder/:folderId", async function (req, res) {
   const body = req.body;
   const errors = requestErrors(validator.validate(body, schemas.user));
@@ -562,6 +690,21 @@ app.delete("/folder/:folderId", async function (req, res) {
   }
 });
 
+/**
+ * @openapi
+ * /folder/:folderId:
+ *  put:
+ *      description: Updates a folder with the given ID (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Updates the folder specified by the ID and returns folder
+ *          401:
+ *              description: Returns "encountered error" when updating the folder throws an exception
+ *          402:
+ *              description: Returns 'invalid input' and a list of errors with the format of the req body or 'invalid token' if a valid jupyter token authentication is not provided
+ *          404:
+ *              description: Returns "unknown folder with id" when the specified folder is not found
+ */
 app.put("/folder/:folderId", async function (req, res) {
   const body = req.body;
   const errors = requestErrors(validator.validate(body, schemas.updateFolder));
@@ -605,6 +748,19 @@ app.put("/folder/:folderId", async function (req, res) {
   }
 });
 
+/**
+ * @openapi
+ * /folder/:folderId/download/globus-init:
+ *  post:
+ *      description: Posts a request to initiate a globus download of the specified folder (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Globus download of the specific folder is successful
+ *          402:
+ *              description: Returns 'invalid input' and a list of errors with the format of the req body or 'invalid token' if a valid jupyter token authentication is not provided
+ *          403:
+ *              description: Returns error when the folder ID cannot be found, when the hpc config for globus cannot be found, when the globus download fails, or when a download is already running for the folder
+ */
 app.post("/folder/:folderId/download/globus-init", async function (req, res) {
   const body = req.body;
   const errors = requestErrors(
@@ -667,6 +823,19 @@ app.post("/folder/:folderId/download/globus-init", async function (req, res) {
   }
 });
 
+/**
+ * @openapi
+ * /folder/:folderId/download/globus-status:
+ *  get:
+ *      description: Gets the status of a globus download job currenty happening on the given folder ID (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns status of current globus download (if no download is occuring {} is returned)
+ *          402:
+ *              description: Returns 'invalid input' and a list of errors with the format of the req body or 'invalid token' if a valid jupyter token authentication is not provided
+ *          403:
+ *              description: Returns error when the folder ID cannot be found or when the globus query fails
+ */
 app.get("/folder/:folderId/download/globus-status", async function (req, res) {
   const body = req.body;
   const errors = requestErrors(validator.validate(body, schemas.user));
@@ -705,7 +874,19 @@ app.get("/folder/:folderId/download/globus-status", async function (req, res) {
   }
 });
 
-// job
+/**
+ * @openapi
+ * /job:
+ *  post:
+ *      description: Posts a job to run with the corresponding metatdata in the request (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns when job is successfully posted
+ *          401:
+ *              description: Returns an error when the request passes an unrecognized maintainer or hpc or if SSH credentials are invalid
+ *          402:
+ *              description: Returns 'invalid input' and a list of errors with the format of the req body
+ */
 app.post("/job", async function (req, res) {
   const body = req.body;
   const errors = requestErrors(validator.validate(body, schemas.createJob));
@@ -764,6 +945,19 @@ app.post("/job", async function (req, res) {
   res.json(Helper.job2object(job));
 });
 
+/**
+ * @openapi
+ * /job/:jobId:
+ *  put:
+ *      description: Updates a job with the given job ID (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns updated job when it is successfully updated
+ *          402:
+ *              description: Returns 'invalid input' and a list of errors with the format of the req body, 'invalid token' if a valid jupyter token authentication is not provided, or an error if the job does not exist
+ *          403:
+ *              description: Returns internal error when there is an exception while updating the job details
+*/
 app.put("/job/:jobId", async function (req, res) {
   const body = req.body;
   const errors = requestErrors(validator.validate(body, schemas.updateJob));
@@ -818,6 +1012,19 @@ app.put("/job/:jobId", async function (req, res) {
   }
 });
 
+/**
+ * @openapi
+ * /job/:jobId/submit:
+ *  post:
+ *      description: Submits a job with the given job ID to the HPC (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns when job is successfully submitted
+ *          401:
+ *              description: Returns "submit without login is not allowed" if the user is not logged in, "invalid access" if job folders are not accessible, or "job already submitted or in queue" if the job is already suibmitted
+ *          402:
+ *              description: Returns 'invalid input' and a list of errors with the format of the req body or a list of errors if the job does not successfully submit
+*/
 app.post("/job/:jobId/submit", async function (req, res) {
   const body = req.body;
   const errors = requestErrors(validator.validate(body, schemas.user));
@@ -880,12 +1087,93 @@ app.post("/job/:jobId/submit", async function (req, res) {
   res.json(Helper.job2object(job));
 });
 
+/**
+ * @openapi
+ * /clean:
+ *  put:
+ *      description: Not yet implemented
+*/
+app.put("/clean", async function (req, res) {});
+
+/**
+ * @openapi
+ * /job/:jobId/pause:
+ *  put:
+ *      description: Not yet implemented
+*/
 app.put("/job/:jobId/pause", async function (req, res) {});
 
+/**
+ * @openapi
+ * /job/:jobId/resume:
+ *  put:
+ *      description: Not yet implemented
+*/
 app.put("/job/:jobId/resume", async function (req, res) {});
 
-app.put("/job/:jobId/cancel", async function (req, res) {});
+/**
+ * @openapi
+ * /job/:jobId/cancel:
+ *  put:
+ *      description: Cancels a job that is currently in the queue
+ *      responses:
+ *          200:
+ *              description: Job was found successfully added to the queue to be canceled
+ *          401:
+ *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access token" if the events cannot be accessed
+ *          402:
+ *              description: Returns 'invalid input' and a list of errors with the format of the req body - jobId may be invalid or job may not be in queue
+*/
+app.put("/job/:jobId/cancel", async function (req, res) {
+  console.log("made it to cancel");
+  const body = req.body;
+  const errors = requestErrors(validator.validate(body, schemas.user));
 
+  if (errors.length > 0) {
+    res.status(402).json({ error: "invalid input", messages: errors });
+    return;
+  }
+  if (!res.locals.username) {
+    res
+      .status(401)
+      .json({ error: "submit without login is not allowed", messages: [] });
+    return;
+  }
+  
+  try {
+    const jobId = req.params.jobId;
+    var job = supervisor.cancelJob(jobId);
+    if (job == null) {
+      res
+        .status(402)
+        .json({ error: "job is not in queue or running jobs" });
+      return;
+    }
+    res
+      .status(200)
+      .json({ messages: ["job successfully added to cancel queue"] });
+    return;
+  } catch (e) {
+    res
+      .status(402)
+      .json({ error: "invalid jobId", messages: [e.toString()] });
+    return;
+  }
+});
+
+/**
+ * @openapi
+ * /job/:jobId/events:
+ *  get:
+ *      description: Gets an array of the job events for a given job ID (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns array of dictionary objects containing details of each event in the process of ssubmitting and fufilling a a job
+ *          401:
+ *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access token" if the events cannot be accessed
+ *          402:
+ *              description: Returns 'invalid input' and a list of errors with the format of the req body
+*/
 app.get("/job/:jobId/events", async function (req, res) {
   const body = req.body;
   const errors = requestErrors(validator.validate(body, schemas.user));
@@ -919,12 +1207,27 @@ app.get("/job/:jobId/events", async function (req, res) {
   }
 });
 
+/**
+ * @openapi
+ * /job/:jobId/result-folder-content:
+ *  get:
+ *      description: Gets an array of the directories in the result folder for a given job ID (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns array of dirrectories in the given job's result folder
+ *          401:
+ *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access" if the folder cannot be accessed
+ *          402:
+ *              description: Returns 'invalid input' and a list of errors with the format of the req body
+*/
 app.get("/job/:jobId/result-folder-content", async function (req, res) {
   const body = req.body;
   const errors = requestErrors(validator.validate(body, schemas.user));
 
   if (errors.length > 0) {
-    res.json({ error: "invalid input", messages: errors });
+    res
+      .status(402)
+      .json({ error: "invalid input", messages: errors });
     return;
   }
   if (!res.locals.username) {
@@ -948,13 +1251,27 @@ app.get("/job/:jobId/result-folder-content", async function (req, res) {
   }
 });
 
+/**
+ * @openapi
+ * /job/:jobId/logs:
+ *  get:
+ *      description: Gets an array of dictionary objects that represent logs for the given job ID (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns array of dictionary objects that represent logs for the given job ID
+ *          401:
+ *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access" if the logs cannot be accessed
+ *          402:
+ *              description: Returns 'invalid input' and a list of errors with the format of the req body
+*/
 app.get("/job/:jobId/logs", async function (req, res) {
   var body = req.body;
   var errors = requestErrors(validator.validate(body, schemas.user));
 
   if (errors.length > 0) {
-    res.json({ error: "invalid input", messages: errors });
-    res.status(402);
+    res
+      .status(402)
+      .json({ error: "invalid input", messages: errors });
     return;
   }
   if (!res.locals.username) {
@@ -980,6 +1297,19 @@ app.get("/job/:jobId/logs", async function (req, res) {
   }
 });
 
+/**
+ * @openapi
+ * /job/:jobId:
+ *  get:
+ *      description: Gets a dictionary object representing the given job ID that includes information on the job as well as events, logs, and folder information (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns a dictionary object representing the given job ID
+ *          401:
+ *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access" if the job and job information cannot be accessed
+ *          402:
+ *              description: Returns 'invalid input' and a list of errors with the format of the req body
+*/
 app.get("/job/:jobId", async function (req, res) {
   var body = req.body;
   var errors = requestErrors(validator.validate(body, schemas.user));

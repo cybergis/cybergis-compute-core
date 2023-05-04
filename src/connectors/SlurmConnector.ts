@@ -294,6 +294,16 @@ ${cmd}`;
   }
 
   /**
+   * Get Container CVMFS folder path
+   * @param{string} providedPath - specified path
+   * @return{string} - executable path
+   */
+  getContainerCVMFSFolderPath(providedPath: string = null) {
+    if (providedPath) return path.join(`/tmp/cvmfs`, providedPath);
+    else return `/tmp/cvmfs`;
+  }
+
+  /**
    * Get Container data folder path
    *
    * @param{string} providedPath - specified path

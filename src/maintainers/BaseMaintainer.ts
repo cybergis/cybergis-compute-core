@@ -49,6 +49,8 @@ class BaseMaintainer {
 
   public isPaused = false;
 
+  public jobOnHpc = false;
+
   protected lifeCycleState = {
     initCounter: 0,
     createdAt: null,
@@ -298,6 +300,22 @@ class BaseMaintainer {
       this.job.id,
       this,
       this.job.env
+    );
+  }
+
+  /**
+   * Return the Singularity connector associated with this job and hpc.
+   *
+   * @public
+   * @returns {SingularityConnector} - The singularity connector associated with this job with cvmfs turned on.
+   */
+  public getSingCVMFSConnector(): SingularityConnector {
+    return new SingularityConnector(
+      this.job.hpc,
+      this.job.id,
+      this,
+      this.job.env,
+      true
     );
   }
 

@@ -17,6 +17,10 @@ class Supervisor {
 
   private queues: { [keys: string]: Queue } = {};
 
+  private runningJobs: { [keys: string]: Array<Job> } = {};
+
+  private cancelJobs: { [keys: string]: Array<Job> } = {};
+
   private emitter = new Emitter();
 
   private maintainerMasterThread = null;
@@ -33,6 +37,8 @@ class Supervisor {
       this.jobPoolCapacities[hpcName] = hpcConfig.job_pool_capacity;
       this.jobPoolCounters[hpcName] = 0;
       this.queues[hpcName] = new Queue(hpcName);
+      this.runningJobs[hpcName] = new Array<Job>();
+      this.cancelJobs[hpcName] = new Array<Job>();
     }
 
     this.createMaintainerMaster();
@@ -55,6 +61,8 @@ class Supervisor {
           }`).default; // typescript compilation hack
           try {
             job.maintainerInstance = new maintainer(job);
+            this.runningJobs[job.hpc].push(job);
+            console.log(`Added job to running jobs: ${job.id}`);
           } catch (e) {
             // log error and skip job
             self.emitter.registerEvents(
@@ -72,6 +80,7 @@ class Supervisor {
               .execute();
             continue;
           }
+          
           self.jobPoolCounters[hpcName]++;
 
           // manage ssh pool
@@ -150,6 +159,21 @@ class Supervisor {
         self.emitter.registerEvents(job, events[j].type, events[j].message);
       for (var j in logs) self.emitter.registerLogs(job, logs[j]);
 
+      // check if job should be canceled
+      var shouldCancel = false;
+      for (var i = 0; i < this.cancelJobs[job.hpc].length; i++) {
+        if (this.cancelJobs[job.hpc][i] == job) {
+          shouldCancel = true;
+        }
+      }
+      if (shouldCancel && job.maintainerInstance.jobOnHpc) {
+        job.maintainerInstance.onCancel();
+        const index = this.cancelJobs[job.hpc].indexOf(job, 0);
+        if (index > -1) {
+          this.cancelJobs[job.hpc].splice(index, 1);
+        }
+      }
+
       // ending conditions
       if (job.maintainerInstance.isEnd) {
         // exit or deflag ssh pool
@@ -165,6 +189,18 @@ class Supervisor {
 
         // emit event
         this.maintainerMasterEventEmitter.emit("job_end", job.hpc, job.id);
+
+        // remove from running jobs
+        var index = this.runningJobs[job.hpc].indexOf(job, 0);
+        if (index > -1) {
+          this.runningJobs[job.hpc].splice(index, 1);
+          console.log(`Removed job from running jobs: ${job.id}`);
+        }
+
+        index = this.cancelJobs[job.hpc].indexOf(job, 0);
+        if (index > -1) {
+          this.cancelJobs[job.hpc].splice(index, 1);
+        }
 
         // exit loop
         return;
@@ -183,6 +219,35 @@ class Supervisor {
 
   destroy() {
     clearInterval(this.maintainerMasterThread);
+  }
+
+  cancelJob(jobId: any) : Job {
+    console.log(`cancelJob(${jobId}) looking for job`);
+    var toReturn = null;
+    var hpcToAdd = null;
+    for (var hpc in hpcConfigMap) {
+      console.log(`looking in ${hpc}`);
+      for (var i = 0; i < +this.queues[hpc].length; i++) {
+        console.log(`Queue: checking is ${this.queues[hpc][i].id.toString()}`);
+        if (this.queues[hpc][i].id.toString() == jobId.toString()) {
+          toReturn = this.queues[hpc][i];
+          hpcToAdd = hpc;
+        }
+      }
+      for (var i = 0; i < this.runningJobs[hpc].length; i++) {
+        console.log(`RunningJobs: checking is ${this.runningJobs[hpc][i].id.toString()}`);
+        if (this.runningJobs[hpc][i].id == jobId.toString()) {
+          toReturn = this.runningJobs[hpc][i];
+          hpcToAdd = hpc;
+        }
+      }
+    }
+    if (toReturn != null) {
+      this.cancelJobs[hpcToAdd].push(toReturn)
+    } else {
+      console.log("Supervisor getJob(" + jobId + "): job not found");
+    }
+    return toReturn;
   }
 }
 

@@ -223,6 +223,16 @@ export interface jupyterGlobusMapConfig {
   user_mapping?: string;
 }
 
+export interface announcement {
+  poster: string;
+  message: string;
+  time_stamp: string;
+}
+
+export interface announcementsConfig {
+  announcements: announcement[];
+}
+
 export interface fileConfig {
   ignore: string[];
   must_have: string[];
@@ -238,6 +248,7 @@ export interface maintainerConfig {
 export interface executableManifest {
   name: string;
   container: string;
+  connector?: string;
   pre_processing_stage?: string;
   execution_stage: string;
   post_processing_stage?: string;
@@ -264,6 +275,10 @@ export interface containerConfig {
       [keys: string]: string;
     };
   };
+}
+
+export interface kernelConfig {
+  env: string[];
 }
 
 export interface event {
