@@ -112,5 +112,14 @@
     },
     "mount": {
     } 
+  },
+  "cvmfs": {
+    "dockerfile": "",
+    "dockerhub": "https://hub.docker.com/repository/docker/cybergisx/compute-cvmfs",
+    "hpc_path": {
+      "keeling_community": "/data/keeling/a/cigi-gisolve/simages/cvmfs.sif"
+    },
+    "mount": {
+    }
   }
 }

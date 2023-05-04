@@ -13,15 +13,19 @@
 },
 "cybergisx/python3-0.9.0": {
   "env": [
+    "export CYBERGISCVMFSLOG=${result_folder}/cvmfs.out",
     "source /etc/profile.d/z00_lmod.sh",
-    "module --version",
+    "module --version >> $CYBERGISCVMFSLOG 2>&1",
+    "ls /cvmfs/cybergis.illinois.edu/software/easybuild/modules/all /cvmfs/cybergis.illinois.edu/software/metamodules >> $CYBERGISCVMFSLOG",
     "module use /cvmfs/cybergis.illinois.edu/software/easybuild/modules/all",
     "module use /cvmfs/cybergis.illinois.edu/software/metamodules",
     "module load cybergisx/0.8.0",
+    "ls /cvmfs/cybergis.illinois.edu/software/conda/cybergisx/python3-0.9.0/bin /cvmfs/cybergis.illinois.edu/software/conda/cybergisx/python3-0.9.0/share /cvmfs/cybergis.illinois.edu/software/conda/cybergisx/python3-0.9.0/lib/python3.8/site-packages >> $CYBERGISCVMFSLOG",
     "alias python=/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/python3-0.9.0/bin/python",
     "alias python3=/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/python3-0.9.0/bin/python",
     "export PATH=\"/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/python3-0.9.0/bin:$PATH\"",
-    "export MY_PROJ_LIB=\"/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/python3-0.9.0/share/proj\""
+    "export MY_PROJ_LIB=\"/cvmfs/cybergis.illinois.edu/software/conda/cybergisx/python3-0.9.0/share/proj\"",
+    "python -c \"import pandas; import geopandas; import matplotlib\" >> $CYBERGISCVMFSLOG"
   ]
 },
 "cybergisx/geoai-0.8.0": {

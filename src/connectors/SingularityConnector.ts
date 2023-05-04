@@ -50,6 +50,15 @@ class SingularityConnector extends SlurmConnector {
         );
       // remove buffer: https://dashboard.hpc.unimelb.edu.au/job_submission/
     }
+    else {
+      var container = containerConfigMap["cvmfs"];  // hard-coded CVMFS container
+      if (!container) throw new Error(`unknown container ${manifest.container}`);
+      var containerPath = container.hpc_path[this.hpcName];
+      if (!containerPath)
+        throw new Error(
+          `container ${manifest.container} is not supported on HPC ${this.hpcName}`
+        );
+    }
     var jobENV = this._getJobENV();
     var cmd = ``;
 
@@ -60,8 +69,11 @@ class SingularityConnector extends SlurmConnector {
     } else if (manifest.pre_processing_stage) {
       if (this.is_cvmfs){
         cmd += `${jobENV.join(
+              " "
+            )} singcvmfs -s exec ${this._getVolumeBindCMD()} -cip ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && source kernel_init.sh\"\n\n`;    
+        cmd += `${jobENV.join(
           " "
-        )} singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://cybergisx/compute-cvmfs:0.1.0 bash -c \"cd ${this.getContainerExecutableFolderPath()} && source kernel_init.sh && ${
+        )} singcvmfs -s exec ${this._getVolumeBindCMD()} -cip ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && source kernel_init.sh && ${
           manifest.pre_processing_stage
         }\"\n\n`;
       }
@@ -83,7 +95,7 @@ class SingularityConnector extends SlurmConnector {
         this.createKernelInit(manifest);
         cmd += `${jobENV.join(
           " "
-        )} srun --unbuffered --mpi=pmi2 singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://cybergisx/compute-cvmfs:0.1.0 bash -c \"cd ${this.getContainerExecutableFolderPath()} && source kernel_init.sh && ${
+        )} srun --unbuffered --mpi=pmi2 singcvmfs -s exec ${this._getVolumeBindCMD()} -cip ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && source kernel_init.sh && ${
           manifest.execution_stage
         }"\n\n`;
       }
@@ -106,9 +118,10 @@ class SingularityConnector extends SlurmConnector {
       if(this.is_cvmfs){
         cmd += `${jobENV.join(
           " "
-        )} singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://cybergisx/compute-cvmfs:0.1.0 bash -c \"cd ${this.getContainerExecutableFolderPath()} && source kernel_init.sh && ${
+        )} singcvmfs -s exec ${this._getVolumeBindCMD()} -cip ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && source kernel_init.sh && ${
           manifest.post_processing_stage
         }\"`;
+        cmd += `rm -r $tmp_path\n`;
       }
       else{
         cmd += `${jobENV.join(" ")} singularity exec ${this._getVolumeBindCMD(
