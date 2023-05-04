@@ -18,7 +18,7 @@
       "CYBERGIS_COMPUTE_BASE=$(pwd)",
       "source ~/.bashrc  # this adds the `singcvmfs` executable to the path",
       "cd $CYBERGIS_COMPUTE_BASE",
-      "export SINGCVMFS_REPOSITORIES=\"grid.cern.ch,cybergis.illinois.edu\"  # required for singcvmfs, specifies repositories",
+      "export SINGCVMFS_REPOSITORIES=\"cybergis.illinois.edu\"  # required for singcvmfs, specifies repositories",
       "export SINGCVMFS_CACHEDIR=$tmp_path",
       "export BASE=\"$(pwd)\"",
       "export tmp_path=\"/tmp/cvmfs-$(openssl rand -hex 12)\"",
