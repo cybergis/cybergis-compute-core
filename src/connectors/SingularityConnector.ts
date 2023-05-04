@@ -120,7 +120,7 @@ class SingularityConnector extends SlurmConnector {
           " "
         )} singcvmfs -s exec ${this._getVolumeBindCMD()} -cip ${containerPath} bash -c \"cd ${this.getContainerExecutableFolderPath()} && source kernel_init.sh && ${
           manifest.post_processing_stage
-        }\"`;
+        }\"\n\n`;
         cmd += `rm -r $tmp_path\n`;
       }
       else{
