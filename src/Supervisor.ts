@@ -135,12 +135,13 @@ class Supervisor {
         console.log("try to connect");
         while (!ssh.connection.isConnected() && !exit) {
           console.log(ct);
+          console.log(exit);
           setTimeout(() => { ssh.connection.connect(ssh.config); }, ct*1000);
           ct **= 2;
           if (ct > 100) {
+            exit = true;
             console.error("Not able to connect to HPC. Please check for potential outages.");
             this.maintainerMasterEventEmitter.emit("job_end", job.hpc, job.id);
-            exit = true;
             // emit job over event - this.maintainerMasterEventEmitter.emit("job_end", job.hpc, job.id); ??
           }
         }
