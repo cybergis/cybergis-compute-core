@@ -119,6 +119,10 @@ class Supervisor {
   async createMaintainerWorker(job: Job) {
     var self = this;
 
+    
+    var exit = false;
+    var ct = 2;
+
     while (true) {
       // get ssh connector from pool
       var ssh: SSH;
@@ -130,8 +134,6 @@ class Supervisor {
 
       // connect ssh & run
       try {
-        var ct = 2;
-        var exit = false;
         console.log("try to connect");
         while (!ssh.connection.isConnected() && !exit) {
           console.log(ct);
