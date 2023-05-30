@@ -1,5 +1,5 @@
 import { Job } from "./models/Job";
-import { jupyterGlobusMap } from "../configs/config";
+import { hpcConfigMap, jupyterGlobusMap } from "../configs/config";
 import * as fs from "fs";
 
 var Helper = {
@@ -102,6 +102,11 @@ var Helper = {
     return Object.keys(obj).length == 0;
   },
 
+  /**
+   * 
+   * @param host JupyterHub submitting jobs
+   * @returns bool, whether or not the Jupyter can submit
+   */
   isAllowlisted(host: string): boolean {
     var jupyterGlobus = jupyterGlobusMap[host]
     if (!jupyterGlobus) {
@@ -109,6 +114,36 @@ var Helper = {
     }
     return true;
   },
+
+  /**
+   * 
+   * @param user the user to check for
+   * @param hpc the HPC to check for
+   * @returns whether or not the user can check the HPC
+   */
+  canAccessHPC(user: string, hpc: string): boolean {
+    var allowList = hpcConfigMap[hpc].allowlist;
+    var denyList = hpcConfigMap[hpc].denylist;
+    console.log(allowList);
+    console.log(denyList);
+    // check if they are in the denylist
+    if (denyList.includes(user)) {
+        return false;
+    }
+    // check if the allowlist is empty
+    if (allowList.length == 0) {
+        // if they aren't in the deny and the allow
+        // is blank, we assume everyone is fine
+        return true;
+    }
+    else {
+        // if the allowList isn't blank, we need to check for them
+        return allowList.includes(user);
+    }
+    // shouldn't be reachable, but print false just in case
+    return false;
+    },
+    
 
   consoleEnd: "\x1b[0m",
 

@@ -208,6 +208,8 @@ export interface hpcConfig {
   slurm_input_rules?: slurmInputRules;
   slurm_global_cap: slurm;
   xsede_job_log_credential: XSEDEJobLogCredential;
+  allowlist: string[];
+  denylist: string[];
 }
 
 export interface XSEDEJobLogCredential {
