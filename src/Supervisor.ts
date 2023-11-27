@@ -127,6 +127,9 @@ class Supervisor {
   async createMaintainerWorker(job: Job) {
     var self = this;
 
+    var exit = false;
+    var wait = 2;
+
     while (true) {
       // get ssh connector from pool
       var ssh: SSH;
@@ -137,18 +140,26 @@ class Supervisor {
       }
 
       // connect ssh & run
-      try {
-        if (!ssh.connection.isConnected())
-          await ssh.connection.connect(ssh.config);
-        await ssh.connection.execCommand("echo"); // test connection
-        if (job.maintainerInstance.isInit) {
-          await job.maintainerInstance.maintain();
-        } else {
-          await job.maintainerInstance.init();
+      while (!exit && !ssh.connection.isConnected()) {
+        if (wait > 100) {
+          exit = true;
+          continue;
         }
-      } catch (e) {
-        if (config.is_testing) console.error(e.stack);
-        continue;
+        try {
+          if (!ssh.connection.isConnected()) {
+            await ssh.connection.connect(ssh.config);
+            // setTimeout(() => { ssh.connection.connect(ssh.config); }, wait * 1000);
+          }
+          await ssh.connection.execCommand("echo"); // test connection
+          if (job.maintainerInstance.isInit) {
+            await job.maintainerInstance.maintain();
+          } else {
+            await job.maintainerInstance.init();
+          }
+        } catch (e) {
+          wait = wait * wait;
+          if (config.is_testing) console.error(e.stack);
+        }
       }
 
       // emit events & logs
@@ -175,7 +186,7 @@ class Supervisor {
       }
 
       // ending conditions
-      if (job.maintainerInstance.isEnd) {
+      if (job.maintainerInstance.isEnd || exit) {
         // exit or deflag ssh pool
         if (job.maintainerInstance.connector.config.is_community_account) {
           connectionPool[job.hpc].counter--;
@@ -252,3 +263,4 @@ class Supervisor {
 }
 
 export default Supervisor;
+
