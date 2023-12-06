@@ -127,10 +127,10 @@ class Supervisor {
   async createMaintainerWorker(job: Job) {
     var self = this;
 
-    var exit = false;
-    var wait = 2;
-
     while (true) {
+      // console.log("jdebug enter loop");
+      const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+      sleep(1000);
       // get ssh connector from pool
       var ssh: SSH;
       if (job.maintainerInstance.connector.config.is_community_account) {
@@ -139,16 +139,21 @@ class Supervisor {
         ssh = connectionPool[job.id].ssh;
       }
 
+      var exit = false;
+      var wait = 2;
+
       // connect ssh & run
       while (!exit && !ssh.connection.isConnected()) {
         if (wait > 100) {
+          console.log("jdebug bad");
           exit = true;
           continue;
         }
         try {
+          console.log("jdebug ok");
+          sleep(wait * 1000);
           if (!ssh.connection.isConnected()) {
             await ssh.connection.connect(ssh.config);
-            // setTimeout(() => { ssh.connection.connect(ssh.config); }, wait * 1000);
           }
           await ssh.connection.execCommand("echo"); // test connection
           if (job.maintainerInstance.isInit) {
@@ -156,12 +161,14 @@ class Supervisor {
           } else {
             await job.maintainerInstance.init();
           }
+          wait = wait * wait;
+          console.log("jdebug success");
         } catch (e) {
           wait = wait * wait;
           if (config.is_testing) console.error(e.stack);
         }
       }
-
+      // console.log("jdebug past connection");
       // emit events & logs
       var events = job.maintainerInstance.dumpEvents();
       var logs = job.maintainerInstance.dumpLogs();
@@ -187,6 +194,7 @@ class Supervisor {
 
       // ending conditions
       if (job.maintainerInstance.isEnd || exit) {
+        console.log("jdebug exit");
         // exit or deflag ssh pool
         if (job.maintainerInstance.connector.config.is_community_account) {
           connectionPool[job.hpc].counter--;
