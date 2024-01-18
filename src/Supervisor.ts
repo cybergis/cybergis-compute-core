@@ -130,7 +130,7 @@ class Supervisor {
     while (true) {
       // console.log("jdebug enter loop");
       const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-      sleep(1000);
+      // await sleep(4000);
       // get ssh connector from pool
       var ssh: SSH;
       if (job.maintainerInstance.connector.config.is_community_account) {
@@ -151,7 +151,7 @@ class Supervisor {
         }
         try {
           console.log("jdebug ok");
-          sleep(wait * 1000);
+          await sleep(wait * 1000);
           if (!ssh.connection.isConnected()) {
             await ssh.connection.connect(ssh.config);
           }
@@ -168,7 +168,6 @@ class Supervisor {
           if (config.is_testing) console.error(e.stack);
         }
       }
-      // console.log("jdebug past connection");
       // emit events & logs
       var events = job.maintainerInstance.dumpEvents();
       var logs = job.maintainerInstance.dumpLogs();
