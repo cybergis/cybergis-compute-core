@@ -1,116 +1,272 @@
 {
-  "python": {
-    "dockerfile": "",
-    "dockerhub": "",
-    "hpc_path": {
-      "keeling_community": "/data/keeling/a/cigi-gisolve/simages/python.sif",
-      "expanse_community": "/home/cybergis/SUMMA_IMAGE/python.sif",
-      "bridges_community_gpu": "/jet/home/cybergis/image/python.sif",
-      "anvil_community": "/home/x-cybergis/simages/python.sif"
+    "cuahsisubsetterinput-connector": {
+        "dockerfile": "",
+        "dockerhub": "",
+        "hpc_path": {
+             "anvil_community": "/home/x-cybergis/simages/cuahsisubsetterinput-connector.sif"
+         },
+        "mount": {
+             "anvil_community": {
+                 "/anvil/projects/x-cis220065/x-cybergis/compute": "/compute_shared"
+             },
+             "expanse_community": {
+                 "/expanse/lustre/projects/usu104/cybergis/compute": "/compute_shared"
+             },
+             "keeling_community": {
+                 "/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared"
+             }
+         }
+ 
+     },
+    "cybergisx-0.4": {
+        "dockerfile": "",
+        "dockerhub": "",
+        "hpc_path": {
+            "expanse_community": "/home/cybergis/SUMMA_IMAGE/cybergisx_0.4.simg",
+            "keeling_community": "/data/keeling/a/cigi-gisolve/simages/cybergisx_0.4.simg",
+	    "bridges_community_gpu": "/jet/home/cybergis/image/cybergisx_0.4.simg",
+            "anvil_community": "/home/x-cybergis/simages/cybergisx_0.4.simg"
+        },
+       "mount": {
+            "anvil_community": {
+                "/anvil/projects/x-cis220065/x-cybergis/compute": "/compute_shared"
+            },
+            "expanse_community": {
+                "/expanse/lustre/projects/usu104/cybergis/compute": "/compute_shared"
+            },
+            "keeling_community": {
+                "/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared"
+            }
+        }
     },
-    "mount": {
+    "damfiminput-connector": {
+        "dockerfile": "",
+        "dockerhub": "",
+        "hpc_path": {
+             "expanse_community": "/home/cybergis/SUMMA_IMAGE/damfiminput-connector.sif",
+             "anvil_community": "/home/x-cybergis/simages/damfiminput-connector.sif"
+         },
+        "mount": {
+             "anvil_community": {
+                 "/anvil/projects/x-cis220065/x-cybergis/compute": "/compute_shared"
+             },
+             "expanse_community": {
+                 "/expanse/lustre/projects/usu104/cybergis/compute": "/compute_shared"
+             },
+             "keeling_community": {
+                 "/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared"
+             }
+         }
+     },
+    "datafusion": {
+        "dockerfile": "",
+        "dockerhub": "",
+        "hpc_path": {
+            "bridges_community_gpu": "/jet/home/cybergis/image/fusion_env_v1.sif"
+        },
+        "mount": {
+            "bridges_community_gpu": {
+                "/jet/home/cybergis/data/datafusion": "/datafusion"
+            }
+        }
+    },
+    "demclip-processor": {
+        "dockerfile": "",
+        "dockerhub": "",
+        "hpc_path": {
+            "anvil_community": "/anvil/projects/x-cis220065/x-cybergis/simages/DEMClip.sif"
+      },
+      "mount": {
+      }
+    },
+    "deminput-connector": {
+        "dockerfile": "",
+        "dockerhub": "",
+        "hpc_path": {
+            "anvil_community": "/anvil/projects/x-cis220065/x-cybergis/simages/DEMInput.sif"
+      },
+      "mount": {
+      }
+    },
+    "demmerge-processor": {
+        "dockerfile": "",
+        "dockerhub": "",
+        "hpc_path": {
+            "anvil_community": "/anvil/projects/x-cis220065/x-cybergis/simages/DEMMerge.sif"
+      },
+      "mount": {
+      }
+    },
+    "demreproject-processor": {
+        "dockerfile": "",
+        "dockerhub": "",
+        "hpc_path": {
+            "anvil_community": "/anvil/projects/x-cis220065/x-cybergis/simages/DEMReproject.sif"
+      },
+      "mount": {
+      }
+    },
+    "era5input-connector": {
+        "dockerfile": "",
+        "dockerhub": "",
+        "hpc_path": {
+             "anvil_community": "/home/x-cybergis/simages/era5input-connector.sif"
+         },
+        "mount": {
+             "anvil_community": {
+                 "/anvil/projects/x-cis220065/x-cybergis/compute": "/compute_shared"
+             },
+             "expanse_community": {
+                 "/expanse/lustre/projects/usu104/cybergis/compute": "/compute_shared"
+             },
+             "keeling_community": {
+                 "/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared"
+             }
+         }
+ 
+     },
+     "extractinundationcensustracts-processor": {
+        "dockerfile": "",
+        "dockerhub": "",
+        "hpc_path": {
+             "anvil_community": "/home/x-cybergis/simages/extractinundationcensustracts-processor.sif",
+         "keeling_community": "/data/keeling/a/cigi-gisolve/simages/extractinundationcensustracts-processor.sif"
+         },
+        "mount": {
+             "anvil_community": {
+                 "/anvil/projects/x-cis220065/x-cybergis/compute": "/compute_shared",
+            "/anvil/projects/x-cis220065/x-cybergis/compute/Aging_Dams/": "/job/aging_dam_data"
+             },
+             "expanse_community": {
+                 "/expanse/lustre/projects/usu104/cybergis/compute": "/compute_shared"
+             },
+             "keeling_community": {
+                 "/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared",
+         "/data/cigi/common/jparkgeo/aging_dam_data": "/job/aging_dam_data"
+             }
+         }
+ 
+    },
+    "gearlab-r": {
+        "dockerfile": "https://github.com/cybergis/docker-images/blob/main/cybergis-compute/gearlab-r/Dockerfile",
+        "dockerhub": "https://hub.docker.com/r/cybergisx/gearlab-r/",
+        "hpc_path": {
+            "aces_community": "/scratch/user/u.cc85312/simages/gearlab-r.sif",
+            "keeling_community": "/data/keeling/a/cigi-gisolve/simages/gearlab-r.sif"
+      },
+      "mount": {
+      }
+    },
+    "mpich": {
+        "dockerfile": "",
+        "dockerhub": "",
+        "hpc_path": {
+            "keeling_community": "/data/keeling/a/cigi-gisolve/simages/mpich34.simg",
+            "expanse_community": "/home/cybergis/SUMMA_IMAGE/mpich34.simg",
+            "anvil_community": "/home/x-cybergis/simages/mpich34.simg"
+        },
+       "mount": {
+            "anvil_community": {
+                "/anvil/projects/x-cis220065/x-cybergis/compute": "/compute_shared"
+            },
+            "expanse_community": {
+                "/expanse/lustre/projects/usu104/cybergis/compute": "/compute_shared"
+            },
+            "keeling_community": {
+                "/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared"
+            }
+        }
+    },
+    "pysal-access": {
+        "dockerfile": "https://github.com/cybergis/docker-images/blob/main/cybergis-compute/pysal-access/Dockerfile",
+        "dockerhub": "https://hub.docker.com/repository/docker/alexandermichels/pysal-access/general",
+        "hpc_path": {
+            "anvil_community": "/anvil/projects/x-cis220065/x-cybergis/simages/pysal-access.simg",
+            "expanse_community": "/home/cybergis/SUMMA_IMAGE/pysal-access.simg",
+            "keeling_community": "/data/keeling/a/cigi-gisolve/simages/pysal-access.simg"
+        },
+        "mount": {
+        }
+    },
+    "python": {
+        "dockerfile": "",
+        "dockerhub": "",
+        "hpc_path": {
+            "keeling_community": "/data/keeling/a/cigi-gisolve/simages/python.sif",
+            "expanse_community": "/home/cybergis/SUMMA_IMAGE/python.sif",
+            "bridges_community_gpu": "/jet/home/cybergis/image/python.sif",
+            "anvil_community": "/home/x-cybergis/simages/python.sif",
+            "aces_community": "/scratch/user/u.cc85312/simages/python.sif"
+        },
+       "mount": {
+            "anvil_community": {
+                "/anvil/projects/x-cis220065/x-cybergis/compute": "/compute_shared"
+            },
+            "expanse_community": {
+                "/expanse/lustre/projects/usu104/cybergis/compute": "/compute_shared"
+            },
+            "keeling_community": {
+                "/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared"
+            }
+        }
+    },
+    "subsetaorcforcingdata-processor": {
+        "dockerfile": "",
+        "dockerhub": "",
+        "hpc_path": {
+             "anvil_community": "/home/x-cybergis/simages/subsetaorcforcingdata-processor.sif"
+         },
+        "mount": {
+             "anvil_community": {
+                 "/anvil/projects/x-cis220065/x-cybergis/compute": "/compute_shared"
+             },
+             "expanse_community": {
+                 "/expanse/lustre/projects/usu104/cybergis/compute": "/compute_shared"
+             },
+             "keeling_community": {
+                 "/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared"
+             }
+         }
+ 
+     },
+    "summa-3.0.3": {
+       "dockerfile": "",
+       "dockerhub": "",
+       "hpc_path": {
+            "keeling_community": "/data/keeling/a/cigi-gisolve/simages/summa3_xenial.simg",
+            "expanse_community": "/home/cybergis/SUMMA_IMAGE/summa3_xenial.simg",
+             "anvil_community": "/home/x-cybergis/simages/summa3_xenial.simg"
+        },
+       "mount": {
+            "anvil_community": {
+                "/anvil/projects/x-cis220065/x-cybergis/compute": "/compute_shared"
+            },
+            "expanse_community": {
+                "/expanse/lustre/projects/usu104/cybergis/compute": "/compute_shared"
+            },
+            "keeling_community": {
+                "/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared"
+            }
+        }
+    },
+    "wrfhydro-5.x": {
+       "dockerfile": "",
+       "dockerhub": "",
+       "hpc_path": {
+            "keeling_community": "/data/keeling/a/cigi-gisolve/simages/wrfhydro_focal.simg",
+            "expanse_community": "/home/cybergis/SUMMA_IMAGE/wrfhydro_focal.simg",
+            "anvil_community": "/home/x-cybergis/simages/wrfhydro_focal.simg"
+        },
+       "mount": {
+            "anvil_community": {
+                "/anvil/projects/x-cis220065/x-cybergis/compute": "/compute_shared"
+            },
+            "expanse_community": {
+                "/expanse/lustre/projects/usu104/cybergis/compute": "/compute_shared"
+            },
+            "keeling_community": {
+                "/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared"
+            }
+        }
     }
-  },
-  "cybergisx-0.4": {
-    "dockerfile": "",
-    "dockerhub": "",
-    "hpc_path": {
-      "expanse_community": "/home/cybergis/SUMMA_IMAGE/cybergisx_0.4.simg",
-      "keeling_community": "/data/keeling/a/cigi-gisolve/simages/cybergisx_0.4.simg",
-      "bridges_community_gpu": "/jet/home/cybergis/image/cybergisx_0.4.simg",
-      "anvil_community": "/home/x-cybergis/simages/cybergisx_0.4.simg"
-    },
-    "mount": {
-    }
-  },
-  "cjw-eb": {
-    "dockerfile": "",
-    "dockerhub": "",
-    "hpc_path": {
-      "keeling_community": "/data/keeling/a/cigi-gisolve/simages/cjw-eb.simg",
-      "bridges_community": "/jet/home/cybergis/image/cybergisx_0.4.simg",
-      "anvil_community": "/home/x-cybergis/simages/cjw-eb.simg"
-    },
-    "mount": {
-    }
-  },
-  "mpich": {
-    "dockerfile": "",
-    "dockerhub": "",
-    "hpc_path": {
-      "keeling_community": "/data/keeling/a/cigi-gisolve/simages/mpich34.simg",
-      "expanse_community": "/home/cybergis/SUMMA_IMAGE/mpich34.simg",
-      "anvil_community": "/home/x-cybergis/simages/mpich34.simg"
-    },
-    "mount": {
-    } 
-  },
-  "summa-3.0.3": {
-    "dockerfile": "",
-    "dockerhub": "",
-    "hpc_path": {
-      "keeling_community": "/data/keeling/a/cigi-gisolve/simages/summa3_xenial.simg",
-      "expanse_community": "/home/cybergis/SUMMA_IMAGE/summa3_xenial.simg",
-      "anvil_community": "/home/x-cybergis/simages/summa3_xenial.simg"
-    },
-    "mount": {
-    } 
-  },
-  "wrfhydro-5.x": {
-    "dockerfile": "",
-    "dockerhub": "",
-    "hpc_path": {
-      "keeling_community": "/data/keeling/a/cigi-gisolve/simages/wrfhydro_focal.simg",
-      "expanse_community": "/home/cybergis/SUMMA_IMAGE/wrfhydro_focal.simg",
-      "anvil_community": "/home/x-cybergis/simages/wrfhydro_focal.simg"
-    },
-    "mount": {
-    }
-  },
-  "datafusion": {
-    "dockerfile": "",
-    "dockerhub": "",
-    "hpc_path": {
-      "bridges_community_gpu": "/jet/home/cybergis/image/fusion_env_v1.sif"
-    },
-    "mount": {
-    }
-  },
-  "damfiminput-connector": {
-    "dockerfile": "",
-    "dockerhub": "",
-    "hpc_path": {
-      "expanse_community": "/home/cybergis/SUMMA_IMAGE/damfiminput-connector.sif",
-      "anvil_community": "/home/x-cybergis/simages/damfiminput-connector.sif"
-    },
-    "mount": {
-    }
-  },
-  "era5input-connector": {
-    "dockerfile": "",
-    "dockerhub": "",
-    "hpc_path": {
-      "anvil_community": "/home/x-cybergis/simages/era5input-connector.sif"
-    },
-    "mount": {
-    }
-  },
-  "subsetaorcforcingdata-processor": {
-    "dockerfile": "",
-    "dockerhub": "",
-    "hpc_path": {
-      "anvil_community": "/home/x-cybergis/simages/subsetaorcforcingdata-processor.sif"
-    },
-    "mount": {
-    }
-  },
-  "cuahsisubsetterinput-connector": {
-    "dockerfile": "",
-    "dockerhub": "",
-    "hpc_path": {
-      "anvil_community": "/home/x-cybergis/simages/cuahsisubsetterinput-connector.sif"
-    },
-    "mount": {
-    } 
-  }
 }
