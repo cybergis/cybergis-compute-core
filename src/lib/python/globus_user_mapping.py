@@ -25,6 +25,9 @@ def username_mapping_iguide_k8s_js2(in_username):
 if (MAPPING_FUNC == "iguide-mapping"):
   USERNAME_MAPPED = username_mapping_iguide_k8s_js2(USER_NAME)
 else:
-  USERNAME_MAPPED = USER_NAME
+  USERNAME_MAPPED = escapism.escape(
+        USER_NAME,
+        safe=set(string.ascii_lowercase + string.digits)
+    )
 output("mapped_username", USERNAME_MAPPED)
 exit()
