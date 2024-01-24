@@ -2,10 +2,12 @@ import NodeSSH = require("node-ssh");
 import { SSH, SSHConfig } from "../types";
 import { config, hpcConfigMap } from "../../configs/config";
 
+// dictionary recording ssh connections for community accounts
 const connectionPool: { [keys: string]: { counter: number; ssh: SSH } } = {};
 
-for (var hpcName in hpcConfigMap) {
-  var hpcConfig = hpcConfigMap[hpcName];
+// populates the connectionPool with community account HPCs
+for (const hpcName in hpcConfigMap) {
+  const hpcConfig = hpcConfigMap[hpcName];
   if (!hpcConfig.is_community_account) continue;
 
   // register community account SSH

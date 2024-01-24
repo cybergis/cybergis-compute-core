@@ -129,7 +129,7 @@ ${cmd}`;
     );
 
     // submit
-    if (this.maintainer != null)
+    if (this.maintainer !== null)
       this.maintainer.emitEvent("SLURM_SUBMIT", `submitting slurm job`);
     const sbatchResult = await this.exec(
       `sbatch job.sbatch`,
@@ -148,7 +148,7 @@ ${cmd}`;
       failed = true;
 
     if (failed) {
-      if (this.maintainer != null)
+      if (this.maintainer !== null)
         this.maintainer.emitEvent(
           "SLURM_SUBMIT_ERROR",
           "cannot submit job " +
@@ -166,7 +166,7 @@ ${cmd}`;
 
     this.slurm_id = sbatchResult.stdout.split(/[ ]+/).pop().trim();
     await this.maintainer.updateJob({ slurmId: this.slurm_id });
-    if (this.maintainer != null)
+    if (this.maintainer !== null)
       this.maintainer.emitEvent(
         "SLURM_SUBMIT_SUCCESS",
         `slurm job submitted with slurm job id ${this.slurm_id}`
@@ -346,7 +346,7 @@ ${cmd}`;
     var files = ["/"];
     for (var i in rawFiles) {
       var t = rawFiles[i].trim();
-      if (t[0] == ".") t = t.replace("./", "");
+      if (t[0] === ".") t = t.replace("./", "");
       var rawFile = t.split("/");
       var skipFile = false;
       for (var j in rawFile) {
@@ -409,13 +409,13 @@ ${cmd}`;
             seffOutput.cpus = parseInt(v);
           case "CPU Utilized":
             var l = v.split(":");
-            if (l.length != 3) continue;
+            if (l.length !== 3) continue;
             var seconds =
               parseInt(l[0]) * 60 * 60 + parseInt(l[1]) * 60 + parseInt(l[2]);
             seffOutput.cpuTime = seconds;
           case "Job Wall-clock time":
             var l = v.split(":");
-            if (l.length != 3) continue;
+            if (l.length !== 3) continue;
             var seconds =
               parseInt(l[0]) * 60 * 60 + parseInt(l[1]) * 60 + parseInt(l[2]);
             seffOutput.walltime = seconds;
@@ -440,9 +440,9 @@ ${cmd}`;
           case "Memory Efficiency":
             v = v.toLowerCase();
             var l = v.split("of");
-            if (l.length != 2) continue;
+            if (l.length !== 2) continue;
             l = l[1].trim().split("(");
-            if (l.length != 2) continue;
+            if (l.length !== 2) continue;
             v = l[0].trim();
             //
             var kb = parseFloat(v.substring(0, v.length - 2).trim());

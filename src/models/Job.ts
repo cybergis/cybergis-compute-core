@@ -61,7 +61,7 @@ export class Job {
       from: (
         i: string | null | undefined | object
       ): LocalFolder | GitFolder | GlobusFolder =>
-        typeof i == "string" ? JSON.parse(i) : i,
+        typeof i === "string" ? JSON.parse(i) : i,
     },
   })
   localExecutableFolder: LocalFolder | GitFolder | GlobusFolder;
@@ -74,7 +74,7 @@ export class Job {
       to: (i: NeedUploadFolder | null | undefined): string =>
         i ? JSON.stringify(i) : null,
       from: (i: string | null | undefined | object): NeedUploadFolder =>
-        typeof i == "string" ? JSON.parse(i) : i,
+        typeof i === "string" ? JSON.parse(i) : i,
     },
   })
   localDataFolder: NeedUploadFolder;
@@ -89,7 +89,7 @@ export class Job {
       from: (
         i: string | null | undefined | object
       ): { [keys: string]: string } =>
-        typeof i == "string" ? JSON.parse(i) : {},
+        typeof i === "string" ? JSON.parse(i) : {},
     },
   })
   param: { [keys: string]: string };
@@ -104,7 +104,7 @@ export class Job {
       from: (
         i: string | null | undefined | object
       ): { [keys: string]: string } =>
-        typeof i == "string" ? JSON.parse(i) : {},
+        typeof i === "string" ? JSON.parse(i) : {},
     },
   })
   env: { [keys: string]: string };
@@ -117,7 +117,7 @@ export class Job {
       to: (i: slurm | null | undefined): string =>
         i ? JSON.stringify(i) : null,
       from: (i: string | null | undefined | object): slurm =>
-        typeof i == "string" ? JSON.parse(i) : {},
+        typeof i === "string" ? JSON.parse(i) : {},
     },
   })
   slurm?: slurm;

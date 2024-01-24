@@ -1,7 +1,11 @@
 import { spawn } from "child_process";
 import { config } from "../../configs/config";
 
+/**
+ * Helper class for interfacing with python scripts in the ./python directory. Primarily deals with globus.
+ */
 export default class PythonUtil {
+
   /**
    * Runs the specified python file. The person running this file can provide user input.
    *
@@ -10,29 +14,29 @@ export default class PythonUtil {
    * @param {string} file - Path of the file to run
    * @param {string[]} args - Arguments to be passed when running the file.
    * @param {string[]} returnTags - Items to be returned
-   * @returns {Promise} - Values returned by the function that correspond the the ones passed in returnTags
+   * @returns {Promise<any>} - Values returned by the function that correspond the the ones passed in returnTags
    */
   static async runInteractive(
     file: string,
     args: string[] = [],
     returnTags: string[] = []
-  ) {
+  ): Promise<any> {
     args.unshift(`${__dirname}/python/${file}`);
     const child = spawn("python3", args);
-    var out = {};
+    const out = {};
 
     child.stdout.on("data", function (result) {
-      var stdout = Buffer.from(result, "utf-8").toString();
-      var parsedStdout = stdout.split("@");
+      let stdout = Buffer.from(result, "utf-8").toString();
+      const parsedStdout = stdout.split("@");
 
-      for (var i in parsedStdout) {
-        var o = parsedStdout[i];
-        for (var j in returnTags) {
-          var tag = returnTags[j];
-          var regex = new RegExp(`${tag}=((?!\]).)*`, "g");
-          var m = o.match(regex);
+      for (const i in parsedStdout) {
+        const o = parsedStdout[i];
+        for (const j in returnTags) {
+          const tag = returnTags[j];
+          const regex = new RegExp(`${tag}=((?!\]).)*`, "g"); //eslint-disable-line
+          const m = o.match(regex);
           if (m) {
-            m.forEach((v, i) => {
+            m.forEach((v, _i) => {
               v = v.replace(`${tag}=[`, "");
               out[tag] = v;
             });
@@ -49,7 +53,7 @@ export default class PythonUtil {
       if (chunk !== null) child.stdin.write(chunk);
     });
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _reject) => {
       child.on("exit", () => {
         resolve(out);
       });
@@ -80,29 +84,29 @@ export default class PythonUtil {
     args.unshift(`${__dirname}/python/${file}`);
     const child = spawn("python3", args);
 
-    var out = {
+    const out = {
       error: null,
     };
 
     child.stderr.on("data", function (result) {
-      var stderr = Buffer.from(result, "utf-8").toString();
+      const stderr = Buffer.from(result, "utf-8").toString();
       if (config.is_testing) console.log(stderr);
       if (!out.error) out.error = stderr;
       else out.error += stderr;
     });
 
     child.stdout.on("data", function (result) {
-      var stdout = Buffer.from(result, "utf-8").toString();
-      var parsedStdout = stdout.split("@");
+      let stdout = Buffer.from(result, "utf-8").toString();
+      const parsedStdout = stdout.split("@");
 
-      for (var i in parsedStdout) {
-        var o = parsedStdout[i];
-        for (var j in returnTags) {
-          var tag = returnTags[j];
-          var regex = new RegExp(`${tag}=((?!\]).)*`, "g");
-          var m = o.match(regex);
+      for (const i in parsedStdout) {
+        const o = parsedStdout[i];
+        for (const j in returnTags) {
+          const tag = returnTags[j];
+          const regex = new RegExp(`${tag}=((?!\]).)*`, "g"); // eslint-disable-line
+          const m = o.match(regex);
           if (m) {
-            m.forEach((v, i) => {
+            m.forEach((v, _i) => {
               v = v.replace(`${tag}=[`, "");
               out[tag] = v;
             });

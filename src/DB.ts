@@ -15,9 +15,10 @@ import { Folder } from "./models/Folder";
 const entities = [Event, Log, Job, Git, GlobusTransferRefreshToken, Folder];
 
 /**
- * Connection helper class as a wrapper around TypeORM Connection
+ * Connection helper class as a wrapper around TypeORM Connection (MySQL)
  */
 class DB {
+
   /** @private */
   private config: ConnectionOptions = {
     name: "default",
@@ -93,6 +94,11 @@ class DB {
     await (await this.connect()).close();
   }
 
+  /**
+   * Completely clears all tables in the database.
+   * 
+   * @throws Thrown if clearing the database fails.
+   */
   async clearAll() {
     try {
       for (const entity of entities) {

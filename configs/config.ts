@@ -4,16 +4,19 @@ import {
   maintainerConfig,
   containerConfig,
   jupyterGlobusMapConfig,
-  kernelConfig
+  kernelConfig,
 } from "../src/types";
 
-const rawConfig = require("../config.json");
-const rawHpc = require("./hpc.json");
-const rawMaintainer = require("./maintainer.json");
-const rawContainerConfig = require("./container.json");
-const rawJupyterGlobusMapConfig = require("./jupyter-globus-map.json");
-const rawKernelConfig = require("./kernel.json");
+const rawConfig = require("../config.json"); // base config
+const rawHpc = require("./hpc.json"); // hpc configuration
+const rawMaintainer = require("./maintainer.json"); // maintainer config
+const rawContainerConfig = require("./container.json"); // docker container config
+const rawJupyterGlobusMapConfig = require("./jupyter-globus-map.json"); // globus configs
+const rawKernelConfig = require("./kernel.json"); // python kernel configs
+
 const config: config = JSON.parse(JSON.stringify(rawConfig));
+
+// create and populate configs
 
 var hpcConfigMap: { [key: string]: hpcConfig } = {};
 for (var i in rawHpc) {
@@ -64,5 +67,5 @@ export {
   maintainerConfigMap,
   containerConfigMap,
   jupyterGlobusMap,
-  kernelConfigMap
+  kernelConfigMap,
 };

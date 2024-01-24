@@ -12,30 +12,56 @@ import {
   slurm_integer_none_unit_config,
   slurm_integer_storage_unit_config,
   slurm_integer_time_unit_config,
-  slurm_string_option_configs,
+  slurm_string_option_configs
 } from "../types";
-const rimraf = require("rimraf");
+import rimraf = require("rimraf");
 
+/**
+ * 
+ */
 export default class GitUtil {
-  static getLocalPath(gitId: string) {
+
+
+  /**
+   * Gets the local path of a given git repository. 
+   *
+   * @static
+   * @param {string} gitId
+   * @return {string} resulting path 
+   */
+  static getLocalPath(gitId: string): string {
     return path.join(config.local_file_system.root_path, gitId);
   }
 
+  /**
+   * Deletes a specified git repository and pulls it again.
+   *
+   * @static
+   * @param {Git} git
+   */
   static async deleteAndPull(git: Git) {
     const localPath = this.getLocalPath(git.id);
-    rimraf.sync(localPath);
+    rimraf.sync(localPath);  // deletes everything
+
     await fs.promises.mkdir(localPath);
     await exec(`cd ${localPath} && git clone ${git.address} ${localPath}`);
+
     if (git.sha) {
       // if a sha is specified, checkout that commit
       await exec(`cd ${localPath} && git checkout ${git.sha}`);
-    };
+    }
   }
-
+  
+  /**
+   * Repulls a git repository if it is out of date and records it in git database.
+   *
+   * @static
+   * @param {Git} git git object
+   */
   static async refreshGit(git: Git) {
     const localPath = this.getLocalPath(git.id);
     await FolderUtil.removeZip(localPath);
-
+    
     // clone if git repo not exits locally
     if (!fs.existsSync(localPath)) {
       await fs.promises.mkdir(localPath);
@@ -43,12 +69,12 @@ export default class GitUtil {
     }
 
     //check when last updated
-    var now = new Date();
+    let now = new Date();
     // set to a large number so that we update if the check fails
-    var secsSinceUpdate = 1000000;
+    let secsSinceUpdate = 1000000;
     try {
-        // check when last updated if you can. If updatedAt is null this throws error
-        secsSinceUpdate = (now.getTime() - git.updatedAt.getTime()) / 1000.0;
+      // check when last updated if you can. If updatedAt is null this throws error
+      secsSinceUpdate = (now.getTime() - git.updatedAt.getTime()) / 1000.0;
     } catch {}
     if (secsSinceUpdate > 120) {
       console.log(`${git.id} is stale, let's update...`);
@@ -67,22 +93,30 @@ export default class GitUtil {
       // call to update the updatedAt timestamp
       now = new Date();
       const db = new DB(false);
-      var connection = await db.connect();
+      const connection = await db.connect();
       await connection
-            .createQueryBuilder()
-            .update(Git)
-            .where("id = :id", { id: git.id })
-            .set({'updatedAt' : now})
-            .execute();
+        .createQueryBuilder()
+        .update(Git)
+        .where("id = :id", { id: git.id })
+        .set({"updatedAt" : now})
+        .execute();
     }
     else {
       console.log(`${git.id} last updated ${secsSinceUpdate}s ago, skipping update`);
-    };
+    }
   }
 
-  static async getExecutableManifest(git: Git) {
+  /**
+   * Does some logic on and returns the manifest.json of the executable of a git object. 
+   *
+   * @static
+   * @param {Git} git git object to get the manifest 
+   * @return {executableManifest} the cleaned manifest 
+   */
+  static async getExecutableManifest(git: Git): Promise<executableManifest> {
     const localPath = this.getLocalPath(git.id);
     const executableFolderPath = path.join(localPath, "manifest.json");
+
     let rawExecutableManifest;
     try {
       rawExecutableManifest = (
@@ -90,7 +124,7 @@ export default class GitUtil {
       ).toString();
     } catch (e) {
       // delete, repull, and then read
-      console.log(`Encountered error with manifest: ${e}.\nDeleting and repulling`)
+      console.log(`Encountered error with manifest: ${e}.\nDeleting and repulling`);
       await this.deleteAndPull(git);
       rawExecutableManifest = (
         await fs.promises.readFile(executableFolderPath)
@@ -121,7 +155,7 @@ export default class GitUtil {
       executableManifest.default_hpc = executableManifest.supported_hpc[0];
     }
 
-    for (var i in executableManifest.slurm_input_rules) {
+    for (const i in executableManifest.slurm_input_rules) {
       // remove invalid configs
       if (!slurm_configs.includes(i)) {
         delete executableManifest.slurm_input_rules[i];
@@ -133,7 +167,7 @@ export default class GitUtil {
         continue;
       }
 
-      var j = executableManifest.slurm_input_rules[i];
+      const j: any = executableManifest.slurm_input_rules[i];
       if (
         slurm_integer_time_unit_config.includes(i) &&
         !["Minutes", "Hours", "Days"].includes(j.unit)
@@ -187,7 +221,7 @@ export default class GitUtil {
       }
     }
 
-    for (var i in executableManifest.param_rules) {
+    for (const i in executableManifest.param_rules) {
       // ignore invalid param
       if (!executableManifest.param_rules[i].default_value) {
         delete executableManifest.param_rules[i];
@@ -204,7 +238,7 @@ export default class GitUtil {
       }
 
       // default values
-      if (executableManifest.param_rules[i].type == "integer") {
+      if (executableManifest.param_rules[i].type === "integer") {
         if (!executableManifest.param_rules[i].max) {
           executableManifest.param_rules[i].max =
             executableManifest.param_rules[i].default_value * 2;
@@ -217,7 +251,7 @@ export default class GitUtil {
         }
       }
 
-      if (executableManifest.param_rules[i].type == "string_option") {
+      if (executableManifest.param_rules[i].type === "string_option") {
         if (!executableManifest.param_rules[i].options) {
           executableManifest.param_rules[i].options = [
             executableManifest.param_rules[i].default_value,

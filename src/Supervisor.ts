@@ -8,31 +8,37 @@ import * as events from "events";
 import DB from "./DB";
 import NodeSSH = require("node-ssh");
 
+/**
+ * Manages 
+ */
 class Supervisor {
-  private db = new DB();
 
-  private jobPoolCapacities: { [keys: string]: number } = {};
+  private db = new DB();  // database reference
 
-  private jobPoolCounters: { [keys: string]: number } = {};
+  // these maps keep track of the various hpcs
+  private jobPoolCapacities: { [keys: string]: number } = {};  // capacity
+  private jobPoolCounters: { [keys: string]: number } = {};  // current size
+  private queues: { [keys: string]: Queue } = {};  // queues of jobs
+  private runningJobs: { [keys: string]: Array<Job> } = {};  // running jobs
+  private cancelJobs: { [keys: string]: Array<Job> } = {};  // what jobs to cancel
 
-  private queues: { [keys: string]: Queue } = {};
+  private emitter = new Emitter();  // emitter reference
 
-  private runningJobs: { [keys: string]: Array<Job> } = {};
-
-  private cancelJobs: { [keys: string]: Array<Job> } = {};
-
-  private emitter = new Emitter();
-
-  private maintainerMasterThread = null;
+  private maintainerMasterThread: NodeJS.Timeout = null;  // main loop
 
   private maintainerMasterEventEmitter = new events.EventEmitter();
 
   private queueConsumeTimePeriodInSeconds =
     config.queue_consume_time_period_in_seconds;
 
+  /**
+   * Constructs the supervisor. Populates the instance variables with trackers for all the HPCs in the config. Creates the 
+   * master maintainer. 
+   */
   constructor() {
-    for (var hpcName in hpcConfigMap) {
-      var hpcConfig = hpcConfigMap[hpcName];
+    for (const hpcName in hpcConfigMap) {
+      const hpcConfig = hpcConfigMap[hpcName];
+
       // register job pool & queues
       this.jobPoolCapacities[hpcName] = hpcConfig.job_pool_capacity;
       this.jobPoolCounters[hpcName] = 0;
@@ -44,34 +50,44 @@ class Supervisor {
     this.createMaintainerMaster();
   }
 
-  createMaintainerMaster() {
-    var self = this;
 
+  /**
+   * Creates the main maintainer for all job execution. Runs in an infinite spaced loop. Ends on destruction. 
+   */
+  createMaintainerMaster() {
     // queue consumer
+    // this function defined here will repeat every x seconds (specified in second parameter)
     this.maintainerMasterThread = setInterval(async () => {
-      for (var hpcName in self.jobPoolCounters) {
+
+      // iterate over all HPCs
+      for (const hpcName in this.jobPoolCounters) {
+
+        // try to fill in the current HPC with jobs
         while (
-          self.jobPoolCounters[hpcName] < self.jobPoolCapacities[hpcName] &&
-          !(await self.queues[hpcName].isEmpty())
+          this.jobPoolCounters[hpcName] < this.jobPoolCapacities[hpcName] &&
+          !(await this.queues[hpcName].isEmpty())
         ) {
-          var job = await self.queues[hpcName].shift();
+          const job = await this.queues[hpcName].shift();
           if (!job) continue;
-          var maintainer = require(`./maintainers/${
+
+          const maintainer = require(`./maintainers/${ // eslint-disable-line
             maintainerConfigMap[job.maintainer].maintainer
-          }`).default; // typescript compilation hack
+          }`).default; // typescript compilation hack 
+
           try {
+            // push the job
             job.maintainerInstance = new maintainer(job);
             this.runningJobs[job.hpc].push(job);
             console.log(`Added job to running jobs: ${job.id}`);
           } catch (e) {
             // log error and skip job
-            self.emitter.registerEvents(
+            this.emitter.registerEvents(
               job,
               "JOB_INIT_ERROR",
               `job [${job.id}] failed to initialized with error ${e.toString()}`
             );
             job.finishedAt = new Date();
-            var connection = await self.db.connect();
+            const connection = await this.db.connect();
             await connection
               .createQueryBuilder()
               .update(Job)
@@ -80,10 +96,10 @@ class Supervisor {
               .execute();
             continue;
           }
-          
-          self.jobPoolCounters[hpcName]++;
 
-          // manage ssh pool
+          this.jobPoolCounters[hpcName]++;
+
+          // manage ssh pool -- diferent behavior for community/noncommunity accounts
           if (job.maintainerInstance.connector.config.is_community_account) {
             connectionPool[job.hpc].counter++;
           } else {
@@ -104,7 +120,7 @@ class Supervisor {
           }
 
           // emit event
-          self.emitter.registerEvents(
+          this.emitter.registerEvents(
             job,
             "JOB_REGISTERED",
             `job [${job.id}] is registered with the supervisor, waiting for initialization`
@@ -120,16 +136,19 @@ class Supervisor {
     this.maintainerMasterEventEmitter.on("job_end", (hpcName, jobName) => {
       if (config.is_testing)
         console.log(`received job_end event from ${jobName}`);
-      self.jobPoolCounters[hpcName]--;
+      this.jobPoolCounters[hpcName]--;
     });
   }
 
+  /**
+   * Creates a maintainer worker for a given job. 
+   *
+   * @param {Job} job
+   */
   async createMaintainerWorker(job: Job) {
-    var self = this;
-
-    while (true) {
+    while (true) {  // eslint-disable-line
       // get ssh connector from pool
-      var ssh: SSH;
+      let ssh: SSH;
       if (job.maintainerInstance.connector.config.is_community_account) {
         ssh = connectionPool[job.hpc].ssh;
       } else {
@@ -141,6 +160,7 @@ class Supervisor {
         if (!ssh.connection.isConnected())
           await ssh.connection.connect(ssh.config);
         await ssh.connection.execCommand("echo"); // test connection
+
         if (job.maintainerInstance.isInit) {
           await job.maintainerInstance.maintain();
         } else {
@@ -152,20 +172,22 @@ class Supervisor {
       }
 
       // emit events & logs
-      var events = job.maintainerInstance.dumpEvents();
-      var logs = job.maintainerInstance.dumpLogs();
+      const events = job.maintainerInstance.dumpEvents();
+      const logs = job.maintainerInstance.dumpLogs();
+
       // TODO: no need to dump events or logs outside the maintainer
-      for (var j in events)
-        self.emitter.registerEvents(job, events[j].type, events[j].message);
-      for (var j in logs) self.emitter.registerLogs(job, logs[j]);
+      for (const j in events)
+        this.emitter.registerEvents(job, events[j].type, events[j].message);
+      for (const j in logs) this.emitter.registerLogs(job, logs[j]);
 
       // check if job should be canceled
-      var shouldCancel = false;
-      for (var i = 0; i < this.cancelJobs[job.hpc].length; i++) {
-        if (this.cancelJobs[job.hpc][i] == job) {
+      let shouldCancel = false;
+      for (let i = 0; i < this.cancelJobs[job.hpc].length; i++) {
+        if (this.cancelJobs[job.hpc][i] === job) {
           shouldCancel = true;
         }
       }
+      
       if (shouldCancel && job.maintainerInstance.jobOnHpc) {
         job.maintainerInstance.onCancel();
         const index = this.cancelJobs[job.hpc].indexOf(job, 0);
@@ -191,7 +213,7 @@ class Supervisor {
         this.maintainerMasterEventEmitter.emit("job_end", job.hpc, job.id);
 
         // remove from running jobs
-        var index = this.runningJobs[job.hpc].indexOf(job, 0);
+        let index = this.runningJobs[job.hpc].indexOf(job, 0);
         if (index > -1) {
           this.runningJobs[job.hpc].splice(index, 1);
           console.log(`Removed job from running jobs: ${job.id}`);
@@ -208,6 +230,12 @@ class Supervisor {
     }
   }
 
+
+  /**
+   * Adds a job to the job queue. 
+   *
+   * @param {Job} job job to add
+   */
   async pushJobToQueue(job: Job) {
     await this.queues[job.hpc].push(job);
     this.emitter.registerEvents(
@@ -217,36 +245,53 @@ class Supervisor {
     );
   }
 
+  /**
+   * Stops the master thread execution. 
+   */
   destroy() {
     clearInterval(this.maintainerMasterThread);
   }
 
-  cancelJob(jobId: any) : Job {
+
+  /**
+   * Cancels the job associated with the given job id. 
+   *
+   * @param {*} jobId
+   * @return {Job} the job that was cancelled
+   */
+  cancelJob(jobId: any): Job {
     console.log(`cancelJob(${jobId}) looking for job`);
-    var toReturn = null;
-    var hpcToAdd = null;
-    for (var hpc in hpcConfigMap) {
+    let toReturn = null;
+    let hpcToAdd = null;
+
+    // look for the job in teh queue
+    for (const hpc in hpcConfigMap) {
       console.log(`looking in ${hpc}`);
-      for (var i = 0; i < +this.queues[hpc].length; i++) {
+      for (let i = 0; i < +this.queues[hpc].length; i++) {
         console.log(`Queue: checking is ${this.queues[hpc][i].id.toString()}`);
-        if (this.queues[hpc][i].id.toString() == jobId.toString()) {
+        if (this.queues[hpc][i].id.toString() === jobId.toString()) {
           toReturn = this.queues[hpc][i];
           hpcToAdd = hpc;
         }
       }
-      for (var i = 0; i < this.runningJobs[hpc].length; i++) {
+
+      // look for the job in the running jobs
+      for (let i = 0; i < this.runningJobs[hpc].length; i++) {
         console.log(`RunningJobs: checking is ${this.runningJobs[hpc][i].id.toString()}`);
-        if (this.runningJobs[hpc][i].id == jobId.toString()) {
+        if (this.runningJobs[hpc][i].id === jobId.toString()) {
           toReturn = this.runningJobs[hpc][i];
           hpcToAdd = hpc;
         }
       }
     }
-    if (toReturn != null) {
-      this.cancelJobs[hpcToAdd].push(toReturn)
+    
+    // if found, cancel it; otherwise log it
+    if (toReturn !== null) {
+      this.cancelJobs[hpcToAdd].push(toReturn);
     } else {
       console.log("Supervisor getJob(" + jobId + "): job not found");
     }
+
     return toReturn;
   }
 }

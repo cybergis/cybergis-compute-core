@@ -107,7 +107,7 @@ class BaseConnector {
       options
     );
 
-    if (typeof commands == "string") {
+    if (typeof commands === "string") {
       commands = [commands];
     }
 
@@ -157,7 +157,7 @@ class BaseConnector {
    * @throws {ConnectorError} - Thrown if maintainer emits 'SSH_SCP_DOWNLOAD_ERROR'
    */
   async download(from: string, to: string, muteEvent = false) {
-    if (to == undefined)
+    if (to === undefined)
       throw new ConnectorError("please init input file first");
     const fromZipFilePath = from.endsWith(".zip") ? from : `${from}.zip`;
     const toZipFilePath = `${to}.zip`;
@@ -446,7 +446,7 @@ class BaseConnector {
   ) {
     if (this.maintainer && !muteEvent)
       this.maintainer.emitEvent("SSH_CREATE_FILE", `create file to ${remotePath}`);
-    if (typeof content != "string") {
+    if (typeof content !== "string") {
       content = JSON.stringify(content)
     } 
     // cast to string
@@ -481,7 +481,7 @@ class BaseConnector {
    * @return(Object) returns - command execution output
    */
   getRemoteExecutableFolderPath(providedPath: string = null): string {
-    if (this.remote_executable_folder_path == null)
+    if (this.remote_executable_folder_path === null)
       throw new Error("need to set remote_executable_folder_path");
     if (providedPath)
       return path.join(this.remote_executable_folder_path, providedPath);
@@ -508,7 +508,7 @@ class BaseConnector {
    * @return(Object) returns - command execution output
    */
   getRemoteResultFolderPath(providedPath: string = null): string {
-    if (this.remote_result_folder_path == null)
+    if (this.remote_result_folder_path === null)
       throw new Error("need to set remote_result_folder_path");
     if (providedPath)
       return path.join(this.remote_result_folder_path, providedPath);

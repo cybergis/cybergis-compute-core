@@ -31,7 +31,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
 
       // check if local executable file is git
       const localExecutableFolder = this.job.localExecutableFolder;
-      if (localExecutableFolder.type != "git")
+      if (localExecutableFolder.type !== "git")
         throw new Error(
           "community contribution currently don't accept non-git code"
         );
@@ -44,7 +44,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
         throw new Error("could not find git repo executable in this job");
       this.executableManifest = await GitUtil.getExecutableManifest(git);
       
-      if (this.executableManifest.connector == "SingCVMFSConnector"){
+      if (this.executableManifest.connector === "SingCVMFSConnector"){
         this.connector = this.getSingCVMFSConnector();
       }
 
@@ -134,7 +134,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
     try {
       var status = await this.connector.getStatus();
       // failing condition
-      if (status == "ERROR" || status == "F" || status == "NF") {
+      if (status === "ERROR" || status === "F" || status === "NF") {
         this.emitEvent(
           "JOB_FAILED",
           "job [" + this.id + "] failed with status " + status
@@ -142,7 +142,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
         return;
       }
       // complete condition
-      if (status == "C" || status == "CD" || status == "UNKNOWN") {
+      if (status === "C" || status === "CD" || status === "UNKNOWN") {
         // collect logs
         await this.connector.getSlurmStdout();
         await this.connector.getSlurmStderr();
@@ -160,18 +160,18 @@ class CommunityContributionMaintainer extends BaseMaintainer {
         if (defaultResultFolderDownloadablePath) {
           // bring default downloadable to front (for frontend display)
           contents.sort((a, b) =>
-            a == defaultResultFolderDownloadablePath
+            a === defaultResultFolderDownloadablePath
               ? -1
-              : b == defaultResultFolderDownloadablePath
+              : b === defaultResultFolderDownloadablePath
               ? 1
               : 0
           );
-          if (defaultResultFolderDownloadablePath[0] != "/") {
+          if (defaultResultFolderDownloadablePath[0] !== "/") {
             defaultResultFolderDownloadablePath = `/${defaultResultFolderDownloadablePath}`;
             contents.sort((a, b) =>
-              a == defaultResultFolderDownloadablePath
+              a === defaultResultFolderDownloadablePath
                 ? -1
-                : b == defaultResultFolderDownloadablePath
+                : b === defaultResultFolderDownloadablePath
                 ? 1
                 : 0
             );

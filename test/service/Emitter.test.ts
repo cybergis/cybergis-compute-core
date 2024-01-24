@@ -66,7 +66,7 @@ describe("test Emitter.getEvents", () => {
       );
     const queriedEvents = await emitter.getEvents(job.id);
     //
-    expect(queriedEvents.length == eventsCount);
+    expect(queriedEvents.length === eventsCount);
     for (var i = 0; i < eventsCount; i++) {
       expect(queriedEvents[i].jobId).toEqual(job.id);
       expect(queriedEvents[i].type).toEqual(`${eventType}_${i}`);
@@ -107,7 +107,7 @@ describe("test Emitter.getLogs", () => {
       await TestHelper.createLog(job, `${logMessage}_${i}`);
     const queriedLogs = await emitter.getLogs(job.id);
     //
-    expect(queriedLogs.length == logsCount);
+    expect(queriedLogs.length === logsCount);
     for (var i = 0; i < logsCount; i++) {
       expect(queriedLogs[i].jobId).toEqual(job.id);
       expect(queriedLogs[i].message).toEqual(`${logMessage}_${i}`);

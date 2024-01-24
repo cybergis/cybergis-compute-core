@@ -76,7 +76,7 @@ class BaseMaintainer {
   constructor(job: Job) {
     for (var i in this.envParamValidators) {
       var val = job.env[i];
-      if (val != undefined) {
+      if (val !== undefined) {
         if (this.envParamValidators[i](val)) this.envParam[i] = val;
       }
     }
