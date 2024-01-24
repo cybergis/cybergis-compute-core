@@ -126,11 +126,8 @@ class Supervisor {
 
   async createMaintainerWorker(job: Job) {
     var self = this;
-
+    const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
     while (true) {
-      // console.log("jdebug enter loop");
-      const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-      // await sleep(4000);
       // get ssh connector from pool
       var ssh: SSH;
       if (job.maintainerInstance.connector.config.is_community_account) {
@@ -140,33 +137,34 @@ class Supervisor {
       }
 
       var exit = false;
-      var wait = 2;
+      var wait = 0;
 
       // connect ssh & run
       while (!exit && !ssh.connection.isConnected()) {
         if (wait > 100) {
-          console.log("jdebug bad");
           exit = true;
+          self.emitter.registerEvents(
+            job,
+            "JOB_FAILED",
+            `job [${job.id}] failed because the HPC could not connect within the allotted time`
+          );
           continue;
         }
         try {
-          console.log("jdebug ok");
           await sleep(wait * 1000);
           if (!ssh.connection.isConnected()) {
             await ssh.connection.connect(ssh.config);
           }
           await ssh.connection.execCommand("echo"); // test connection
-          if (job.maintainerInstance.isInit) {
-            await job.maintainerInstance.maintain();
-          } else {
-            await job.maintainerInstance.init();
-          }
-          wait = wait * wait;
-          console.log("jdebug success");
         } catch (e) {
-          wait = wait * wait;
           if (config.is_testing) console.error(e.stack);
         }
+        wait = wait == 0 ? 2 : wait * wait;
+      }
+      if (job.maintainerInstance.isInit) {
+        await job.maintainerInstance.maintain();
+      } else {
+        await job.maintainerInstance.init();
       }
       // emit events & logs
       var events = job.maintainerInstance.dumpEvents();
@@ -192,8 +190,7 @@ class Supervisor {
       }
 
       // ending conditions
-      if (job.maintainerInstance.isEnd || exit) {
-        console.log("jdebug exit");
+      if (job.maintainerInstance.isEnd) {
         // exit or deflag ssh pool
         if (job.maintainerInstance.connector.config.is_community_account) {
           connectionPool[job.hpc].counter--;
@@ -270,4 +267,3 @@ class Supervisor {
 }
 
 export default Supervisor;
-
