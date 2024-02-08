@@ -121,9 +121,9 @@ export default class JobUtil {
    * @async
    * @param {string} userID - User to collect slurm usage from
    * @param {boolean} format - Whether or not the cputume, memory, memoryusage, and walltime are already formatted
-   * @returns {Object} - Total slurm usage of the indicated user
+   * @returns {Record<string, number | string>} - Total slurm usage of the indicated user
    */
-  static async getUserSlurmUsage(userId: string, format = false) {
+  static async getUserSlurmUsage(userId: string, format = false): Promise<Record<string, number | string>> {
     const db = new DB();
     const connection = await db.connect();
     const jobs = await connection.getRepository(Job).find({ userId: userId });

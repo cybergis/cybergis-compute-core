@@ -240,9 +240,9 @@ class BaseMaintainer {
    * Clear all logs in this.logs
    *
    * @async
-   * @return {Object} - List of jobs that were just deleted.
+   * @return {string[]} - List of jobs that were just deleted.
    */
-  dumpLogs() {
+  dumpLogs(): string[] {
     const logs = this.logs;
     this.logs = [];
     return logs;
@@ -252,9 +252,9 @@ class BaseMaintainer {
    * Clear all events in this.events
    *
    * @async
-   * @return {Object} - List of events that were just deleted.
+   * @return {event[]} - List of events that were just deleted.
    */
-  dumpEvents() {
+  dumpEvents(): event[] {
     const events = this.events;
     this.events = [];
     return events;

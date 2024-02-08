@@ -8,7 +8,6 @@ import * as path from "path";
  */
 export default class registerUtil {
 
-
   /**
    * Determines if a file/path is a zip file. 
    *
@@ -25,7 +24,6 @@ export default class registerUtil {
     }
   }
 
-
   /**
    * Zips a file/directory.
    *
@@ -41,10 +39,16 @@ export default class registerUtil {
     try {
       const child = spawn(
         "zip",
-        ["-q", "-r", `${filePath}.zip`, ".", `${path.basename(filePath)}`],
-        { cwd: filePath }
+        ["-q", // quiet mode
+          "-r", // zip recursively (folder)
+          `${filePath}.zip`, // output path
+          ".", // current directory to output to
+          `${path.basename(filePath)}` // thing to zip
+        ],
+        { cwd: filePath }  // specify current working directory of the spawned child
       );
 
+      // handle errors in zip
       return new Promise((resolve, reject) => {
         child.on("exit", () => resolve(`${filePath}.zip`));
         child.on("close", () => resolve(`${filePath}.zip`));
@@ -112,12 +116,14 @@ export default class registerUtil {
 
     try {
       const child = spawn("unzip", [
-        "-o",
-        "-q",
-        `${zipFilePath}`,
-        "-d",
-        `${filePath}`,
+        "-o", // overwrite
+        "-q", // quiet mode
+        `${zipFilePath}`, // thing to unzip
+        "-d", // specify output directory
+        `${filePath}`, // output directory
       ]);
+
+      // handle errors in unzip
       return new Promise((resolve, reject) => {
         child.on("exit", () => resolve(`${filePath}.zip`));
         child.on("close", () => resolve(`${filePath}.zip`));

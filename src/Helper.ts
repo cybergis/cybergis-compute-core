@@ -110,9 +110,9 @@ const Helper = {
    * @param {Object} obj object to check
    * @return {boolean} whether or not that object is empty
    */
-  isObjectEmpty(obj: object): boolean {
-    return Object.keys(obj).length === 0;
-  },
+  // isObjectEmpty(obj: object): boolean {
+  //   return Object.keys(obj).length === 0;
+  // },
 
   /**
    * Checks if jupyter host is in the config.

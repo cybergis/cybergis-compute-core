@@ -145,7 +145,7 @@ function requestErrors(v: jsonschema.ValidatorResult): string[] {
 }
 
 // function to take data and get it into dictionary format for DB interfacing
-async function prepareDataForDB(data, properties): Promise<{ [keys: string]: any}> {
+async function prepareDataForDB(data, properties): Promise<{ [keys: string]: string}> {
   const out = {};
   const connection = await db.connect();
   for (const i in properties) {
