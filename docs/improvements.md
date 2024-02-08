@@ -1,0 +1,8 @@
+- port src/lib/python to javascript using the newly released javascript globus sdk
+    - would be able to remove pythonutil and simplify things
+- get to all the TODOs
+- remove all unneeded packages/functions/code
+- figure out the purpose of the redis store and possibly archive it
+- get rid of the code that just read files -- encapsulate in a class?
+- declutter server.ts
+    - implement the unimplemented server.ts things?

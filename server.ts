@@ -41,7 +41,7 @@ import fs = require("fs");
 const app = express();
 
 // handle parsing arguments
-app.use(bodyParser.json());
+app.use(bodyParser.json());  // possibly unneeded now with newer versions of express
 app.use(morgan("combined"));
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -267,6 +267,7 @@ app.get("/statistic/job/:jobId", async (req, res) => {
   }
 
   try {
+    // query the job matching the params
     const connection = await db.connect();
     const job = await connection
       .getRepository(Job)
@@ -347,6 +348,7 @@ app.get("/user/jupyter-globus", async (req, res) => {
     return;
   }
 
+  // extract username minus the last segment after an @
   const username_array = res.locals.username.split("@");
   let username = username_array.slice(0, username_array.length - 1).join("@");
   const jupyterGlobus = jupyterGlobusMap[res.locals.host];
@@ -403,6 +405,7 @@ app.get("/user/job", async (req, res) => {
     return;
   }
 
+  // get all jobs associated with user
   const connection = await db.connect();
   const jobs = await connection.getRepository(Job).find({
     where: { userId: res.locals.username },
@@ -441,6 +444,7 @@ app.get("/user/slurm-usage", async (req, res) => {
     return;
   }
 
+  // get all jobs associated with user, then aggregate, then return that
   res.json(await JobUtil.getUserSlurmUsage(res.locals.username, true));
 });
 
@@ -455,6 +459,7 @@ app.get("/user/slurm-usage", async (req, res) => {
  */
 app.get("/hpc", function (req, res) {
   const parseHPC = (dest: { [key: string]: hpcConfig }) => {
+    // create truncated version of all hpc configs
     const out = {};
     for (const i in dest) {
       const d: hpcConfig = JSON.parse(JSON.stringify(dest[i])); // hard copy
@@ -506,7 +511,7 @@ app.get("/container", function (req, res) {
     const out = {};
     for (const i in dest) {
       const d: containerConfig = JSON.parse(JSON.stringify(dest[i])); // hard copy
-      if (!(i in ["dockerfile", "dockerhub"])) out[i] = d;
+      if (!(i in ["dockerfile", "dockerhub"])) out[i] = d;  // exclude dockerfiles/dockerhub configs
     }
     return out;
   };
@@ -568,6 +573,7 @@ app.get("/allowlist", function (req, res) {
  *              description: Returns array of current announcements
  */
 app.get("/announcement", function (req, res) {
+  // read announcements from the announcements.json file
   fs.readFile("./configs/announcement.json", "utf8", function (err, data) {
     const parseHost = (dest: { [key: string]: announcementsConfig }) => {
       const out = {};
@@ -596,9 +602,10 @@ app.get("/git", async function (req, res) {
     const out = {};
     for (const i in dest) {
       try {
+        // refresh git (updating the database), then get the manifest.json from the repo and append it
         await GitUtil.refreshGit(dest[i]);
         out[dest[i].id] = await GitUtil.getExecutableManifest(dest[i]);
-      } catch (e) {
+      } catch (e) {  // pulling/cloning went wrong
         console.error(`cannot clone git: ${e.toString()}`);
       }
     }
@@ -636,6 +643,7 @@ app.get("/folder", async function (req, res) {
     return;
   }
 
+  // get all folders associated with the user from the database
   const connection = await db.connect();
   const folder = await connection
     .getRepository(Folder)
@@ -667,6 +675,7 @@ app.get("/folder/:folderId", async function (req, res) {
     return;
   }
 
+  // get all folders associated with the user and with the given folder Id from the database
   const connection = await db.connect();
   const folder = await connection
     .getRepository(Folder)
@@ -702,6 +711,7 @@ app.delete("/folder/:folderId", async function (req, res) {
     return;
   }
 
+  // try to find the folder with the given id/associated user; if not found, give a 404
   const folderId = req.params.folderId;
   const connection = await db.connect();
   const folder = await connection
@@ -713,7 +723,7 @@ app.delete("/folder/:folderId", async function (req, res) {
   }
 
   try {
-    await connection.getRepository(Folder).softDelete(folderId);
+    await connection.getRepository(Folder).softDelete(folderId);  // not actually deleted, just marked as such
     res.status(200).json({ success: true });
   } catch (err) {
     res.status(401).json({ error: "encountered error: " + err.toString() });
@@ -749,6 +759,7 @@ app.put("/folder/:folderId", async function (req, res) {
     return;
   }
 
+  // try to find the folder specified in the body, if not found, give a 404
   const folderId = req.params.folderId;
   const connection = await db.connect();
   const folder = await connection
@@ -759,9 +770,12 @@ app.put("/folder/:folderId", async function (req, res) {
     return;
   }
 
+  // body parameters to pass as folder properties
   if (body.name) folder.name = body.name;
   if (body.isWritable) folder.isWritable = body.isWritable;
+
   try {
+    // update the folder entry and return it
     await connection
       .createQueryBuilder()
       .update(Folder)
@@ -772,6 +786,7 @@ app.put("/folder/:folderId", async function (req, res) {
     const updatedFolder = await connection
       .getRepository(Folder)
       .findOne(folderId);
+
     res.status(200).json(updatedFolder);
   } catch (err) {
     res.status(401).json({ error: "encountered error: " + err.toString() });
@@ -807,10 +822,10 @@ app.post("/folder/:folderId/download/globus-init", async function (req, res) {
     return;
   }
 
-  // get jobId
+  // get jobId from body
   const jobId = body.jobId;
 
-  // get folder
+  // get folder; if not found, error out
   const folderId = req.params.folderId;
   const connection = await db.connect();
   const folder = await connection.getRepository(Folder).findOneOrFail(folderId);
@@ -819,7 +834,8 @@ app.post("/folder/:folderId/download/globus-init", async function (req, res) {
     return;
   }
 
-  const existingTransferJob = await globusTaskList.get(folderId);
+  // check if there is an existing globus job from the redis DB -- if so, error out
+  const existingTransferJob: string | null = await globusTaskList.get(folderId);
   if (existingTransferJob) {
     res.status(403).json({
       error: `a globus job is currently running on folder with id ${folderId}`,
@@ -840,15 +856,18 @@ app.post("/folder/:folderId/download/globus-init", async function (req, res) {
     : folder.globusPath;
   const from = { path: fromPath, endpoint: hpcConfig.globus.endpoint };
   const to = { path: body.toPath, endpoint: body.toEndpoint };
-  console.log(from, to);
+  // console.log(from, to);
 
   try {
+    // start the transfer
     const globusTaskId = await GlobusUtil.initTransfer(
       from,
       to,
       hpcConfig,
       `job-id-${jobId}-download-folder-${folder.id}`
     );
+
+    // record the task as ongoing for the given folder
     await globusTaskList.put(folderId, globusTaskId);
     res.json({ globus_task_id: globusTaskId });
   } catch (err) {
@@ -875,16 +894,18 @@ app.post("/folder/:folderId/download/globus-init", async function (req, res) {
 app.get("/folder/:folderId/download/globus-status", async function (req, res) {
   const body = req.body;
   const errors = requestErrors(validator.validate(body, schemas.user));
+
   if (errors.length > 0) {
     res.status(402).json({ error: "invalid input", messages: errors });
     return;
   }
+
   if (!res.locals.username) {
     res.status(402).json({ error: "invalid token" });
     return;
   }
 
-  // get folder
+  // get folder -- if doesn't exist, error out
   const folderId = req.params.folderId;
   const connection = await db.connect();
   const folder = await connection.getRepository(Folder).findOneOrFail(folderId);
@@ -901,8 +922,9 @@ app.get("/folder/:folderId/download/globus-status", async function (req, res) {
       hpcConfigMap[folder.hpc]
     );
 
+    // remove the folder from the ongoing globus task list if the globus transfer finished
     if (["SUCCEEDED", "FAILED"].includes(status))
-      await globusTaskList.remove(folderId);
+      await globusTaskList.remove(folderId);  
 
     res.json({ status: status });
   } catch (err) {
@@ -929,12 +951,14 @@ app.get("/folder/:folderId/download/globus-status", async function (req, res) {
 app.post("/job", async function (req, res) {
   const body = req.body;
   const errors = requestErrors(validator.validate(body, schemas.createJob));
+
   if (errors.length > 0) {
     res.status(402).json({ error: "invalid input", messages: errors });
     return;
   }
 
-  const maintainerName: string = body.maintainer ?? "community_contribution";
+  // try to extract maintainer and hpc associated with the job
+  const maintainerName: string = body.maintainer ?? "community_contribution";  // default to community contribution job maintainer
   const maintainer = maintainerConfigMap[maintainerName];
   if (maintainer === undefined) {
     res.status(401).json({ error: "unrecognized maintainer", message: null });
@@ -950,7 +974,7 @@ app.post("/job", async function (req, res) {
 
   // check if the user can use the HPC
   const allowedOnHPC = Helper.canAccessHPC(res.locals.username, hpcName);
-  console.log(allowedOnHPC);
+  // console.log(allowedOnHPC);
   
   if (!allowedOnHPC) {
     res.status(401).json({ error: "Not authorized for HPC", message: null });
@@ -958,6 +982,7 @@ app.post("/job", async function (req, res) {
   }
 
   try {
+    // need to validate if hpc is not a community account
     if (!hpc.is_community_account) {
       await sshCredentialGuard.validatePrivateAccount(
         hpcName,
@@ -972,6 +997,7 @@ app.post("/job", async function (req, res) {
     return;
   }
 
+  // start job db connection & create the job object to upload
   const connection = await db.connect();
   const jobRepo = connection.getRepository(Job);
 
@@ -984,6 +1010,7 @@ app.post("/job", async function (req, res) {
   job.slurm = {};
   job.env = {};
 
+  // store credentials if not community account/need verification
   if (!hpc.is_community_account)
     job.credentialId = await sshCredentialGuard.registerCredential(
       body.user,
@@ -992,7 +1019,7 @@ app.post("/job", async function (req, res) {
 
   await jobRepo.save(job);
 
-  res.json(Helper.job2object(job));
+  res.json(Helper.job2object(job));  // return the job converted to a dictionary
 });
 
 /**
@@ -1029,7 +1056,7 @@ app.put("/job/:jobId", async function (req, res) {
       .getRepository(Job)
       .findOneOrFail({ id: jobId, userId: res.locals.username });
 
-    // update
+    // update the job with the given id
     try {
       await connection
         .createQueryBuilder()
@@ -1054,7 +1081,7 @@ app.put("/job/:jobId", async function (req, res) {
       return;
     }
 
-    // return updated job
+    // return updated job as a dictionary
     const job = await connection.getRepository(Job).findOne(jobId);
     res.json(Helper.job2object(job));
   } catch (e) {
@@ -1084,6 +1111,7 @@ app.post("/job/:jobId/submit", async function (req, res) {
     res.status(402).json({ error: "invalid input", messages: errors });
     return;
   }
+
   if (!res.locals.username) {
     res
       .status(401)
@@ -1094,6 +1122,7 @@ app.post("/job/:jobId/submit", async function (req, res) {
   let job = null;
   const jobId = req.params.jobId;
 
+  // try to find the specified job
   try {
     const connection = await db.connect();
     job = await connection.getRepository(Job).findOneOrFail(
@@ -1111,6 +1140,7 @@ app.post("/job/:jobId/submit", async function (req, res) {
     return;
   }
 
+  // if already queued, do nothing
   if (job.queuedAt) {
     res
       .status(401)
@@ -1119,9 +1149,11 @@ app.post("/job/:jobId/submit", async function (req, res) {
   }
 
   try {
+    // validate job and push it to the job queue
     await JobUtil.validateJob(job);
     await supervisor.pushJobToQueue(job);
-    // update status
+
+    // update status of the job
     const connection = await db.connect();
     job.queuedAt = new Date();
     await connection
@@ -1176,7 +1208,7 @@ app.put("/job/:jobId/resume", async function (_req, _res) { });
  *              description: Returns "invalid input" and a list of errors with the format of the req body - jobId may be invalid or job may not be in queue
  */
 app.put("/job/:jobId/cancel", async function (req, res) {
-  console.log("made it to cancel");
+  // console.log("made it to cancel");
   const body = req.body;
   const errors = requestErrors(validator.validate(body, schemas.user));
 
@@ -1184,6 +1216,7 @@ app.put("/job/:jobId/cancel", async function (req, res) {
     res.status(402).json({ error: "invalid input", messages: errors });
     return;
   }
+
   if (!res.locals.username) {
     res
       .status(401)
@@ -1192,19 +1225,19 @@ app.put("/job/:jobId/cancel", async function (req, res) {
   }
 
   try {
+    // try to cancel the job on the supervisor job manager
     const jobId = req.params.jobId;
     const job = supervisor.cancelJob(jobId);
+
+    // check if the job was successfully cancelled (per the return value from cancelJob)
     if (job === null) {
       res.status(402).json({ error: "job is not in queue or running jobs" });
       return;
     }
-    res
-      .status(200)
-      .json({ messages: ["job successfully added to cancel queue"] });
-    return;
+
+    res.status(200).json({ messages: ["job successfully added to cancel queue"] });
   } catch (e) {
     res.status(402).json({ error: "invalid jobId", messages: [e.toString()] });
-    return;
   }
 });
 
@@ -1229,6 +1262,7 @@ app.get("/job/:jobId/events", async function (req, res) {
     res.status(402).json({ error: "invalid input", messages: errors });
     return;
   }
+  
   if (!res.locals.username) {
     res
       .status(401)
@@ -1237,6 +1271,7 @@ app.get("/job/:jobId/events", async function (req, res) {
   }
 
   try {
+    // get events from the job repo (updated in the supervisor/with individual maintainers)
     const jobId = req.params.jobId;
     const connection = await db.connect();
     const job = await connection
@@ -1275,6 +1310,7 @@ app.get("/job/:jobId/result-folder-content", async function (req, res) {
     res.status(402).json({ error: "invalid input", messages: errors });
     return;
   }
+
   if (!res.locals.username) {
     res
       .status(401)
@@ -1283,11 +1319,13 @@ app.get("/job/:jobId/result-folder-content", async function (req, res) {
   }
 
   try {
+    // query the result folder content from the job repo
     const jobId = req.params.jobId;
     const connection = await db.connect();
     const job = await connection
       .getRepository(Job)
       .findOneOrFail({ id: jobId, userId: res.locals.username });
+    
     const out = await resultFolderContent.get(job.id);
     res.json(out ? out : []);
   } catch (e) {
@@ -1317,16 +1355,17 @@ app.get("/job/:jobId/logs", async function (req, res) {
     res.status(402).json({ error: "invalid input", messages: errors });
     return;
   }
+
   if (!res.locals.username) {
-    res
-      .status(401)
-      .json({ error: "submit without login is not allowed", messages: [] });
+    res.status(401).json({ error: "submit without login is not allowed", messages: [] });
     return;
   }
 
   try {
+    // try to get the logs from teh jobs database (continuously updated in the maintainer)
     const jobId = req.params.jobId;
     const connection = await db.connect();
+
     const job = await connection
       .getRepository(Job)
       .findOneOrFail(
@@ -1361,6 +1400,7 @@ app.get("/job/:jobId", async function (req, res) {
     res.status(402).json({ error: "invalid input", messages: errors });
     return;
   }
+
   if (!res.locals.username) {
     res
       .status(401)
@@ -1369,8 +1409,10 @@ app.get("/job/:jobId", async function (req, res) {
   }
 
   try {
+    // query job database for all requested things, return it as a dictionary json
     const jobId = req.params.jobId;
     const connection = await db.connect();
+    
     const job = await connection.getRepository(Job).findOneOrFail(
       { id: jobId, userId: res.locals.username },
       {
