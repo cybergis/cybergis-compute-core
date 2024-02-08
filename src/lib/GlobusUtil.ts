@@ -7,7 +7,7 @@ import redis = require("redis");
 import { promisify } from "util";
 
 /**
- * Class for managing globus tasks
+ * Class for managing globus tasks, TODO: port the python scripts to the JS Globus SDK (https://www.globus.org/blog/globus-javascript-sdk-now-available)
  */
 export class GlobusTaskListManager {
 

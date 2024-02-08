@@ -19,24 +19,22 @@ import SingularityConnector from "../connectors/SingularityConnector";
 import Supervisor from "../Supervisor";
 import DB from "../DB";
 
+/**
+ * This is an abstract class for compute core job maintainers, which are responsible for submitting jobs and monitoring them.
+ */
 class BaseMaintainer {
   /** parent pointer **/
   public supervisor: Supervisor;
 
   /** packages **/
   public validator = validator; // https://github.com/validatorjs/validator.js
-
-  public db: DB;
+  public db: DB = undefined;
 
   /** config **/
   public job: Job = undefined;
-
   public hpc: hpcConfig = undefined;
-
   public config: maintainerConfig = undefined;
-
   public id: string = undefined;
-
   public slurm: slurm = undefined;
 
   /** mutex **/
@@ -44,11 +42,8 @@ class BaseMaintainer {
 
   /** states **/
   public isInit = false;
-
   public isEnd = false;
-
   public isPaused = false;
-
   public jobOnHpc = false;
 
   protected lifeCycleState = {
@@ -57,50 +52,52 @@ class BaseMaintainer {
   };
 
   /** parameters **/
-  public initRetry = 3;
-
+  public initRetry = 3;  // how many times to retry initialization
   public maintainThresholdInHours = 100000; // something super large
 
-  public envParamValidators: { [keys: string]: (val: string) => boolean } =
+  // optional parameter validators for derivec classes
+  public envParamValidators: { [keys: string]: (_val: string) => boolean } =
     undefined;
-
   public envParamDefault: { [keys: string]: string } = {};
-
   public envParam: { [keys: string]: string } = {};
-
   public appParamValidators = undefined;
-
   public appParam: { [keys: string]: string } = {};
-
-  /** constructor **/
-  constructor(job: Job) {
-    for (var i in this.envParamValidators) {
-      var val = job.env[i];
-      if (val !== undefined) {
-        if (this.envParamValidators[i](val)) this.envParam[i] = val;
-      }
-    }
-    const maintainerConfig = maintainerConfigMap[job.maintainer];
-    this.job = job;
-    this.config = maintainerConfig;
-    this.id = job.id;
-    this.slurm = job.slurm;
-    this.db = new DB();
-    var hpc = job.hpc ? job.hpc : this.config.default_hpc;
-    this.hpc = hpcConfigMap[hpc];
-    if (!this.hpc) throw new Error("cannot find hpc with name [" + hpc + "]");
-    this.onDefine();
-  }
 
   /** HPC connectors **/
   public connector: BaseConnector | SlurmConnector = undefined;
 
   /** data **/
   protected logs: Array<string> = [];
-
   protected events: Array<event> = [];
 
+
+  /** constructor **/
+  constructor(job: Job) {
+    // try to validate the job's environment
+    for (const i in this.envParamValidators) {
+      const val: string = job.env[i];
+      if (val !== undefined) {
+        if (this.envParamValidators[i](val)) this.envParam[i] = val;
+      }
+    }
+    
+    // instantiate class variables
+    this.job = job;
+    this.config = maintainerConfigMap[job.maintainer];
+    this.id = job.id;
+    this.slurm = job.slurm;
+    this.db = new DB();
+
+    // determine if the current hpc exists within the config
+    const hpc = job.hpc ? job.hpc : this.config.default_hpc;
+    this.hpc = hpcConfigMap[hpc];
+    if (!this.hpc) throw new Error("cannot find hpc with name [" + hpc + "]");
+
+    this.onDefine();  // can't instantiate this class, abstract
+  }
+
   /** lifecycle interfaces **/
+
   /**
    * Throw execption when ondefine not implemented
    *
@@ -165,6 +162,7 @@ class BaseMaintainer {
   emitEvent(type: string, message: string) {
     if (type === "JOB_INIT") this.isInit = true;
     if (type === "JOB_ENDED" || type === "JOB_FAILED") this.isEnd = true;
+
     this.events.push({
       type: type,
       message: message,
@@ -181,12 +179,14 @@ class BaseMaintainer {
   }
 
   /** supervisor interfaces **/
+
   /**
    * Initialize job in the maintainer. If the job has been retried too many times, terminate and update events.
    *
    * @async
    */
   async init() {
+    // check if already trying to init -- if so, don't start another async instance
     if (this._lock) return;
     this._lock = true;
 
@@ -209,6 +209,7 @@ class BaseMaintainer {
    * @async
    */
   async maintain() {
+    // check if already trying to do this -- if so, don't start another async instance
     if (this._lock) return;
     this._lock = true;
 
@@ -242,7 +243,7 @@ class BaseMaintainer {
    * @return {Object} - List of jobs that were just deleted.
    */
   dumpLogs() {
-    var logs = this.logs;
+    const logs = this.logs;
     this.logs = [];
     return logs;
   }
@@ -254,7 +255,7 @@ class BaseMaintainer {
    * @return {Object} - List of events that were just deleted.
    */
   dumpEvents() {
-    var events = this.events;
+    const events = this.events;
     this.events = [];
     return events;
   }
@@ -267,14 +268,14 @@ class BaseMaintainer {
    * @param {jobMaintainerUpdatable} job - New information to update this job with.
    */
   public async updateJob(job: jobMaintainerUpdatable) {
-    var connection = await this.db.connect();
+    const connection = await this.db.connect();
     await connection
       .createQueryBuilder()
       .update(Job)
       .where("id = :id", { id: this.id })
       .set(job)
       .execute();
-    var jobRepo = connection.getRepository(Job);
+    const jobRepo = connection.getRepository(Job);
     this.job = await jobRepo.findOne(this.id);
   }
 

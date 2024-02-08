@@ -8,10 +8,11 @@ import connectionPool from "./ConnectionPool";
 import { config, hpcConfigMap } from "../../configs/config";
 import FileUtil from "../lib/FolderUtil";
 
+/**
+ * Connects the job to the HPC environment through maintainer
+ */
 class BaseConnector {
-  /**
-   * Connects the job to the HPC environment through maintainer
-   */
+
   /** parent pointer **/
   public maintainer: BaseMaintainer;
 

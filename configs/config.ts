@@ -7,19 +7,19 @@ import {
   kernelConfig,
 } from "../src/types";
 
-const rawConfig = require("../config.json"); // base config
-const rawHpc = require("./hpc.json"); // hpc configuration
-const rawMaintainer = require("./maintainer.json"); // maintainer config
-const rawContainerConfig = require("./container.json"); // docker container config
-const rawJupyterGlobusMapConfig = require("./jupyter-globus-map.json"); // globus configs
-const rawKernelConfig = require("./kernel.json"); // python kernel configs
+import rawConfig = require("../config.json"); // base config
+import rawHpc = require("./hpc.json"); // hpc configuration
+import rawMaintainer = require("./maintainer.json"); // maintainer config
+import rawContainerConfig = require("./container.json"); // docker container config
+import rawJupyterGlobusMapConfig = require("./jupyter-globus-map.json"); // globus configs
+import rawKernelConfig = require("./kernel.json"); // python kernel configs
 
 const config: config = JSON.parse(JSON.stringify(rawConfig));
 
 // create and populate configs
 
-var hpcConfigMap: { [key: string]: hpcConfig } = {};
-for (var i in rawHpc) {
+const hpcConfigMap: { [key: string]: hpcConfig } = {};
+for (const i in rawHpc) {
   hpcConfigMap[i] = Object.assign(
     {
       ip: undefined,
@@ -39,25 +39,25 @@ for (var i in rawHpc) {
   );
 }
 
-var jupyterGlobusMap: { [key: string]: jupyterGlobusMapConfig } = {};
-for (var i in rawJupyterGlobusMapConfig) {
+const jupyterGlobusMap: { [key: string]: jupyterGlobusMapConfig } = {};
+for (const i in rawJupyterGlobusMapConfig) {
   jupyterGlobusMap[i] = JSON.parse(
     JSON.stringify(rawJupyterGlobusMapConfig[i])
   );
 }
 
-var maintainerConfigMap: { [key: string]: maintainerConfig } = {};
-for (var i in rawMaintainer) {
+const maintainerConfigMap: { [key: string]: maintainerConfig } = {};
+for (const i in rawMaintainer) {
   maintainerConfigMap[i] = JSON.parse(JSON.stringify(rawMaintainer[i]));
 }
 
-var containerConfigMap: { [key: string]: containerConfig } = {};
-for (var i in rawContainerConfig) {
+const containerConfigMap: { [key: string]: containerConfig } = {};
+for (const i in rawContainerConfig) {
   containerConfigMap[i] = JSON.parse(JSON.stringify(rawContainerConfig[i]));
 }
 
-var kernelConfigMap: { [key: string]: kernelConfig } = {};
-for (var i in rawKernelConfig) {
+const kernelConfigMap: { [key: string]: kernelConfig } = {};
+for (const i in rawKernelConfig) {
   kernelConfigMap[i] = JSON.parse(JSON.stringify(rawKernelConfig[i]));
 }
 

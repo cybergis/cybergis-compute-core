@@ -8,13 +8,17 @@ import { Git } from "../models/Git";
 import { Folder } from "../models/Folder";
 import { FolderUploaderHelper } from "../FolderUploader";
 
+/**
+ * Specialized maintainer for handling jobs submitted to community HPCs (no login). Inherits from BaseMaintainer.
+ */
 class CommunityContributionMaintainer extends BaseMaintainer {
-  public connector: SingularityConnector;
+
+  public connector: SingularityConnector;  // connector to communicate with HPC
 
   public resultFolderContentManager: ResultFolderContentManager =
     new ResultFolderContentManager();
 
-  public executableManifest: executableManifest;
+  public executableManifest: executableManifest;  // details about the job
 
   onDefine() {
     this.connector = this.getSingularityConnector();
@@ -33,7 +37,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
       const localExecutableFolder = this.job.localExecutableFolder;
       if (localExecutableFolder.type !== "git")
         throw new Error(
-          "community contribution currently don't accept non-git code"
+          "community contribution currently doesn't accept non-git code"
         );
 
       // get executable manifest
@@ -44,6 +48,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
         throw new Error("could not find git repo executable in this job");
       this.executableManifest = await GitUtil.getExecutableManifest(git);
       
+      // overwrite default singularity connector if cvmfs needs to be turned on
       if (this.executableManifest.connector === "SingCVMFSConnector"){
         this.connector = this.getSingCVMFSConnector();
       }
@@ -51,8 +56,9 @@ class CommunityContributionMaintainer extends BaseMaintainer {
       // upload executable folder
       if (!this.job.localExecutableFolder)
         throw new Error("job.localExecutableFolder is required");
-      this.emitEvent("SLURM_UPLOAD_EXECUTABLE", `uploading executable folder`);
-      var uploader = await FolderUploaderHelper.upload(
+      
+      this.emitEvent("SLURM_UPLOAD_EXECUTABLE", "uploading executable folder");  // isn't this SCP?
+      let uploader = await FolderUploaderHelper.upload(
         this.job.localExecutableFolder,
         this.job.hpc,
         this.job.userId,
@@ -66,7 +72,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
 
       // upload data folder
       if (this.job.localDataFolder) {
-        this.emitEvent("SLURM_UPLOAD_DATA", `uploading data folder`);
+        this.emitEvent("SLURM_UPLOAD_DATA", "uploading data folder");
         uploader = await FolderUploaderHelper.upload(
           this.job.localDataFolder,
           this.job.hpc,
@@ -85,7 +91,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
       }
 
       // create empty result folder
-      this.emitEvent("SLURM_CREATE_RESULT", `create result folder`);
+      this.emitEvent("SLURM_CREATE_RESULT", "create result folder");
       uploader = await FolderUploaderHelper.upload(
         { type: "empty" },
         this.job.hpc,
@@ -105,17 +111,20 @@ class CommunityContributionMaintainer extends BaseMaintainer {
         remoteResultFolder: this.job.remoteResultFolder,
       });
 
-      // submit
+      // submit job
       await this.connector.execExecutableManifestWithinImage(
         this.executableManifest,
         this.slurm
       );
       await this.connector.submit();
+
       this.jobOnHpc = true;
       this.emitEvent(
         "JOB_INIT",
         "job [" + this.id + "] is initialized, waiting for job completion"
       );
+
+      // log on xsede
       XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc, this.job);
     } catch (e) {
       this.emitEvent(
@@ -132,7 +141,9 @@ class CommunityContributionMaintainer extends BaseMaintainer {
    */
   async onMaintain() {
     try {
-      var status = await this.connector.getStatus();
+      // query HPC status via connector
+      const status = await this.connector.getStatus();
+
       // failing condition
       if (status === "ERROR" || status === "F" || status === "NF") {
         this.emitEvent(
@@ -141,45 +152,46 @@ class CommunityContributionMaintainer extends BaseMaintainer {
         );
         return;
       }
+
       // complete condition
       if (status === "C" || status === "CD" || status === "UNKNOWN") {
         // collect logs
         await this.connector.getSlurmStdout();
         await this.connector.getSlurmStderr();
+
         // update job usage
         this.emitEvent("JOB_ENDED", "job [" + this.id + "] finished");
         const usage = await this.connector.getUsage();
         this.updateJob(usage);
+
         // submit again to XSEDE
         XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc, this.job); // for backup submit
+
         // fetch result folder content
         // TODO: make this shorter
-        var contents = await this.connector.getRemoteResultFolderContent();
-        var defaultResultFolderDownloadablePath =
+        const contents = await this.connector.getRemoteResultFolderContent();
+
+        let defaultResultFolderDownloadablePath =
           this.executableManifest.default_result_folder_downloadable_path;
+
         if (defaultResultFolderDownloadablePath) {
           // bring default downloadable to front (for frontend display)
           contents.sort((a, b) =>
-            a === defaultResultFolderDownloadablePath
-              ? -1
-              : b === defaultResultFolderDownloadablePath
-              ? 1
-              : 0
+            a === defaultResultFolderDownloadablePath ? -1 : (b === defaultResultFolderDownloadablePath ? 1 : 0)
           );
           if (defaultResultFolderDownloadablePath[0] !== "/") {
             defaultResultFolderDownloadablePath = `/${defaultResultFolderDownloadablePath}`;
             contents.sort((a, b) =>
-              a === defaultResultFolderDownloadablePath
-                ? -1
-                : b === defaultResultFolderDownloadablePath
-                ? 1
-                : 0
+              a === defaultResultFolderDownloadablePath ? -1 : (b === defaultResultFolderDownloadablePath ? 1 : 0)
             );
           }
         }
+
+        // update redis with this job's contents
         await this.resultFolderContentManager.put(this.id, contents);
       }
     } catch (e) {
+      // try to retry job if something goes wrong
       this.emitEvent(
         "JOB_RETRY",
         "job [" + this.id + "] encountered system error " + e.toString()

@@ -107,7 +107,7 @@ export default class GitUtil {
   }
 
   /**
-   * Does some logic on and returns the manifest.json of the executable of a git object. 
+   * Does some logic on and returns the manifest json of the executable of a git object. 
    *
    * @static
    * @param {Git} git git object to get the manifest 

@@ -934,7 +934,7 @@ app.post("/job", async function (req, res) {
     return;
   }
 
-  const maintainerName = body.maintainer ?? "community_contribution";
+  const maintainerName: string = body.maintainer ?? "community_contribution";
   const maintainer = maintainerConfigMap[maintainerName];
   if (maintainer === undefined) {
     res.status(401).json({ error: "unrecognized maintainer", message: null });
