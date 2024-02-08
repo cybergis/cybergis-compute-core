@@ -5,33 +5,33 @@ import {
   DeleteDateColumn,
   BeforeInsert,
   BeforeUpdate,
-  OneToMany,
+  // OneToMany,
 } from "typeorm";
-import { Job } from "./Job";
+// import { Job } from "./Job";
 
 /** Class representing a job event. */
 @Entity({ name: "folders" })
 export class Folder {
   @PrimaryColumn()
-  id: string;
+    id: string;
 
   @Column({ nullable: true })
-  name: string;
+    name: string;
 
   @Column()
-  hpc: string;
+    hpc: string;
 
   @Column()
-  hpcPath: string;
+    hpcPath: string;
 
   @Column()
-  globusPath: string;
+    globusPath: string;
 
   @Column({ nullable: true })
-  userId: string;
+    userId: string;
 
   @Column({ default: false })
-  isWritable: boolean;
+    isWritable: boolean;
 
   @Column({
     type: "bigint",
@@ -40,7 +40,7 @@ export class Folder {
       from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-  createdAt: Date;
+    createdAt: Date;
 
   @Column({
     type: "bigint",
@@ -50,7 +50,7 @@ export class Folder {
       from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-  updatedAt: Date;
+    updatedAt: Date;
 
   @DeleteDateColumn({
     type: "bigint",
@@ -60,7 +60,7 @@ export class Folder {
       from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-  deletedAt: Date;
+    deletedAt: Date;
 
   /**
    * Set the createdAt time to the current time.

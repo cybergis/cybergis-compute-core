@@ -1,5 +1,5 @@
-const fs = require("fs");
-const swaggerJsdoc = require("swagger-jsdoc");
+import fs = require("fs");
+import swaggerJsdoc = require("swagger-jsdoc");
 
 const options = {
   definition: {
@@ -16,5 +16,5 @@ const output = swaggerJsdoc(options);
 fs.writeFile(
   "./production/swagger.json",
   JSON.stringify(output),
-  function (err) {}
+  function (_err) {}
 );
