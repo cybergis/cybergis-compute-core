@@ -162,6 +162,14 @@ const Helper = {
     // shouldn't be reachable, but print false just in case
     return false;
   },
+
+  assertError(err: unknown): Error {
+    if (!(err instanceof Error)) {
+      throw err;
+    }
+
+    return err;
+  },
     
 
   consoleEnd: "\x1b[0m",

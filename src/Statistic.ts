@@ -14,9 +14,9 @@ export default class Statistic {
    * @param {string} jobId id of the job
    * @return {*} runtime of job (initialization time - finish time)
    */
-  public async getRuntimeByJobId(jobId: string) {
+  public async getRuntimeByJobId(jobId: string): Promise<number | undefined> {
     const connection = await this.db.connect();
-    const statistic = await connection
+    const statistic: number | undefined = await connection
       .getRepository(Job)
       .createQueryBuilder("job")
       .select(

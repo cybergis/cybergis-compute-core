@@ -203,9 +203,7 @@ export interface hpcConfig {
     endpoint?: string;
     root_path?: string;
   };
-  mount: {
-    [keys: string]: string;
-  };
+  mount: Record<string, string>;
   slurm_input_rules?: slurmInputRules;
   slurm_global_cap: slurm;
   xsede_job_log_credential: XSEDEJobLogCredential;
@@ -272,12 +270,8 @@ export interface executableManifest {
 export interface containerConfig {
   dockerfile?: string;
   dockerhub?: string;
-  hpc_path: { [keys: string]: string };
-  mount: {
-    [keys: string]: {
-      [keys: string]: string;
-    };
-  };
+  hpc_path: Record<string, string>;
+  mount: Record<string, Record<string, string>>;
 }
 
 export interface kernelConfig {
@@ -308,8 +302,8 @@ export interface SSH {
 }
 
 export interface jobMaintainerUpdatable {
-  param?: { [keys: string]: string };
-  env?: { [keys: string]: string };
+  param?: Record<string, string>;
+  env?: Record<string, string>;
   slurm?: slurm;
   slurmId?: string;
   nodes?: number;
@@ -345,3 +339,40 @@ export interface folderEditable {
 }
 
 export type NeedUploadFolder = GlobusFolder | GitFolder | LocalFolder;
+
+export interface authReqBody {
+  jupyterhubApiToken: string
+}
+
+export interface updateFolderBody { 
+  jupyterhubApiToken: string, 
+  name?: string, 
+  isWritable?: boolean 
+}
+
+export interface initGlobusDownloadBody { 
+  jupyterhubApiToken: string, 
+  toEndpoint: string, 
+  toPath: string, 
+  jobId?: string, 
+  fromPath?: string 
+}
+
+export interface createJobBody { 
+  jupyterhubApiToken: string, 
+  maintainer?: string, 
+  hpc?: string, 
+  user?: string, 
+  password?: string 
+}
+
+export interface updateJobBody {
+  jupyterhubApiToken: string,
+    param?: object,
+    env?: object,
+    slurm?: object,
+    localExecutableFolder?: object,
+    localDataFolder?: object,
+    remoteDataFolder?: object,
+    remoteExecutableFolder?: object,
+}

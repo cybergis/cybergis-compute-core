@@ -6,7 +6,11 @@ module.exports = {
   },
   "extends": [
     "eslint:recommended",
-    "plugin:@typescript-eslint/recommended"
+    "plugin:@typescript-eslint/recommended-type-checked",
+    "plugin:@typescript-eslint/stylistic-type-checked",
+    "plugin:import/errors",
+    "plugin:import/warnings",
+    "plugin:import/typescript"
   ],
   "overrides": [
     {
@@ -23,10 +27,12 @@ module.exports = {
   ],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
-    "ecmaVersion": "latest"
+    "ecmaVersion": "latest",
+    "project": ["tsconfig(.*)?.json"]
   },
   "plugins": [
-    "@typescript-eslint"
+    "@typescript-eslint",
+    "@stylistic"
   ],
   "rules": {
     "indent": [
@@ -47,7 +53,37 @@ module.exports = {
     ],
     "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
     "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
-    "no-empty": [2, {"allowEmptyCatch": true}]
+    "no-empty": [2, {"allowEmptyCatch": true}],
+    "@typescript-eslint/no-misused-promises": [
+      "error",
+      {
+        "checksVoidReturn": false
+      }
+    ],
+    "import/order": [
+      "error",
+      {
+        "alphabetize": {
+          caseInsensitive: true,
+          order: "asc",
+        },
+        "groups": ["external", "builtin", "parent", ["sibling", "index"]],
+        "newlines-between": "never",
+        "pathGroups": [
+          {
+            group: "external",
+            pattern: "react",
+            position: "before",
+          },
+          {
+            group: "external",
+            pattern: "@my_org/**",
+            position: "after",
+          },
+        ],
+        "pathGroupsExcludedImportTypes": ["builtin"],
+      },
+    ],
   }
 };
     
