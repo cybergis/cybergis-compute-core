@@ -103,10 +103,10 @@ export default class JobUtil {
    *
    * @static
    * @param {Job} job - This job
-   * @param { [keys: string]: any } paramRules - Parameter rules for this job
+   * @param { [keys: string]: unknown } paramRules - Parameter rules for this job
    * @throws Job must have a complete parameter list
    */
-  static validateParam(job: Job, paramRules: { [keys: string]: any }) {
+  static validateParam(job: Job, paramRules: { [keys: string]: unknown }) {
     for (const i in paramRules) {
       if (!job.param[i]) {
         throw new Error(`job missing input param ${i}`);
@@ -181,7 +181,7 @@ export default class JobUtil {
   static async validateJob(job: Job) {
     // create slurm config rules
     const providedSlurmInputRules: slurmInputRules = {};
-    const providedParamRules: { [keys: string]: any } = {};
+    const providedParamRules: { [keys: string]: unknown } = {};
     const requireUploadData = false;
 
     if (requireUploadData && !job.localDataFolder && !job.remoteDataFolder) {

@@ -33,7 +33,7 @@ class BaseConnector {
     hpcName: string,
     jobId: string = null,
     maintainer: BaseMaintainer = null,
-    env: { [keys: string]: any } = {},
+    env: { [keys: string]: unknown } = {},
     is_cvmfs: boolean = false
   ) {
     this.hpcName = hpcName;
@@ -480,13 +480,13 @@ class BaseConnector {
    * @async
    * creates file with specified content
    *
-   * @param {string | Record<string, any>} content file content (either string or dictionary)
+   * @param {string | Record<string, unknown>} content file content (either string or dictionary)
    * @param {string} remotePath specified path with filename
    * @param {options} options dictionary with string options (not used)
    * @param {boolean} [muteEvent=false] set to True if you want to mute maintauner emitted Event
    */
   async createFile(
-    content: string | Record<string, any>,
+    content: string | Record<string, unknown>,
     remotePath: string,
     options: options = {},  // eslint-disable-line
     muteEvent = false

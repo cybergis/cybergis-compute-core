@@ -14,13 +14,13 @@ export default class PythonUtil {
    * @param {string} file - Path of the file to run
    * @param {string[]} args - Arguments to be passed when running the file.
    * @param {string[]} returnTags - Items to be returned
-   * @returns {Promise<any>} - Values returned by the function that correspond the the ones passed in returnTags
+   * @returns {Promise<Record<string, unknown>>} - Values returned by the function that correspond the the ones passed in returnTags
    */
   static async runInteractive(
     file: string,
     args: string[] = [],
     returnTags: string[] = []
-  ): Promise<any> {
+  ): Promise<Record<string, unknown>> {
     args.unshift(`${__dirname}/python/${file}`);
     const child = spawn("python3", args);
     const out = {};
@@ -74,13 +74,13 @@ export default class PythonUtil {
    * @param {string} file - Path of the file to run
    * @param {string[]} args - Arguments to be passed when running the file.
    * @param {string[]} returnTags - Items to be returned
-   * @returns {Promise} - Values returned by the function that correspond the the ones passed in returnTags
+   * @returns {Promise<Record<string, unknown>>} - Values returned by the function that correspond the the ones passed in returnTags
    */
   static async run(
     file: string,
     args: string[] = [],
     returnTags: string[] = []
-  ): Promise<any> {
+  ): Promise<Record<string, unknown>> {
     args.unshift(`${__dirname}/python/${file}`);
     const child = spawn("python3", args);
 

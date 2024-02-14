@@ -12,7 +12,7 @@ import {
   slurm_integer_none_unit_config,
   slurm_integer_storage_unit_config,
   slurm_integer_time_unit_config,
-  slurm_string_option_configs
+  slurm_string_option_configs,
 } from "../types";
 import rimraf = require("rimraf");
 
@@ -167,7 +167,7 @@ export default class GitUtil {
         continue;
       }
 
-      const j: any = executableManifest.slurm_input_rules[i];
+      const j = executableManifest.slurm_input_rules[i];
       if (
         slurm_integer_time_unit_config.includes(i) &&
         !["Minutes", "Hours", "Days"].includes(j.unit)

@@ -256,10 +256,10 @@ class Supervisor {
   /**
    * Cancels the job associated with the given job id. 
    *
-   * @param {*} jobId
+   * @param {string} jobId
    * @return {Job} the job that was cancelled
    */
-  cancelJob(jobId: any): Job {
+  cancelJob(jobId: string): Job {
     console.log(`cancelJob(${jobId}) looking for job`);
     let toReturn = null;
     let hpcToAdd = null;

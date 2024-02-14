@@ -249,7 +249,7 @@ export class GitFolderUploader extends LocalFolderUploader {
     }
 
     // repull git if old, then upload (via SCP)
-    await GitUtil.refreshGit(this.git);
+    await GitUtil.refreshGit(this.git);  // unneeded if can guarantee we are good
     await super.upload();
   }
 }

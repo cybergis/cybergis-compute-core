@@ -89,7 +89,7 @@ export interface rawAccessToken {
   alg: string;
   payload: {
     encoded: string;
-    decoded: any;
+    decoded: unknown;
   };
   hash: string;
   id: string;
@@ -135,19 +135,19 @@ export interface secretTokenCache {
 
 export interface options {
   cwd?: string;
-  execOptions?: any;
+  execOptions?: unknown;
   encoding?: BufferEncoding;
 }
 
 export interface localKey {
   private_key_path: string;
-  passphrase?: any;
+  passphrase?: unknown;
 }
 
 export interface redis {
   host: string;
   port: number;
-  password?: any;
+  password?: unknown;
 }
 
 export interface mysql {
@@ -265,7 +265,7 @@ export interface executableManifest {
   repository?: string;
   require_upload_data?: boolean;
   slurm_input_rules?: slurmInputRules;
-  param_rules?: { [keys: string]: any };
+  param_rules?: integerRule | stringOptionRule;
   default_result_folder_downloadable_path?: string;
 }
 

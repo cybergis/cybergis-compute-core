@@ -76,7 +76,7 @@ class BaseMaintainer {
     // try to validate the job's environment
     for (const i in this.envParamValidators) {
       const val: string = job.env[i];
-      if (val !== undefined) {
+      if (val != undefined) {
         if (this.envParamValidators[i](val)) this.envParam[i] = val;
       }
     }
