@@ -38,6 +38,17 @@ export default class GitUtil {
   }
 
   /**
+   * Gets the local manifest path of a given git repository. 
+   *
+   * @static
+   * @param {string} gitId
+   * @return {string} resulting path 
+   */
+  static getLocalManifestPath(gitId: string): string {
+    return path.join(config.local_file_system.root_path, "manifests", gitId);
+  }
+
+  /**
    * Deletes a specified git repository and pulls it again.
    *
    * @static
@@ -54,6 +65,32 @@ export default class GitUtil {
     if (git.sha) {
       // if a sha is specified, checkout that commit
       await exec(`cd ${localPath} && git checkout ${git.sha}`);
+    }
+  }
+
+  /**
+   * Deletes a specified manifest of a git repository and pulls it again.
+   *
+   * @static
+   * @param {Git} git
+   */
+  static async deleteAndPullManifest(git: Git) {
+    const localPath = this.getLocalManifestPath(git.id);
+    // eslint-disable-next-line
+    rimraf.sync(localPath);  // deletes everything
+
+    const getManifestUrl = (
+      (commit: string) => 
+        `git.address.replace("github.com", "raw.githubusercontent.com").replace(".git", "")}/${commit}/manifest.json`
+    );
+
+    await fs.promises.mkdir(localPath);
+    
+    if (git.sha) {
+      // if a sha is specified, checkout that commit
+      await exec(`cd ${localPath} && wget -O manifest.json ${getManifestUrl(git.sha)}`);
+    } else {
+      await exec(`cd ${localPath} && wget -O manifest.json ${getManifestUrl("main")}`);
     }
   }
   
@@ -119,13 +156,17 @@ export default class GitUtil {
    * @param {Git} git
    */
   static async refreshGitManifest(git: Git) {
-    const localPath = this.getLocalPath(git.id);
-    await FolderUtil.removeZip(localPath);
+    const localPath = this.getLocalManifestPath(git.id);
+    const getManifestUrl = (
+      (commit: string) => 
+        `git.address.replace("github.com", "raw.githubusercontent.com").replace(".git", "")}/${commit}/manifest.json`
+    );
     
-    // clone if git repo not exits locally
+    // get the manifest if it does not exist locally
     if (!fs.existsSync(localPath)) {
       await fs.promises.mkdir(localPath);
-      await exec(`cd ${localPath} && git clone ${git.address} ${localPath}`);
+      // TODO: either get the branch/the sha of the thing we want
+      await exec(`cd ${localPath} && wget -O manifest.json ${getManifestUrl("main")}`);
     }
 
     //check when last updated
@@ -143,13 +184,13 @@ export default class GitUtil {
       try {
         // try checking out the sha or pulling latest
         if (git.sha) {
-          await exec(`cd ${localPath} && git checkout ${git.sha}`);
+          await exec(`cd ${localPath} && wget -O manifest.json ${getManifestUrl(git.sha)}`);
         } else {
-          await exec(`cd ${localPath} && git pull`);
+          await exec(`cd ${localPath} && wget -O manifest.json ${getManifestUrl("main")}`);
         }
       } catch {
         // if there is an error, delete and repull
-        await this.deleteAndPull(git);
+        await this.deleteAndPullManifest(git);
       }
       // call to update the updatedAt timestamp
       now = new Date();
@@ -169,6 +210,7 @@ export default class GitUtil {
 
   /**
    * Does some logic on and returns the manifest json of the executable of a git object. 
+   * Uses the normal git path (with git pulls and checkouts).
    *
    * @static
    * @param {Git} git git object to get the manifest 
@@ -192,6 +234,21 @@ export default class GitUtil {
       ).toString();
     }
 
+    return this.processExecutableManifest(rawExecutableManifest, git.address);
+  }
+
+  /**
+   * Processes a raw string manifest and returns it as a cleaned executableManifest.
+   *
+   * @static
+   * @param {string} rawExecutableManifest string form of manifest
+   * @param {string} address git address
+   * @return {executableManifest} cleaned manifest
+   */
+  static processExecutableManifest(
+    rawExecutableManifest: string,
+    address: string
+  ) : executableManifest {
     const executableManifest = Object.assign(
       {
         name: undefined,
@@ -204,7 +261,7 @@ export default class GitUtil {
         estimated_runtime: "unknown",
         supported_hpc: ["keeling_community"],
         default_hpc: undefined,
-        repository: git.address,
+        repository: address,
         require_upload_data: false,
         slurm_input_rules: {},
         param_rules: {},
@@ -339,5 +396,36 @@ export default class GitUtil {
     }
 
     return executableManifest;
+  }
+
+  /**
+   * Does some logic on and returns the manifest json of the executable of a git object. 
+   * Uses the manifests/ path to do so. 
+   *
+   * @static
+   * @param {Git} git git object to get the manifest 
+   * @return {executableManifest} the cleaned manifest 
+   */
+  static async getExecutableManifestSpecialized(
+    git: Git
+  ): Promise<executableManifest> {
+    const localPath = this.getLocalManifestPath(git.id);
+    const executableFolderPath = path.join(localPath, "manifest.json");
+
+    let rawExecutableManifest: string;
+    try {
+      rawExecutableManifest = (
+        await fs.promises.readFile(executableFolderPath)
+      ).toString();
+    } catch (e) {
+      // delete, repull, and then read
+      console.log(`Encountered error with manifest: ${e}.\nDeleting and repulling`);
+      await this.deleteAndPullManifest(git);
+      rawExecutableManifest = (
+        await fs.promises.readFile(executableFolderPath)
+      ).toString();
+    }
+
+    return this.processExecutableManifest(rawExecutableManifest, git.address);
   }
 }

@@ -277,7 +277,10 @@ class BaseMaintainer {
       .set(job)
       .execute();
     const jobRepo = connection.getRepository(Job);
-    this.job = (await jobRepo.findOne(this.id))!;
+
+    const temp = await jobRepo.findOne(this.id);
+    Helper.nullGuard(temp);
+    this.job = temp;
   }
 
   /**

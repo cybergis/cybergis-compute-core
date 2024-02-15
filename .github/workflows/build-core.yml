@@ -13,3 +13,15 @@ jobs:
     - run: |
         npm install
         npm run build
+  linting:
+    runs-on: ubuntu-latest
+    needs: [build]
+    name: run eslint
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 16
+    - run: |
+        npm install
+        npm run lint

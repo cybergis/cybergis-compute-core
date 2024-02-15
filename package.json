@@ -15,7 +15,8 @@
     "cpy": "cp -r ./configs ./production && cp ./*.json ./production && cp -r ./src/lib/python ./production/src/lib/python",
     "prebuild": "rm -rf ./production",
     "build": "tsc",
-    "postbuild": "npm run cpy && npm run doc-gen"
+    "postbuild": "npm run cpy && npm run doc-gen",
+    "lint": "eslint ."
   },
   "repository": {
     "type": "git",
