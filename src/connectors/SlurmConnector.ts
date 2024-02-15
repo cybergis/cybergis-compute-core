@@ -425,7 +425,7 @@ ${cmd}`;
   /**
    * Get job usage
    *
-   * @return{Object} - usage dictionary
+   * @return {Promise<Record<string, number | null>>} - usage dictionary
    */
   async getUsage(): Promise<Record<string, number | null>> {
     const seffOutput: Record<string, number | null> = {
