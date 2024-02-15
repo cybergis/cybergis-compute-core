@@ -207,7 +207,7 @@ const authMiddleWare = async (req: Request, res: Response, next: NextFunction) =
       res.locals.username = await jupyterHub.getUsername(
         body.jupyterhubApiToken
       );
-      res.locals.host = await jupyterHub.getHost(body.jupyterhubApiToken);
+      res.locals.host = jupyterHub.getHost(body.jupyterhubApiToken);
     } catch {}
 
     // continue onto the actual route
@@ -278,7 +278,7 @@ app.get("/statistic/job/:jobId", authMiddleWare, async (req, res) => {
       .findOne({ id: req.params.jobId, userId: res.locals.username as string });
 
     if (job === undefined) {
-      throw Error("job not found.");
+      throw new Error("job not found.");
     }
 
     res.json({ runtime_in_seconds: await statistic.getRuntimeByJobId(job.id) });
@@ -508,7 +508,7 @@ app.get("/whitelist", function (req, res) {
   const parseHost = (dest: Record<string, jupyterGlobusMapConfig>) => {
     const out = {};
     for (const i in dest) {
-      const d: jupyterGlobusMapConfig = JSON.parse(JSON.stringify(dest[i])) as jupyterGlobusMapConfig; // hard copy
+      const d = JSON.parse(JSON.stringify(dest[i])) as jupyterGlobusMapConfig; // hard copy
       out[i] = d.comment;
     }
     return out;
@@ -809,7 +809,7 @@ app.post("/folder/:folderId/download/globus-init", authMiddleWare, async functio
   const fromPath = body.fromPath
     ? path.join(folder.globusPath, body.fromPath)
     : folder.globusPath;
-  const from = { path: fromPath, endpoint: hpcConfig.globus!.endpoint };
+  const from = { path: fromPath, endpoint: hpcConfig.globus?.endpoint };
   const to = { path: body.toPath, endpoint: body.toEndpoint };
   // console.log(from, to);
 
@@ -933,8 +933,8 @@ app.post("/job", authMiddleWare, async function (req, res) {
     if (!hpc.is_community_account) {
       await sshCredentialGuard.validatePrivateAccount(
         hpcName,
-        body.user!,
-        body.password!
+        body.user,
+        body.password
       );
     }
   } catch (e) {
@@ -960,8 +960,8 @@ app.post("/job", authMiddleWare, async function (req, res) {
   // store credentials if not community account/need verification
   if (!hpc.is_community_account)
     job.credentialId = await sshCredentialGuard.registerCredential(
-      body.user!,
-      body.password!
+      body.user,
+      body.password
     );
 
   await jobRepo.save(job);
@@ -1032,7 +1032,7 @@ app.put("/job/:jobId", authMiddleWare, async function (req, res) {
     const job = await connection.getRepository(Job).findOne(jobId);
 
     if (job === undefined) {
-      throw Error("Updated job not found in the database.");
+      throw new Error("Updated job not found in the database.");
     }
 
     res.json(Helper.job2object(job));

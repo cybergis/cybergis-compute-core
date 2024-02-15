@@ -5,7 +5,6 @@ import {
   // jupyterGlobusMap,
   // maintainerConfigMap,
   config } from "../../configs/config";
-
 // import path = require("path");
 import DB from "../DB";
 import { Job } from "../models/Job";
@@ -14,6 +13,9 @@ import {
   slurm_integer_time_unit_config,
   slurmInputRules,
   slurm_integer_configs,
+  GetValueFunction,
+  SetValueFunction,
+  DelValueFunction
 } from "../types";
 
 /**
@@ -21,9 +23,9 @@ import {
  */
 export class ResultFolderContentManager {
   private redis = {
-    getValue: null,
-    setValue: null,
-    delValue: null,
+    getValue: null as null | GetValueFunction,
+    setValue: null as null | SetValueFunction,
+    delValue: null as null | DelValueFunction,
   };
 
   private isConnected = false;
@@ -37,7 +39,7 @@ export class ResultFolderContentManager {
    */
   async put(jobId: string, contents: string[]) {
     await this.connect();
-    await this.redis.setValue(
+    await this.redis.setValue!(
       `job_result_folder_content${jobId}`,
       JSON.stringify(contents)
     );
@@ -48,12 +50,12 @@ export class ResultFolderContentManager {
    *
    * @async
    * @param {string} jobId - This job
-   * @returns {string[]} - Contents of the results folder
+   * @returns {string[] | null} - Contents of the results folder
    */
-  async get(jobId: string): Promise<string[]> {
+  async get(jobId: string): Promise<string[] | null> {
     await this.connect();
-    const out = await this.redis.getValue(`job_result_folder_content${jobId}`);
-    return out ? JSON.parse(out) : null;
+    const out = await this.redis.getValue!(`job_result_folder_content${jobId}`);
+    return out ? JSON.parse(out) as string[] : null;
   }
 
   /**
@@ -66,7 +68,7 @@ export class ResultFolderContentManager {
     await this.connect();
     const out = await this.get(jobId);
     if (!out) return;
-    this.redis.delValue(`job_result_folder_content${jobId}`);
+    await this.redis.delValue!(`job_result_folder_content${jobId}`);
   }
 
   /**
@@ -77,6 +79,13 @@ export class ResultFolderContentManager {
   private async connect() {
     if (this.isConnected) return;
 
+    // TODO: rework this redis code to be less hacky
+    /* eslint-disable 
+      @typescript-eslint/no-unsafe-assignment, 
+      @typescript-eslint/no-unsafe-argument, 
+      @typescript-eslint/no-unsafe-member-access, 
+      @typescript-eslint/no-unsafe-call 
+    */
     const client = new redis.createClient({
       host: config.redis.host,
       port: config.redis.port,
@@ -91,6 +100,13 @@ export class ResultFolderContentManager {
     this.redis.setValue = promisify(client.set).bind(client);
     this.redis.delValue = promisify(client.del).bind(client);
     this.isConnected = true;
+
+    /* eslint-disable 
+      @typescript-eslint/no-unsafe-assignment, 
+      @typescript-eslint/no-unsafe-argument, 
+      @typescript-eslint/no-unsafe-member-access, 
+      @typescript-eslint/no-unsafe-call 
+    */
   }
 }
 
@@ -137,8 +153,7 @@ export default class JobUtil {
       walltime: 0,
     };
 
-    for (const i in jobs) {
-      const job = jobs[i];
+    for (const job of jobs) {
       if (job.nodes) userSlurmUsage.nodes += job.nodes;
       if (job.cpus) userSlurmUsage.cpus += job.cpus;
       if (job.cpuTime) userSlurmUsage.cpuTime += job.cpuTime;
@@ -172,13 +187,12 @@ export default class JobUtil {
    * Ensure this job has valid input data and slurm config rules
    *
    * @static
-   * @async
    * @param {Job} job - This job
    * @param {string} jupyterHost - Jupyter host for this job
    * @param {string} username - Username of the user who submitted this job
    * @throws - DataFolder must have a valid path, the job must have upload data, and there must be an executable folder in the maintainerConfig
    */
-  static async validateJob(job: Job) {
+  static validateJob(job: Job) {
     // create slurm config rules
     const providedSlurmInputRules: slurmInputRules = {};
     const providedParamRules: Record<string, unknown> = {};
@@ -208,7 +222,7 @@ export default class JobUtil {
     let globalInputCap = hpcConfigMap[job.hpc].slurm_global_cap;
     if (!globalInputCap) globalInputCap = {};
     slurmInputRules = Object.assign(
-      hpcConfigMap[job.hpc].slurm_input_rules,
+      hpcConfigMap[job.hpc].slurm_input_rules as Record<string, unknown>,
       slurmInputRules
     );
 
@@ -226,39 +240,42 @@ export default class JobUtil {
       time: "10:00:00",
     };
 
-    for (const i in slurmInputRules) {
-      if (!slurmInputRules[i].max) continue;
-      if (slurm_integer_storage_unit_config.includes(i)) {
-        slurmCeiling[i] = slurmInputRules[i].max + slurmInputRules[i].unit;
-      } else if (slurm_integer_time_unit_config.includes(i)) {
-        const val = slurmInputRules[i].max;
-        const unit = slurmInputRules[i].unit;
+    for (const rule_name in slurmInputRules) {
+      if (!slurmInputRules[rule_name].max) continue;
+
+      if (slurm_integer_storage_unit_config.includes(rule_name)) {
+        slurmCeiling[rule_name] = slurmInputRules[rule_name].max + slurmInputRules[rule_name].unit;
+      } else if (slurm_integer_time_unit_config.includes(rule_name)) {
+        const val = slurmInputRules[rule_name].max;
+        const unit = slurmInputRules[rule_name].unit;
         const sec = JobUtil.unitTimeToSeconds(val, unit);
-        slurmCeiling[i] = JobUtil.secondsToTime(sec);
-      } else if (slurm_integer_configs.includes(i)) {
-        slurmCeiling[i] = slurmInputRules[i].max;
+
+        slurmCeiling[rule_name] = JobUtil.secondsToTime(sec);
+      } else if (slurm_integer_configs.includes(rule_name)) {
+        slurmCeiling[rule_name] = slurmInputRules[rule_name].max;
       }
     }
 
-    for (const i in globalInputCap) {
-      if (!slurmCeiling[i]) slurmCeiling[i] = globalInputCap[i];
-      else if (this.compareSlurmConfig(i, globalInputCap[i], slurmCeiling[i])) {
-        slurmCeiling[i] = globalInputCap[i];
+    for (const field in globalInputCap) {
+      if (!slurmCeiling[field]) slurmCeiling[field] = globalInputCap[field];
+      else if (this.compareSlurmConfig(field, globalInputCap[field], slurmCeiling[field])) {
+        slurmCeiling[field] = globalInputCap[field];
       }
     }
 
-    for (const i in defaultSlurmCeiling) {
-      if (!slurmCeiling[i]) {
-        slurmCeiling[i] = defaultSlurmCeiling[i];
+    for (const field in defaultSlurmCeiling) {
+      if (!slurmCeiling[field]) {
+        slurmCeiling[field] = defaultSlurmCeiling[field];
         continue;
       }
     }
 
-    for (const i in slurmCeiling) {
-      if (!job.slurm[i]) continue;
-      if (this.compareSlurmConfig(i, slurmCeiling[i], job.slurm[i])) {
+    for (const field in slurmCeiling) {
+      if (!job.slurm?.[field]) continue;
+      
+      if (this.compareSlurmConfig(field, slurmCeiling[field], job.slurm[field])) {
         throw new Error(
-          `slurm config ${i} exceeds the threshold of ${slurmCeiling[i]} (current value ${job.slurm[i]})`
+          `slurm config ${field} exceeds the threshold of ${slurmCeiling[field]} (current value ${job.slurm[field]})`
         );
       }
     }
@@ -273,7 +290,7 @@ export default class JobUtil {
    * @param {string} b - Storage or projected time for this job for this job
    * @return {boolean} - If the slurm config exceeds the threshold of the slurm ceiling
    */
-  static compareSlurmConfig(i, a, b) {
+  static compareSlurmConfig(i: string, a: string, b: string): boolean {
     if (slurm_integer_storage_unit_config.includes(i)) {
       return this.storageUnitToKB(a) < this.storageUnitToKB(b);
     }
@@ -290,17 +307,31 @@ export default class JobUtil {
    * @param {string} i - Amount of storage in original unit
    * @return {number} - Storage in kb
    */
-  static storageUnitToKB(i: string) {
+  static storageUnitToKB(i: string): number {
     i = i.toLowerCase().replace(/b/gi, "");
+
+    // petabytes
     if (i.includes("p")) {
-      return parseInt(i.replace("p", "").trim()) * 1024 * 1024 * 1024;
+      return parseInt(i.replace("p", "").trim()) * 1024 * 1024 * 1024 * 1024;
     }
+
+    // terabytes
+    if (i.includes("t")) {
+      return parseInt(i.replace("t", "").trim()) * 1024 * 1024 * 1024;
+    }
+
+    // gigabytes
     if (i.includes("g")) {
       return parseInt(i.replace("g", "").trim()) * 1024 * 1024;
     }
+
+    // megabytes
     if (i.includes("m")) {
       return parseInt(i.replace("m", "").trim()) * 1024;
     }
+
+    // kilobytes
+    return parseInt(i.trim());
   }
 
   /**

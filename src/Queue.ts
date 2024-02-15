@@ -4,11 +4,7 @@ import { config } from "../configs/config";
 import DB from "./DB";
 import { Job } from "./models/Job";
 import { CredentialManager } from "./SSHCredentialGuard";
-
-type PushFunction = (_args: unknown[]) => Promise<number>;
-type ShiftFunction = (_key: unknown) => Promise<unknown>;
-type PeekFunction = (_key: unknown, _start: number, _end: number) => Promise<unknown>;
-type LengthFunction = (_key: unknown) => Promise<number>;
+import { PushFunction, ShiftFunction, PeekFunction, LengthFunction } from "./types";
 
 /**
  * This class is used to represent queues of jobs waiting to be executed. 

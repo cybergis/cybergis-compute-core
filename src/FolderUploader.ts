@@ -56,7 +56,7 @@ export class BaseFolderUploader {
     this.isFailed = false;
     this.db = new DB();
 
-    this.globusPath = path.join(this.hpcConfig.globus!.root_path!, this.id);
+    this.globusPath = path.join(this.hpcConfig.globus!.root_path, this.id);
   }
 
   // eslint-disable-next-line
@@ -113,8 +113,8 @@ export class EmptyFolderUploader extends BaseFolderUploader {
  * Specialization of BaseFolderUploader for uploading a folder via Globus.
  */
 export class GlobusFolderUploader extends BaseFolderUploader {
-  private from: GlobusFolder = {};
-  private to: GlobusFolder = {};
+  private from: GlobusFolder;
+  private to: GlobusFolder;
 
   private taskId: string;
   private jobId: string;
@@ -236,7 +236,7 @@ export class GitFolderUploader extends LocalFolderUploader {
     jobId: string,
     connector: Connector | null = null
   ) {
-    const localPath = GitUtil.getLocalPath(from.gitId!);  // extract the local path
+    const localPath = GitUtil.getLocalPath(from.gitId);  // extract the local path
     super({ localPath }, hpcName, userId, jobId, connector);
     this.gitId = from.gitId!;
   }
@@ -291,7 +291,7 @@ export class FolderUploaderHelper {
     switch (from.type) {
     case "git":
       uploader = new GitFolderUploader(
-        from,
+        from as GitFolder,
         hpcName,
         userId,
         jobId,
@@ -302,7 +302,7 @@ export class FolderUploaderHelper {
 
     case "local":
       uploader = new LocalFolderUploader(
-        from,
+        from as LocalFolder,
         hpcName,
         userId,
         jobId,
@@ -312,7 +312,7 @@ export class FolderUploaderHelper {
       break;
 
     case "globus":
-      uploader = new GlobusFolderUploader(from, hpcName, userId, jobId);
+      uploader = new GlobusFolderUploader(from as GlobusFolder, hpcName, userId, jobId);
       await uploader.upload();
       break;
 

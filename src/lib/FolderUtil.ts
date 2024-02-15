@@ -36,27 +36,23 @@ export default class registerUtil {
     if (!filePath) throw new Error("getZip operation is not supported");
     if (await this.isZipped(filePath)) return filePath + ".zip";
 
-    try {
-      const child = spawn(
-        "zip",
-        ["-q", // quiet mode
-          "-r", // zip recursively (folder)
-          `${filePath}.zip`, // output path
-          ".", // current directory to output to
-          `${path.basename(filePath)}` // thing to zip
-        ],
-        { cwd: filePath }  // specify current working directory of the spawned child
-      );
+    const child = spawn(
+      "zip",
+      ["-q", // quiet mode
+        "-r", // zip recursively (folder)
+        `${filePath}.zip`, // output path
+        ".", // current directory to output to
+        `${path.basename(filePath)}` // thing to zip
+      ],
+      { cwd: filePath }  // specify current working directory of the spawned child
+    );
 
-      // handle errors in zip
-      return new Promise((resolve, reject) => {
-        child.on("exit", () => resolve(`${filePath}.zip`));
-        child.on("close", () => resolve(`${filePath}.zip`));
-        child.on("error", () => reject(`${filePath}.zip`));
-      });
-    } catch (e) {
-      throw new Error(e);
-    }
+    // handle errors in zip
+    return new Promise((resolve, reject) => {
+      child.on("exit", () => resolve(`${filePath}.zip`));
+      child.on("close", () => resolve(`${filePath}.zip`));
+      child.on("error", () => reject(`${filePath}.zip`));
+    });
   }
 
 
@@ -114,23 +110,19 @@ export default class registerUtil {
       throw new FileNotExistError("file not exists or initialized");
     }
 
-    try {
-      const child = spawn("unzip", [
-        "-o", // overwrite
-        "-q", // quiet mode
-        `${zipFilePath}`, // thing to unzip
-        "-d", // specify output directory
-        `${filePath}`, // output directory
-      ]);
+    const child = spawn("unzip", [
+      "-o", // overwrite
+      "-q", // quiet mode
+      `${zipFilePath}`, // thing to unzip
+      "-d", // specify output directory
+      `${filePath}`, // output directory
+    ]);
 
-      // handle errors in unzip
-      return new Promise((resolve, reject) => {
-        child.on("exit", () => resolve(`${filePath}.zip`));
-        child.on("close", () => resolve(`${filePath}.zip`));
-        child.on("error", () => reject(`${filePath}.zip`));
-      });
-    } catch (e) {
-      throw new Error(e);
-    }
+    // handle errors in unzip
+    return new Promise((resolve, reject) => {
+      child.on("exit", () => resolve(`${filePath}.zip`));
+      child.on("close", () => resolve(`${filePath}.zip`));
+      child.on("error", () => reject(`${filePath}.zip`));
+    });
   }
 }

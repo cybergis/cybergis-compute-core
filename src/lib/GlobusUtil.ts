@@ -3,7 +3,7 @@ import { promisify } from "util";
 import { config } from "../../configs/config";
 import DB from "../DB";
 import { GlobusTransferRefreshToken } from "../models/GlobusTransferRefreshToken";
-import { GlobusFolder, hpcConfig } from "../types";
+import { GlobusFolder, hpcConfig, GetValueFunction, SetValueFunction, DelValueFunction } from "../types";
 import PythonUtil from "./PythonUtil";
 
 /**
@@ -12,9 +12,9 @@ import PythonUtil from "./PythonUtil";
 export class GlobusTaskListManager {
 
   private redis = {
-    getValue: null,
-    setValue: null,
-    delValue: null,
+    getValue: null as null | GetValueFunction,
+    setValue: null as null | SetValueFunction,
+    delValue: null as null | DelValueFunction,
   };
 
   private isConnected = false;
@@ -27,7 +27,7 @@ export class GlobusTaskListManager {
    */
   async put(label: string, taskId: string) {
     await this.connect();
-    await this.redis.setValue(`globus_task_${label}`, taskId);
+    await this.redis.setValue!(`globus_task_${label}`, taskId);
   }
 
   /**
@@ -38,7 +38,7 @@ export class GlobusTaskListManager {
    */
   async get(label: string): Promise<string | null> {
     await this.connect();
-    const out = await this.redis.getValue(`globus_task_${label}`);
+    const out = await this.redis.getValue!(`globus_task_${label}`);
     return out ? out : null;
   }
 
@@ -51,7 +51,7 @@ export class GlobusTaskListManager {
     await this.connect();
     const out = await this.get(label);
     if (!out) return;
-    this.redis.delValue(`globus_task_${label}`);
+    await this.redis.delValue!(`globus_task_${label}`);
   }
 
   /**
@@ -60,6 +60,14 @@ export class GlobusTaskListManager {
    */
   private async connect() {
     if (this.isConnected) return;
+
+    // TODO: rework this redis code to be less hacky
+    /* eslint-disable 
+      @typescript-eslint/no-unsafe-assignment, 
+      @typescript-eslint/no-unsafe-argument, 
+      @typescript-eslint/no-unsafe-member-access, 
+      @typescript-eslint/no-unsafe-call 
+    */
 
     const client = new redis.createClient({
       host: config.redis.host,
@@ -75,6 +83,13 @@ export class GlobusTaskListManager {
     this.redis.setValue = promisify(client.set).bind(client);
     this.redis.delValue = promisify(client.del).bind(client);
     this.isConnected = true;
+
+    /* eslint-disable 
+      @typescript-eslint/no-unsafe-assignment, 
+      @typescript-eslint/no-unsafe-argument, 
+      @typescript-eslint/no-unsafe-member-access, 
+      @typescript-eslint/no-unsafe-call 
+    */
   }
 }
 
@@ -108,17 +123,17 @@ export default class GlobusUtil {
       GlobusTransferRefreshToken
     );
     const g = await globusTransferRefreshTokenRepo.findOne(
-      hpcConfig.globus.identity
+      hpcConfig.globus!.identity
     );
 
-    let out;
+    let out: Record<string, string>;
     try {
       // run python helpers with cmd line arguments to initialize globus
       out = await PythonUtil.run(
         "globus_init.py",
         [
           config.globus_client_id,
-          g.transferRefreshToken,
+          g!.transferRefreshToken,
           from.endpoint,
           from.path,
           to.endpoint,
@@ -176,9 +191,9 @@ export default class GlobusUtil {
    */
   static async mapUsername(
     initial_username: string,
-    mapping_func: string | undefined
+    mapping_func: string
   ): Promise<string> {
-    let username;
+    let username: Record<string, string>;
     try {
       username = await PythonUtil.run(
         "globus_user_mapping.py",
@@ -211,14 +226,14 @@ export default class GlobusUtil {
       GlobusTransferRefreshToken
     );
     const g = await globusTransferRefreshTokenRepo.findOne(
-      hpcConfig.globus.identity
+      hpcConfig.globus?.identity
     );
 
-    let out;
+    let out: Record<string, string>;
     try {
       out = await PythonUtil.run(
         script,
-        [config.globus_client_id, g.transferRefreshToken, taskId],
+        [config.globus_client_id, g!.transferRefreshToken, taskId],
         ["status"]
       );
     } catch (e) {

@@ -263,7 +263,7 @@ export interface executableManifest {
   repository?: string;
   require_upload_data?: boolean;
   slurm_input_rules?: slurmInputRules;
-  param_rules?: integerRule | stringOptionRule;
+  param_rules?: Record<string, stringOptionRule | integerRule>;
   default_result_folder_downloadable_path?: string;
 }
 

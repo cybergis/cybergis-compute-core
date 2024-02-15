@@ -74,13 +74,13 @@ export default class PythonUtil {
    * @param {string} file - Path of the file to run
    * @param {string[]} args - Arguments to be passed when running the file.
    * @param {string[]} returnTags - Items to be returned
-   * @returns {Promise<Record<string, unknown>>} - Values returned by the function that correspond the the ones passed in returnTags
+   * @returns {Promise<Record<string, string>>} - Values returned by the function that correspond the the ones passed in returnTags
    */
   static async run(
     file: string,
     args: string[] = [],
     returnTags: string[] = []
-  ): Promise<Record<string, unknown>> {
+  ): Promise<Record<string, string>> {
     args.unshift(`${__dirname}/python/${file}`);
     const child = spawn("python3", args);
 

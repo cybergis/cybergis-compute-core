@@ -1,20 +1,24 @@
-import { exec } from "child-process-async";
 import rimraf from "rimraf";
 import * as fs from "fs";
 import * as path from "path";
+import { promisify } from "util";
 import { config } from "../../configs/config";
 import DB from "../DB";
 import { Git } from "../models/Git";
-import type {
+import {
   executableManifest,
+  integerRule,
   slurm_configs,
   slurm_integer_configs,
   slurm_integer_none_unit_config,
   slurm_integer_storage_unit_config,
   slurm_integer_time_unit_config,
   slurm_string_option_configs,
+  stringOptionRule,
 } from "../types";
 import FolderUtil from "./FolderUtil";
+
+const exec: Function = promisify(require("child_process").exec); // eslint-disable-line
 
 /**
  * 
@@ -41,6 +45,7 @@ export default class GitUtil {
    */
   static async deleteAndPull(git: Git) {
     const localPath = this.getLocalPath(git.id);
+    // eslint-disable-next-line
     rimraf.sync(localPath);  // deletes everything
 
     await fs.promises.mkdir(localPath);
@@ -173,7 +178,7 @@ export default class GitUtil {
     const localPath = this.getLocalPath(git.id);
     const executableFolderPath = path.join(localPath, "manifest.json");
 
-    let rawExecutableManifest;
+    let rawExecutableManifest: string;
     try {
       rawExecutableManifest = (
         await fs.promises.readFile(executableFolderPath)
@@ -187,7 +192,7 @@ export default class GitUtil {
       ).toString();
     }
 
-    const executableManifest: executableManifest = Object.assign(
+    const executableManifest = Object.assign(
       {
         name: undefined,
         container: undefined,
@@ -205,122 +210,123 @@ export default class GitUtil {
         param_rules: {},
       },
       JSON.parse(rawExecutableManifest)
-    );
+    ) as executableManifest;
 
     if (!executableManifest.default_hpc) {
-      executableManifest.default_hpc = executableManifest.supported_hpc[0];
+      executableManifest.default_hpc = executableManifest.supported_hpc![0];
     }
 
-    for (const i in executableManifest.slurm_input_rules) {
+    for (const rule_name in executableManifest.slurm_input_rules) {
+      
       // remove invalid configs
-      if (!slurm_configs.includes(i)) {
-        delete executableManifest.slurm_input_rules[i];
+      if (!slurm_configs.includes(rule_name)) {
+        delete executableManifest.slurm_input_rules[rule_name];
         continue;
       }
 
-      if (!executableManifest.slurm_input_rules[i].default_value) {
-        delete executableManifest.slurm_input_rules[i];
-        continue;
-      }
+      // pass by reference
+      const rule = executableManifest.slurm_input_rules[rule_name] as integerRule | stringOptionRule;
 
-      const j = executableManifest.slurm_input_rules[i];
-      if (
-        slurm_integer_time_unit_config.includes(i) &&
-        !["Minutes", "Hours", "Days"].includes(j.unit)
-      ) {
-        delete executableManifest.slurm_input_rules[i];
+      if (!rule.default_value) {
+        delete executableManifest.slurm_input_rules[rule_name];
         continue;
       }
 
       if (
-        slurm_integer_storage_unit_config.includes(i) &&
-        !["GB", "MB"].includes(j.unit)
+        slurm_integer_time_unit_config.includes(rule_name) &&
+        (rule as integerRule).unit !== undefined &&
+        !["Minutes", "Hours", "Days"].includes((rule as integerRule).unit!)
       ) {
-        delete executableManifest.slurm_input_rules[i];
+        delete executableManifest.slurm_input_rules[rule_name];
+        continue;
+      }
+
+      if (
+        slurm_integer_storage_unit_config.includes(rule_name) &&
+        (rule as integerRule).unit !== undefined &&
+        !["GB", "MB"].includes((rule as integerRule).unit!)
+      ) {
+        delete executableManifest.slurm_input_rules[rule_name];
         continue;
       }
 
       // default values
-      if (slurm_integer_none_unit_config.includes(i)) {
-        executableManifest.slurm_input_rules[i].unit = "None";
+      if (slurm_integer_none_unit_config.includes(rule_name)) {
+        (rule as integerRule).unit = "None";
         continue;
       }
 
-      if (slurm_integer_configs.includes(i)) {
-        if (!executableManifest.slurm_input_rules[i].max) {
-          executableManifest.slurm_input_rules[i].max =
-            executableManifest.slurm_input_rules[i].default_value * 2;
+      if (slurm_integer_configs.includes(rule_name)) {
+        if (!(rule as integerRule).max) {
+          (rule as integerRule).max = (rule as integerRule).default_value * 2;
         }
-        if (!executableManifest.slurm_input_rules[i].min) {
-          executableManifest.slurm_input_rules[i].min = 0;
+        if (!(rule as integerRule).min) {
+          (rule as integerRule).min = 0;
         }
-        if (!executableManifest.slurm_input_rules[i].step) {
-          executableManifest.slurm_input_rules[i].step = 1;
+        if (!(rule as integerRule).step) {
+          (rule as integerRule).step = 1;
         }
       }
 
-      if (slurm_string_option_configs.includes(i)) {
-        if (!executableManifest.slurm_input_rules[i].options) {
-          executableManifest.slurm_input_rules[i].options = [
-            executableManifest.slurm_input_rules[i].default_value,
+      if (slurm_string_option_configs.includes(rule_name)) {
+        if (!(rule as stringOptionRule).options) {
+          (rule as stringOptionRule).options = [
+            (rule as stringOptionRule).default_value,
           ];
         }
         if (
-          !executableManifest.slurm_input_rules[i].options.includes(
-            executableManifest.slurm_input_rules[i].default_value
+          !(rule as stringOptionRule).options.includes(
+            (rule as stringOptionRule).default_value
           )
         ) {
-          executableManifest.slurm_input_rules[i].options.push(
-            executableManifest.slurm_input_rules[i].default_value
+          (rule as stringOptionRule).options.push(
+            (rule as stringOptionRule).default_value
           );
         }
       }
     }
 
-    for (const i in executableManifest.param_rules) {
+    for (const rule_name in executableManifest.param_rules) {
       // ignore invalid param
-      if (!executableManifest.param_rules[i].default_value) {
-        delete executableManifest.param_rules[i];
+      if (!executableManifest.param_rules[rule_name].default_value) {
+        delete executableManifest.param_rules[rule_name];
         continue;
       }
 
       if (
         !["integer", "string_option", "string_input"].includes(
-          executableManifest.param_rules[i].type
+          executableManifest.param_rules[rule_name].type === undefined ? "" : executableManifest.param_rules[rule_name].type as string
         )
       ) {
-        delete executableManifest.param_rules[i];
+        delete executableManifest.param_rules[rule_name];
         continue;
       }
 
       // default values
-      if (executableManifest.param_rules[i].type === "integer") {
-        if (!executableManifest.param_rules[i].max) {
-          executableManifest.param_rules[i].max =
-            executableManifest.param_rules[i].default_value * 2;
+      if (executableManifest.param_rules[rule_name].type === "integer") {
+        const rule: integerRule = executableManifest.param_rules[rule_name] as integerRule;
+        if (!rule.max) {
+          rule.max = rule.default_value * 2;
         }
-        if (!executableManifest.param_rules[i].min) {
-          executableManifest.param_rules[i].min = 0;
+
+        if (!rule.min) {
+          rule.min = 0;
         }
-        if (!executableManifest.param_rules[i].step) {
-          executableManifest.param_rules[i].step = 1;
+
+        if (!rule.step) {
+          rule.step = 1;
         }
       }
 
-      if (executableManifest.param_rules[i].type === "string_option") {
-        if (!executableManifest.param_rules[i].options) {
-          executableManifest.param_rules[i].options = [
-            executableManifest.param_rules[i].default_value,
-          ];
+      if (executableManifest.param_rules[rule_name].type === "string_option") {
+        const rule: stringOptionRule = executableManifest.param_rules[rule_name] as stringOptionRule;
+
+        if (!rule.options) {
+          rule.options = [rule.default_value,];
         }
-        if (
-          !executableManifest.param_rules[i].options.includes(
-            executableManifest.param_rules[i].default_value
-          )
-        ) {
-          executableManifest.param_rules[i].options.push(
-            executableManifest.param_rules[i].default_value
-          );
+
+        if (!rule.options.includes(rule.default_value)) {
+          rule.options.push(rule.default_value);
         }
       }
     }

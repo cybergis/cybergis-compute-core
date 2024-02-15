@@ -3,11 +3,7 @@ import redis = require("redis");
 import { promisify } from "util";
 import { config, hpcConfigMap } from "../configs/config";
 import Helper from "./Helper";
-import { credential } from "./types";
-
-type GetValueFunction = (_key: unknown) => Promise<string>;
-type SetValueFunction = (_key: unknown, _value: string) => Promise<string>;  // possibly not string
-type DelValueFunction = (_keys: unknown[]) => Promise<number>;
+import { credential, GetValueFunction, SetValueFunction, DelValueFunction } from "./types";
 
 /**
  * This is a helper class that interfaces with the redis credential manager store.
