@@ -104,7 +104,7 @@ class Supervisor {
           this.jobPoolCounters[hpcName]++;
 
           // manage ssh pool -- diferent behavior for community/noncommunity accounts
-          if (job.maintainerInstance.connector.config.is_community_account) {
+          if (job.maintainerInstance.connector?.config.is_community_account) {
             connectionPool[job.hpc].counter++;
           } else {
             const hpcConfig = hpcConfigMap[job.hpc];
@@ -153,7 +153,7 @@ class Supervisor {
     while (true) {  // eslint-disable-line
       // get ssh connector from pool
       let ssh: SSH;
-      if (job.maintainerInstance!.connector.config.is_community_account) {
+      if (job.maintainerInstance!.connector!.config.is_community_account) {
         ssh = connectionPool[job.hpc].ssh;
       } else {
         ssh = connectionPool[job.id].ssh;
@@ -203,7 +203,7 @@ class Supervisor {
       // ending conditions
       if (job.maintainerInstance!.isEnd) {
         // exit or deflag ssh pool
-        if (job.maintainerInstance!.connector.config.is_community_account) {
+        if (job.maintainerInstance!.connector?.config.is_community_account) {
           connectionPool[job.hpc].counter--;
           if (connectionPool[job.hpc].counter === 0) {
             if (ssh.connection.isConnected()) ssh.connection.dispose();

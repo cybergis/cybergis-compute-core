@@ -99,8 +99,8 @@ class SSHCredentialGuard {
    */
   async validatePrivateAccount(
     hpcName: string,
-    user: string,
-    password: string
+    user: string | undefined,
+    password: string | undefined
   ) {
     const hpc = hpcConfigMap[hpcName];
 
@@ -108,7 +108,7 @@ class SSHCredentialGuard {
       await this.ssh.connect({
         host: hpc.ip,
         port: hpc.port,
-        // user: user,
+        username: user,
         password: password,
       });
       this.ssh.dispose();
