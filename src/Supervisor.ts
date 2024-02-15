@@ -7,6 +7,9 @@ import connectionPool from "./connectors/ConnectionPool";
 import * as events from "events";
 import DB from "./DB";
 import NodeSSH = require("node-ssh");
+import BaseConnector from "./connectors/BaseConnector";
+import { Console } from "console";
+import Helper from "./Helper";
 
 class Supervisor {
   private db = new DB();
@@ -126,7 +129,7 @@ class Supervisor {
 
   async createMaintainerWorker(job: Job) {
     var self = this;
-
+    const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
     while (true) {
       // get ssh connector from pool
       var ssh: SSH;
@@ -136,21 +139,20 @@ class Supervisor {
         ssh = connectionPool[job.id].ssh;
       }
 
-      // connect ssh & run
-      try {
-        if (!ssh.connection.isConnected())
-          await ssh.connection.connect(ssh.config);
-        await ssh.connection.execCommand("echo"); // test connection
-        if (job.maintainerInstance.isInit) {
-          await job.maintainerInstance.maintain();
-        } else {
-          await job.maintainerInstance.init();
-        }
-      } catch (e) {
-        if (config.is_testing) console.error(e.stack);
-        continue;
+      if (!ssh.connection.isConnected()) {
+        await Helper.runCommandWithBackoff(async (ssh1: SSH) => {
+          if (!ssh1.connection.isConnected()) {
+            await ssh1.connection.connect(ssh1.config);
+          }
+          ssh1.connection.execCommand("echo");
+        }, [ssh], null);
       }
 
+      if (job.maintainerInstance.isInit) {
+        await job.maintainerInstance.maintain();
+      } else {
+        await job.maintainerInstance.init();
+      }
       // emit events & logs
       var events = job.maintainerInstance.dumpEvents();
       var logs = job.maintainerInstance.dumpLogs();
@@ -252,3 +254,4 @@ class Supervisor {
 }
 
 export default Supervisor;
+
