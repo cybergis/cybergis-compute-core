@@ -1,7 +1,7 @@
 import DB from "../src/DB";
 import { Event } from "../src/models/Event";
-import { Log } from "../src/models/Log";
 import { Job } from "../src/models/Job";
+import { Log } from "../src/models/Log";
 
 export default class TestHelper {
   static async createJob(

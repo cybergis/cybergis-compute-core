@@ -139,7 +139,10 @@ export default class JobUtil {
    * @param {boolean} format - Whether or not the cputume, memory, memoryusage, and walltime are already formatted
    * @returns {Record<string, number | string>} - Total slurm usage of the indicated user
    */
-  static async getUserSlurmUsage(userId: string, format = false): Promise<Record<string, number | string>> {
+  static async getUserSlurmUsage(
+    userId: string, 
+    format = false
+  ): Promise<Record<string, number | string>> {
     const db = new DB();
     const connection = await db.connect();
     const jobs = await connection.getRepository(Job).find({ userId: userId });
@@ -244,7 +247,9 @@ export default class JobUtil {
       if (!slurmInputRules[rule_name].max) continue;
 
       if (slurm_integer_storage_unit_config.includes(rule_name)) {
-        slurmCeiling[rule_name] = slurmInputRules[rule_name].max + slurmInputRules[rule_name].unit;
+        slurmCeiling[rule_name] = slurmInputRules[rule_name].max + 
+          slurmInputRules[rule_name].unit;
+
       } else if (slurm_integer_time_unit_config.includes(rule_name)) {
         const val = slurmInputRules[rule_name].max;
         const unit = slurmInputRules[rule_name].unit;
@@ -258,7 +263,11 @@ export default class JobUtil {
 
     for (const field in globalInputCap) {
       if (!slurmCeiling[field]) slurmCeiling[field] = globalInputCap[field];
-      else if (this.compareSlurmConfig(field, globalInputCap[field], slurmCeiling[field])) {
+      else if (this.compareSlurmConfig(
+        field, 
+        globalInputCap[field], 
+        slurmCeiling[field])
+      ) {
         slurmCeiling[field] = globalInputCap[field];
       }
     }
@@ -273,9 +282,13 @@ export default class JobUtil {
     for (const field in slurmCeiling) {
       if (!job.slurm?.[field]) continue;
       
-      if (this.compareSlurmConfig(field, slurmCeiling[field], job.slurm[field])) {
+      if (this.compareSlurmConfig(
+        field, 
+        slurmCeiling[field], 
+        job.slurm[field])
+      ) {
         throw new Error(
-          `slurm config ${field} exceeds the threshold of ${slurmCeiling[field]} (current value ${job.slurm[field]})`
+          `slurm config ${field} exceeds the threshold of ${slurmCeiling[field]} (current value ${job.slurm[field]})`  // eslint-disable-line @stylistic/max-len
         );
       }
     }
@@ -361,8 +374,10 @@ export default class JobUtil {
     const days = Math.floor(seconds_in / (60 * 60 * 24));
     const hours = Math.floor(seconds_in / (60 * 60) - days * 24);
     const minutes = Math.floor(seconds_in / 60 - days * 60 * 24 - hours * 60);
-    const seconds = Math.floor(seconds_in - days * 60 * 60 * 24 - hours * 60 * 60);
-    //
+    const seconds = Math.floor(
+      seconds_in - days * 60 * 60 * 24 - hours * 60 * 60
+    );
+
     const format = (j) => {
       if (j === 0) return "00";
       else if (j < 10) return `0${j}`;

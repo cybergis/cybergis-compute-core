@@ -2,7 +2,7 @@ import NodeSSH = require("node-ssh");
 import redis = require("redis");
 import { promisify } from "util";
 import { config, hpcConfigMap } from "../configs/config";
-import Helper from "./Helper";
+import * as Helper from "./Helper";
 import { credential, GetValueFunction, SetValueFunction, DelValueFunction } from "./types";
 
 /**
@@ -36,7 +36,10 @@ class CredentialManager {
    */
   async get(key: string): Promise<credential> {
     await this.connect();
-    return JSON.parse(await this.redis_functions.getValue!(key)) as Promise<credential>;
+
+    return JSON.parse(
+      await this.redis_functions.getValue!(key)
+    ) as Promise<credential>;
   }
 
   // TODO: rework this redis code to be less hacky
@@ -120,7 +123,10 @@ class SSHCredentialGuard {
    * @param {string} password
    * @return {Promise<string>} the assigned redis key/id
    */
-  async registerCredential(user: string | undefined, password: string | undefined): Promise<string> {
+  async registerCredential(
+    user: string | undefined, 
+    password: string | undefined
+  ): Promise<string> {
     const credentialId = Helper.generateId();
     await this.credentialManager.add(credentialId, {
       id: credentialId,

@@ -32,13 +32,13 @@ const main = async () => {
       ["transfer_refresh_token"]
     );
 
-    if (out["transfer_refresh_token"]) {
+    if (out.transfer_refresh_token) {
       const globusTransferRefreshTokenRepo = connection.getRepository(
         GlobusTransferRefreshToken
       );
       const g = new GlobusTransferRefreshToken();
       g.identity = identity;
-      g.transferRefreshToken = out["transfer_refresh_token"];
+      g.transferRefreshToken = out.transfer_refresh_token;
       await globusTransferRefreshTokenRepo.save(g);
     }
 

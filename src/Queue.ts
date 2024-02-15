@@ -46,7 +46,9 @@ class Queue {
    */
   async shift(): Promise<Job | null> {
     await this.connect();
-    const jobId: string = await this.redis_functions.shift!(this.name) as string;
+    const jobId: string = await (
+      this.redis_functions.shift!(this.name)
+    ) as string;
     return this.getJobById(jobId);
   }
 
@@ -68,7 +70,9 @@ class Queue {
   async peek(): Promise<Job | null | undefined> {
     await this.connect();
     if (await this.isEmpty()) return undefined;
-    const jobId: string = await this.redis_functions.peek!(this.name, 0, 0) as string;
+    const jobId: string = await (
+      this.redis_functions.peek!(this.name, 0, 0)
+    ) as string;
     return this.getJobById(jobId);
   }
 
@@ -103,7 +107,10 @@ class Queue {
         @typescript-eslint/no-unsafe-call 
       */
      
-      if (config.redis.password !== null && config.redis.password !== undefined) {
+      if (
+        config.redis.password !== null
+        && config.redis.password !== undefined
+      ) {
         const redisAuth = promisify(client.auth).bind(client);
         await redisAuth(config.redis.password);
       }

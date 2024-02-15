@@ -25,14 +25,12 @@ export default class PythonUtil {
     const child = spawn("python3", args);
     const out = {};
 
-    child.stdout.on("data", function (result) {
-      let stdout = Buffer.from(result, "utf-8").toString();
+    child.stdout.on("data", function (result: any) {  // eslint-disable-line @typescript-eslint/no-explicit-any
+      let stdout = Buffer.from(result, "utf-8").toString();  // eslint-disable-line @typescript-eslint/no-unsafe-argument
       const parsedStdout = stdout.split("@");
 
-      for (const i in parsedStdout) {
-        const o = parsedStdout[i];
-        for (const j in returnTags) {
-          const tag = returnTags[j];
+      for (const o of parsedStdout) {
+        for (const tag of returnTags) {
           const regex = new RegExp(`${tag}=((?!\]).)*`, "g"); //eslint-disable-line
           const m = o.match(regex);
           if (m) {
@@ -49,7 +47,7 @@ export default class PythonUtil {
     });
 
     process.stdin.on("readable", () => {
-      const chunk = process.stdin.read();
+      const chunk = process.stdin.read();  // eslint-disable-line @typescript-eslint/no-unsafe-assignment
       if (chunk !== null) child.stdin.write(chunk);
     });
 
@@ -74,35 +72,33 @@ export default class PythonUtil {
    * @param {string} file - Path of the file to run
    * @param {string[]} args - Arguments to be passed when running the file.
    * @param {string[]} returnTags - Items to be returned
-   * @returns {Promise<Record<string, string>>} - Values returned by the function that correspond the the ones passed in returnTags
+   * @returns {Promise<Record<string, string | null>>} - Values returned by the function that correspond the the ones passed in returnTags
    */
   static async run(
     file: string,
     args: string[] = [],
     returnTags: string[] = []
-  ): Promise<Record<string, string>> {
+  ): Promise<Record<string, string | null>> {
     args.unshift(`${__dirname}/python/${file}`);
     const child = spawn("python3", args);
 
     const out = {
-      error: null,
+      error: null as null | string,
     };
 
     child.stderr.on("data", function (result) {
-      const stderr = Buffer.from(result, "utf-8").toString();
+      const stderr = Buffer.from(result, "utf-8").toString();  // eslint-disable-line @typescript-eslint/no-unsafe-argument
       if (config.is_testing) console.log(stderr);
       if (!out.error) out.error = stderr;
       else out.error += stderr;
     });
 
     child.stdout.on("data", function (result) {
-      let stdout = Buffer.from(result, "utf-8").toString();
+      let stdout = Buffer.from(result, "utf-8").toString();  // eslint-disable-line @typescript-eslint/no-unsafe-argument
       const parsedStdout = stdout.split("@");
 
-      for (const i in parsedStdout) {
-        const o = parsedStdout[i];
-        for (const j in returnTags) {
-          const tag = returnTags[j];
+      for (const o of parsedStdout) {
+        for (const tag of returnTags) {
           const regex = new RegExp(`${tag}=((?!\]).)*`, "g"); // eslint-disable-line
           const m = o.match(regex);
           if (m) {
@@ -122,7 +118,7 @@ export default class PythonUtil {
 
     if (config.is_testing) {
       child.stderr.on("data", function (result) {
-        console.log(Buffer.from(result, "utf-8").toString());
+        console.log(Buffer.from(result, "utf-8").toString());  // eslint-disable-line @typescript-eslint/no-unsafe-argument
       });
     }
 

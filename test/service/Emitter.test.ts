@@ -1,8 +1,8 @@
 import "jest";
-import TestHelper from "../TestHelper";
-import Emitter from "../../src/Emitter";
 import { config } from "../../configs/config";
 import DB from "../../src/DB";
+import Emitter from "../../src/Emitter";
+import TestHelper from "../TestHelper";
 const db = new DB();
 
 beforeAll(() => {

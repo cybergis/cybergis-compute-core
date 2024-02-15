@@ -1,6 +1,7 @@
 import * as path from "path";
 import { config } from "../../configs/config";
 import { ConnectorError } from "../errors";
+import * as Helper from "../Helper";
 import { slurm } from "../types";
 import BaseConnector from "./BaseConnector";
 // import { FolderUploaderHelper } from "../FolderUploader";
@@ -30,7 +31,7 @@ class SlurmConnector extends BaseConnector {
    * @param {string} cmd - command that needs to be executed
    * @param {slurm} config - slurm configuration
    */
-  async prepare(cmd: string, config: slurm) {
+  prepare(cmd: string, config: slurm) {
     // prepare sbatch script
     config = Object.assign(
       {
@@ -43,10 +44,17 @@ class SlurmConnector extends BaseConnector {
 
     let modules = "";
     if (config.modules) {
-      for (const i in config.modules)
-        modules += `module load ${config.modules[i]}\n`;
+      for (const module of config.modules)
+        modules += `module load ${module}\n`;
     }
     
+    console.assert(this.remote_result_folder_path);
+    console.assert(config.mail_type);
+
+    Helper.nullGuard(this.remote_result_folder_path);
+    Helper.nullGuard(config.mail_type);
+    Helper.nullGuard(config.mail_user);
+
     // https://researchcomputing.princeton.edu/support/knowledge-base/slurm
     this.template = `#!/bin/bash
 #SBATCH --job-name=${this.jobId}
@@ -99,7 +107,7 @@ ${cmd}`;
    */
   async submit() {
     // create job.sbatch on HPC
-    await this.mkdir(path.join(this.remote_result_folder_path, "slurm_log"));
+    await this.mkdir(path.join(this.remote_result_folder_path ?? "", "slurm_log"));
     await this.createFile(
       this.template,
       path.join(this.getRemoteExecutableFolderPath(), "job.sbatch"),
@@ -107,6 +115,7 @@ ${cmd}`;
       true
     );
 
+    Helper.nullGuard(this.maintainer);
     // create job.json on HPC
     const jobJSON = {
       job_id: this.maintainer.job.id,
@@ -168,15 +177,15 @@ ${cmd}`;
 
       throw new ConnectorError(
         "cannot submit job " +
-          this.maintainer.id +
+          this.maintainer?.id +
           ": " +
           JSON.stringify(sbatchResult)
       );
     }
 
     // update slurm id in the job repo to reflect this slurm job run
-    this.slurm_id = sbatchResult.stdout.split(/[ ]+/).pop().trim();
-    await this.maintainer.updateJob({ slurmId: this.slurm_id });
+    this.slurm_id = sbatchResult.stdout!.split(/[ ]+/).pop()!.trim();
+    await this.maintainer?.updateJob({ slurmId: this.slurm_id });
 
     if (this.maintainer !== null)
       this.maintainer.emitEvent(
@@ -270,7 +279,7 @@ ${cmd}`;
    */
   async getSlurmStdout() {
     const out = await this.cat(
-      path.join(this.remote_result_folder_path, "slurm_log", "job.stdout"),
+      path.join(this.remote_result_folder_path ?? "", "slurm_log", "job.stdout"),
       {}
     );
 
@@ -283,7 +292,7 @@ ${cmd}`;
    */
   async getSlurmStderr() {
     const out = await this.cat(
-      path.join(this.remote_result_folder_path, "slurm_log", "job.stderr"),
+      path.join(this.remote_result_folder_path ?? "", "slurm_log", "job.stderr"),
       {}
     );
 
@@ -302,7 +311,7 @@ ${cmd}`;
     if (!vals) return "";
 
     let out = "";
-    for (const i in vals) out += `#SBATCH --${tag}=${vals[i]}\n`;
+    for (const val of vals) out += `#SBATCH --${tag}=${val}\n`;
 
     return out;
   }
@@ -313,7 +322,7 @@ ${cmd}`;
    * @param {string} [providedPath=null] specified path
    * @return {string}  executable path
    */
-  getContainerExecutableFolderPath(providedPath: string = null): string {
+  getContainerExecutableFolderPath(providedPath: string | null = null): string {
     if (providedPath) return path.join("/job/executable", providedPath);
     else return "/job/executable";
   }
@@ -324,7 +333,7 @@ ${cmd}`;
    * @param {string} [providedPath=null] specified path
    * @return {string} executable path
    */
-  getContainerCVMFSFolderPath(providedPath: string = null): string {
+  getContainerCVMFSFolderPath(providedPath: string | null = null): string {
     if (providedPath) return path.join("/tmp/cvmfs", providedPath);
     else return "/tmp/cvmfs";
   }
@@ -335,7 +344,7 @@ ${cmd}`;
    * @param {string} [providedPath=null] specified path
    * @return {string} executable path
    */
-  getContainerDataFolderPath(providedPath: string = null): string {
+  getContainerDataFolderPath(providedPath: string | null = null): string {
     if (providedPath) return path.join("/job/data", providedPath);
     else return "/job/data";
   }
@@ -346,7 +355,7 @@ ${cmd}`;
    * @param {string} [providedPath=null] specified path
    * @return {string} executable path
    */
-  getContainerResultFolderPath(providedPath: string = null): string {
+  getContainerResultFolderPath(providedPath: string | null = null): string {
     if (providedPath) return path.join("/job/result", providedPath);
     else return "/job/result";
   }
@@ -376,14 +385,14 @@ ${cmd}`;
 
     // turn list of raw files into a list of cleaned files
     const files = ["/"];
-    for (const i in rawFiles) {
-      let t = rawFiles[i].trim();
+    for (const file of rawFiles) {
+      let t = file.trim();
       if (t.startsWith(".")) t = t.replace("./", "");
 
       const rawFile = t.split("/");
       let skipFile = false;
-      for (const j in rawFile) {
-        if (rawFile[j].startsWith(".")) {
+      for (const inner_file of rawFile) {
+        if (inner_file.startsWith(".")) {
           skipFile = true;
           break;
         } // ignore invisible files
@@ -418,8 +427,8 @@ ${cmd}`;
    *
    * @return{Object} - usage dictionary
    */
-  async getUsage(): Promise<Record<string, number>> {
-    const seffOutput: Record<string, number> = {
+  async getUsage(): Promise<Record<string, number | null>> {
+    const seffOutput: Record<string, number | null> = {
       nodes: null,
       cpus: null,
       cpuTime: null,
@@ -433,12 +442,16 @@ ${cmd}`;
       const seffResult = await this.exec(`seff ${this.slurm_id}`, {}, true, true);
       if (seffResult.stderr) return seffOutput;
 
+      if (!seffResult.stdout) {
+        throw new Error();
+      }
+
       const tmp = seffResult.stdout.split("\n");
       
       // iterate over the lines in the usage output and do string processing
       // to motivate this string processing see the above output example
-      for (const i in tmp) {
-        const j = tmp[i].split(":");
+      for (const i of tmp) {
+        const j = i.split(":");
         const k = j[0].trim();
         j.shift();
         let v = j.join(":").trim();
@@ -471,15 +484,14 @@ ${cmd}`;
           let kb = parseFloat(v.substring(0, v.length - 2).trim());
           const units = ["kb", "mb", "gb", "tb", "pb", "eb"];
           let isValid = false;
-          for (const i in units) {
-            if (v.includes(i)) {
+          for (const unit of units) {
+            if (v.includes(unit)) {
               isValid = true;
               break;
             }
           }
           if (!isValid) continue;
-          for (const i in units) {
-            const unit = units[i];
+          for (const unit of units) {
             if (v.includes(unit)) break;
             kb = kb * 1024;
           }
@@ -497,15 +509,14 @@ ${cmd}`;
           let kb = parseFloat(v.substring(0, v.length - 2).trim());
           const units = ["kb", "mb", "gb", "tb", "pb", "eb"];
           let isValid = false;
-          for (const i in units) {
-            if (v.includes(i)) {
+          for (const unit of units) {
+            if (v.includes(unit)) {
               isValid = true;
               break;
             }
           }
           if (!isValid) continue;
-          for (const i in units) {
-            const unit = units[i];
+          for (const unit of units) {
             if (v.includes(unit)) break;
             kb = kb * 1024;
           }

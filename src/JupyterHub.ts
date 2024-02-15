@@ -1,7 +1,7 @@
 import axios from "axios";
 import * as path from "path";
 import { jupyterGlobusMap } from "../configs/config";
-import Helper from "./Helper";
+import * as Helper from "./Helper";
 
 declare interface decodedToken {
   host: string;
@@ -25,7 +25,12 @@ class JupyterHub {
   public async getUsername(token: string): Promise<string | undefined> {
     const t = this._decodeToken(token);
     const protocols = ["https", "http"];
-    const hosts = Object.keys(JSON.parse(JSON.stringify(jupyterGlobusMap)) as Record<string, unknown>);
+    const hosts = Object.keys(
+      JSON.parse(
+        JSON.stringify(jupyterGlobusMap)
+      ) as Record<string, unknown>
+    );
+    
     let flag = false;
 
     for (const host of hosts) {

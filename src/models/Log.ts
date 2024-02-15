@@ -27,8 +27,12 @@ export class Log {
   @Column({
     type: "bigint",
     transformer: {
-      to: (i: Date | null | undefined): number | null => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date | null => (i ? new Date(Math.trunc(i)) : null),
+      to: (
+        i: Date | null | undefined
+      ): number | null => (i ? i.getTime() : null),
+      from: (
+        i: number | null | undefined
+      ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
     createdAt: Date;
@@ -37,8 +41,12 @@ export class Log {
     type: "bigint",
     nullable: true,
     transformer: {
-      to: (i: Date | null | undefined): number | null => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date | null => (i ? new Date(Math.trunc(i)) : null),
+      to: (
+        i: Date | null | undefined
+      ): number | null => (i ? i.getTime() : null),
+      from: (
+        i: number | null | undefined
+      ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
     updatedAt: Date;
@@ -47,8 +55,12 @@ export class Log {
     type: "bigint",
     nullable: true,
     transformer: {
-      to: (i: Date | null | undefined): number | null => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date | null => (i ? new Date(Math.trunc(i)) : null),
+      to: (
+        i: Date | null | undefined
+      ): number | null => (i ? i.getTime() : null),
+      from: (
+        i: number | null | undefined
+      ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
     deletedAt: Date;

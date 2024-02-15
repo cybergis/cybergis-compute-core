@@ -1,6 +1,6 @@
 import SingularityConnector from "../connectors/SingularityConnector";
 import { FolderUploaderHelper } from "../FolderUploader";
-import Helper from "../Helper";
+import * as Helper from "../Helper";
 import GitUtil from "../lib/GitUtil";
 import { ResultFolderContentManager } from "../lib/JobUtil";
 import XSEDEUtil from "../lib/XSEDEUtil";
@@ -57,12 +57,14 @@ class CommunityContributionMaintainer extends BaseMaintainer {
       // upload executable folder
       if (!this.job.localExecutableFolder)
         throw new Error("job.localExecutableFolder is required");
+
+      Helper.nullGuard<string>(this.job.userId);
       
       this.emitEvent("SLURM_UPLOAD_EXECUTABLE", "uploading executable folder");  // isn't this SCP?
       let uploader = await FolderUploaderHelper.upload(
         this.job.localExecutableFolder,
         this.job.hpc,
-        this.job.userId!,
+        this.job.userId,
         this.job.id,
         this.connector
       );
@@ -77,7 +79,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
         uploader = await FolderUploaderHelper.upload(
           this.job.localDataFolder,
           this.job.hpc,
-          this.job.userId!,
+          this.job.userId,
           this.job.id,
           this.connector
         );
@@ -97,7 +99,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
       uploader = await FolderUploaderHelper.upload(
         { type: "empty" },
         this.job.hpc,
-        this.job.userId!,
+        this.job.userId,
         this.job.id,
         this.connector
       );
@@ -113,10 +115,12 @@ class CommunityContributionMaintainer extends BaseMaintainer {
         remoteResultFolder: this.job.remoteResultFolder,
       });
 
+      Helper.nullGuard(this.slurm);
+
       // submit job
-      this.connector.execExecutableManifestWithinImage(
+      await this.connector.execExecutableManifestWithinImage(
         this.executableManifest,
-        this.slurm!
+        this.slurm
       );
       await this.connector.submit();
 
@@ -127,7 +131,8 @@ class CommunityContributionMaintainer extends BaseMaintainer {
       );
 
       // log on xsede
-      await XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc!, this.job);
+      Helper.nullGuard(this.hpc);
+      await XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc, this.job);
     } catch (e) {
       this.emitEvent(
         "JOB_RETRY",
@@ -167,7 +172,8 @@ class CommunityContributionMaintainer extends BaseMaintainer {
         await this.updateJob(usage);
 
         // submit again to XSEDE
-        await XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc!, this.job); // for backup submit
+        Helper.nullGuard(this.hpc);
+        await XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc, this.job); // for backup submit
 
         // fetch result folder content
         // TODO: make this shorter
@@ -179,18 +185,23 @@ class CommunityContributionMaintainer extends BaseMaintainer {
         if (defaultResultFolderDownloadablePath) {
           // bring default downloadable to front (for frontend display)
           contents.sort((a, b) =>
-            a === defaultResultFolderDownloadablePath ? -1 : (b === defaultResultFolderDownloadablePath ? 1 : 0)
+            a === defaultResultFolderDownloadablePath ? -1 : (
+              b === defaultResultFolderDownloadablePath ? 1 : 0
+            )
           );
           if (!defaultResultFolderDownloadablePath.startsWith("/")) {
             defaultResultFolderDownloadablePath = `/${defaultResultFolderDownloadablePath}`;
             contents.sort((a, b) =>
-              a === defaultResultFolderDownloadablePath ? -1 : (b === defaultResultFolderDownloadablePath ? 1 : 0)
+              a === defaultResultFolderDownloadablePath ? -1 : (
+                b === defaultResultFolderDownloadablePath ? 1 : 0
+              )
             );
           }
         }
 
         // update redis with this job's contents
-        await this.resultFolderContentManager.put(this.id!, contents);
+        Helper.nullGuard(this.id);
+        await this.resultFolderContentManager.put(this.id, contents);
       }
     } catch (e) {
       // try to retry job if something goes wrong

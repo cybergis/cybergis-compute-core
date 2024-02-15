@@ -9,7 +9,7 @@ import SingularityConnector from "../connectors/SingularityConnector";
 import SlurmConnector from "../connectors/SlurmConnector";
 import DB from "../DB";
 import { NotImplementedError } from "../errors";
-import Helper from "../Helper";
+import * as Helper from "../Helper";
 import { Job } from "../models/Job";
 import Supervisor from "../Supervisor";
 import {
@@ -57,8 +57,8 @@ class BaseMaintainer {
   public maintainThresholdInHours = 100000; // something super large
 
   // optional parameter validators for derivec classes
-  public envParamValidators: Record<string, (_val: string) => boolean> | undefined =
-    undefined;
+  public envParamValidators: 
+    Record<string, (_val: string) => boolean> | undefined = undefined;
   public envParamDefault: Record<string, string> = {};
   public envParam: Record<string, string> = {};
   public appParamValidators = undefined;

@@ -5,7 +5,7 @@ import BaseConnector from "./connectors/BaseConnector";
 import SingularityConnector from "./connectors/SingularityConnector";
 import SlurmConnector from "./connectors/SlurmConnector";
 import DB from "./DB";
-import Helper from "./Helper";
+import * as Helper from "./Helper";
 import FolderUtil from "./lib/FolderUtil";
 import GitUtil from "./lib/GitUtil";
 import GlobusUtil from "./lib/GlobusUtil";
@@ -56,7 +56,9 @@ export class BaseFolderUploader {
     this.isFailed = false;
     this.db = new DB();
 
-    this.globusPath = path.join(this.hpcConfig.globus!.root_path, this.id);
+    this.globusPath = path.join(
+      this.hpcConfig.globus?.root_path ?? "", this.id
+    ); 
   }
 
   // eslint-disable-next-line
@@ -99,7 +101,8 @@ export class EmptyFolderUploader extends BaseFolderUploader {
   }
 
   /**
-   * Creates ("uploads") an empty folder onto the HPC at the given path. Updates the database accordingly.
+   * Creates ("uploads") an empty folder onto the HPC at the given path. 
+   * Updates the database accordingly.
    *
    */
   async upload() {
@@ -223,7 +226,8 @@ export class LocalFolderUploader extends BaseFolderUploader {
 }
 
 /**
- * Specialization of LocalFolderUploader for uploading a git folder (on the local machine).
+ * Specialization of LocalFolderUploader for 
+ * uploading a git folder (on the local machine).
  */
 export class GitFolderUploader extends LocalFolderUploader {
   private gitId: string;
@@ -238,7 +242,7 @@ export class GitFolderUploader extends LocalFolderUploader {
   ) {
     const localPath = GitUtil.getLocalPath(from.gitId);  // extract the local path
     super({ localPath }, hpcName, userId, jobId, connector);
-    this.gitId = from.gitId!;
+    this.gitId = from.gitId;
   }
 
   async upload() {
@@ -259,7 +263,8 @@ export class GitFolderUploader extends LocalFolderUploader {
 }
 
 /**
- * Helper class/method for uploading a generic file, returning the proper folder uploader as required.
+ * Helper class/method for uploading a generic file, 
+ * returning the proper folder uploader as required.
  *
  * @export
  */
@@ -312,12 +317,22 @@ export class FolderUploaderHelper {
       break;
 
     case "globus":
-      uploader = new GlobusFolderUploader(from as GlobusFolder, hpcName, userId, jobId);
+      uploader = new GlobusFolderUploader(
+        from as GlobusFolder, 
+        hpcName, 
+        userId, 
+        jobId
+      );
+
       await uploader.upload();
       break;
 
     case "empty":
-      uploader = new EmptyFolderUploader(hpcName, userId, jobId, connector!);
+      if (!connector) {
+        throw new Error("NO connector provided for empty folder uploaded.");
+      }
+      
+      uploader = new EmptyFolderUploader(hpcName, userId, jobId, connector);
       await uploader.upload();
       break;
 

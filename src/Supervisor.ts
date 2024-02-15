@@ -4,7 +4,7 @@ import { config, maintainerConfigMap, hpcConfigMap } from "../configs/config";
 import connectionPool from "./connectors/ConnectionPool";
 import DB from "./DB";
 import Emitter from "./Emitter";
-import Helper from "./Helper";
+import * as Helper from "./Helper";
 import BaseMaintainer from "./maintainers/BaseMaintainer";
 import { Job } from "./models/Job";
 import Queue from "./Queue";
@@ -153,7 +153,7 @@ class Supervisor {
     while (true) {  // eslint-disable-line
       // get ssh connector from pool
       let ssh: SSH;
-      if (job.maintainerInstance!.connector!.config.is_community_account) {
+      if (job.maintainerInstance?.connector?.config.is_community_account) {
         ssh = connectionPool[job.hpc].ssh;
       } else {
         ssh = connectionPool[job.id].ssh;
@@ -165,10 +165,14 @@ class Supervisor {
           await ssh.connection.connect(ssh.config);
         await ssh.connection.execCommand("echo"); // test connection
 
-        if (job.maintainerInstance!.isInit) {
-          await job.maintainerInstance!.maintain();
+        if (!job.maintainerInstance) {
+          throw new Error("Job doesn't have maintainer instance.");
+        }
+
+        if (job.maintainerInstance.isInit) {
+          await job.maintainerInstance.maintain();
         } else {
-          await job.maintainerInstance!.init();
+          await job.maintainerInstance.init();
         }
       } catch (e) {
         if (config.is_testing) console.error(Helper.assertError(e).stack);
@@ -176,8 +180,8 @@ class Supervisor {
       }
 
       // emit events & logs
-      const events = job.maintainerInstance!.dumpEvents();
-      const logs = job.maintainerInstance!.dumpLogs();
+      const events = job.maintainerInstance.dumpEvents();
+      const logs = job.maintainerInstance.dumpLogs();
 
       // TODO: no need to dump events or logs outside the maintainer
       for (const event of events)
@@ -192,8 +196,8 @@ class Supervisor {
         }
       }
       
-      if (shouldCancel && job.maintainerInstance!.jobOnHpc) {
-        await job.maintainerInstance!.onCancel();
+      if (shouldCancel && job.maintainerInstance.jobOnHpc) {
+        await job.maintainerInstance.onCancel();
         const index = this.cancelJobs[job.hpc].indexOf(job, 0);
         if (index > -1) {
           this.cancelJobs[job.hpc].splice(index, 1);
@@ -201,9 +205,9 @@ class Supervisor {
       }
 
       // ending conditions
-      if (job.maintainerInstance!.isEnd) {
+      if (job.maintainerInstance.isEnd) {
         // exit or deflag ssh pool
-        if (job.maintainerInstance!.connector?.config.is_community_account) {
+        if (job.maintainerInstance.connector?.config.is_community_account) {
           connectionPool[job.hpc].counter--;
           if (connectionPool[job.hpc].counter === 0) {
             if (ssh.connection.isConnected()) ssh.connection.dispose();
@@ -253,7 +257,7 @@ class Supervisor {
    * Stops the master thread execution. 
    */
   destroy() {
-    clearInterval(this.maintainerMasterThread!);
+    clearInterval(this.maintainerMasterThread ?? undefined);
   }
 
 

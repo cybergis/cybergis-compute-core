@@ -212,8 +212,8 @@ export default class GitUtil {
       JSON.parse(rawExecutableManifest)
     ) as executableManifest;
 
-    if (!executableManifest.default_hpc) {
-      executableManifest.default_hpc = executableManifest.supported_hpc![0];
+    if (!executableManifest.default_hpc && executableManifest.supported_hpc) {
+      executableManifest.default_hpc = executableManifest.supported_hpc[0];
     }
 
     for (const rule_name in executableManifest.slurm_input_rules) {
@@ -225,7 +225,9 @@ export default class GitUtil {
       }
 
       // pass by reference
-      const rule = executableManifest.slurm_input_rules[rule_name] as integerRule | stringOptionRule;
+      const rule = (executableManifest
+        .slurm_input_rules[rule_name] 
+      ) as integerRule | stringOptionRule;
 
       if (!rule.default_value) {
         delete executableManifest.slurm_input_rules[rule_name];
@@ -304,7 +306,10 @@ export default class GitUtil {
 
       // default values
       if (executableManifest.param_rules[rule_name].type === "integer") {
-        const rule: integerRule = executableManifest.param_rules[rule_name] as integerRule;
+        const rule: integerRule = (executableManifest
+          .param_rules[rule_name]
+        ) as integerRule;
+
         if (!rule.max) {
           rule.max = rule.default_value * 2;
         }
@@ -319,7 +324,9 @@ export default class GitUtil {
       }
 
       if (executableManifest.param_rules[rule_name].type === "string_option") {
-        const rule: stringOptionRule = executableManifest.param_rules[rule_name] as stringOptionRule;
+        const rule: stringOptionRule = (executableManifest
+          .param_rules[rule_name]
+        ) as stringOptionRule;
 
         if (!rule.options) {
           rule.options = [rule.default_value,];

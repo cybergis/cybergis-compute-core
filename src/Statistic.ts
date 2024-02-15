@@ -39,22 +39,28 @@ export default class Statistic {
   public async getRuntimeTotal(): Promise<Record<string, number> | null> {
     const connection = await this.db.connect();
 
-    const statisticTotal: null | { STATISTIC: string } | undefined = await connection
-      .getRepository(Job)
-      .createQueryBuilder("job")
-      .select("SUM(ABS(job.initializedAt - job.finishedAt)) as STATISTIC")
-      .where("job.initializedAt IS NOT NULL AND job.finishedAt IS NOT NULL")
-      .getRawOne();
+    type totalStatistics = null | { STATISTIC: string } | undefined 
+    const statisticTotal: totalStatistics = await (
+      connection
+        .getRepository(Job)
+        .createQueryBuilder("job")
+        .select("SUM(ABS(job.initializedAt - job.finishedAt)) as STATISTIC")
+        .where("job.initializedAt IS NOT NULL AND job.finishedAt IS NOT NULL")
+        .getRawOne()
+    );
 
-    const statisticByHPC: { STATISTIC: string, HPC: string }[] | null | undefined = await connection
-      .getRepository(Job)
-      .createQueryBuilder("job")
-      .select(
-        "SUM(ABS(job.initializedAt - job.finishedAt)) as STATISTIC, job.hpc as HPC"
-      )
-      .where("job.initializedAt IS NOT NULL AND job.finishedAt IS NOT NULL")
-      .groupBy("hpc")
-      .getRawMany();
+    type hpcStatistics = { STATISTIC: string, HPC: string }[] | null | undefined
+    const statisticByHPC: hpcStatistics = await (
+      connection
+        .getRepository(Job)
+        .createQueryBuilder("job")
+        .select(
+          "SUM(ABS(job.initializedAt - job.finishedAt)) as STATISTIC, job.hpc as HPC"
+        )
+        .where("job.initializedAt IS NOT NULL AND job.finishedAt IS NOT NULL")
+        .groupBy("hpc")
+        .getRawMany()
+    );
 
     if (statisticTotal && statisticByHPC) {
       const out = {

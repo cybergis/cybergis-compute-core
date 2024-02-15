@@ -1,5 +1,6 @@
 import * as path from "path";
 import { containerConfigMap, hpcConfigMap, kernelConfigMap} from "../../configs/config";
+import * as Helper from "../Helper";
 import { slurm, executableManifest } from "../types";
 import SlurmConnector from "./SlurmConnector";
 // import { kernelConfig } from "../types";
@@ -29,6 +30,7 @@ class SingularityConnector extends SlurmConnector {
     else{
       cmd = `srun --mpi=pmi2 singularity exec ${this._getVolumeBindCMD()} ${image} ${cmd}`;
     }
+
     super.prepare(cmd, config);
   }
 
@@ -39,11 +41,11 @@ class SingularityConnector extends SlurmConnector {
    * @param {slurm} config - slurm configuration
    * @throw {Error} - thrown when container is not supported
    */
-  execExecutableManifestWithinImage(
+  async execExecutableManifestWithinImage(
     manifest: executableManifest,
     config: slurm
   ) {
-    let containerPath: string;
+    let containerPath!: string;
     if(!this.is_cvmfs){
       const container = containerConfigMap[manifest.container];
       if (!container) throw new Error(`unknown container ${manifest.container}`);
@@ -60,8 +62,8 @@ class SingularityConnector extends SlurmConnector {
     let cmd = "";
 
     if (manifest.pre_processing_stage_in_raw_sbatch) {
-      for (const i in manifest.pre_processing_stage_in_raw_sbatch) {
-        cmd += `${manifest.pre_processing_stage_in_raw_sbatch[i]}\n`;
+      for (const stage of manifest.pre_processing_stage_in_raw_sbatch) {
+        cmd += `${stage}\n`;
       }
     } else if (manifest.pre_processing_stage) {
       if (this.is_cvmfs){
@@ -71,7 +73,7 @@ class SingularityConnector extends SlurmConnector {
           manifest.pre_processing_stage
         }"\n\n`;
 
-      } else{
+      } else {
         cmd += `${jobENV.join(" ")} singularity exec ${this._getVolumeBindCMD(
           manifest
         )} ${containerPath} bash -c "cd ${this.getContainerExecutableFolderPath()} && ${
@@ -82,12 +84,12 @@ class SingularityConnector extends SlurmConnector {
     }
 
     if (manifest.execution_stage_in_raw_sbatch) {
-      for (const i in manifest.execution_stage_in_raw_sbatch) {
-        cmd += `${manifest.execution_stage_in_raw_sbatch[i]}\n`;
+      for (const stage of manifest.execution_stage_in_raw_sbatch) {
+        cmd += `${stage}\n`;
       }
     } else {
       if (this.is_cvmfs){
-        this.createKernelInit(manifest);
+        await this.createKernelInit(manifest);
         cmd += `${jobENV.join(
           " "
         )} srun --unbuffered --mpi=pmi2 singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://cybergisx/compute-cvmfs:0.1.0 bash -c "cd ${this.getContainerExecutableFolderPath()} && source kernel_init.sh && ${
@@ -107,8 +109,8 @@ class SingularityConnector extends SlurmConnector {
     }
 
     if (manifest.post_processing_stage_in_raw_sbatch) {
-      for (const i in manifest.post_processing_stage_in_raw_sbatch) {
-        cmd += `${manifest.post_processing_stage_in_raw_sbatch[i]}\n`;
+      for (const stage of manifest.post_processing_stage_in_raw_sbatch) {
+        cmd += `${stage}\n`;
       }
 
     } else if (manifest.post_processing_stage) {
@@ -174,7 +176,9 @@ class SingularityConnector extends SlurmConnector {
    * @param {executableManifest} manifest - manifest containing volumeBinds
    * @return {string | {[keys: string]: string}} volumeBinds
    */
-  private _getVolumeBindCMD(manifest: executableManifest | null = null): string {
+  private _getVolumeBindCMD(
+    manifest: executableManifest | null = null
+  ): string {
     if (this.is_cvmfs){
       this.volumeBinds.$tmp_path = this.getContainerCVMFSFolderPath();
     }
@@ -185,20 +189,20 @@ class SingularityConnector extends SlurmConnector {
       this.getContainerResultFolderPath();
 
     if (this.getRemoteDataFolderPath()) {
-      this.volumeBinds[this.getRemoteDataFolderPath()] =
+      this.volumeBinds[this.getRemoteDataFolderPath()!] =
         this.getContainerDataFolderPath();
     }
 
     if (manifest && !this.is_cvmfs) {
       const hpc = hpcConfigMap[this.hpcName];
-      if (hpc && hpc.mount) {
+      if (hpc?.mount) {
         for (const i in hpc.mount){
           this.volumeBinds[i] = hpc.mount[i];
         }
       }
 
       const container = containerConfigMap[manifest.container];
-      if (container && container.mount && container.mount[this.hpcName]) {
+      if (container?.mount?.[this.hpcName]) {
         for (const i in container.mount[this.hpcName]) {
           this.volumeBinds[i] = container.mount[this.hpcName][i];
         }
@@ -224,6 +228,8 @@ class SingularityConnector extends SlurmConnector {
    * @return {string[]} jobENV - jobenvironment variables
    */
   private _getJobENV(): string[] {
+    Helper.nullGuard(this.maintainer);
+
     const jobJSON = {
       job_id: this.maintainer.job.id,
       user_id: this.maintainer.job.userId,
@@ -248,7 +254,7 @@ class SingularityConnector extends SlurmConnector {
 
       if (structuredKeys.includes(key)) {
         for (const i in jobJSON[key]) {
-          jobENV.push(`${key}_${i}="${jobJSON[key][i]}"`);
+          jobENV.push(`${key}_${i}="${(jobJSON[key] as Record<string, string>)[i]}"`);
         }
 
       } else {

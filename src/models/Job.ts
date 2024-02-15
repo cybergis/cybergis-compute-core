@@ -60,7 +60,8 @@ export class Job {
       ): string | null => (i ? JSON.stringify(i) : null),
       from: (
         i: string | null | undefined | object
-      ): LocalFolder | GitFolder | GlobusFolder | undefined | string | null | object =>
+      ): LocalFolder | GitFolder | GlobusFolder
+       | undefined | string | null | object =>
         typeof i === "string" ? JSON.parse(i) as LocalFolder | GitFolder | GlobusFolder : i,
     },
   })
@@ -73,7 +74,9 @@ export class Job {
     transformer: {
       to: (i: NeedUploadFolder | null | undefined): string | null =>
         i ? JSON.stringify(i) : null,
-      from: (i: string | null | undefined | object): NeedUploadFolder | string | null | undefined | object =>
+      from: (
+        i: string | null | undefined | object
+      ): NeedUploadFolder | string | null | undefined | object =>
         typeof i === "string" ? JSON.parse(i) as NeedUploadFolder : i,
     },
   })
@@ -137,8 +140,12 @@ export class Job {
   @Column({
     type: "bigint",
     transformer: {
-      to: (i: Date | null | undefined): number | null => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date | null => (i ? new Date(Math.trunc(i)) : null),
+      to: (
+        i: Date | null | undefined
+      ): number | null => (i ? i.getTime() : null),
+      from: (
+        i: number | null | undefined
+      ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
     createdAt: Date;
@@ -147,8 +154,12 @@ export class Job {
     type: "bigint",
     nullable: true,
     transformer: {
-      to: (i: Date | null | undefined): number | null => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date | null => (i ? new Date(Math.trunc(i)) : null),
+      to: (
+        i: Date | null | undefined
+      ): number | null => (i ? i.getTime() : null),
+      from: (
+        i: number | null | undefined
+      ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
     updatedAt: Date;
@@ -157,8 +168,12 @@ export class Job {
     type: "bigint",
     nullable: true,
     transformer: {
-      to: (i: Date | null | undefined): number | null => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date | null => (i ? new Date(Math.trunc(i)) : null),
+      to: (
+        i: Date | null | undefined
+      ): number | null => (i ? i.getTime() : null),
+      from: (
+        i: number | null | undefined
+      ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
     deletedAt: Date;
@@ -167,8 +182,12 @@ export class Job {
     type: "bigint",
     nullable: true,
     transformer: {
-      to: (i: Date | null | undefined): number | null=> (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date | null => (i ? new Date(Math.trunc(i)) : null),
+      to: (
+        i: Date | null | undefined
+      ): number | null=> (i ? i.getTime() : null),
+      from: (
+        i: number | null | undefined
+      ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
     initializedAt: Date;
@@ -177,8 +196,12 @@ export class Job {
     type: "bigint",
     nullable: true,
     transformer: {
-      to: (i: Date | null | undefined): number | null => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date | null => (i ? new Date(Math.trunc(i)) : null),
+      to: (
+        i: Date | null | undefined
+      ): number | null => (i ? i.getTime() : null),
+      from: (
+        i: number | null | undefined
+      ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
     finishedAt: Date;
@@ -187,8 +210,12 @@ export class Job {
     type: "bigint",
     nullable: true,
     transformer: {
-      to: (i: Date | null | undefined): number | null => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date | null => (i ? new Date(Math.trunc(i)) : null),
+      to: (
+        i: Date | null | undefined
+      ): number | null => (i ? i.getTime() : null),
+      from: (
+        i: number | null | undefined
+      ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
     queuedAt: Date;

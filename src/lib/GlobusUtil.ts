@@ -2,8 +2,14 @@ import redis = require("redis");
 import { promisify } from "util";
 import { config } from "../../configs/config";
 import DB from "../DB";
-import { GlobusTransferRefreshToken } from "../models/GlobusTransferRefreshToken";
-import { GlobusFolder, hpcConfig, GetValueFunction, SetValueFunction, DelValueFunction } from "../types";
+import * as Helper from "../Helper";
+import { GlobusTransferRefreshToken } from 
+  "../models/GlobusTransferRefreshToken";
+import { GlobusFolder, 
+  hpcConfig, 
+  GetValueFunction, 
+  SetValueFunction,
+  DelValueFunction } from "../types";
 import PythonUtil from "./PythonUtil";
 
 /**
@@ -122,18 +128,21 @@ export default class GlobusUtil {
     const globusTransferRefreshTokenRepo = connection.getRepository(
       GlobusTransferRefreshToken
     );
+
+    Helper.nullGuard(hpcConfig.globus);
     const g = await globusTransferRefreshTokenRepo.findOne(
-      hpcConfig.globus!.identity
+      hpcConfig.globus.identity
     );
 
-    let out: Record<string, string>;
+    let out: Record<string, unknown>;
     try {
+      Helper.nullGuard(g);
       // run python helpers with cmd line arguments to initialize globus
       out = await PythonUtil.run(
         "globus_init.py",
         [
           config.globus_client_id,
-          g!.transferRefreshToken,
+          g.transferRefreshToken,
           from.endpoint,
           from.path,
           to.endpoint,
@@ -147,9 +156,9 @@ export default class GlobusUtil {
     }
 
     if (!out.task_id)
-      throw new Error(`cannot initialize Globus job: ${out.error}`);
+      throw new Error(`cannot initialize Globus job: ${out.error as string}`);
 
-    return out.task_id;
+    return out.task_id as string;
   }
 
   /**
@@ -191,20 +200,20 @@ export default class GlobusUtil {
    */
   static async mapUsername(
     initial_username: string,
-    mapping_func: string
+    mapping_func: string | null
   ): Promise<string> {
-    let username: Record<string, string>;
+    let username: Record<string, unknown>;
     try {
       username = await PythonUtil.run(
         "globus_user_mapping.py",
-        [initial_username, mapping_func],
+        [initial_username, mapping_func ?? ""],
         ["mapped_username"]
       );
     } catch (e) {
       throw new Error(`Jupyter-Globus mapping failed with error: ${e}`);
     }
 
-    return username.mapped_username;
+    return username.mapped_username as string;
   }
   /**
    * @static
@@ -229,17 +238,19 @@ export default class GlobusUtil {
       hpcConfig.globus?.identity
     );
 
-    let out: Record<string, string>;
+    let out: Record<string, unknown>;
     try {
+      Helper.nullGuard(g);
+      
       out = await PythonUtil.run(
         script,
-        [config.globus_client_id, g!.transferRefreshToken, taskId],
+        [config.globus_client_id, g.transferRefreshToken, taskId],
         ["status"]
       );
     } catch (e) {
       throw new Error(`Globus query status failed with error: ${e}`);
     }
 
-    return out.status;
+    return out.status as string;
   }
 }

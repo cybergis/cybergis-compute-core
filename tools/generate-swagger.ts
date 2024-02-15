@@ -1,5 +1,5 @@
-import fs = require("fs");
 import swaggerJsdoc = require("swagger-jsdoc");
+import fs = require("fs");
 
 const options = {
   definition: {

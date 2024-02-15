@@ -3,6 +3,7 @@ import * as path from "path";
 import { config, hpcConfigMap } from "../../configs/config";
 import DB from "../DB";
 import { ConnectorError } from "../errors";
+import * as Helper from "../Helper";
 import FileUtil from "../lib/FolderUtil";  // shouldn't this be registerUtil?
 import BaseMaintainer from "../maintainers/BaseMaintainer";
 import { options, hpcConfig, SSH } from "../types";
@@ -14,15 +15,15 @@ import connectionPool from "./ConnectionPool";
 class BaseConnector {
 
   /** parent pointer **/
-  public maintainer: BaseMaintainer;
+  public maintainer: BaseMaintainer | null;
 
   /** properties **/
-  public jobId: string;
+  public jobId: string | null;
   public hpcName: string;
   public is_cvmfs: boolean;
-  public remote_executable_folder_path: string;
-  public remote_data_folder_path: string;
-  public remote_result_folder_path: string;
+  public remote_executable_folder_path: string | null;
+  public remote_data_folder_path: string | null;
+  public remote_result_folder_path: string | null;
 
   /** config **/
   public config: hpcConfig;
@@ -31,8 +32,8 @@ class BaseConnector {
 
   constructor(
     hpcName: string,
-    jobId: string = null,
-    maintainer: BaseMaintainer = null,
+    jobId: string | null = null,
+    maintainer: BaseMaintainer | null = null,
     env: Record<string, unknown> = {},
     is_cvmfs = false
   ) {
@@ -45,7 +46,7 @@ class BaseConnector {
     // set environment variables
     let envCmd = "source /etc/profile;";
     for (const i in env) {
-      const v = env[i];
+      const v = env[i] as string;
       envCmd += `export ${i}=${v};\n`;
     }
     this.envCmd = envCmd;
@@ -64,7 +65,7 @@ class BaseConnector {
     if (this.config.is_community_account) {
       return connectionPool[this.hpcName].ssh;
     } else {
-      return connectionPool[this.jobId].ssh;
+      return connectionPool[this.jobId!].ssh;
     }
   }
 
@@ -114,15 +115,15 @@ class BaseConnector {
     // enabled by NodeSSH library
     const opt = Object.assign(
       {
-        onStdout(o) {
-          o = o.toString();
+        onStdout(chunk: Buffer) {
+          const o: string = chunk.toString();
           if (out.stdout === null) out.stdout = o;
           else out.stdout += o;
 
           if (maintainer && !muteLog) maintainer.emitLog(o);
         },
-        onStderr(o) {
-          o = o.toString();
+        onStderr(chunk: Buffer) {
+          const o: string = chunk.toString();
           if (out.stderr === null) out.stderr = o;
           else out.stderr += o;
 
@@ -134,8 +135,9 @@ class BaseConnector {
     );
 
     // run the array of commands as if they were
-    for (const i in commands) {
-      const command = commands[i].trim();
+    for (let command of commands) {
+      command = command.trim();
+      
       // log execution in maintainer event log
       if (this.maintainer && !muteEvent)
         this.maintainer.emitEvent(
@@ -144,6 +146,8 @@ class BaseConnector {
         );
 
       // run command via ssh
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore the type is hidden in some file and can't be coerced
       await this.ssh().connection.execCommand(this.envCmd + command, opt);
 
       // behavior similar to && operator in bash, if desired (break if have an error)
@@ -187,7 +191,7 @@ class BaseConnector {
       // decompress the transferred file into the toZipFilePath directory
       await FileUtil.putFileFromZip(to, toZipFilePath);
     } catch (e) {
-      const error = `unable to get file from ${from} to ${to}: ` + e.toString();
+      const error = `unable to get file from ${from} to ${to}: ` + Helper.assertError(e).toString();
 
       if (this.maintainer && !muteEvent)
         this.maintainer.emitEvent("SSH_SCP_DOWNLOAD_ERROR", error);
@@ -215,7 +219,7 @@ class BaseConnector {
       await this.ssh().connection.putFile(from, to);
     } catch (e) {
       const error =
-        `unable to put file from ${from} to ${to}: ` + e.toString();
+        `unable to put file from ${from} to ${to}: ` + Helper.assertError(e).toString();
         
       if (this.maintainer && !muteEvent)
         this.maintainer.emitEvent("SSH_SCP_UPLOAD_ERROR", error);
@@ -253,7 +257,7 @@ class BaseConnector {
    * @param {options} [options={}] dictionary with string options
    * @return {Promise<string>} returns command execution output
    */
-  async homeDirectory(options: options = {}): Promise<string> {
+  async homeDirectory(options: options = {}): Promise<string | null> {
     const out = await this.exec("cd ~;pwd;", options);
     return out.stdout;
   }
@@ -263,9 +267,9 @@ class BaseConnector {
    * Returns the username
    *
    * @param {options} [options={}] dictionary with string options
-   * @return {Promise<string>} returns command execution output
+   * @return {Promise<string | null>} returns command execution output
    */
-  async whoami(options: options = {}): Promise<string> {
+  async whoami(options: options = {}): Promise<string | null> {
     const out = await this.exec("whoami;", options);
     return out.stdout;
   }
@@ -278,7 +282,10 @@ class BaseConnector {
    * @param {options} [options={}] dictionary with string options
    * @return {Promise<string>} returns command execution output
    */
-  async pwd(path: string = undefined, options: options = {}): Promise<string> {
+  async pwd(
+    path: string | undefined = undefined, 
+    options: options = {}
+  ): Promise<string | null> {
     let cmd = "pwd;";
     if (path) cmd = "cd " + path + ";" + cmd;
     const out = await this.exec(cmd, options);
@@ -291,9 +298,12 @@ class BaseConnector {
    *
    * @param {string} [path=undefined] specified path
    * @param {options} [options={}] dictionary with string options
-   * @return {Promise<string>} returns command execution output
+   * @return {Promise<string | null>} returns command execution output
    */
-  async ls(path: string = undefined, options: options = {}): Promise<string> {
+  async ls(
+    path: string | undefined = undefined, 
+    options: options = {}
+  ): Promise<string | null> {
     let cmd = "ls;";
     if (path) cmd = "cd " + path + ";" + cmd;
     const out = await this.exec(cmd, options);
@@ -306,9 +316,9 @@ class BaseConnector {
    *
    * @param {string} path specified path with filename
    * @param {options} [options={}] dictionary with string options
-   * @return {Promise<string>} command execution output
+   * @return {Promise<string | null>} command execution output
    */
-  async cat(path: string, options: options = {}): Promise<string> {
+  async cat(path: string, options: options = {}): Promise<string | null> {
     const cmd = "cat " + path;
     const out = await this.exec(cmd, options);
     return out.stdout;
@@ -323,9 +333,13 @@ class BaseConnector {
    * @param {string} path specified path with filename
    * @param {options} [options={}] set to True if you want to mute maintauner emitted Event
    * @param {boolean} [muteEvent=false] command execution output
-   * @return {Promise<string>} 
+   * @return {Promise<string | null>} 
    */
-  async rm(path: string, options: options = {}, muteEvent = false): Promise<string> {
+  async rm(
+    path: string, 
+    options: options = {}, 
+    muteEvent = false
+  ): Promise<string | null> {
     if (this.maintainer && !muteEvent)
       this.maintainer.emitEvent("SSH_RM", `removing ${path}`);
 
@@ -340,9 +354,13 @@ class BaseConnector {
    * @param {string} path specified path with filename
    * @param {options} [options={}] dictionary with string options
    * @param {boolean} [muteEvent=false] set to True if you want to mute maintauner emitted Event
-   * @return {Promise<string>}  command execution output
+   * @return {Promise<string | null>}  command execution output
    */
-  async mkdir(path: string, options: options = {}, muteEvent = false): Promise<string> {
+  async mkdir(
+    path: string, 
+    options: options = {},
+    muteEvent = false
+  ): Promise<string | null> {
     if (this.maintainer && !muteEvent)
       this.maintainer.emitEvent("SSH_MKDIR", `removing ${path}`);
 
@@ -358,14 +376,14 @@ class BaseConnector {
    * @param {string} to compress file path with file name
    * @param {options} [options={}] dictionary with string options
    * @param {boolean} [muteEvent=false] set to True if you want to mute maintauner emitted Event
-   * @return {Promise<string>} command execution output
+   * @return {Promise<string | null>} command execution output
    */
   async zip(
     from: string,
     to: string,
     options: options = {},
     muteEvent = false
-  ): Promise<string> {
+  ): Promise<string | null> {
     if (this.maintainer && !muteEvent)
       this.maintainer.emitEvent("SSH_ZIP", `zipping ${from} to ${to}`);
 
@@ -390,14 +408,14 @@ class BaseConnector {
    * @param {string} to compress file path with file name
    * @param {options} [options={}] dictionary with string options
    * @param {boolean} [muteEvent=false] set to True if you want to mute maintauner emitted Event
-   * @return {Promise<string>} command execution output
+   * @return {Promise<string | null>} command execution output
    */
   async unzip(
     from: string,
     to: string,
     options: options = {},
     muteEvent = false
-  ): Promise<string> {
+  ): Promise<string | null> {
     if (this.maintainer && !muteEvent)
       this.maintainer.emitEvent("SSH_UNZIP", `unzipping ${from} to ${to}`);
 
@@ -424,14 +442,14 @@ class BaseConnector {
    * @param {string} to compress file path with file name
    * @param {options} [options={}] dictionary with string options
    * @param {boolean} [muteEvent=false] set to True if you want to mute maintauner emitted Event
-   * @return {Promise<string>}  command execution output
+   * @return {Promise<string | null>}  command execution output
    */
   async tar(
     from: string,
     to: string,
     options: options = {},
     muteEvent = false
-  ): Promise<string> {
+  ): Promise<string | null> {
     if (this.maintainer && !muteEvent)
       this.maintainer.emitEvent("SSH_TAR", `taring ${from} to ${to}`);
 
@@ -459,14 +477,14 @@ class BaseConnector {
    * @param {string} to compress file path with file name
    * @param {options} [options={}] dictionary with string options
    * @param {boolean} [muteEvent=false] set to True if you want to mute maintauner emitted Event
-   * @return {Promise<string>} command execution output
+   * @return {Promise<string | null>} command execution output
    */
   async untar(
     from: string,
     to: string,
     options: options = {},
     muteEvent = false
-  ): Promise<string> {
+  ): Promise<string | null> {
     if (this.maintainer && !muteEvent)
       this.maintainer.emitEvent("SSH_UNTAR", `untaring ${from} to ${to}`);
 
@@ -534,7 +552,7 @@ class BaseConnector {
    * @param {string} [providedPath=null] specified path
    * @return {string} command execution output
    */
-  getRemoteExecutableFolderPath(providedPath: string = null): string {
+  getRemoteExecutableFolderPath(providedPath: string | null = null): string {
     if (this.remote_executable_folder_path === null)
       throw new Error("need to set remote_executable_folder_path");
     
@@ -548,9 +566,9 @@ class BaseConnector {
    * gets remote data folder path
    *
    * @param {string} [providedPath=null] specified path
-   * @return {string} command execution output
+   * @return {string | null} command execution output
    */
-  getRemoteDataFolderPath(providedPath: string = null): string {
+  getRemoteDataFolderPath(providedPath: string | null = null): string | null {
     if (!this.remote_data_folder_path) return null;
 
     if (providedPath)
@@ -565,7 +583,7 @@ class BaseConnector {
    * @param {string} [providedPath=null] specified path
    * @return {string} command execution output
    */
-  getRemoteResultFolderPath(providedPath: string = null): string {
+  getRemoteResultFolderPath(providedPath: string | null = null): string {
     if (this.remote_result_folder_path === null)
       throw new Error("need to set remote_result_folder_path");
 

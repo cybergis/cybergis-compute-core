@@ -1,7 +1,6 @@
 import { Command } from "commander";
-import { Git } from "./src/models/Git";
 import DB from "./src/DB";
-
+import { Git } from "./src/models/Git";
 const pkg = require("../package.json");  // eslint-disable-line
 const cmd = new Command();
 
@@ -56,8 +55,8 @@ cmd
       const connection = await db.connect();
       const i = {};
 
-      if (cmd.address) i["address"] = cmd.address;
-      if (cmd.sha) i["sha"] = cmd.sha;
+      if (cmd.address) i.address = cmd.address;
+      if (cmd.sha) i.sha = cmd.sha;
 
       await connection
         .createQueryBuilder()

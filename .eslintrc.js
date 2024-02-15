@@ -52,7 +52,9 @@ module.exports = {
       "always"
     ],
     "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
-    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+    "@typescript-eslint/no-unused-vars": [
+      "error", { "argsIgnorePattern": "^_" }
+    ],
     "no-empty": [2, {"allowEmptyCatch": true}],
     "@typescript-eslint/no-misused-promises": [
       "error",
@@ -84,6 +86,10 @@ module.exports = {
         "pathGroupsExcludedImportTypes": ["builtin"],
       },
     ],
+    "@stylistic/max-len": [
+      "error", 
+      { "ignoreTemplateLiterals": true, "code": 80, "ignoreComments": true, "ignoreStrings": true }
+    ]
   }
 };
     
