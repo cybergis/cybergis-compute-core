@@ -10,6 +10,7 @@ import {
   ManyToOne,
   // JoinColumn,
 } from "typeorm";
+import BaseMaintainer from "../maintainers/BaseMaintainer";
 import {
   credential,
   GitFolder,
@@ -19,9 +20,8 @@ import {
   slurm,
 } from "../types";
 import { Event } from "./Event";
-import { Log } from "./Log";
-import BaseMaintainer from "../maintainers/BaseMaintainer";
 import { Folder } from "./Folder";
+import { Log } from "./Log";
 
 /** Class representing a job. */
 @Entity({ name: "jobs" })
@@ -57,11 +57,11 @@ export class Job {
     transformer: {
       to: (
         i: LocalFolder | GitFolder | GlobusFolder | null | undefined
-      ): string => (i ? JSON.stringify(i) : null),
+      ): string | null => (i ? JSON.stringify(i) : null),
       from: (
         i: string | null | undefined | object
-      ): LocalFolder | GitFolder | GlobusFolder =>
-        typeof i === "string" ? JSON.parse(i) : i,
+      ): LocalFolder | GitFolder | GlobusFolder | undefined | string | null | object =>
+        typeof i === "string" ? JSON.parse(i) as LocalFolder | GitFolder | GlobusFolder : i,
     },
   })
     localExecutableFolder: LocalFolder | GitFolder | GlobusFolder;
@@ -71,10 +71,10 @@ export class Job {
     nullable: true,
     default: null,
     transformer: {
-      to: (i: NeedUploadFolder | null | undefined): string =>
+      to: (i: NeedUploadFolder | null | undefined): string | null =>
         i ? JSON.stringify(i) : null,
-      from: (i: string | null | undefined | object): NeedUploadFolder =>
-        typeof i === "string" ? JSON.parse(i) : i,
+      from: (i: string | null | undefined | object): NeedUploadFolder | string | null | undefined | object =>
+        typeof i === "string" ? JSON.parse(i) as NeedUploadFolder : i,
     },
   })
     localDataFolder: NeedUploadFolder;
@@ -84,40 +84,40 @@ export class Job {
     nullable: true,
     default: null,
     transformer: {
-      to: (i: { [keys: string]: string } | null | undefined): string =>
+      to: (i: Record<string, string> | null | undefined): string | null =>
         i ? JSON.stringify(i) : null,
       from: (
         i: string | null | undefined | object
-      ): { [keys: string]: string } =>
-        typeof i === "string" ? JSON.parse(i) : {},
+      ): Record<string, string> =>
+        typeof i === "string" ? JSON.parse(i) as Record<string, string> : {},
     },
   })
-    param: { [keys: string]: string };
+    param: Record<string, string>;
 
   @Column({
     type: "text",
     nullable: true,
     default: null,
     transformer: {
-      to: (i: { [keys: string]: string } | null | undefined): string =>
+      to: (i: Record<string, string> | null | undefined): string | null =>
         i ? JSON.stringify(i) : null,
       from: (
         i: string | null | undefined | object
-      ): { [keys: string]: string } =>
-        typeof i === "string" ? JSON.parse(i) : {},
+      ): Record<string, string> =>
+        typeof i === "string" ? JSON.parse(i) as Record<string, string> : {},
     },
   })
-    env: { [keys: string]: string };
+    env: Record<string, string>;
 
   @Column({
     type: "text",
     nullable: true,
     default: null,
     transformer: {
-      to: (i: slurm | null | undefined): string =>
+      to: (i: slurm | null | undefined): string | null =>
         i ? JSON.stringify(i) : null,
       from: (i: string | null | undefined | object): slurm =>
-        typeof i === "string" ? JSON.parse(i) : {},
+        typeof i === "string" ? JSON.parse(i) as slurm : {},
     },
   })
     slurm?: slurm;
@@ -137,8 +137,8 @@ export class Job {
   @Column({
     type: "bigint",
     transformer: {
-      to: (i: Date | null | undefined): number => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
+      to: (i: Date | null | undefined): number | null => (i ? i.getTime() : null),
+      from: (i: number | null | undefined): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
     createdAt: Date;
@@ -147,8 +147,8 @@ export class Job {
     type: "bigint",
     nullable: true,
     transformer: {
-      to: (i: Date | null | undefined): number => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
+      to: (i: Date | null | undefined): number | null => (i ? i.getTime() : null),
+      from: (i: number | null | undefined): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
     updatedAt: Date;
@@ -157,8 +157,8 @@ export class Job {
     type: "bigint",
     nullable: true,
     transformer: {
-      to: (i: Date | null | undefined): number => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
+      to: (i: Date | null | undefined): number | null => (i ? i.getTime() : null),
+      from: (i: number | null | undefined): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
     deletedAt: Date;
@@ -167,8 +167,8 @@ export class Job {
     type: "bigint",
     nullable: true,
     transformer: {
-      to: (i: Date | null | undefined): number => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
+      to: (i: Date | null | undefined): number | null=> (i ? i.getTime() : null),
+      from: (i: number | null | undefined): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
     initializedAt: Date;
@@ -177,8 +177,8 @@ export class Job {
     type: "bigint",
     nullable: true,
     transformer: {
-      to: (i: Date | null | undefined): number => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
+      to: (i: Date | null | undefined): number | null => (i ? i.getTime() : null),
+      from: (i: number | null | undefined): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
     finishedAt: Date;
@@ -187,8 +187,8 @@ export class Job {
     type: "bigint",
     nullable: true,
     transformer: {
-      to: (i: Date | null | undefined): number => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
+      to: (i: Date | null | undefined): number | null => (i ? i.getTime() : null),
+      from: (i: number | null | undefined): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
     queuedAt: Date;
@@ -196,22 +196,20 @@ export class Job {
   /**
    * Set the createdAt time to the current time.
    *
-   * @async
    * @return {Date} date - Date this job was created.
    */
   @BeforeInsert()
-  async setCreatedAt() {
+  setCreatedAt() {
     this.createdAt = new Date();
   }
 
   /**
    * Set the updatedAt time to the current time.
    *
-   * @async
    * @return {Date} date - Date this job was last updated.
    */
   @BeforeUpdate()
-  async setUpdatedAt() {
+  setUpdatedAt() {
     return (this.updatedAt = new Date());
   }
 

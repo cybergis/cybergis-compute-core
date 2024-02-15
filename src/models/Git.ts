@@ -28,8 +28,8 @@ export class Git {
   @Column({
     type: "bigint",
     transformer: {
-      to: (i: Date | null | undefined): number => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
+      to: (i: Date | null | undefined): number | null => (i ? i.getTime() : null),
+      from: (i: number | null | undefined): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
     createdAt: Date;
@@ -38,8 +38,8 @@ export class Git {
     type: "bigint",
     nullable: true,
     transformer: {
-      to: (i: Date | null | undefined): number => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
+      to: (i: Date | null | undefined): number | null => (i ? i.getTime() : null),
+      from: (i: number | null | undefined): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
     updatedAt: Date;
@@ -48,8 +48,8 @@ export class Git {
     type: "bigint",
     nullable: true,
     transformer: {
-      to: (i: Date | null | undefined): number => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
+      to: (i: Date | null | undefined): number | null => (i ? i.getTime() : null),
+      from: (i: number | null | undefined): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
     deletedAt: Date;
@@ -61,7 +61,7 @@ export class Git {
    * @return {Date} date - Date this job was created.
    */
   @BeforeInsert()
-  async setCreatedAt() {
+  setCreatedAt() {
     this.createdAt = new Date();
   }
 
@@ -72,7 +72,7 @@ export class Git {
    * @return {Date} date - Date this job was last updated.
    */
   @BeforeUpdate()
-  async setUpdatedAt() {
+  setUpdatedAt() {
     return (this.updatedAt = new Date());
   }
 }
