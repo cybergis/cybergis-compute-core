@@ -1,8 +1,8 @@
-import DB from "./DB";
 import { config } from "../configs/config";
+import DB from "./DB";
 import { Event } from "./models/Event";
-import { Log } from "./models/Log";
 import { Job } from "./models/Job";
+import { Log } from "./models/Log";
 
 /**
  * This class abstracts away the "emission" of signals via mutations to the database. 

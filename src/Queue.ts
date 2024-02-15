@@ -1,9 +1,14 @@
-import { Job } from "./models/Job";
+import redis = require("redis");
+import { promisify } from "util";
 import { config } from "../configs/config";
 import DB from "./DB";
+import { Job } from "./models/Job";
 import { CredentialManager } from "./SSHCredentialGuard";
-import { promisify } from "util";
-import redis = require("redis");
+
+type PushFunction = (_args: unknown[]) => Promise<number>;
+type ShiftFunction = (_key: unknown) => Promise<unknown>;
+type PeekFunction = (_key: unknown, _start: number, _end: number) => Promise<unknown>;
+type LengthFunction = (_key: unknown) => Promise<number>;
 
 /**
  * This class is used to represent queues of jobs waiting to be executed. 
@@ -11,11 +16,11 @@ import redis = require("redis");
 class Queue {
   private name;
 
-  private redis = {
-    push: null,
-    shift: null,
-    peak: null,
-    length: null,
+  private redis_functions = {
+    push: null as PushFunction | null,
+    shift: null as ShiftFunction | null,
+    peek: null as PeekFunction | null,
+    length: null as LengthFunction | null,
   };
 
   private isConnected = false;
@@ -35,17 +40,17 @@ class Queue {
    */
   async push(item: Job) {
     await this.connect();
-    await this.redis.push([this.name, item.id]);
+    await this.redis_functions.push!([this.name, item.id]);
   }
 
   /**
    * Shifts everything in the queue forwards and pops out the job at the front. 
    * 
-   * @returns {Promise{Job}} the popped out job
+   * @returns {Promise{Job | null}} the popped out job
    */
-  async shift(): Promise<Job> {
+  async shift(): Promise<Job | null> {
     await this.connect();
-    const jobId: string = await this.redis.shift(this.name);
+    const jobId: string = await this.redis_functions.shift!(this.name) as string;
     return this.getJobById(jobId);
   }
 
@@ -56,18 +61,18 @@ class Queue {
    */
   async isEmpty(): Promise<boolean> {
     await this.connect();
-    return (await this.redis.length(this.name)) === 0;
+    return (await this.redis_functions.length!(this.name)) === 0;
   }
 
   /**
    * Returns the job at the front of the queue without mutating the queue. 
    * 
-   * @returns {Promise{Job | undefined}} the job at the front or undefined if empty
+   * @returns {Promise{Job | null | undefined}} the job at the front or undefined if empty
    */
-  async peak(): Promise<Job | undefined> {
+  async peek(): Promise<Job | null | undefined> {
     await this.connect();
     if (await this.isEmpty()) return undefined;
-    const jobId: string = await this.redis.peak(this.name, 0, 0);
+    const jobId: string = await this.redis_functions.peek!(this.name, 0, 0) as string;
     return this.getJobById(jobId);
   }
 
@@ -78,7 +83,7 @@ class Queue {
    */
   async length(): Promise<number> {
     await this.connect();
-    return await this.redis.length(this.name);
+    return await this.redis_functions.length!(this.name);
   }
 
   /**
@@ -88,21 +93,39 @@ class Queue {
    */
   private async connect() {
     if (!this.isConnected) {
+      // eslint-disable-next-line
       const client = new redis.createClient({
         host: config.redis.host,
         port: config.redis.port,
       });
 
+      // TODO: rework this redis code to be less hacky
+      /* eslint-disable 
+        @typescript-eslint/no-unsafe-assignment, 
+        @typescript-eslint/no-unsafe-argument, 
+        @typescript-eslint/no-unsafe-member-access, 
+        @typescript-eslint/no-unsafe-call 
+      */
+     
       if (config.redis.password !== null && config.redis.password !== undefined) {
         const redisAuth = promisify(client.auth).bind(client);
         await redisAuth(config.redis.password);
       }
 
-      this.redis.push = promisify(client.rpush).bind(client);
-      this.redis.shift = promisify(client.lpop).bind(client);
-      this.redis.peak = promisify(client.lrange).bind(client);
-      this.redis.length = promisify(client.llen).bind(client);
+      // these save the redis functions rpush, lpop, lrange, llen within any context to promise-based functions
+      // and binds them in the context of the redis client defined here (to actually connect to that database)
+      this.redis_functions.push = promisify(client.rpush).bind(client);
+      this.redis_functions.shift = promisify(client.lpop).bind(client);
+      this.redis_functions.peek = promisify(client.lrange).bind(client);
+      this.redis_functions.length = promisify(client.llen).bind(client);
       this.isConnected = true;
+
+      /* eslint-disable 
+        @typescript-eslint/no-unsafe-assignment, 
+        @typescript-eslint/no-unsafe-argument, 
+        @typescript-eslint/no-unsafe-member-access, 
+        @typescript-eslint/no-unsafe-call 
+      */
     }
   }
 
@@ -111,9 +134,9 @@ class Queue {
    *
    * @private
    * @param {string} id jobId
-   * @return {Promise<Job>} job with the given jobId
+   * @return {Promise<Job | null>} job with the given jobId
    */
-  private async getJobById(id: string): Promise<Job> {
+  private async getJobById(id: string): Promise<Job | null> {
     const connection = await this.db.connect();
     const jobRepo = connection.getRepository(Job);
     const job = await jobRepo.findOne(id, {

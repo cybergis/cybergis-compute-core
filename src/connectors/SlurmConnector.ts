@@ -1,8 +1,8 @@
-import { ConnectorError } from "../errors";
-import BaseConnector from "./BaseConnector";
-import { slurm } from "../types";
 import * as path from "path";
 import { config } from "../../configs/config";
+import { ConnectorError } from "../errors";
+import { slurm } from "../types";
+import BaseConnector from "./BaseConnector";
 // import { FolderUploaderHelper } from "../FolderUploader";
 
 /**
@@ -11,7 +11,7 @@ import { config } from "../../configs/config";
 class SlurmConnector extends BaseConnector {
   
   public slurm_id: string;
-  public modules: Array<string> = [];  // list of modules to load in slurm environment
+  public modules: string[] = [];  // list of modules to load in slurm environment
   public template: string;
   public isContainer = false;
 
@@ -20,7 +20,7 @@ class SlurmConnector extends BaseConnector {
    *
    * @param {Array<string>} modules - Array of strings
    */
-  registerModules(modules: Array<string>) {
+  registerModules(modules: string[]) {
     this.modules = this.modules.concat(modules);
   }
 
@@ -378,7 +378,7 @@ ${cmd}`;
     const files = ["/"];
     for (const i in rawFiles) {
       let t = rawFiles[i].trim();
-      if (t[0] === ".") t = t.replace("./", "");
+      if (t.startsWith(".")) t = t.replace("./", "");
 
       const rawFile = t.split("/");
       let skipFile = false;

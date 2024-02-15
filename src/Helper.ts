@@ -1,5 +1,5 @@
-import { Job } from "./models/Job";
 import { hpcConfigMap, jupyterGlobusMap } from "../configs/config";
+import { Job } from "./models/Job";
 // import * as fs from "fs";
 
 /**
@@ -43,16 +43,16 @@ const Helper = {
    * @param {Array} [exclude=[]] list of attributes to exclude
    * @return {(object | object[])} job object including all attributes in the job list and excluding fields specified in exclude
    */
-  job2object(job: Job | Job[], exclude = []): object | object[] {
+  job2object(job: Job | Job[], exclude: string[] = []): object | object[] {
     if (Array.isArray(job)) {
       const outArray: object[] = [];
-      for (const i in job) {
-        outArray.push(Helper.job2object(job[i]));
+      for (const j of job) {
+        outArray.push(Helper.job2object(j));
       }
       return outArray;
     }
     
-    const out = {};
+    const out: Record<string, unknown> = {};
     const include = [
       "id",
       "userId",
@@ -78,8 +78,7 @@ const Helper = {
       "logs",
     ];
 
-    for (let i in include) {
-      i = include[i];
+    for (const i of include) {
       if (exclude.includes(i)) continue;
       if (i in job) out[i] = job[i];
       else out[i] = null;

@@ -1,10 +1,16 @@
-import { hpcConfigMap } from "../configs/config";
-import BaseConnector from "./connectors/BaseConnector";
-import DB from "./DB";
 import * as fs from "fs";
 import * as path from "path";
-import GlobusUtil from "./lib/GlobusUtil";
+import { hpcConfigMap } from "../configs/config";
+import BaseConnector from "./connectors/BaseConnector";
+import SingularityConnector from "./connectors/SingularityConnector";
+import SlurmConnector from "./connectors/SlurmConnector";
+import DB from "./DB";
+import Helper from "./Helper";
 import FolderUtil from "./lib/FolderUtil";
+import GitUtil from "./lib/GitUtil";
+import GlobusUtil from "./lib/GlobusUtil";
+import { Folder } from "./models/Folder";
+import { Git } from "./models/Git";
 import {
   GitFolder,
   GlobusFolder,
@@ -12,12 +18,6 @@ import {
   LocalFolder,
   NeedUploadFolder,
 } from "./types";
-import Helper from "./Helper";
-import { Folder } from "./models/Folder";
-import { Git } from "./models/Git";
-import GitUtil from "./lib/GitUtil";
-import SlurmConnector from "./connectors/SlurmConnector";
-import SingularityConnector from "./connectors/SingularityConnector";
 
 type Connector =
   | BaseConnector
@@ -46,6 +46,7 @@ export class BaseFolderUploader {
     this.hpcConfig = hpcConfigMap[hpcName];
     if (!this.hpcConfig)
       throw new Error(`cannot find hpcConfig with name ${hpcName}`);
+    
     this.hpcPath = path.join(this.hpcConfig.root_path, this.id);
     
     this.id = Helper.generateId();
@@ -55,9 +56,10 @@ export class BaseFolderUploader {
     this.isFailed = false;
     this.db = new DB();
 
-    this.globusPath = path.join(this.hpcConfig.globus.root_path, this.id);
+    this.globusPath = path.join(this.hpcConfig.globus!.root_path!, this.id);
   }
 
+  // eslint-disable-next-line
   async upload() {
     throw new Error("FolderUploader upload not implemented");
   }
@@ -180,14 +182,14 @@ export class GlobusFolderUploader extends BaseFolderUploader {
  */
 export class LocalFolderUploader extends BaseFolderUploader {
   protected connector: Connector;
-  protected localPath: string;
+  protected localPath: string | undefined;
 
   constructor(
     from: LocalFolder,
     hpcName: string,
     userId: string,
     jobId: string,
-    connector: Connector = null
+    connector: Connector | null = null
   ) {
     super(hpcName, userId);
     this.localPath = from.localPath;
@@ -201,7 +203,7 @@ export class LocalFolderUploader extends BaseFolderUploader {
    */
   async upload() {
     // if path does not exist, throw an error
-    if (!fs.existsSync(this.localPath)) {
+    if (this.localPath === undefined || !fs.existsSync(this.localPath)) {
       throw new Error(`could not find folder under path ${this.localPath}`);
     }
 
@@ -232,21 +234,23 @@ export class GitFolderUploader extends LocalFolderUploader {
     hpcName: string,
     userId: string,
     jobId: string,
-    connector: Connector = null
+    connector: Connector | null = null
   ) {
-    const localPath = GitUtil.getLocalPath(from.gitId);  // extract the local path
+    const localPath = GitUtil.getLocalPath(from.gitId!);  // extract the local path
     super({ localPath }, hpcName, userId, jobId, connector);
-    this.gitId = from.gitId;
+    this.gitId = from.gitId!;
   }
 
   async upload() {
     // try to find the git repo in the database
     const connection = await this.db.connect();
     const gitRepo = connection.getRepository(Git);
-    this.git = await gitRepo.findOne(this.gitId);
-    if (!this.git) {
+
+    const foundGit = await gitRepo.findOne(this.gitId);
+    if (!foundGit) {
       throw new Error(`cannot find git repo with id ${this.gitId}`);
     }
+    this.git = foundGit;
 
     // repull git if old, then upload (via SCP)
     await GitUtil.refreshGit(this.git);  // unneeded if can guarantee we are good
@@ -277,8 +281,8 @@ export class FolderUploaderHelper {
     from: NeedUploadFolder,
     hpcName: string,
     userId: string,
-    jobId: string = "",
-    connector: Connector = null
+    jobId = "",
+    connector: Connector | null = null
   ): Promise<BaseFolderUploader> {
     // if type not specified, throw an error
     if (!from.type) throw new Error("invalid local file format");
@@ -313,7 +317,7 @@ export class FolderUploaderHelper {
       break;
 
     case "empty":
-      uploader = new EmptyFolderUploader(hpcName, userId, jobId, connector);
+      uploader = new EmptyFolderUploader(hpcName, userId, jobId, connector!);
       await uploader.upload();
       break;
 

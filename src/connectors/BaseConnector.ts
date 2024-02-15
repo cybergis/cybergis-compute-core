@@ -1,12 +1,12 @@
-import { options, hpcConfig, SSH } from "../types";
-import { ConnectorError } from "../errors";
-import BaseMaintainer from "../maintainers/BaseMaintainer";
-import DB from "../DB";
 import { existsSync, unlink, writeFileSync } from "fs";
 import * as path from "path";
-import connectionPool from "./ConnectionPool";
 import { config, hpcConfigMap } from "../../configs/config";
+import DB from "../DB";
+import { ConnectorError } from "../errors";
 import FileUtil from "../lib/FolderUtil";  // shouldn't this be registerUtil?
+import BaseMaintainer from "../maintainers/BaseMaintainer";
+import { options, hpcConfig, SSH } from "../types";
+import connectionPool from "./ConnectionPool";
 
 /**
  * Base class for connecting with the HPC environment, mainly via shell scripts.
@@ -33,8 +33,8 @@ class BaseConnector {
     hpcName: string,
     jobId: string = null,
     maintainer: BaseMaintainer = null,
-    env: { [keys: string]: unknown } = {},
-    is_cvmfs: boolean = false
+    env: Record<string, unknown> = {},
+    is_cvmfs = false
   ) {
     this.hpcName = hpcName;
     this.jobId = jobId;
@@ -81,16 +81,16 @@ class BaseConnector {
    *
    */
   async exec(
-    commands: string | Array<string>,
+    commands: string | string[],
     options: options = {},
     muteEvent = true,
     muteLog = true,
     continueOnError = false
   ) {
-    type out = {
+    interface out {
       stdout: string | null;
       stderr: string | null;
-    };
+    }
 
     const out: out = {
       stdout: null,
@@ -499,7 +499,7 @@ class BaseConnector {
     }
 
     // cast to string
-    const contentString : string = String(content);
+    const contentString  = String(content);
     // use the cache dir
     const tmp_dir: string = config.local_file_system.cache_path;
     

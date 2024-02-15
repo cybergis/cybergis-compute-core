@@ -1,12 +1,12 @@
 import SingularityConnector from "../connectors/SingularityConnector";
-import BaseMaintainer from "./BaseMaintainer";
-import XSEDEUtil from "../lib/XSEDEUtil";
-import { ResultFolderContentManager } from "../lib/JobUtil";
-import { executableManifest, GitFolder } from "../types";
-import GitUtil from "../lib/GitUtil";
-import { Git } from "../models/Git";
-import { Folder } from "../models/Folder";
 import { FolderUploaderHelper } from "../FolderUploader";
+import GitUtil from "../lib/GitUtil";
+import { ResultFolderContentManager } from "../lib/JobUtil";
+import XSEDEUtil from "../lib/XSEDEUtil";
+import { Folder } from "../models/Folder";
+import { Git } from "../models/Git";
+import { executableManifest, GitFolder } from "../types";
+import BaseMaintainer from "./BaseMaintainer";
 
 /**
  * Specialized maintainer for handling jobs submitted to community HPCs (no login). Inherits from BaseMaintainer.
@@ -179,7 +179,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
           contents.sort((a, b) =>
             a === defaultResultFolderDownloadablePath ? -1 : (b === defaultResultFolderDownloadablePath ? 1 : 0)
           );
-          if (defaultResultFolderDownloadablePath[0] !== "/") {
+          if (!defaultResultFolderDownloadablePath.startsWith("/")) {
             defaultResultFolderDownloadablePath = `/${defaultResultFolderDownloadablePath}`;
             contents.sort((a, b) =>
               a === defaultResultFolderDownloadablePath ? -1 : (b === defaultResultFolderDownloadablePath ? 1 : 0)

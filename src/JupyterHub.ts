@@ -1,12 +1,12 @@
-import Helper from "./Helper";
 import axios from "axios";
 import * as path from "path";
 import { jupyterGlobusMap } from "../configs/config";
+import Helper from "./Helper";
 
-declare type decodedToken = {
+declare interface decodedToken {
   host: string;
   token: string;
-};
+}
 
 /**
  * Handles interfacing with JupyterHub. 
@@ -20,16 +20,16 @@ class JupyterHub {
    *
    * @param {string} token the token for authorization to the jupterHub host
    * @throws {Error} jupyterhubHost must be in whitelist
-   * @return {Promise<string>} username
+   * @return {Promise<string | undefined>} username
    */
-  public async getUsername(token: string): Promise<string> {
+  public async getUsername(token: string): Promise<string | undefined> {
     const t = this._decodeToken(token);
     const protocols = ["https", "http"];
-    const hosts = Object.keys(JSON.parse(JSON.stringify(jupyterGlobusMap)));
+    const hosts = Object.keys(JSON.parse(JSON.stringify(jupyterGlobusMap)) as Record<string, unknown>);
     let flag = false;
 
-    for (const j in hosts) {
-      if (t.host === hosts[j]) {
+    for (const host of hosts) {
+      if (t.host === host) {
         flag = true;
       }
     }
@@ -38,9 +38,8 @@ class JupyterHub {
       throw new Error("Cannot find jupyterhubHost in whitelist");
     }
 
-    let user: string = undefined;
-    for (const i in protocols) {
-      const protocol = protocols[i];
+    let user: string | undefined = undefined;
+    for (const protocol of protocols) {
       try {
         const res = await axios.get(
           `${protocol}://${path.join(t.host, this.basePath, "/user")}`,
@@ -48,7 +47,10 @@ class JupyterHub {
             headers: { Authorization: `token ${t.token}` },
           }
         );
-        user = `${res.data.name}@${t.host}`;
+      
+        const data = res.data as { name: string };
+
+        user = `${data.name}@${t.host}`;
         break;
       } catch {}
     }
@@ -62,7 +64,7 @@ class JupyterHub {
    * @param {string} token
    * @return {string} 
    */
-  public async getHost(token: string): Promise<string> {
+  public getHost(token: string): string {
     const t = this._decodeToken(token);
     return t.host;
   }

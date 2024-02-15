@@ -1,11 +1,11 @@
-import DB from "../DB";
-import FolderUtil from "./FolderUtil";
-import { Git } from "../models/Git";
 import { exec } from "child-process-async";
+import rimraf from "rimraf";
 import * as fs from "fs";
 import * as path from "path";
 import { config } from "../../configs/config";
-import {
+import DB from "../DB";
+import { Git } from "../models/Git";
+import type {
   executableManifest,
   slurm_configs,
   slurm_integer_configs,
@@ -14,7 +14,7 @@ import {
   slurm_integer_time_unit_config,
   slurm_string_option_configs,
 } from "../types";
-import rimraf = require("rimraf");
+import FolderUtil from "./FolderUtil";
 
 /**
  * 
@@ -76,6 +76,62 @@ export default class GitUtil {
       // check when last updated if you can. If updatedAt is null this throws error
       secsSinceUpdate = (now.getTime() - git.updatedAt.getTime()) / 1000.0;
     } catch {}
+    
+    if (secsSinceUpdate > 120) {
+      console.log(`${git.id} is stale, let's update...`);
+      // update git repo before upload
+      try {
+        // try checking out the sha or pulling latest
+        if (git.sha) {
+          await exec(`cd ${localPath} && git checkout ${git.sha}`);
+        } else {
+          await exec(`cd ${localPath} && git pull`);
+        }
+      } catch {
+        // if there is an error, delete and repull
+        await this.deleteAndPull(git);
+      }
+      // call to update the updatedAt timestamp
+      now = new Date();
+      const db = new DB(false);
+      const connection = await db.connect();
+      await connection
+        .createQueryBuilder()
+        .update(Git)
+        .where("id = :id", { id: git.id })
+        .set({"updatedAt" : now})
+        .execute();
+    }
+    else {
+      console.log(`${git.id} last updated ${secsSinceUpdate}s ago, skipping update`);
+    }
+  }
+
+  /**
+   * Repulls only the repository of a git repo if it is out of date and records it in git database.
+   *
+   * @static
+   * @param {Git} git
+   */
+  static async refreshGitManifest(git: Git) {
+    const localPath = this.getLocalPath(git.id);
+    await FolderUtil.removeZip(localPath);
+    
+    // clone if git repo not exits locally
+    if (!fs.existsSync(localPath)) {
+      await fs.promises.mkdir(localPath);
+      await exec(`cd ${localPath} && git clone ${git.address} ${localPath}`);
+    }
+
+    //check when last updated
+    let now = new Date();
+    // set to a large number so that we update if the check fails
+    let secsSinceUpdate = 1000000;
+    try {
+      // check when last updated if you can. If updatedAt is null this throws error
+      secsSinceUpdate = (now.getTime() - git.updatedAt.getTime()) / 1000.0;
+    } catch {}
+
     if (secsSinceUpdate > 120) {
       console.log(`${git.id} is stale, let's update...`);
       // update git repo before upload

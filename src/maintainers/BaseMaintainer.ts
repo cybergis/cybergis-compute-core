@@ -1,4 +1,16 @@
+import validator from "validator";
+import {
+  config,
+  hpcConfigMap,
+  maintainerConfigMap,
+} from "../../configs/config";
+import BaseConnector from "../connectors/BaseConnector";
+import SingularityConnector from "../connectors/SingularityConnector";
+import SlurmConnector from "../connectors/SlurmConnector";
+import DB from "../DB";
+import { NotImplementedError } from "../errors";
 import { Job } from "../models/Job";
+import Supervisor from "../Supervisor";
 import {
   maintainerConfig,
   event,
@@ -6,18 +18,6 @@ import {
   jobMaintainerUpdatable,
   hpcConfig,
 } from "../types";
-import BaseConnector from "../connectors/BaseConnector";
-import SlurmConnector from "../connectors/SlurmConnector";
-import validator from "validator";
-import { NotImplementedError } from "../errors";
-import {
-  config,
-  hpcConfigMap,
-  maintainerConfigMap,
-} from "../../configs/config";
-import SingularityConnector from "../connectors/SingularityConnector";
-import Supervisor from "../Supervisor";
-import DB from "../DB";
 
 /**
  * This is an abstract class for compute core job maintainers, which are responsible for submitting jobs and monitoring them.
@@ -56,19 +56,19 @@ class BaseMaintainer {
   public maintainThresholdInHours = 100000; // something super large
 
   // optional parameter validators for derivec classes
-  public envParamValidators: { [keys: string]: (_val: string) => boolean } =
+  public envParamValidators: Record<string, (_val: string) => boolean> =
     undefined;
-  public envParamDefault: { [keys: string]: string } = {};
-  public envParam: { [keys: string]: string } = {};
+  public envParamDefault: Record<string, string> = {};
+  public envParam: Record<string, string> = {};
   public appParamValidators = undefined;
-  public appParam: { [keys: string]: string } = {};
+  public appParam: Record<string, string> = {};
 
   /** HPC connectors **/
   public connector: BaseConnector | SlurmConnector = undefined;
 
   /** data **/
-  protected logs: Array<string> = [];
-  protected events: Array<event> = [];
+  protected logs: string[] = [];
+  protected events: event[] = [];
 
 
   /** constructor **/

@@ -1,18 +1,22 @@
-import Helper from "./Helper";
-import { credential } from "./types";
-import { config, hpcConfigMap } from "../configs/config";
 import NodeSSH = require("node-ssh");
 import redis = require("redis");
 import { promisify } from "util";
+import { config, hpcConfigMap } from "../configs/config";
+import Helper from "./Helper";
+import { credential } from "./types";
+
+type GetValueFunction = (_key: unknown) => Promise<string>;
+type SetValueFunction = (_key: unknown, _value: string) => Promise<string>;  // possibly not string
+type DelValueFunction = (_keys: unknown[]) => Promise<number>;
 
 /**
  * This is a helper class that interfaces with the redis credential manager store.
  */
 class CredentialManager {
-  private redis = {
-    getValue: null,
-    setValue: null,
-    delValue: null,
+  private redis_functions = {
+    getValue: null as GetValueFunction | null,
+    setValue: null as SetValueFunction | null,
+    delValue: null as DelValueFunction | null,
   };
 
   private isConnected = false;
@@ -25,7 +29,7 @@ class CredentialManager {
    */
   async add(key: string, cred: credential) {
     await this.connect();
-    await this.redis.setValue(key, JSON.stringify(cred));
+    await this.redis_functions.setValue!(key, JSON.stringify(cred));
   }
 
   /**
@@ -36,8 +40,16 @@ class CredentialManager {
    */
   async get(key: string): Promise<credential> {
     await this.connect();
-    return JSON.parse(await this.redis.getValue(key));
+    return JSON.parse(await this.redis_functions.getValue!(key)) as Promise<credential>;
   }
+
+  // TODO: rework this redis code to be less hacky
+  /* eslint-disable 
+    @typescript-eslint/no-unsafe-assignment, 
+    @typescript-eslint/no-unsafe-argument, 
+    @typescript-eslint/no-unsafe-member-access, 
+    @typescript-eslint/no-unsafe-call 
+  */
 
   /**
    * Establishes a connection with the redis client.
@@ -57,11 +69,18 @@ class CredentialManager {
       await redisAuth(config.redis.password);
     }
 
-    this.redis.getValue = promisify(client.get).bind(client);
-    this.redis.setValue = promisify(client.set).bind(client);
-    this.redis.delValue = promisify(client.del).bind(client);
+    this.redis_functions.getValue = promisify(client.get).bind(client);
+    this.redis_functions.setValue = promisify(client.set).bind(client);
+    this.redis_functions.delValue = promisify(client.del).bind(client);
     this.isConnected = true;
   }
+
+  /* eslint-disable 
+    @typescript-eslint/no-unsafe-assignment, 
+    @typescript-eslint/no-unsafe-argument, 
+    @typescript-eslint/no-unsafe-member-access, 
+    @typescript-eslint/no-unsafe-call 
+  */
 }
 
 
@@ -92,7 +111,7 @@ class SSHCredentialGuard {
         // user: user,
         password: password,
       });
-      await this.ssh.dispose();
+      this.ssh.dispose();
     } catch (e) {
       throw new Error(`unable to check credentials with ${hpcName}`);
     }
@@ -105,9 +124,9 @@ class SSHCredentialGuard {
    * @param {string} password
    * @return {Promise<string>} the assigned redis key/id
    */
-  async registerCredential(user: string, password: string): Promise<string> {
+  async registerCredential(user: string | undefined, password: string | undefined): Promise<string> {
     const credentialId = Helper.generateId();
-    this.credentialManager.add(credentialId, {
+    await this.credentialManager.add(credentialId, {
       id: credentialId,
       user: user,
       password: password,

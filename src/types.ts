@@ -102,8 +102,8 @@ export interface secretToken {
 
 export interface credential {
   id: string;
-  user: string;
-  password: string;
+  user?: string;
+  password?: string;
 }
 
 export interface slurm {

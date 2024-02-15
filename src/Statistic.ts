@@ -36,17 +36,17 @@ export default class Statistic {
    *
    * @return {{ [key: string]: number } | null} dictionary of results, including total and statistics by HPC
    */
-  public async getRuntimeTotal(): Promise<{ [key: string]: number } | null> {
+  public async getRuntimeTotal(): Promise<Record<string, number> | null> {
     const connection = await this.db.connect();
 
-    const statisticTotal = await connection
+    const statisticTotal: null | { STATISTIC: string } | undefined = await connection
       .getRepository(Job)
       .createQueryBuilder("job")
       .select("SUM(ABS(job.initializedAt - job.finishedAt)) as STATISTIC")
       .where("job.initializedAt IS NOT NULL AND job.finishedAt IS NOT NULL")
       .getRawOne();
 
-    const statisticByHPC = await connection
+    const statisticByHPC: { STATISTIC: string, HPC: string }[] | null | undefined = await connection
       .getRepository(Job)
       .createQueryBuilder("job")
       .select(
@@ -58,12 +58,12 @@ export default class Statistic {
 
     if (statisticTotal && statisticByHPC) {
       const out = {
-        total: parseInt(statisticTotal["STATISTIC"]),
+        total: parseInt(statisticTotal.STATISTIC),
       };
 
-      for (const i in statisticByHPC) {
-        out[statisticByHPC[i]["HPC"]] = parseInt(
-          statisticByHPC[i]["STATISTIC"]
+      for (const statistic of statisticByHPC) {
+        out[statistic.HPC] = parseInt(
+          statistic.STATISTIC
         );
       }
 

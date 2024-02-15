@@ -1,10 +1,10 @@
-import { GlobusTransferRefreshToken } from "../models/GlobusTransferRefreshToken";
-import PythonUtil from "./PythonUtil";
-import { config } from "../../configs/config";
-import { GlobusFolder, hpcConfig } from "../types";
-import DB from "../DB";
 import redis = require("redis");
 import { promisify } from "util";
+import { config } from "../../configs/config";
+import DB from "../DB";
+import { GlobusTransferRefreshToken } from "../models/GlobusTransferRefreshToken";
+import { GlobusFolder, hpcConfig } from "../types";
+import PythonUtil from "./PythonUtil";
 
 /**
  * Class for managing globus tasks, TODO: port the python scripts to the JS Globus SDK (https://www.globus.org/blog/globus-javascript-sdk-now-available)
@@ -101,7 +101,7 @@ export default class GlobusUtil {
     from: GlobusFolder,
     to: GlobusFolder,
     hpcConfig: hpcConfig,
-    label: string = ""
+    label = ""
   ): Promise<string> {
     const connection = await this.db.connect();
     const globusTransferRefreshTokenRepo = connection.getRepository(
@@ -131,10 +131,10 @@ export default class GlobusUtil {
       throw new Error(`Globus query status failed with error: ${e}`);
     }
 
-    if (!out["task_id"])
-      throw new Error(`cannot initialize Globus job: ${out["error"]}`);
+    if (!out.task_id)
+      throw new Error(`cannot initialize Globus job: ${out.error}`);
 
-    return out["task_id"];
+    return out.task_id;
   }
 
   /**
@@ -176,7 +176,7 @@ export default class GlobusUtil {
    */
   static async mapUsername(
     initial_username: string,
-    mapping_func: string
+    mapping_func: string | undefined
   ): Promise<string> {
     let username;
     try {
@@ -189,7 +189,7 @@ export default class GlobusUtil {
       throw new Error(`Jupyter-Globus mapping failed with error: ${e}`);
     }
 
-    return username["mapped_username"];
+    return username.mapped_username;
   }
   /**
    * @static
@@ -225,6 +225,6 @@ export default class GlobusUtil {
       throw new Error(`Globus query status failed with error: ${e}`);
     }
 
-    return out["status"];
+    return out.status;
   }
 }

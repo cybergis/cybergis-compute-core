@@ -1,7 +1,7 @@
-import * as fs from "fs";
 import { spawn } from "child_process";
-import { FileNotExistError } from "../errors";
+import * as fs from "fs";
 import * as path from "path";
+import { FileNotExistError } from "../errors";
 
 /**
  * Utility class for dealing with (zipped) files. 

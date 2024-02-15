@@ -1,7 +1,7 @@
-import SlurmConnector from "./SlurmConnector";
-import { slurm, executableManifest } from "../types";
-import { containerConfigMap, hpcConfigMap, kernelConfigMap} from "../../configs/config";
 import * as path from "path";
+import { containerConfigMap, hpcConfigMap, kernelConfigMap} from "../../configs/config";
+import { slurm, executableManifest } from "../types";
+import SlurmConnector from "./SlurmConnector";
 // import { kernelConfig } from "../types";
 
 /**
@@ -12,7 +12,7 @@ import * as path from "path";
  */
 class SingularityConnector extends SlurmConnector {
 
-  private volumeBinds: { [keys: string]: string } = {};
+  private volumeBinds: Record<string, string> = {};
   public isContainer = true;  // this is a container -- causes some changes in how job JSONs are generated
 
   /**
@@ -160,7 +160,7 @@ class SingularityConnector extends SlurmConnector {
    *
    * @param {{[keys: string]: string}} volumeBinds - volumeBinds that need to be registered
    */
-  registerContainerVolumeBinds(volumeBinds: { [keys: string]: string }) {
+  registerContainerVolumeBinds(volumeBinds: Record<string, string>) {
     for (const from in volumeBinds) {
       const to = volumeBinds[from];
       this.volumeBinds[from] = to;
@@ -176,7 +176,7 @@ class SingularityConnector extends SlurmConnector {
    */
   private _getVolumeBindCMD(manifest: executableManifest | null = null): string {
     if (this.is_cvmfs){
-      this.volumeBinds["$tmp_path"] = this.getContainerCVMFSFolderPath();
+      this.volumeBinds.$tmp_path = this.getContainerCVMFSFolderPath();
     }
 
     this.volumeBinds[this.getRemoteExecutableFolderPath()] =
@@ -205,7 +205,7 @@ class SingularityConnector extends SlurmConnector {
       }
     }
 
-    const bindCMD: Array<string> = [];
+    const bindCMD: string[] = [];
     for (const from in this.volumeBinds) {
       const to = this.volumeBinds[from];
       bindCMD.push(`${from}:${to}`);

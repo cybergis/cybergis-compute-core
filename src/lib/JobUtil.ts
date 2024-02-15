@@ -1,20 +1,20 @@
+import redis = require("redis");
+import { promisify } from "util";
+import {
+  hpcConfigMap,
+  // jupyterGlobusMap,
+  // maintainerConfigMap,
+  config } from "../../configs/config";
+
+// import path = require("path");
+import DB from "../DB";
+import { Job } from "../models/Job";
 import {
   slurm_integer_storage_unit_config,
   slurm_integer_time_unit_config,
   slurmInputRules,
   slurm_integer_configs,
 } from "../types";
-import { Job } from "../models/Job";
-import {
-  hpcConfigMap,
-  // jupyterGlobusMap,
-  // maintainerConfigMap,
-} from "../../configs/config";
-import { config } from "../../configs/config";
-// import path = require("path");
-import DB from "../DB";
-import redis = require("redis");
-import { promisify } from "util";
 
 /**
  * Helper class to interface with the jobs redis result folder.
@@ -106,7 +106,7 @@ export default class JobUtil {
    * @param { [keys: string]: unknown } paramRules - Parameter rules for this job
    * @throws Job must have a complete parameter list
    */
-  static validateParam(job: Job, paramRules: { [keys: string]: unknown }) {
+  static validateParam(job: Job, paramRules: Record<string, unknown>) {
     for (const i in paramRules) {
       if (!job.param[i]) {
         throw new Error(`job missing input param ${i}`);
@@ -181,7 +181,7 @@ export default class JobUtil {
   static async validateJob(job: Job) {
     // create slurm config rules
     const providedSlurmInputRules: slurmInputRules = {};
-    const providedParamRules: { [keys: string]: unknown } = {};
+    const providedParamRules: Record<string, unknown> = {};
     const requireUploadData = false;
 
     if (requireUploadData && !job.localDataFolder && !job.remoteDataFolder) {
