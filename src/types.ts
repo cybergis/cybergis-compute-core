@@ -199,9 +199,9 @@ export interface hpcConfig {
   init_sbatch_options: string[];
   description?: string;
   globus?: {
-    identity?: string;
-    endpoint?: string;
-    root_path?: string;
+    identity: string;
+    endpoint: string;
+    root_path: string;
   };
   mount: Record<string, string>;
   slurm_input_rules?: slurmInputRules;
@@ -319,23 +319,28 @@ export interface jobMaintainerUpdatable {
 
 export interface GlobusFolder {
   type?: string;
-  endpoint?: string;
-  path?: string;
+  endpoint: string;
+  path: string;
 }
 
 export interface GitFolder {
   type?: string;
-  gitId?: string;
+  gitId: string;
 }
 
-export interface LocalFolder {
-  type?: string;
+interface LocalFolderType {
+  type: string;
   localPath?: string;
 }
+interface LocalFolderPath {
+  localPath: string;
+  type?: string;
+}
+export type LocalFolder = LocalFolderType | LocalFolderPath;
 
 export interface folderEditable {
-  name?: string;
-  isWritable?: boolean;
+  name: string;
+  isWritable: boolean;
 }
 
 export type NeedUploadFolder = GlobusFolder | GitFolder | LocalFolder;
@@ -376,3 +381,12 @@ export interface updateJobBody {
     remoteDataFolder?: object,
     remoteExecutableFolder?: object,
 }
+
+export type PushFunction = (_args: unknown[]) => Promise<number>;
+export type ShiftFunction = (_key: unknown) => Promise<unknown>;
+export type PeekFunction = (_key: unknown, _start: number, _end: number) => Promise<unknown>;
+export type LengthFunction = (_key: unknown) => Promise<number>;
+
+export type GetValueFunction = (_key: unknown) => Promise<string>;
+export type SetValueFunction = (_key: unknown, _value: string) => Promise<string>;  // possibly not string
+export type DelValueFunction = (_keys: unknown) => Promise<number>;
