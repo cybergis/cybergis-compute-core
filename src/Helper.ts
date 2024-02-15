@@ -159,10 +159,8 @@ var Helper = {
     const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
     var wait = 0;
     var end = false;
-    console.error("here");
 
     while (true && !end) {
-      console.error(wait);
       if (wait > 100) {
         throw new Error("The function was attempted too mant times unsuccessfully");
       }
