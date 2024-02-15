@@ -9,6 +9,7 @@ import SingularityConnector from "../connectors/SingularityConnector";
 import SlurmConnector from "../connectors/SlurmConnector";
 import DB from "../DB";
 import { NotImplementedError } from "../errors";
+import Helper from "../Helper";
 import { Job } from "../models/Job";
 import Supervisor from "../Supervisor";
 import {
@@ -28,14 +29,14 @@ class BaseMaintainer {
 
   /** packages **/
   public validator = validator; // https://github.com/validatorjs/validator.js
-  public db: DB = undefined;
+  public db: DB;
 
   /** config **/
-  public job: Job = undefined;
-  public hpc: hpcConfig = undefined;
-  public config: maintainerConfig = undefined;
-  public id: string = undefined;
-  public slurm: slurm = undefined;
+  public job: Job;
+  public hpc: hpcConfig | undefined = undefined;
+  public config: maintainerConfig | undefined = undefined;
+  public id: string | undefined = undefined;
+  public slurm: slurm | undefined = undefined;
 
   /** mutex **/
   private _lock = false;
@@ -48,7 +49,7 @@ class BaseMaintainer {
 
   protected lifeCycleState = {
     initCounter: 0,
-    createdAt: null,
+    createdAt: null as null | number,
   };
 
   /** parameters **/
@@ -56,7 +57,7 @@ class BaseMaintainer {
   public maintainThresholdInHours = 100000; // something super large
 
   // optional parameter validators for derivec classes
-  public envParamValidators: Record<string, (_val: string) => boolean> =
+  public envParamValidators: Record<string, (_val: string) => boolean> | undefined =
     undefined;
   public envParamDefault: Record<string, string> = {};
   public envParam: Record<string, string> = {};
@@ -64,7 +65,7 @@ class BaseMaintainer {
   public appParam: Record<string, string> = {};
 
   /** HPC connectors **/
-  public connector: BaseConnector | SlurmConnector = undefined;
+  public connector: BaseConnector | SlurmConnector | undefined = undefined;
 
   /** data **/
   protected logs: string[] = [];
@@ -112,7 +113,7 @@ class BaseMaintainer {
    *
    * @throws {NotImplementedError} - Oninit is not implemented
    */
-  async onInit() {
+  async onInit() {  // eslint-disable-line
     throw new NotImplementedError("onInit not implemented");
   }
 
@@ -121,7 +122,7 @@ class BaseMaintainer {
    *
    * @throws {NotImplementedError} - Onmaintain is not implemented
    */
-  async onMaintain() {
+  async onMaintain() {  // eslint-disable-line
     throw new NotImplementedError("onMaintain not implemented");
   }
 
@@ -130,7 +131,7 @@ class BaseMaintainer {
    *
    * @throws {NotImplementedError} - Onpause is not implemented
    */
-  async onPause() {
+  async onPause() {  // eslint-disable-line
     throw new NotImplementedError("onPause not implemented");
   }
 
@@ -139,7 +140,7 @@ class BaseMaintainer {
    *
    * @throws {NotImplementedError} - Onresume is not implemented
    */
-  async onResume() {
+  async onResume() {  // eslint-disable-line
     throw new NotImplementedError("onResume not implemented");
   }
 
@@ -148,7 +149,7 @@ class BaseMaintainer {
    *
    * @throws {NotImplementedError} - Oncancel is not implemented
    */
-  async onCancel() {
+  async onCancel() {  // eslint-disable-line
     throw new NotImplementedError("onCancel not implemented");
   }
 
@@ -229,7 +230,7 @@ class BaseMaintainer {
       try {
         await this.onMaintain();
       } catch (e) {
-        if (config.is_testing) console.error(e.toString()); // ignore error
+        if (config.is_testing) console.error(Helper.assertError(e).toString()); // ignore error
       }
     }
 
@@ -276,7 +277,7 @@ class BaseMaintainer {
       .set(job)
       .execute();
     const jobRepo = connection.getRepository(Job);
-    this.job = await jobRepo.findOne(this.id);
+    this.job = (await jobRepo.findOne(this.id))!;
   }
 
   /**
@@ -321,7 +322,7 @@ class BaseMaintainer {
   }
 
   /**
-   * Return the base connector associated with this job and hpc.
+   * Return the base connector associated with this job and hpc. Never used. 
    *
    * @public
    * @returns {BaseConnector} - The base connector associated with this job.

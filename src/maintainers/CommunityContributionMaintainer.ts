@@ -1,5 +1,6 @@
 import SingularityConnector from "../connectors/SingularityConnector";
 import { FolderUploaderHelper } from "../FolderUploader";
+import Helper from "../Helper";
 import GitUtil from "../lib/GitUtil";
 import { ResultFolderContentManager } from "../lib/JobUtil";
 import XSEDEUtil from "../lib/XSEDEUtil";
@@ -61,14 +62,14 @@ class CommunityContributionMaintainer extends BaseMaintainer {
       let uploader = await FolderUploaderHelper.upload(
         this.job.localExecutableFolder,
         this.job.hpc,
-        this.job.userId,
+        this.job.userId!,
         this.job.id,
         this.connector
       );
       this.connector.setRemoteExecutableFolderPath(uploader.hpcPath);
-      this.job.remoteExecutableFolder = await connection
+      this.job.remoteExecutableFolder = (await connection
         .getRepository(Folder)
-        .findOne(uploader.id);
+        .findOne(uploader.id))!;
 
       // upload data folder
       if (this.job.localDataFolder) {
@@ -76,14 +77,15 @@ class CommunityContributionMaintainer extends BaseMaintainer {
         uploader = await FolderUploaderHelper.upload(
           this.job.localDataFolder,
           this.job.hpc,
-          this.job.userId,
+          this.job.userId!,
           this.job.id,
           this.connector
         );
+
         this.connector.setRemoteDataFolderPath(uploader.hpcPath);
-        this.job.remoteDataFolder = await connection
+        this.job.remoteDataFolder = (await connection
           .getRepository(Folder)
-          .findOne(uploader.id);
+          .findOne(uploader.id))!;
       } else if (this.job.remoteDataFolder) {
         this.connector.setRemoteDataFolderPath(
           this.job.remoteDataFolder.hpcPath
@@ -95,14 +97,14 @@ class CommunityContributionMaintainer extends BaseMaintainer {
       uploader = await FolderUploaderHelper.upload(
         { type: "empty" },
         this.job.hpc,
-        this.job.userId,
+        this.job.userId!,
         this.job.id,
         this.connector
       );
       this.connector.setRemoteResultFolderPath(uploader.hpcPath);
-      this.job.remoteResultFolder = await connection
+      this.job.remoteResultFolder = (await connection
         .getRepository(Folder)
-        .findOne(uploader.id);
+        .findOne(uploader.id))!;
 
       // update job
       await this.updateJob({
@@ -112,9 +114,9 @@ class CommunityContributionMaintainer extends BaseMaintainer {
       });
 
       // submit job
-      await this.connector.execExecutableManifestWithinImage(
+      this.connector.execExecutableManifestWithinImage(
         this.executableManifest,
-        this.slurm
+        this.slurm!
       );
       await this.connector.submit();
 
@@ -125,11 +127,11 @@ class CommunityContributionMaintainer extends BaseMaintainer {
       );
 
       // log on xsede
-      XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc, this.job);
+      await XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc!, this.job);
     } catch (e) {
       this.emitEvent(
         "JOB_RETRY",
-        "job [" + this.id + "] encountered system error " + e.toString()
+        "job [" + this.id + "] encountered system error " + Helper.assertError(e).toString()
       );
     }
   }
@@ -162,10 +164,10 @@ class CommunityContributionMaintainer extends BaseMaintainer {
         // update job usage
         this.emitEvent("JOB_ENDED", "job [" + this.id + "] finished");
         const usage = await this.connector.getUsage();
-        this.updateJob(usage);
+        await this.updateJob(usage);
 
         // submit again to XSEDE
-        XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc, this.job); // for backup submit
+        await XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc!, this.job); // for backup submit
 
         // fetch result folder content
         // TODO: make this shorter
@@ -188,13 +190,13 @@ class CommunityContributionMaintainer extends BaseMaintainer {
         }
 
         // update redis with this job's contents
-        await this.resultFolderContentManager.put(this.id, contents);
+        await this.resultFolderContentManager.put(this.id!, contents);
       }
     } catch (e) {
       // try to retry job if something goes wrong
       this.emitEvent(
         "JOB_RETRY",
-        "job [" + this.id + "] encountered system error " + e.toString()
+        "job [" + this.id + "] encountered system error " + Helper.assertError(e).toString()
       );
     }
   }
