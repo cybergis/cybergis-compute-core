@@ -1,7 +1,7 @@
 import SingularityConnector from "../connectors/SingularityConnector";
 import { FolderUploaderHelper } from "../FolderUploader";
-import * as Helper from "../Helper";
 import GitUtil from "../lib/GitUtil";
+import * as Helper from "../lib/Helper";
 import { ResultFolderContentManager } from "../lib/JobUtil";
 import XSEDEUtil from "../lib/XSEDEUtil";
 import { Folder } from "../models/Folder";
@@ -26,7 +26,8 @@ class CommunityContributionMaintainer extends BaseMaintainer {
   }
 
   /**
-   * On maintainer initialization, set executableManifest, and give it to the connector. Update the event log to reflect the job being initialized or encountering a system error.
+   * On maintainer initialization, set executableManifest, and give it to the connector. 
+   * Update the event log to reflect the job being initialized or encountering a system error.
    *
    * @async
    */
@@ -47,7 +48,9 @@ class CommunityContributionMaintainer extends BaseMaintainer {
         .findOne((localExecutableFolder as GitFolder).gitId);
       if (!git)
         throw new Error("could not find git repo executable in this job");
-      this.executableManifest = await GitUtil.getExecutableManifest(git);
+      this.executableManifest = (
+        await GitUtil.getExecutableManifestSpecialized(git)
+      );
       
       // overwrite default singularity connector if cvmfs needs to be turned on
       if (this.executableManifest.connector === "SingCVMFSConnector"){
@@ -58,7 +61,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
       if (!this.job.localExecutableFolder)
         throw new Error("job.localExecutableFolder is required");
 
-      Helper.nullGuard<string>(this.job.userId);
+      Helper.nullGuard(this.job.userId);
       
       this.emitEvent("SLURM_UPLOAD_EXECUTABLE", "uploading executable folder");  // isn't this SCP?
       let uploader = await FolderUploaderHelper.upload(
@@ -68,6 +71,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
         this.job.id,
         this.connector
       );
+      
       this.connector.setRemoteExecutableFolderPath(uploader.hpcPath);
       this.job.remoteExecutableFolder = (await connection
         .getRepository(Folder)

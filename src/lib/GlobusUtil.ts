@@ -2,7 +2,6 @@ import redis = require("redis");
 import { promisify } from "util";
 import { config } from "../../configs/config";
 import DB from "../DB";
-import * as Helper from "../Helper";
 import { GlobusTransferRefreshToken } from 
   "../models/GlobusTransferRefreshToken";
 import { GlobusFolder, 
@@ -10,6 +9,7 @@ import { GlobusFolder,
   GetValueFunction, 
   SetValueFunction,
   DelValueFunction } from "../types";
+import * as Helper from "./Helper";
 import PythonUtil from "./PythonUtil";
 
 /**
@@ -155,8 +155,7 @@ export default class GlobusUtil {
       throw new Error(`Globus query status failed with error: ${e}`);
     }
 
-    if (!out.task_id)
-      throw new Error(`cannot initialize Globus job: ${out.error as string}`);
+    Helper.nullGuard(out.task_id);
 
     return out.task_id as string;
   }

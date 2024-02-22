@@ -8,8 +8,7 @@ import BaseConnector from "../connectors/BaseConnector";
 import SingularityConnector from "../connectors/SingularityConnector";
 import SlurmConnector from "../connectors/SlurmConnector";
 import DB from "../DB";
-import { NotImplementedError } from "../errors";
-import * as Helper from "../Helper";
+import * as Helper from "../lib/Helper";
 import { Job } from "../models/Job";
 import Supervisor from "../Supervisor";
 import {
@@ -23,7 +22,7 @@ import {
 /**
  * This is an abstract class for compute core job maintainers, which are responsible for submitting jobs and monitoring them.
  */
-class BaseMaintainer {
+abstract class BaseMaintainer {
   /** parent pointer **/
   public supervisor: Supervisor;
 
@@ -34,7 +33,7 @@ class BaseMaintainer {
   /** config **/
   public job: Job;
   public hpc: hpcConfig | undefined = undefined;
-  public config: maintainerConfig | undefined = undefined;
+  public maintainerConfig: maintainerConfig | undefined = undefined;
   public id: string | undefined = undefined;
   public slurm: slurm | undefined = undefined;
 
@@ -65,7 +64,7 @@ class BaseMaintainer {
   public appParam: Record<string, string> = {};
 
   /** HPC connectors **/
-  public connector: BaseConnector | SlurmConnector | undefined = undefined;
+  public connector: BaseConnector | undefined = undefined;
 
   /** data **/
   protected logs: string[] = [];
@@ -84,74 +83,62 @@ class BaseMaintainer {
     
     // instantiate class variables
     this.job = job;
-    this.config = maintainerConfigMap[job.maintainer];
+    this.maintainerConfig = maintainerConfigMap[job.maintainer];
     this.id = job.id;
     this.slurm = job.slurm;
     this.db = new DB();
 
     // determine if the current hpc exists within the config
-    const hpc = job.hpc ? job.hpc : this.config.default_hpc;
+    const hpc = job.hpc ? job.hpc : this.maintainerConfig.default_hpc;
     this.hpc = hpcConfigMap[hpc];
     if (!this.hpc) throw new Error("cannot find hpc with name [" + hpc + "]");
 
     this.onDefine();  // can't instantiate this class, abstract
   }
 
-  /** lifecycle interfaces **/
+  /** abstract lifecycle interfaces **/
 
   /**
-   * Throw execption when ondefine not implemented
-   *
-   * @throws {NotImplementedError} - Ondefine is not implemented
+   * This function is called when the maintainer is created (during the constructor). Can leave empty. 
    */
-  onDefine() {
-    throw new NotImplementedError("onDefine not implemented");
-  }
+  abstract onDefine(): void;
 
   /**
-   * Throw execption when oninit not implemented
-   *
-   * @throws {NotImplementedError} - Oninit is not implemented
+   * This function is called when the maintainer is initialized--i.e., it begins work on maintaining the job. Called in the supervisor-facing
+   * init() function. 
+   * 
+   * @async
    */
-  async onInit() {  // eslint-disable-line
-    throw new NotImplementedError("onInit not implemented");
-  }
+  abstract onInit(): Promise<void>;
 
   /**
-   * Throw execption when onmaintain not implemented
-   *
-   * @throws {NotImplementedError} - Onmaintain is not implemented
+   * This function is called when the supervisor-facing maintain() function is called to maintain (monitor the status of) the job. 
+   * 
+   * @async
    */
-  async onMaintain() {  // eslint-disable-line
-    throw new NotImplementedError("onMaintain not implemented");
-  }
+  abstract onMaintain(): Promise<void>;
 
   /**
-   * Throw execption when onpause not implemented
-   *
-   * @throws {NotImplementedError} - Onpause is not implemented
+   * This function is called when the supervisor tries to pause the current job/maintainer. Not used.
+   * 
+   * @async
    */
-  async onPause() {  // eslint-disable-line
-    throw new NotImplementedError("onPause not implemented");
-  }
+  abstract onPause(): Promise<void>;
 
   /**
-   * Throw execption when onresume not implemented
-   *
-   * @throws {NotImplementedError} - Onresume is not implemented
+   * This function is called when the supervisor tries to resume the current job/maintainer after pause. Not used.
+   * 
+   * @async
    */
-  async onResume() {  // eslint-disable-line
-    throw new NotImplementedError("onResume not implemented");
-  }
+  abstract onResume(): Promise<void>;
 
   /**
-   * Throw execption when oncancel not implemented
-   *
-   * @throws {NotImplementedError} - Oncancel is not implemented
+   * This function is called when the supervisor tries to cancel the current job/maintainer.
+   * TODO: make a corresponding supervisor-facing function to be nore inline with the other onX functions.
+   * 
+   * @async
    */
-  async onCancel() {  // eslint-disable-line
-    throw new NotImplementedError("onCancel not implemented");
-  }
+  abstract onCancel(): Promise<void>;
 
   /** emitters **/
   /**

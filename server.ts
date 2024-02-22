@@ -17,10 +17,10 @@ import {
   jupyterGlobusMap
 } from "./configs/config";
 import DB from "./src/DB";
-import * as Helper from "./src/Helper";
 import JupyterHub from "./src/JupyterHub";
 import GitUtil from "./src/lib/GitUtil";
 import GlobusUtil, { GlobusTaskListManager } from "./src/lib/GlobusUtil";
+import * as Helper from "./src/lib/Helper";
 import JobUtil, { ResultFolderContentManager } from "./src/lib/JobUtil";
 import { Folder } from "./src/models/Folder";
 import { Git } from "./src/models/Git";
@@ -617,8 +617,11 @@ app.get("/git", async function (req, res) {
     for (const d of dest) {
       try {
         // refresh git (updating the database), then get the manifest.json from the repo and append it
-        await GitUtil.refreshGit(d);
-        out[d.id] = await GitUtil.getExecutableManifest(d);
+        // await GitUtil.refreshGit(d);
+        // out[d.id] = await GitUtil.getExecutableManifest(d);
+
+        await GitUtil.refreshGitManifest(d);
+        out[d.id] = await GitUtil.getExecutableManifestSpecialized(d);
       } catch (e) {  // pulling/cloning went wrong
         console.error(`cannot clone git: ${Helper.assertError(e).toString()}`);
       }
@@ -1244,7 +1247,7 @@ app.put("/job/:jobId/cancel", function (req, res) {
   if (!res.locals.username) {
     res
       .status(401)
-      .json({ error: "submit without login is not allowed", messages: [] });
+      .json({ error: "cancel without login is not allowed", messages: [] });
     return;
   }
 
@@ -1287,7 +1290,7 @@ app.get("/job/:jobId/events", authMiddleWare, async function (req, res) {
   if (!res.locals.username) {
     res
       .status(401)
-      .json({ error: "submit without login is not allowed", messages: [] });
+      .json({ error: "listing events without login is not allowed", messages: [] });
     return;
   }
 
@@ -1333,7 +1336,7 @@ app.get(
     if (!res.locals.username) {
       res
         .status(401)
-        .json({ error: "submit without login is not allowed", messages: [] });
+        .json({ error: "getting results without login is not allowed", messages: [] });
       return;
     }
 
@@ -1373,7 +1376,7 @@ app.get(
 app.get("/job/:jobId/logs", authMiddleWare, async function (req, res) {
   if (!res.locals.username) {
     res.status(401).json({ 
-      error: "submit without login is not allowed", 
+      error: "getting logs without login is not allowed", 
       messages: [] 
     });
     return;
@@ -1417,7 +1420,7 @@ app.get("/job/:jobId", authMiddleWare, async function (req, res) {
   if (!res.locals.username) {
     res
       .status(401)
-      .json({ error: "submit without login is not allowed", messages: [] });
+      .json({ error: "getting job info without login is not allowed", messages: [] });
     return;
   }
 

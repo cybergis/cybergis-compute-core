@@ -5,7 +5,7 @@ import { Job } from "./models/Job";
 import { Log } from "./models/Log";
 
 /**
- * This class abstracts away the "emission" of signals via mutations to the database. 
+ * This class abstracts away the "emission" of events/signals relating to job statuses via mutations to the database. 
  */
 class Emitter {
   private db = new DB();

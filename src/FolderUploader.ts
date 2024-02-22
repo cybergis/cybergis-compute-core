@@ -5,10 +5,10 @@ import BaseConnector from "./connectors/BaseConnector";
 import SingularityConnector from "./connectors/SingularityConnector";
 import SlurmConnector from "./connectors/SlurmConnector";
 import DB from "./DB";
-import * as Helper from "./Helper";
 import FolderUtil from "./lib/FolderUtil";
 import GitUtil from "./lib/GitUtil";
 import GlobusUtil from "./lib/GlobusUtil";
+import * as Helper from "./lib/Helper";
 import { Folder } from "./models/Folder";
 import { Git } from "./models/Git";
 import {
@@ -328,9 +328,7 @@ export class FolderUploaderHelper {
       break;
 
     case "empty":
-      if (!connector) {
-        throw new Error("NO connector provided for empty folder uploaded.");
-      }
+      Helper.nullGuard(connector);
       
       uploader = new EmptyFolderUploader(hpcName, userId, jobId, connector);
       await uploader.upload();

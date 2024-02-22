@@ -1,5 +1,5 @@
-import { hpcConfigMap, jupyterGlobusMap } from "../configs/config";
-import { Job } from "./models/Job";
+import { hpcConfigMap, jupyterGlobusMap } from "../../configs/config";
+import { Job } from "../models/Job";
 // import * as fs from "fs";
 
 

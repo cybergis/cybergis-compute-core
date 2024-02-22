@@ -1,7 +1,7 @@
 import * as path from "path";
 import { config } from "../../configs/config";
 import { ConnectorError } from "../errors";
-import * as Helper from "../Helper";
+import * as Helper from "../lib/Helper";
 import { slurm } from "../types";
 import BaseConnector from "./BaseConnector";
 // import { FolderUploaderHelper } from "../FolderUploader";
@@ -59,8 +59,8 @@ class SlurmConnector extends BaseConnector {
     this.template = `#!/bin/bash
 #SBATCH --job-name=${this.jobId}
 ${
-  this.config.init_sbatch_options
-    ? this.config.init_sbatch_options.join("\n")
+  this.connectorConfig.init_sbatch_options
+    ? this.connectorConfig.init_sbatch_options.join("\n")
     : ""
 }
 ${config.num_of_node ? `#SBATCH --nodes=${config.num_of_node}` : ""}
@@ -93,8 +93,8 @@ ${this.getSBatchTagsFromArray("mail-type", config.mail_type)}
 ${this.getSBatchTagsFromArray("mail-user", config.mail_user)}
 module purge
 ${
-  this.config.init_sbatch_script
-    ? this.config.init_sbatch_script.join("\n")
+  this.connectorConfig.init_sbatch_script
+    ? this.connectorConfig.init_sbatch_script.join("\n")
     : ""
 }
 ${modules}

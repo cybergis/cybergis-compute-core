@@ -3,8 +3,8 @@ import * as path from "path";
 import { config, hpcConfigMap } from "../../configs/config";
 import DB from "../DB";
 import { ConnectorError } from "../errors";
-import * as Helper from "../Helper";
 import FileUtil from "../lib/FolderUtil";  // shouldn't this be registerUtil?
+import * as Helper from "../lib/Helper";
 import BaseMaintainer from "../maintainers/BaseMaintainer";
 import { options, hpcConfig, SSH } from "../types";
 import connectionPool from "./ConnectionPool";
@@ -26,7 +26,7 @@ class BaseConnector {
   public remote_result_folder_path: string | null;
 
   /** config **/
-  public config: hpcConfig;
+  public connectorConfig: hpcConfig;
   public db = new DB();
   protected envCmd = "#!/bin/bash\n";
 
@@ -39,7 +39,7 @@ class BaseConnector {
   ) {
     this.hpcName = hpcName;
     this.jobId = jobId;
-    this.config = hpcConfigMap[hpcName];
+    this.connectorConfig = hpcConfigMap[hpcName];
     this.maintainer = maintainer;
     this.is_cvmfs = is_cvmfs;
 
@@ -62,7 +62,7 @@ class BaseConnector {
      Returns ssh connection from maintainer configuration (for community accounts).
     */
   ssh(): SSH {
-    if (this.config.is_community_account) {
+    if (this.connectorConfig.is_community_account) {
       return connectionPool[this.hpcName].ssh;
     } else {
       return connectionPool[this.jobId!].ssh;
@@ -102,7 +102,7 @@ class BaseConnector {
     // add cwd to options (current working directory) to set root path
     options = Object.assign(
       {
-        cwd: this.config.root_path,
+        cwd: this.connectorConfig.root_path,
       },
       options
     );

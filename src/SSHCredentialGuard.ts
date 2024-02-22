@@ -2,7 +2,7 @@ import NodeSSH = require("node-ssh");
 import redis = require("redis");
 import { promisify } from "util";
 import { config, hpcConfigMap } from "../configs/config";
-import * as Helper from "./Helper";
+import * as Helper from "./lib/Helper";
 import { credential, GetValueFunction, SetValueFunction, DelValueFunction } from "./types";
 
 /**

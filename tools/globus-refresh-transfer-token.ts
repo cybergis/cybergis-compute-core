@@ -9,8 +9,8 @@ const main = async () => {
   const identities: string[] = [];
   for (const i in hpcConfigMap) {
     if (hpcConfigMap[i].globus) {
-      if (!(hpcConfigMap[i].globus.identity in identities)) {
-        identities.push(hpcConfigMap[i].globus.identity);
+      if (!(hpcConfigMap[i].globus!.identity in identities)) {
+        identities.push(hpcConfigMap[i].globus!.identity);
       }
     }
   }
@@ -18,8 +18,7 @@ const main = async () => {
   const connection = await db.connect();
 
   let counter = 0;
-  for (const i in identities) {
-    const identity = identities[i];
+  for (const identity of identities) {
     if (counter > 0)
       console.log(
         "⚠️ please logout of globus before logging into a new identity"
@@ -38,7 +37,7 @@ const main = async () => {
       );
       const g = new GlobusTransferRefreshToken();
       g.identity = identity;
-      g.transferRefreshToken = out.transfer_refresh_token;
+      g.transferRefreshToken = out.transfer_refresh_token as string;
       await globusTransferRefreshTokenRepo.save(g);
     }
 

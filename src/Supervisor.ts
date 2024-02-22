@@ -4,7 +4,7 @@ import { config, maintainerConfigMap, hpcConfigMap } from "../configs/config";
 import connectionPool from "./connectors/ConnectionPool";
 import DB from "./DB";
 import Emitter from "./Emitter";
-import * as Helper from "./Helper";
+import * as Helper from "./lib/Helper";
 import BaseMaintainer from "./maintainers/BaseMaintainer";
 import { Job } from "./models/Job";
 import Queue from "./Queue";
@@ -29,6 +29,8 @@ class Supervisor {
   private maintainerMasterThread: NodeJS.Timeout | null = null;  // main loop
 
   private maintainerMasterEventEmitter = new events.EventEmitter();
+
+  private prevRefreshTime: number = Date.now();
 
   private queueConsumeTimePeriodInSeconds =
     config.queue_consume_time_period_in_seconds;
@@ -61,6 +63,11 @@ class Supervisor {
     // this function defined here will repeat every x seconds (specified in second parameter)
     this.maintainerMasterThread = setInterval(async () => {
 
+      // in the main loop, check if we should rezip things to keep things up to date
+      if (Date.now() - this.prevRefreshTime >= 24 * 60 * 60 * 1000) {  // number of milliseconds in a day
+        // TODO
+      }
+
       // iterate over all HPCs
       for (const hpcName in this.jobPoolCounters) {
 
@@ -76,7 +83,8 @@ class Supervisor {
           const maintainer: new(job: Job) => BaseMaintainer = require(`./maintainers/${
             maintainerConfigMap[job.maintainer].maintainer
           }`).default;  // eslint-disable-line
-          // ^ typescript compilation hack 
+            // ^ typescript compilation hack 
+            // TODO: don't do this
 
           try {
             // push the job
@@ -90,6 +98,7 @@ class Supervisor {
               "JOB_INIT_ERROR",
               `job [${job.id}] failed to initialized with error ${Helper.assertError(e).toString()}`
             );
+
             job.finishedAt = new Date();
             const connection = await this.db.connect();
             await connection
@@ -104,7 +113,11 @@ class Supervisor {
           this.jobPoolCounters[hpcName]++;
 
           // manage ssh pool -- diferent behavior for community/noncommunity accounts
-          if (job.maintainerInstance.connector?.config.is_community_account) {
+          if (job
+            .maintainerInstance
+            .connector?.connectorConfig
+            .is_community_account
+          ) {
             connectionPool[job.hpc].counter++;
           } else {
             const hpcConfig = hpcConfigMap[job.hpc];
@@ -145,15 +158,21 @@ class Supervisor {
   }
 
   /**
-   * Creates a maintainer worker for a given job. 
+   * Creates an object that keeps track of a job throughout its lifecycle on the HPC, recording changes in internal variables. 
    *
    * @param {Job} job
    */
   async createMaintainerWorker(job: Job) {
-    while (true) {  // eslint-disable-line
+    Helper.nullGuard(job.maintainerInstance);  // should have been initialized on job creation
+
+    // keep looping while the job is not finished
+    while (true) {  // eslint-disable-line no-constant-condition
       // get ssh connector from pool
       let ssh: SSH;
-      if (job.maintainerInstance?.connector?.config.is_community_account) {
+      if (job
+        .maintainerInstance?.connector?.connectorConfig
+        .is_community_account
+      ) {
         ssh = connectionPool[job.hpc].ssh;
       } else {
         ssh = connectionPool[job.id].ssh;
@@ -164,10 +183,6 @@ class Supervisor {
         if (!ssh.connection.isConnected())
           await ssh.connection.connect(ssh.config);
         await ssh.connection.execCommand("echo"); // test connection
-
-        if (!job.maintainerInstance) {
-          throw new Error("Job doesn't have maintainer instance.");
-        }
 
         if (job.maintainerInstance.isInit) {
           await job.maintainerInstance.maintain();
@@ -207,7 +222,11 @@ class Supervisor {
       // ending conditions
       if (job.maintainerInstance.isEnd) {
         // exit or deflag ssh pool
-        if (job.maintainerInstance.connector?.config.is_community_account) {
+        if (job
+          .maintainerInstance
+          .connector?.connectorConfig
+          .is_community_account
+        ) {
           connectionPool[job.hpc].counter--;
           if (connectionPool[job.hpc].counter === 0) {
             if (ssh.connection.isConnected()) ssh.connection.dispose();
