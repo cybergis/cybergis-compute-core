@@ -171,9 +171,9 @@ class BaseConnector {
           `get file from ${from} to ${to}`
         );
       // wraps command with backoff -> takes lambda function and array of inputs to execute command
-      await Helper.runCommandWithBackoff(async (ssh1: SSH, to1: string, zipPath: string) => {
-        await ssh1.connection.getFile(to1, zipPath);
-      }, [this.ssh, to, fromZipFilePath], null);
+      await Helper.runCommandWithBackoff.call(this, async (to1: string, zipPath: string) => {
+        await this.ssh().connection.getFile(to1, zipPath);
+      }, [to, fromZipFilePath], "Trying to download file again");
       await this.rm(fromZipFilePath);
       await FileUtil.putFileFromZip(to, toZipFilePath);
     } catch (e) {
@@ -200,9 +200,9 @@ class BaseConnector {
           `put file from ${from} to ${to}`
         );
       // wraps command with backoff -> takes lambda function and array of inputs to execute command
-      await Helper.runCommandWithBackoff(async (ssh1: SSH, from1: string, to1: string) => {
-        await ssh1.connection.putFile(from1, to1);
-      }, [this.ssh, from, to], null);
+      await Helper.runCommandWithBackoff.call(this, async (from1: string, to1: string) => {
+        await this.ssh().connection.putFile(from1, to1);
+      }, [from, to], "Trying again to transfer file");
     } catch (e) {
       const error =
         `unable to put file from ${from} to ${to}: ` + e.toString();
