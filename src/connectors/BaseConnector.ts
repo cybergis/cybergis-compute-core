@@ -326,6 +326,20 @@ class BaseConnector {
 
   // file operators
 
+  
+  /**
+   * @async
+   * Determines whether a passed in (absolute) path exists on the HPC. 
+   * 
+   * @param path path to test for
+   * @param options options for doing an exec
+   * @returns {Promise<boolean>} true if path exists; false if not
+   */
+  async remoteFsExists(path: string, options?: options): Promise<boolean> {
+    const out = await this.exec(`test -d ${path} && echo a`, options ?? {});
+    return out !== null;
+  }
+
   /**
    * @async
    * removes the file/folder at specified path

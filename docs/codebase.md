@@ -70,6 +70,7 @@ Improvements
 - no connectors are actually explicitly initialized -- they are only created through a maintainer function due to a weird two-way relationship between the two (a maintainer needs a connector, which needs a maintainer)
 - many unused functions (particularly specialized shell commands like `ls` in BaseConnector)
 - modularize `connectionPool` into a class and make the ability to add in job-specific connections more transparent
+- switch to a more modern & error-friendly sdk for ssh execs
 
 ### Utility classes
 
@@ -146,13 +147,14 @@ These classes are found in the `src/lib/` directory, and these generally serve a
 General Improvements
 
 - work out the `folderUtil` vs. `registerUtil` naming discrepancy 
-- update the database to support the new specialized manifest functions in `GitUtil`
+- update the database to support the new manifest-specific GitUtil things and update everything accordingly
 - port all the python globus scripts to the javascript globus SDK & delete `PythonUtil`
 - verify `XSEDEUtil` actually does things & is meaningful
 - make a RedisUtil class to encapsulate all of the individual redis interfaces (which are essentially the same with a few naming differences)
     - make the redis connections less weird
     - make the redis connection actually persistent and not local
-- update the database to support the new manifest-specific GitUtil things and update everything accordingly
+- get an actual git sdk to avoid having to exec
+- the Helper generateId function has a chance of collisions (expected 1 in every 62 ** 5 for every millisecond)
 
 ### Maintainers
 
@@ -278,7 +280,7 @@ This file defines a number of folder uploader helpers that are used to send file
 - `LocalFolderUploader`: inherits from `BaseFolderUploader`. This uploader is the most general uploader, allowing for arbitrary local files to be uploaded to HPCs via use of `FolderUtil` zipping and connector `upload`. 
 - `GitFolderUploader`: inherits from `LocalFolderUploader`. This is essentially a `LocalFolderUploader` but directly works with git repositories and the Git database--e.g., it acquires local paths using git ids and supports the refreshing of repos prior to upload.
 
-In addition to these folder uploader specializations, there is also a `FolderUploaderHelper` class that offers a more generalized folder uploader functionality--given an arbitrary input, it decides what folder uploader to create, uploads it, and returns. 
+In addition to these folder uploader specializations, there is also a `FolderUploaderHelper` class that offers a more generalized folder uploader functionality--given an arbitrary input, it decides what folder uploader to create, uploads it, and returns. It should be noted that this helper class is the only folder uploader actually used outside of this file--all calls to folder uploader are abstracted away with this function.
 
 Dependencies:
 - `fs` & `path`: for manipulating the file system and paths
@@ -297,6 +299,8 @@ Improvements:
 - better handle how instance variables are inherited to prevent them from appearing too early unnecessarily
     - rework some of the typings
 - potentially remove some unused classes
+- is there any point in having connectors be passed to it instead of just making a baseconnector
+- think if globus transfers of data should be cached
 
 ### JupyterHub
 
@@ -410,6 +414,8 @@ Overall Improvements and TODOs:
 - full commenting & documentation revamp (mostly done)
 - build a rigorous test suite
 - update/archive `CVMFS_kernel.md`, `v1_v2_coexisting.md`, `xsede-xkdcdb-api.md`, `FILE_SYS.md`, and `lifecycle.md` to be in-line with this documetation
+- get rid of all execs or add better error handling for execs
+- add explicit scoping for class functions (protected/public/private)
 
 ## Job lifecycle
 

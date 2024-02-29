@@ -26,7 +26,7 @@ export function atob(target: string): string {
 /**
  * Generates a random id composed of a number based on time and a random string of length 5. 
  * 
- * @returns {string} random 5 digit ID 
+ * @returns {string} random 15 digit ID (number of unix digits + random string)
  */
 export function generateId(): string {
   return Math.round(new Date().getTime() / 1000) + randomStr(5);

@@ -47,4 +47,4 @@ const main = async () => {
   await db.close();
 };
 
-main();
+main(); // eslint-disable-line

@@ -12,9 +12,11 @@ const options = {
   apis: ["./server.ts"], // files containing annotations as above
 };
 
-const output = swaggerJsdoc(options);
+const output: object = swaggerJsdoc(options);  // eslint-disable-line
 fs.writeFile(
   "./production/swagger.json",
   JSON.stringify(output),
-  function (_err) {}
+  function (_err) {
+    console.log("writing failed");
+  }
 );

@@ -40,7 +40,6 @@ import type {
   initGlobusDownloadBody,
   createJobBody,
   updateJobBody,
-  GlobusFolder
 } from "./src/types";
 
 // create the express app
@@ -862,11 +861,13 @@ app.post(
       return;
     }
 
+    Helper.nullGuard(hpcConfig.globus);
+
     // init transfer
     const fromPath = body.fromPath
       ? path.join(folder.globusPath, body.fromPath)
       : folder.globusPath;
-    const from = { path: fromPath, endpoint: hpcConfig.globus?.endpoint };
+    const from = { path: fromPath, endpoint: hpcConfig.globus.endpoint };
     const to = { path: body.toPath, endpoint: body.toEndpoint };
     // console.log(from, to);
 
@@ -875,10 +876,10 @@ app.post(
     
       // start the transfer
       const globusTaskId = await GlobusUtil.initTransfer(
-      from as GlobusFolder,
-      to,
-      hpcConfig,
-      `job-id-${jobId}-download-folder-${folder.id}`
+        from,
+        to,
+        hpcConfig,
+        `job-id-${jobId}-download-folder-${folder.id}`
       );
 
       // record the task as ongoing for the given folder

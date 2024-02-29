@@ -56,6 +56,7 @@
     "@types/node": "^14.14.39",
     "@types/node-ssh": "^7.0.1",
     "@types/ssh2": "^0.5.46",
+    "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.6",
     "@types/validator": "^13.1.3",
     "@typescript-eslint/eslint-plugin": "^7.0.1",

@@ -328,22 +328,24 @@ export interface GitFolder {
   gitId: string;
 }
 
-interface LocalFolderType {
-  type: string;
-  localPath?: string;
-}
-interface LocalFolderPath {
+export interface LocalFolder {
   localPath: string;
   type?: string;
 }
-export type LocalFolder = LocalFolderType | LocalFolderPath;
+
+export interface EmptyFolder {
+  type: string;
+}
 
 export interface folderEditable {
   name: string;
   isWritable: boolean;
 }
 
-export type NeedUploadFolder = GlobusFolder | GitFolder | LocalFolder;
+export type NeedUploadFolder = 
+  GlobusFolder | GitFolder | LocalFolder;
+
+export type AnyFolder = NeedUploadFolder | EmptyFolder;
 
 export interface authReqBody {
   jupyterhubApiToken: string

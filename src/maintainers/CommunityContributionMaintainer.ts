@@ -1,5 +1,5 @@
 import SingularityConnector from "../connectors/SingularityConnector";
-import { FolderUploaderHelper } from "../FolderUploader";
+import { BaseFolderUploader, FolderUploaderHelper } from "../FolderUploader";
 import GitUtil from "../lib/GitUtil";
 import * as Helper from "../lib/Helper";
 import { ResultFolderContentManager } from "../lib/JobUtil";
@@ -35,17 +35,25 @@ class CommunityContributionMaintainer extends BaseMaintainer {
     try {
       const connection = await this.db.connect();
 
-      // check if local executable file is git
-      const localExecutableFolder = this.job.localExecutableFolder;
-      if (localExecutableFolder.type !== "git")
+      let localExecutableFolder: GitFolder;
+      if (
+        typeof this.job.localExecutableFolder === "object" &&
+        this.job.localExecutableFolder !== null &&
+        "type" in this.job.localExecutableFolder &&
+        "gitId" in this.job.localExecutableFolder &&
+        this.job.localExecutableFolder.type === "git"
+      ) {
+        localExecutableFolder = this.job.localExecutableFolder;
+      } else {
         throw new Error(
-          "community contribution currently doesn't accept non-git code"
+          "community contribution currently doesn't accept non-git code or folder specification was malformed"
         );
+      }
 
       // get executable manifest
       const git = await connection
         .getRepository(Git)
-        .findOne((localExecutableFolder as GitFolder).gitId);
+        .findOne((localExecutableFolder).gitId);
       if (!git)
         throw new Error("could not find git repo executable in this job");
       this.executableManifest = (
@@ -64,12 +72,14 @@ class CommunityContributionMaintainer extends BaseMaintainer {
       Helper.nullGuard(this.job.userId);
       
       this.emitEvent("SLURM_UPLOAD_EXECUTABLE", "uploading executable folder");  // isn't this SCP?
-      let uploader = await FolderUploaderHelper.upload(
-        this.job.localExecutableFolder,
-        this.job.hpc,
-        this.job.userId,
-        this.job.id,
-        this.connector
+      let uploader: BaseFolderUploader = (
+        await FolderUploaderHelper.cachedUpload(
+          localExecutableFolder,
+          this.job.hpc,
+          this.job.userId,
+          this.job.id,
+          this.connector
+        )
       );
       
       this.connector.setRemoteExecutableFolderPath(uploader.hpcPath);
@@ -80,7 +90,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
       // upload data folder
       if (this.job.localDataFolder) {
         this.emitEvent("SLURM_UPLOAD_DATA", "uploading data folder");
-        uploader = await FolderUploaderHelper.upload(
+        uploader = await FolderUploaderHelper.cachedUpload(
           this.job.localDataFolder,
           this.job.hpc,
           this.job.userId,
