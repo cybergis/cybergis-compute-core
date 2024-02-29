@@ -25,6 +25,8 @@ export default class GitUtil {
     const localPath = this.getLocalPath(git.id);
     rimraf.sync(localPath);
     await fs.promises.mkdir(localPath);
+    const token = fs.readFileSync('keys/gitkey.txt');
+    await exec(`git config --global credential.helper '!f() { sleep 1; echo "username=git token=${token}"; }; f'`);
     await exec(`cd ${localPath} && git clone ${git.address} ${localPath}`);
     if (git.sha) {
       // if a sha is specified, checkout that commit
