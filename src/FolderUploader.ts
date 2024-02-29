@@ -27,7 +27,7 @@ type Connector =
 /**
  * Base class for encapsulating information about a folder upload.
  */
-export class BaseFolderUploader {
+export abstract class BaseFolderUploader {
   // details about the current HPC/user this uploader pertains to
   public id: string;  // unique id for the uploader
   public hpcPath: string;
@@ -62,9 +62,7 @@ export class BaseFolderUploader {
   }
 
   // eslint-disable-next-line
-  async upload() {
-    throw new Error("FolderUploader upload not implemented");
-  }
+  abstract upload(): Promise<void>;
 
   /**
    * Registers the current folder into the Folder database.

@@ -26,6 +26,8 @@ class Queue {
   private credentialManager = new CredentialManager();
 
   constructor(name: string) {
+    // this name is what separates the queue from the rest of the
+    // redis database (everything in the queue stored under this name)
     this.name = name;
   }
 

@@ -295,14 +295,14 @@ class Supervisor {
     for (const hpc in hpcConfigMap) {
       console.log(`looking in ${hpc}`);
 
-      // look for any jobs queued up TODO: fix this
-      for (let i = 0; i < await this.queues[hpc].length(); i++) {
-        console.log(`Queue: checking is ${this.queues[hpc][i].id.toString()}`);
-        if (this.queues[hpc][i].id.toString() === jobId.toString()) {
-          toReturn = this.queues[hpc][i];
-          hpcToAdd = hpc;
-        }
-      }
+      // // look for any jobs queued up TODO: fix this
+      // for (let i = 0; i < await this.queues[hpc].length(); i++) {
+      //   console.log(`Queue: checking is ${this.queues[hpc][i].id.toString()}`);
+      //   if (this.queues[hpc][i].id.toString() === jobId.toString()) {
+      //     toReturn = this.queues[hpc][i];
+      //     hpcToAdd = hpc;
+      //   }
+      // }
 
       // look for the job in the running jobs
       for (const job of this.runningJobs[hpc]) {
