@@ -369,7 +369,7 @@ Improvements:
 
 ### Supervisor
 
-A supervisor, defined in `src/Supervisor.ts`, encodes the logic of the main job loop of the CyberGIS Compute server. It serves as a manager of the higher-level view of job submissions, and there is typically one running per program. To that end, all supervisors have a main loop created upon construction that handles job instantiation (via maintainers), monitoring, and wrap-up, and this loop is is repeated indefinitely to ensure jobs can get from start to finish. Supervisors also have the capability to handle submitted jobs and create maintainers for them, to be checked on later in the main loop. 
+A supervisor, defined in `src/Supervisor.ts`, encodes the logic of the main job loop of the CyberGIS Compute server. It serves as a manager of the higher-level view of job submissions, and there is typically one running per program. To that end, all supervisors have a main indefinite loop created upon construction that handles job instantiation (via maintainers) of all jobs in its queue. Once created, jobs and thier maintainers enter a while loop that starts the job on the HPC and checks/handles when the job finishes.
 
 The main outside-facing function for a supervisor is `pushJobToQueue` (and `cancelJob`), which is used to give the supervisor more things to supervise/handle. Supervisors don't really directly handle outputs (that is more of the job of maintainers), but they do handle job initialization errors, in which the finished time of the job is updated in the database, and also register job events/logs upon finish. 
 
@@ -387,6 +387,10 @@ Dependencies:
 
 Dependents:
 - `server.ts`: main supervisor created here, starting the main job loop
+
+Improvements:
+- fix the code for looking inside the redis queue (it curretnly does not work and needs more redis functionality)
+- possibly refactor createMaintenanceWorker to not be busy waiting (change it to setInterval?)
 
 ### server.ts
 
@@ -409,6 +413,13 @@ Overall Improvements and TODOs:
 
 ## Job lifecycle
 
-
+1. Upon the starting of the CyberGIS Compute server, a new `Supervisor` object is instantiated, which begins running its main loop periodically. 
+2. When a job is submitted via the `job/**` endpoints exposed in `server.ts`, it is verified against the job lists in the database, checking that it both exists and is not already submitted. 
+3. After verfication, the supervisor has the job pushed to its job queue.
+4. During the supervisor's main loop, it will detect that a job is queuing to be submitted onto the desired HPC, and, as such, it will create a `Maintainer` for the job and update job counters accordingly. 
+5. The job and its maintainer enter loop in the `createMaintenanceWorker` function, in which the job maintainer `init` function will be called to submit the job to the HPC. 
+6. (CommunityContributionMaintainer) In maintainer initialization, the the job's data/git repository will be uploaded into the HPC and the job's executable manifest will be parsed to HPC run settings. After this, the job's output folders will be created, and the job will actually begin running via a slurm command.
+7. During the `createMaintenanceWorker` loop, the job's maintainer will have `maintain` called on it repeatedly, which checks for potential errors/whether the job is complete. 
+8. On completion, the database is updated accordingly, and the job results (the contents of its output folder) are stored in the `resultFolderContentManager` redis key-value store. The events/logs of the job are also dumped into the database. 
 
 
