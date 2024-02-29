@@ -127,7 +127,7 @@ var schemas = {
   initGlobusDownload: {
     type: "object",
     properties: {
-      jobId: { type: "string"},
+      jobId: { type: "string" },
       jupyterhubApiToken: { type: "string" },
       toEndpoint: { type: "string" },
       toPath: { type: "string" },
