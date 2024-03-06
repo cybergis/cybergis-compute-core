@@ -90,7 +90,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
       // upload data folder
       if (this.job.localDataFolder) {
         this.emitEvent("SLURM_UPLOAD_DATA", "uploading data folder");
-        uploader = await FolderUploaderHelper.cachedUpload(
+        uploader = await FolderUploaderHelper.upload(
           this.job.localDataFolder,
           this.job.hpc,
           this.job.userId,
