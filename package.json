@@ -44,6 +44,7 @@
     "swagger-ui-express": "^4.3.0",
     "typedoc": "^0.25.11",
     "typeorm": "^0.2.34",
+    "typeorm-uml": "^1.6.5",
     "util": "^0.12.3",
     "validator": "^13.7.0"
   },

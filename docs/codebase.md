@@ -417,6 +417,7 @@ Overall Improvements and TODOs:
 - update/archive `CVMFS_kernel.md`, `v1_v2_coexisting.md`, `xsede-xkdcdb-api.md`, `FILE_SYS.md`, and `lifecycle.md` to be in-line with this documetation
 - get rid of all execs or add better error handling for execs
 - add explicit scoping for class functions (protected/public/private)
+- take a second look at some of the prebuild stuff (tsdoc, typeorm, etc.)
 
 ## Job lifecycle
 
