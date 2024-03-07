@@ -49,15 +49,14 @@ export abstract class BaseFolderUploader {
     if (!this.hpcConfig)
       throw new Error(`cannot find hpcConfig with name ${hpcName}`);
     
-    this.hpcPath = path.join(this.hpcConfig.root_path, this.id);
-    
     this.id = Helper.generateId();
     this.userId = userId;
+
+    this.hpcPath = path.join(this.hpcConfig.root_path, this.id);
 
     this.isComplete = false;
     this.isFailed = false;
     this.db = new DB();
-
     this.globusPath = (this.hpcConfig.globus 
       ? path.join(this.hpcConfig.globus.root_path, this.id) 
       : null
@@ -210,7 +209,7 @@ abstract class CachedFolderUploader extends BaseFolderUploader {
     connector?: Connector,
   ) {
     super(hpcName, userId, connector);
-
+    
     this.cacheFile = `${cacheFile}.zip`;  // always store cached files as a zip file (TODO: figure out if this is the best for globus)
     
   }
@@ -382,7 +381,8 @@ export class LocalFolderUploader extends CachedFolderUploader {
     userId: string,
     connector: Connector | null = null
   ) {
-    super(from.localPath, hpcName, userId);
+    const parts = from.localPath.split("/");
+    super(parts[parts.length - 1], hpcName, userId);
     this.localPath = from.localPath;
     this.connector = connector ?? new BaseConnector(hpcName);
   }
