@@ -26,7 +26,10 @@ export default class GitUtil {
     rimraf.sync(localPath);
     await fs.promises.mkdir(localPath);
     const token = fs.readFileSync('keys/gitkey.txt');
-    await exec(`git config --global credential.helper '!f() { sleep 1; echo "username=git token=${token}"; }; f'`);
+    process.env.GIT_TOKEN = token.toString('utf-8');
+    process.env.GIT_USERNAME = 'cybergis-github'
+    await exec(`git config credential.helper '!f() { echo "username=$GIT_USERNAME"; echo "password=$GIT_TOKEN"; };f'`)
+    // await exec(`git config --global credential.helper '!f() { sleep 1; echo "username=cybergis-github password=${token}"; }; f'`);
     await exec(`cd ${localPath} && git clone ${git.address} ${localPath}`);
     if (git.sha) {
       // if a sha is specified, checkout that commit
