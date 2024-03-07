@@ -1,4 +1,4 @@
-import { hpcConfigMap, jupyterGlobusMap } from "../../configs/config";
+import { config, hpcConfigMap, jupyterGlobusMap } from "../../configs/config";
 import { Job } from "../models/Job";
 // import * as fs from "fs";
 
@@ -138,8 +138,8 @@ export function isAllowlisted(host: string): boolean {
 export function canAccessHPC(user: string, hpc: string): boolean {
   const allowList = hpcConfigMap[hpc].allowlist;
   const denyList = hpcConfigMap[hpc].denylist;
-  console.log(allowList);
-  console.log(denyList);
+  if (config.is_testing) console.log(allowList);
+  if (config.is_testing) console.log(denyList);
 
   // check if they are in the denylist
   if (denyList.includes(user)) {

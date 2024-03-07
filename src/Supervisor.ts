@@ -104,7 +104,7 @@ class Supervisor {
             // push the job
             job.maintainerInstance = new maintainer(job);
             this.runningJobs[job.hpc].push(job);
-            console.log(`Added job to running jobs: ${job.id}`);
+            if (config.is_testing) console.log(`Added job to running jobs: ${job.id}`);
           } catch (e) {
             // log error and skip job
             await this.emitter.registerEvents(
@@ -165,8 +165,7 @@ class Supervisor {
 
     // remove job once ended
     this.maintainerMasterEventEmitter.on("job_end", (hpcName: string, jobName: string) => {
-      if (config.is_testing)
-        console.log(`received job_end event from ${jobName}`);
+      if (config.is_testing) console.log(`received job_end event from ${jobName}`);
       this.jobPoolCounters[hpcName]--;
     });
   }
@@ -257,7 +256,7 @@ class Supervisor {
         let index = this.runningJobs[job.hpc].indexOf(job, 0);
         if (index > -1) {
           this.runningJobs[job.hpc].splice(index, 1);
-          console.log(`Removed job from running jobs: ${job.id}`);
+          if (config.is_testing) console.log(`Removed job from running jobs: ${job.id}`);
         }
 
         index = this.cancelJobs[job.hpc].indexOf(job, 0);
@@ -301,13 +300,13 @@ class Supervisor {
    * @return {Job | null} the job that was cancelled
    */
   cancelJob(jobId: string): Job | null {
-    console.log(`cancelJob(${jobId}) looking for job`);
+    if (config.is_testing) console.log(`cancelJob(${jobId}) looking for job`);
     let toReturn: Job | null = null;
     let hpcToAdd: string | null = null;
 
     // look for the job across all hpcs
     for (const hpc in hpcConfigMap) {
-      console.log(`looking in ${hpc}`);
+      if (config.is_testing) console.log(`looking in ${hpc}`);
 
       // // look for any jobs queued up TODO: fix this
       // for (let i = 0; i < await this.queues[hpc].length(); i++) {
