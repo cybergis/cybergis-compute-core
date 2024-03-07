@@ -1,8 +1,14 @@
 import { Command } from "commander";
 import DB from "./src/DB";
 import { Git } from "./src/models/Git";
-const pkg = require("../package.json");  // eslint-disable-line
+const pkg: {version: string} = require("../package.json");  // eslint-disable-line
 const cmd = new Command();
+
+interface CommandOptions {
+  id?: string;
+  address?: string;
+  sha?: string;
+}
 
 cmd.version(pkg.version);
 
@@ -17,7 +23,7 @@ cmd
     "[operation=add/update] git repository's address"
   )
   .option("-s, --sha <sha>", "[operation=add/update] git repository's sha hash")
-  .action(async (operation: string, cmd) => {
+  .action(async (operation: string, cmd: CommandOptions) => {
     const db = new DB(false);
 
     switch (operation) {
@@ -53,7 +59,7 @@ cmd
       }
 
       const connection = await db.connect();
-      const i = {};
+      const i: {address?: string, sha?: string} = {};
 
       if (cmd.address) i.address = cmd.address;
       if (cmd.sha) i.sha = cmd.sha;
