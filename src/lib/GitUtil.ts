@@ -84,7 +84,7 @@ export default class GitUtil {
         `git.address.replace("github.com", "raw.githubusercontent.com").replace(".git", "")}/${commit}/manifest.json`
     );
 
-    await fs.promises.mkdir(localPath);
+    await fs.promises.mkdir(localPath, { recursive: true });
     
     if (git.sha) {
       // if a sha is specified, checkout that commit
@@ -164,7 +164,7 @@ export default class GitUtil {
     
     // get the manifest if it does not exist locally
     if (!fs.existsSync(localPath)) {
-      await fs.promises.mkdir(localPath);
+      await fs.promises.mkdir(localPath, { recursive: true });
       // TODO: either get the branch/the sha of the thing we want
       await exec(`cd ${localPath} && wget -O manifest.json ${getManifestUrl("main")}`);
     }
