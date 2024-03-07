@@ -702,7 +702,7 @@ app.put("/git/refresh/:id", async function (req, res) {
 
 /**
  * @openapi
- * /git/refresh/hpc/:id
+ * /git/refresh/hpc/:id:
  *  put:
  *      description: For the given HPC id (:id), refresh all git repos on it.
  *      responses:
@@ -732,7 +732,7 @@ app.put("/git/refresh/hpc/:id", async function (req, res) {
 
 /**
  * @openapi
- * /git/refresh
+ * /git/refresh:
  *  put:
  *      description: Refresh all git repos on all HPCs.
  *      responses:
