@@ -375,13 +375,17 @@ export interface createJobBody {
 
 export interface updateJobBody {
   jupyterhubApiToken: string,
-    param?: object,
-    env?: object,
-    slurm?: object,
-    localExecutableFolder?: object,
-    localDataFolder?: object,
-    remoteDataFolder?: object,
-    remoteExecutableFolder?: object,
+  param?: object,
+  env?: object,
+  slurm?: object,
+  localExecutableFolder?: object,
+  localDataFolder?: object,
+  remoteDataFolder?: object,
+  remoteExecutableFolder?: object,
+}
+
+export interface refreshCacheBody {
+  hpc?: string
 }
 
 export type PushFunction = (_args: unknown[]) => Promise<number>;

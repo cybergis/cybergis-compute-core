@@ -262,7 +262,7 @@ abstract class CachedFolderUploader extends BaseFolderUploader {
       await this.refreshCache();
     }
 
-    await this.register();  // TODO: possibly indicate this was a cached upload
+    // await this.register();  // TODO: reenable this and mark it as cached somehow
     await this.pullFromCache();
   }
 }

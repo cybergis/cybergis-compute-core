@@ -76,7 +76,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
         await FolderUploaderHelper.cachedUpload(
           localExecutableFolder,
           this.job.hpc,
-          this.job.userId,
+          "cache", // this.job.userId // upload it under the 'cache' user
           this.job.id,
           this.connector
         )

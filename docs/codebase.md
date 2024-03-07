@@ -301,6 +301,7 @@ Improvements:
 - potentially remove some unused classes
 - is there any point in having connectors be passed to it instead of just making a baseconnector
 - think if globus transfers of data should be cached
+- remove the FolderUploaderHelper -- too generic for its own good
 
 ### JupyterHub
 

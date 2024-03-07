@@ -17,6 +17,7 @@ import {
   jupyterGlobusMap
 } from "./configs/config";
 import DB from "./src/DB";
+import { FolderUploaderHelper } from "./src/FolderUploader";
 import JupyterHub from "./src/JupyterHub";
 import GitUtil from "./src/lib/GitUtil";
 import GlobusUtil, { GlobusTaskListManager } from "./src/lib/GlobusUtil";
@@ -40,6 +41,7 @@ import type {
   initGlobusDownloadBody,
   createJobBody,
   updateJobBody,
+  refreshCacheBody,
 } from "./src/types";
 
 // create the express app
@@ -138,6 +140,12 @@ const schemas = {
     },
     required: ["jupyterhubApiToken", "toEndpoint", "toPath"],
   },
+  refreshCache: {
+    type: "object",
+    properties: {
+      hpc: { type: "string" },
+    }
+  }
 };
 
 // handler for route errors
@@ -637,6 +645,124 @@ app.get("/git", async function (req, res) {
 
 /**
  * @openapi
+ * /git/refresh/:id:
+ *  put:
+ *      description: Refreshes a given git repo (with id :id) on the specified HPC, or all HPCs if HPC is not provided
+ *      responses:
+ *          200:
+ *              description: Refresh completed successfully
+ *          401:
+ *              description: Cache refresh failed
+ *          402:
+ *              description: Request body malformed
+ *          404:
+ *              description: Provided git id was not found
+ */
+app.put("/git/refresh/:id", async function (req, res) {
+  const errors = requestErrors(
+    validator.validate(req.body, schemas.refreshCache)
+  );
+
+  if (errors.length > 0) {
+    res.status(402).json({ error: "invalid input", messages: errors });
+    return;
+  }
+
+  const body = req.body as refreshCacheBody;
+
+  const gitId = req.params.id;
+
+  const connection = await db.connect();
+  const git = await connection
+    .getRepository(Git)
+    .findOneOrFail({id: gitId});
+
+  if (!git) {
+    res.status(404).json({ error: "unknown folder with id " + gitId });
+    return;
+  }
+
+  try {
+    await GitUtil.refreshGit(git);
+
+    if (body.hpc) {
+      await FolderUploaderHelper.cachedUpload({ gitId: git.id }, body.hpc, "cache");
+    } else {
+      for (const hpc of Object.keys(hpcConfigMap)) {
+        // vv fun fact! you can avoid awaiting for a promise with the void keyword
+        await FolderUploaderHelper.cachedUpload({gitId: git.id}, hpc, "cache");
+      }
+    }
+  } catch (err) {
+    res.status(401).json({ error: `something went wrong with refreshing the cache; experienced error: ${Helper.assertError(err).toString()}`});
+    return;
+  }
+
+});
+
+/**
+ * @openapi
+ * /git/refresh/hpc/:id
+ *  put:
+ *      description: For the given HPC id (:id), refresh all git repos on it.
+ *      responses:
+ *          200:
+ *              description: Refresh completed successfully
+ *          401:
+ *              description: Something went wrong with the cache reloading
+ */
+app.put("/git/refresh/hpc/:id", async function (req, res) {
+  const hpc = req.params.id;
+
+  const connection = await db.connect();
+  const repos = await connection
+    .getRepository(Git)
+    .find();
+
+  try {
+    for (const repo of repos) {
+      await GitUtil.refreshGit(repo);
+      await FolderUploaderHelper.cachedUpload({ gitId: repo.id }, hpc, "cache");
+    }
+  } catch (err) {
+    res.status(401).json({ error: `something went wrong with refreshing the cache; experienced error: ${Helper.assertError(err).toString()}`});
+    return;
+  }
+});
+
+/**
+ * @openapi
+ * /git/refresh
+ *  put:
+ *      description: Refresh all git repos on all HPCs.
+ *      responses:
+ *          200:
+ *              description: Refresh completed successfully
+ *          401:
+ *              description: Something went wrong with the cache reloading
+ */
+app.put("/git/refresh", async function (req, res) {
+  const connection = await db.connect();
+
+  const repos = await connection.getRepository(Git).find();
+
+  try {
+    for (const repo of repos) {
+      await GitUtil.refreshGit(repo);
+      
+      for (const hpc of Object.keys(hpcConfigMap)) {
+        // vv fun fact! you can avoid awaiting for a promise with the void keyword
+        await FolderUploaderHelper.cachedUpload({gitId: repo.id}, hpc, "cache");
+      }        
+    }
+  } catch (err) {
+    res.status(401).json({ error: `something went wrong with refreshing the cache; experienced error: ${Helper.assertError(err).toString()}`});
+    return;
+  }
+});
+
+/**
+ * @openapi
  * /folder:
  *  get:
  *      description: Returns list of folders stored as dictionary objects (Authentication REQUIRED)
@@ -745,13 +871,17 @@ app.delete("/folder/:folderId", authMiddleWare, async function (req, res) {
  *              description: Returns "unknown folder with id" when the specified folder is not found
  */
 app.put("/folder/:folderId", authMiddleWare, async function (req, res) {
-  const body = req.body as updateFolderBody;
-  const errors = requestErrors(validator.validate(body, schemas.updateFolder));
+  const errors = requestErrors(
+    validator.validate(req.body, schemas.updateFolder)
+  );
 
   if (errors.length > 0) {
     res.status(402).json({ error: "invalid input", messages: errors });
     return;
   }
+
+  const body = req.body as updateFolderBody;
+
   if (!res.locals.username) {
     res.status(402).json({ error: "invalid token" });
     return;
@@ -812,15 +942,17 @@ app.post(
   "/folder/:folderId/download/globus-init", 
   authMiddleWare, 
   async function (req, res) {
-    const body = req.body as initGlobusDownloadBody;
     const errors = requestErrors(
-      validator.validate(body, schemas.initGlobusDownload)
+      validator.validate(req.body, schemas.initGlobusDownload)
     );
 
     if (errors.length > 0) {
       res.status(402).json({ error: "invalid input", messages: errors });
       return;
     }
+
+    const body = req.body as initGlobusDownloadBody;
+
     if (!res.locals.username) {
       res.status(402).json({ error: "invalid token" });
       return;
@@ -973,13 +1105,14 @@ app.get(
  *              description: Returns "invalid input" and a list of errors with the format of the req body
  */
 app.post("/job", authMiddleWare, async function (req, res) {
-  const body = req.body as createJobBody;
-  const errors = requestErrors(validator.validate(body, schemas.createJob));
+  const errors = requestErrors(validator.validate(req.body, schemas.createJob));
 
   if (errors.length > 0) {
     res.status(402).json({ error: "invalid input", messages: errors });
     return;
   }
+
+  const body = req.body as createJobBody;
 
   // try to extract maintainer and hpc associated with the job
   const maintainerName: string = body.maintainer ?? "community_contribution";  // default to community contribution job maintainer
@@ -1069,13 +1202,15 @@ app.post("/job", authMiddleWare, async function (req, res) {
  *              description: Returns internal error when there is an exception while updating the job details
  */
 app.put("/job/:jobId", authMiddleWare, async function (req, res) {
-  const body = req.body as updateJobBody;
-  const errors = requestErrors(validator.validate(body, schemas.updateJob));
+  const errors = requestErrors(validator.validate(req.body, schemas.updateJob));
 
   if (errors.length > 0) {
     res.status(402).json({ error: "invalid input", messages: errors });
     return;
   }
+
+  const body = req.body as updateJobBody;
+
   if (!res.locals.username) {
     res.status(402).json({ error: "invalid token" });
     return;
