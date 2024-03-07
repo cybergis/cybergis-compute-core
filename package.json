@@ -16,7 +16,7 @@
     "cpy": "cp -r ./configs ./production && cp ./*.json ./production && cp -r ./src/lib/python ./production/src/lib/python",
     "prebuild": "rm -rf ./production",
     "build": "tsc",
-    "postbuild": "npm run cpy && npm run doc-gen",
+    "postbuild": "npm run cpy",
     "lint": "eslint ."
   },
   "repository": {
@@ -42,11 +42,7 @@
     "node-ssh": "^10.0.2",
     "redis": "^3.1.2",
     "rimraf": "^3.0.2",
-    "swagger-jsdoc": "^6.2.1",
-    "swagger-ui-express": "^4.3.0",
-    "typedoc": "^0.25.11",
     "typeorm": "^0.2.34",
-    "typeorm-uml": "^1.6.5",
     "util": "^0.12.3",
     "validator": "^13.7.0"
   },
@@ -67,6 +63,10 @@
     "@typescript-eslint/parser": "^7.0.1",
     "eslint": "^8.56.0",
     "eslint-plugin-import": "^2.29.1",
-    "jest": "^27.5.1"
+    "jest": "^27.5.1",
+    "typeorm-uml": "^1.6.5",
+    "swagger-jsdoc": "^6.2.1",
+    "swagger-ui-express": "^4.3.0",
+    "typedoc": "^0.25.11"
   }
 }
