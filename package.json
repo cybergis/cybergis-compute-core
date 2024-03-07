@@ -63,9 +63,9 @@
     "eslint": "^8.56.0",
     "eslint-plugin-import": "^2.29.1",
     "jest": "^27.5.1",
-    "typeorm-uml": "^1.6.5",
     "swagger-jsdoc": "^6.2.1",
     "swagger-ui-express": "^4.3.0",
-    "typedoc": "^0.25.11"
+    "typedoc": "^0.25.11",
+    "typeorm-uml": "^1.6.5"
   }
 }

@@ -159,7 +159,7 @@ export default class GitUtil {
     const localPath = this.getLocalManifestPath(git.id);
     const getManifestUrl = (
       (commit: string) => 
-        `git.address.replace("github.com", "raw.githubusercontent.com").replace(".git", "")}/${commit}/manifest.json`
+        `${git.address.replace("github.com", "raw.githubusercontent.com").replace(".git", "")}/${commit}/manifest.json`
     );
     
     // get the manifest if it does not exist locally
