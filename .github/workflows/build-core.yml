@@ -11,7 +11,7 @@ jobs:
       with:
         node-version: 16
     - run: |
-        npm install
+        npm ci
         
         for file in *.example.json; do
           # Remove the .example part from the filename
@@ -29,17 +29,33 @@ jobs:
           cp "$file" "$new_file"
         done
 
-
         npm run build
-  linting:
+
+  lint:
     runs-on: ubuntu-latest
-    needs: [build]
-    name: run eslint
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-node@v3
       with:
         node-version: 16
-    - run: |
-        npm install
+    - name: Run eslint
+      run: |
+        npm ci
+        
+        for file in *.example.json; do
+          # Remove the .example part from the filename
+          new_file="${file%.example.json}.json"
+          
+          # Copy the file to the new filename
+          cp "$file" "$new_file"
+        done
+
+        for file in configs/*.example.json; do
+          # Remove the .example part from the filename
+          new_file="${file%.example.json}.json"
+          
+          # Copy the file to the new filename
+          cp "$file" "$new_file"
+        done
+
         npm run lint

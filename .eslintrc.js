@@ -1,11 +1,11 @@
 module.exports = {
-  "env": {
-    "browser": true,
-    "commonjs": true,
-    "es2021": true
+  env: {
+    browser: true,
+    commonjs: true,
+    es2021: true
   },
-  "ignorePatterns": ["temp.*"],
-  "extends": [
+  ignorePatterns: ["temp.*"],
+  extends: [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended-type-checked",
     "plugin:@typescript-eslint/stylistic-type-checked",
@@ -13,66 +13,63 @@ module.exports = {
     "plugin:import/warnings",
     "plugin:import/typescript"
   ],
-  "overrides": [
+  overrides: [
     {
-      "env": {
-        "node": true
+      env: {
+        node: true
       },
-      "files": [
+      files: [
         ".eslintrc.{js,cjs}"
       ],
-      "parserOptions": {
-        "sourceType": "script"
+      parserOptions: {
+        sourceType: "script"
       }
     }
   ],
-  "parser": "@typescript-eslint/parser",
-  "parserOptions": {
-    "ecmaVersion": "latest",
-    "project": ["tsconfig(.*)?.json"]
+  parser: "@typescript-eslint/parser",
+  parserOptions: {
+    ecmaVersion: "latest",
+    project: ["tsconfig(.*)?.json"]
   },
-  "plugins": [
+  plugins: [
     "@typescript-eslint",
     "@stylistic"
   ],
-  "rules": {
-    "indent": [
+  rules: {
+    indent: [
       "error",
       2
     ],
-    "linebreak-style": [
-      "error",
-      "windows"
-    ],
-    "quotes": [
+    "linebreak-style": 0,
+    quotes: [
       "error",
       "double"
     ],
-    "semi": [
+    semi: [
       "error",
       "always"
     ],
-    "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+    "no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
     "@typescript-eslint/no-unused-vars": [
-      "error", { "argsIgnorePattern": "^_" }
+      "error", { argsIgnorePattern: "^_" }
     ],
-    "no-empty": [2, {"allowEmptyCatch": true}],
+    "no-empty": [2, { allowEmptyCatch: true }],
     "@typescript-eslint/no-misused-promises": [
       "error",
       {
-        "checksVoidReturn": false
+        checksVoidReturn: false
       }
     ],
     "import/order": [
       "error",
       {
-        "alphabetize": {
+        alphabetize: {
           caseInsensitive: true,
           order: "asc",
         },
-        "groups": ["external", "builtin", "parent", ["sibling", "index"]],
+        groups: ["external", "builtin", "parent", ["sibling", "index"]],
         "newlines-between": "never",
-        "pathGroups": [
+        pathGroups: [
           {
             group: "external",
             pattern: "react",
@@ -84,13 +81,17 @@ module.exports = {
             position: "after",
           },
         ],
-        "pathGroupsExcludedImportTypes": ["builtin"],
+        pathGroupsExcludedImportTypes: ["builtin"],
       },
     ],
     "@stylistic/max-len": [
       "error", 
-      { "ignoreTemplateLiterals": true, "code": 80, "ignoreComments": true, "ignoreStrings": true }
+      { 
+        ignoreTemplateLiterals: true, 
+        code: 80, 
+        ignoreComments: true, 
+        ignoreStrings: true 
+      }
     ]
   }
 };
-    
