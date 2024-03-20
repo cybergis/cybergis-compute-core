@@ -155,6 +155,7 @@ General Improvements
     - make the redis connection actually persistent and not local
 - get an actual git sdk to avoid having to exec
 - the Helper generateId function has a chance of collisions (expected 1 in every 62 ** 5 for every millisecond)
+- unlink vs rm in FolderUtil.removeZip -- unlink doesn't actually remove but rm does (changed to rm)
 
 ### Maintainers
 
@@ -396,6 +397,7 @@ Dependents:
 Improvements:
 - fix the code for looking inside the redis queue (it curretnly does not work and needs more redis functionality)
 - possibly refactor createMaintenanceWorker to not be busy waiting (change it to setInterval?)
+- make supervisor less likely to freak out on an error (infinite loop of prints)--especially assertion errors
 
 ### server.ts
 

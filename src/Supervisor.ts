@@ -77,7 +77,7 @@ class Supervisor {
           
           for (const hpc of Object.keys(hpcConfigMap)) {
             // vv fun fact! you can avoid awaiting for a promise with the void keyword
-            void FolderUploaderHelper.cachedUpload({gitId: repo.id}, hpc, "cache");
+            void FolderUploaderHelper.cacheRefresh({gitId: repo.id}, hpc, "cache");
           }        
         }
       }

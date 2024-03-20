@@ -47,9 +47,6 @@ class SlurmConnector extends BaseConnector {
       for (const module of config.modules)
         modules += `module load ${module}\n`;
     }
-    
-    console.assert(this.remote_result_folder_path);
-    console.assert(config.mail_type);
 
     Helper.nullGuard(this.remote_result_folder_path);
     Helper.nullGuard(config.mail_type);
