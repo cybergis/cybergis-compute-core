@@ -341,7 +341,7 @@ class BaseConnector {
    */
   async remoteFsExists(path: string, options?: options): Promise<boolean> {
     const out = await this.exec(`test -d ${path} && echo a`, options ?? {});
-    return out !== null;
+    return out.stdout !== null;
   }
 
   /**
