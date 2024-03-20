@@ -228,25 +228,29 @@ class BaseConnector {
   }
   /**
    * @async
-   * Compresses the contents of the LocalFolder to the specified zip file on the HPC
-   * TODO: actually compress?
+   * Uploads a (zipped) folder from the local machine to the target machine. After upload, decompresses the
+   * uploaded zip file and then deletes the zip file.
    *
    * @param {string} from - input file string
    * @param {string} to - output folder
    * @param {boolean} muteEvent - set to True if you want to mute maintauner emitted Event (unused)
+   * @param {boolean} unzip - set to True if you want it to unzip and remove on the remote machine; false just uploads
    * @throws {ConnectorError} - Thrown if maintainer emits 'SSH_SCP_DOWNLOAD_ERROR'
    */
-  async upload(from: string, to: string, muteEvent=false) { // eslint-disable-line
+  async upload(from: string, to: string, muteEvent=false, unzip=true) { // eslint-disable-line
     // get the to zip/not zipped paths
     const toZipFilePath = to.endsWith(".zip") ? to : `${to}.zip`;
     const toFilePath = to.endsWith(".zip") ? to.replace(".zip", "") : to;
 
     // transfer file to HPC
     await this.transferFile(from, toZipFilePath);
-    // decompress file on HPC
-    await this.unzip(toZipFilePath, toFilePath);
-    // remove the zipped file
-    await this.rm(toZipFilePath);
+
+    if (unzip) {
+      // decompress file on HPC
+      await this.unzip(toZipFilePath, toFilePath);
+      // remove the zipped file
+      await this.rm(toZipFilePath);
+    }
   }
 
   /** helpers **/

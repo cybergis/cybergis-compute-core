@@ -57,14 +57,16 @@ export default class registerUtil {
 
 
   /**
-   * Deletes (?) a zip file. 
+   * Removes a zip file. 
    *
    * @static
    * @param {string} filePath file path excluding the .* at the end
    */
   static async removeZip(filePath: string) {
     if (await this.isZipped(filePath)) {
-      await fs.promises.unlink(filePath + ".zip");
+      // TODO: this was previous fs promises unlink -- didn't actually delete the file
+      // was this intended?
+      await fs.promises.rm(filePath + ".zip");
     }
   }
 

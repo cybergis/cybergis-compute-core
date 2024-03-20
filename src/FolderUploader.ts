@@ -48,11 +48,11 @@ export abstract class BaseFolderUploader {
     this.hpcConfig = hpcConfigMap[hpcName];
     if (!this.hpcConfig)
       throw new Error(`cannot find hpcConfig with name ${hpcName}`);
-    
-    this.hpcPath = path.join(this.hpcConfig.root_path, this.id);
-    
+
     this.id = Helper.generateId();
     this.userId = userId;
+    
+    this.hpcPath = path.join(this.hpcConfig.root_path, this.id);
 
     this.isComplete = false;
     this.isFailed = false;
@@ -403,7 +403,7 @@ export class LocalFolderUploader extends CachedFolderUploader {
     const from = await FolderUtil.getZip(this.localPath);
 
     // upload via connector and SCP/slurm
-    await this.connector.upload(from, path, false);
+    await this.connector.upload(from, path, false, false);
     // remove the zipped file on the local machine
     await FolderUtil.removeZip(from);
 
@@ -441,7 +441,8 @@ export class GitFolderUploader extends LocalFolderUploader   {
     userId: string,
     connector: Connector | null = null
   ) {
-    const localPath = GitUtil.getLocalPath(from.gitId);  // extract the local path
+    const localPath: string = GitUtil.getLocalPath(from.gitId);
+    
     super({ localPath }, hpcName, userId, connector);
     this.gitId = from.gitId;
   }
@@ -573,6 +574,7 @@ export class FolderUploaderHelper {
       );
       await uploader.init();
       await uploader.cachedUpload();
+      
       break;
 
     case "local":
