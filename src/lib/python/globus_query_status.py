@@ -1,5 +1,7 @@
 import sys
+
 from globus_sdk import NativeAppAuthClient, RefreshTokenAuthorizer, TransferClient
+
 
 def output(k, i):
     print('@' + k + '=[' + i + ']')

@@ -1,6 +1,7 @@
+import logging
 import string
 import sys
-import logging
+
 import escapism  # need to install by conda or pip
 
 logger = logging.getLogger(__name__)
