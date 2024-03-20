@@ -12,6 +12,24 @@ jobs:
         node-version: 16
     - run: |
         npm install
+        
+        for file in *.example.json; do
+          # Remove the .example part from the filename
+          new_file="${file%.example.json}.json"
+          
+          # Copy the file to the new filename
+          cp "$file" "$new_file"
+        done
+
+        for file in configs/*.example.json; do
+          # Remove the .example part from the filename
+          new_file="${file%.example.json}.json"
+          
+          # Copy the file to the new filename
+          cp "$file" "$new_file"
+        done
+
+
         npm run build
   linting:
     runs-on: ubuntu-latest
