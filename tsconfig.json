@@ -10,14 +10,18 @@
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
         "removeComments": true,
-        "resolveJsonModule" : true
+        "resolveJsonModule" : true,
+        "strictNullChecks": true,
+        "esModuleInterop": true
     },
     "include": [
         "**/*",
-        "src/maintainers/*"
+        "src/maintainers/*",
+        ".eslintrc.js"
     ],
     "exclude": [
         "node_modules",
-        "**/*.spec.ts"
+        "**/*.spec.ts",
+        "temp.*"
     ]
 }

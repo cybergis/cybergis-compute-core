@@ -1,4 +1,16 @@
+import validator from "validator";
+import {
+  config,
+  hpcConfigMap,
+  maintainerConfigMap,
+} from "../../configs/config";
+import BaseConnector from "../connectors/BaseConnector";
+import SingularityConnector from "../connectors/SingularityConnector";
+import SlurmConnector from "../connectors/SlurmConnector";
+import DB from "../DB";
+import * as Helper from "../lib/Helper";
 import { Job } from "../models/Job";
+import Supervisor from "../Supervisor";
 import {
   maintainerConfig,
   event,
@@ -6,154 +18,127 @@ import {
   jobMaintainerUpdatable,
   hpcConfig,
 } from "../types";
-import BaseConnector from "../connectors/BaseConnector";
-import SlurmConnector from "../connectors/SlurmConnector";
-import validator from "validator";
-import { NotImplementedError } from "../errors";
-import {
-  config,
-  hpcConfigMap,
-  maintainerConfigMap,
-} from "../../configs/config";
-import SingularityConnector from "../connectors/SingularityConnector";
-import Supervisor from "../Supervisor";
-import DB from "../DB";
 
-class BaseMaintainer {
+/**
+ * This is an abstract class for compute core job maintainers, which are responsible for submitting jobs and monitoring them.
+ */
+abstract class BaseMaintainer {
   /** parent pointer **/
   public supervisor: Supervisor;
 
   /** packages **/
   public validator = validator; // https://github.com/validatorjs/validator.js
-
   public db: DB;
 
   /** config **/
-  public job: Job = undefined;
-
-  public hpc: hpcConfig = undefined;
-
-  public config: maintainerConfig = undefined;
-
-  public id: string = undefined;
-
-  public slurm: slurm = undefined;
+  public job: Job;
+  public hpc: hpcConfig | undefined = undefined;
+  public maintainerConfig: maintainerConfig | undefined = undefined;
+  public id: string | undefined = undefined;
+  public slurm: slurm | undefined = undefined;
 
   /** mutex **/
   private _lock = false;
 
   /** states **/
   public isInit = false;
-
   public isEnd = false;
-
   public isPaused = false;
-
   public jobOnHpc = false;
 
   protected lifeCycleState = {
     initCounter: 0,
-    createdAt: null,
+    createdAt: null as null | number,
   };
 
   /** parameters **/
-  public initRetry = 3;
-
+  public initRetry = 3;  // how many times to retry initialization
   public maintainThresholdInHours = 100000; // something super large
 
-  public envParamValidators: { [keys: string]: (val: string) => boolean } =
-    undefined;
-
-  public envParamDefault: { [keys: string]: string } = {};
-
-  public envParam: { [keys: string]: string } = {};
-
+  // optional parameter validators for derivec classes
+  public envParamValidators: 
+    Record<string, (_val: string) => boolean> | undefined = undefined;
+  public envParamDefault: Record<string, string> = {};
+  public envParam: Record<string, string> = {};
   public appParamValidators = undefined;
+  public appParam: Record<string, string> = {};
 
-  public appParam: { [keys: string]: string } = {};
+  /** HPC connectors **/
+  public connector: BaseConnector | undefined = undefined;
+
+  /** data **/
+  protected logs: string[] = [];
+  protected events: event[] = [];
+
 
   /** constructor **/
   constructor(job: Job) {
-    for (var i in this.envParamValidators) {
-      var val = job.env[i];
+    // try to validate the job's environment
+    for (const i in this.envParamValidators) {
+      const val: string = job.env[i];
       if (val != undefined) {
         if (this.envParamValidators[i](val)) this.envParam[i] = val;
       }
     }
-    const maintainerConfig = maintainerConfigMap[job.maintainer];
+    
+    // instantiate class variables
     this.job = job;
-    this.config = maintainerConfig;
+    this.maintainerConfig = maintainerConfigMap[job.maintainer];
     this.id = job.id;
     this.slurm = job.slurm;
     this.db = new DB();
-    var hpc = job.hpc ? job.hpc : this.config.default_hpc;
+
+    // determine if the current hpc exists within the config
+    const hpc = job.hpc ? job.hpc : this.maintainerConfig.default_hpc;
     this.hpc = hpcConfigMap[hpc];
     if (!this.hpc) throw new Error("cannot find hpc with name [" + hpc + "]");
-    this.onDefine();
+
+    this.onDefine();  // can't instantiate this class, abstract
   }
 
-  /** HPC connectors **/
-  public connector: BaseConnector | SlurmConnector = undefined;
-
-  /** data **/
-  protected logs: Array<string> = [];
-
-  protected events: Array<event> = [];
-
-  /** lifecycle interfaces **/
-  /**
-   * Throw execption when ondefine not implemented
-   *
-   * @throws {NotImplementedError} - Ondefine is not implemented
-   */
-  onDefine() {
-    throw new NotImplementedError("onDefine not implemented");
-  }
+  /** abstract lifecycle interfaces **/
 
   /**
-   * Throw execption when oninit not implemented
-   *
-   * @throws {NotImplementedError} - Oninit is not implemented
+   * This function is called when the maintainer is created (during the constructor). Can leave empty. 
    */
-  async onInit() {
-    throw new NotImplementedError("onInit not implemented");
-  }
+  abstract onDefine(): void;
 
   /**
-   * Throw execption when onmaintain not implemented
-   *
-   * @throws {NotImplementedError} - Onmaintain is not implemented
+   * This function is called when the maintainer is initialized--i.e., it begins work on maintaining the job. Called in the supervisor-facing
+   * init() function. 
+   * 
+   * @async
    */
-  async onMaintain() {
-    throw new NotImplementedError("onMaintain not implemented");
-  }
+  abstract onInit(): Promise<void>;
 
   /**
-   * Throw execption when onpause not implemented
-   *
-   * @throws {NotImplementedError} - Onpause is not implemented
+   * This function is called when the supervisor-facing maintain() function is called to maintain (monitor the status of) the job. 
+   * 
+   * @async
    */
-  async onPause() {
-    throw new NotImplementedError("onPause not implemented");
-  }
+  abstract onMaintain(): Promise<void>;
 
   /**
-   * Throw execption when onresume not implemented
-   *
-   * @throws {NotImplementedError} - Onresume is not implemented
+   * This function is called when the supervisor tries to pause the current job/maintainer. Not used.
+   * 
+   * @async
    */
-  async onResume() {
-    throw new NotImplementedError("onResume not implemented");
-  }
+  abstract onPause(): Promise<void>;
 
   /**
-   * Throw execption when oncancel not implemented
-   *
-   * @throws {NotImplementedError} - Oncancel is not implemented
+   * This function is called when the supervisor tries to resume the current job/maintainer after pause. Not used.
+   * 
+   * @async
    */
-  async onCancel() {
-    throw new NotImplementedError("onCancel not implemented");
-  }
+  abstract onResume(): Promise<void>;
+
+  /**
+   * This function is called when the supervisor tries to cancel the current job/maintainer.
+   * TODO: make a corresponding supervisor-facing function to be nore inline with the other onX functions.
+   * 
+   * @async
+   */
+  abstract onCancel(): Promise<void>;
 
   /** emitters **/
   /**
@@ -165,6 +150,7 @@ class BaseMaintainer {
   emitEvent(type: string, message: string) {
     if (type === "JOB_INIT") this.isInit = true;
     if (type === "JOB_ENDED" || type === "JOB_FAILED") this.isEnd = true;
+
     this.events.push({
       type: type,
       message: message,
@@ -181,12 +167,14 @@ class BaseMaintainer {
   }
 
   /** supervisor interfaces **/
+
   /**
    * Initialize job in the maintainer. If the job has been retried too many times, terminate and update events.
    *
    * @async
    */
   async init() {
+    // check if already trying to init -- if so, don't start another async instance
     if (this._lock) return;
     this._lock = true;
 
@@ -209,6 +197,7 @@ class BaseMaintainer {
    * @async
    */
   async maintain() {
+    // check if already trying to do this -- if so, don't start another async instance
     if (this._lock) return;
     this._lock = true;
 
@@ -228,7 +217,7 @@ class BaseMaintainer {
       try {
         await this.onMaintain();
       } catch (e) {
-        if (config.is_testing) console.error(e.toString()); // ignore error
+        if (config.is_testing) console.error(Helper.assertError(e).toString()); // ignore error
       }
     }
 
@@ -239,10 +228,10 @@ class BaseMaintainer {
    * Clear all logs in this.logs
    *
    * @async
-   * @return {Object} - List of jobs that were just deleted.
+   * @return {string[]} - List of jobs that were just deleted.
    */
-  dumpLogs() {
-    var logs = this.logs;
+  dumpLogs(): string[] {
+    const logs = this.logs;
     this.logs = [];
     return logs;
   }
@@ -251,10 +240,10 @@ class BaseMaintainer {
    * Clear all events in this.events
    *
    * @async
-   * @return {Object} - List of events that were just deleted.
+   * @return {event[]} - List of events that were just deleted.
    */
-  dumpEvents() {
-    var events = this.events;
+  dumpEvents(): event[] {
+    const events = this.events;
     this.events = [];
     return events;
   }
@@ -267,15 +256,18 @@ class BaseMaintainer {
    * @param {jobMaintainerUpdatable} job - New information to update this job with.
    */
   public async updateJob(job: jobMaintainerUpdatable) {
-    var connection = await this.db.connect();
+    const connection = await this.db.connect();
     await connection
       .createQueryBuilder()
       .update(Job)
       .where("id = :id", { id: this.id })
       .set(job)
       .execute();
-    var jobRepo = connection.getRepository(Job);
-    this.job = await jobRepo.findOne(this.id);
+    const jobRepo = connection.getRepository(Job);
+
+    const temp = await jobRepo.findOne(this.id);
+    Helper.nullGuard(temp);
+    this.job = temp;
   }
 
   /**
@@ -320,7 +312,7 @@ class BaseMaintainer {
   }
 
   /**
-   * Return the base connector associated with this job and hpc.
+   * Return the base connector associated with this job and hpc. Never used. 
    *
    * @public
    * @returns {BaseConnector} - The base connector associated with this job.

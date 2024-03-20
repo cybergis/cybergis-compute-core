@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import NodeSSH = require("node-ssh");
 import { ConnectConfig } from "ssh2";
 import { Prompt } from "ssh2-streams";
@@ -88,7 +89,7 @@ export interface rawAccessToken {
   alg: string;
   payload: {
     encoded: string;
-    decoded: any;
+    decoded: unknown;
   };
   hash: string;
   id: string;
@@ -101,8 +102,8 @@ export interface secretToken {
 
 export interface credential {
   id: string;
-  user: string;
-  password: string;
+  user?: string;
+  password?: string;
 }
 
 export interface slurm {
@@ -134,19 +135,19 @@ export interface secretTokenCache {
 
 export interface options {
   cwd?: string;
-  execOptions?: any;
+  execOptions?: unknown;
   encoding?: BufferEncoding;
 }
 
 export interface localKey {
   private_key_path: string;
-  passphrase?: any;
+  passphrase?: unknown;
 }
 
 export interface redis {
   host: string;
   port: number;
-  password?: any;
+  password?: unknown;
 }
 
 export interface mysql {
@@ -198,13 +199,11 @@ export interface hpcConfig {
   init_sbatch_options: string[];
   description?: string;
   globus?: {
-    identity?: string;
-    endpoint?: string;
-    root_path?: string;
+    identity: string;
+    endpoint: string;
+    root_path: string;
   };
-  mount: {
-    [keys: string]: string;
-  };
+  mount: Record<string, string>;
   slurm_input_rules?: slurmInputRules;
   slurm_global_cap: slurm;
   xsede_job_log_credential: XSEDEJobLogCredential;
@@ -264,19 +263,15 @@ export interface executableManifest {
   repository?: string;
   require_upload_data?: boolean;
   slurm_input_rules?: slurmInputRules;
-  param_rules?: { [keys: string]: any };
+  param_rules?: Record<string, stringOptionRule | integerRule>;
   default_result_folder_downloadable_path?: string;
 }
 
 export interface containerConfig {
   dockerfile?: string;
   dockerhub?: string;
-  hpc_path: { [keys: string]: string };
-  mount: {
-    [keys: string]: {
-      [keys: string]: string;
-    };
-  };
+  hpc_path: Record<string, string>;
+  mount: Record<string, Record<string, string>>;
 }
 
 export interface kernelConfig {
@@ -307,8 +302,8 @@ export interface SSH {
 }
 
 export interface jobMaintainerUpdatable {
-  param?: { [keys: string]: string };
-  env?: { [keys: string]: string };
+  param?: Record<string, string>;
+  env?: Record<string, string>;
   slurm?: slurm;
   slurmId?: string;
   nodes?: number;
@@ -324,23 +319,87 @@ export interface jobMaintainerUpdatable {
 
 export interface GlobusFolder {
   type?: string;
-  endpoint?: string;
-  path?: string;
+  endpoint: string;
+  path: string;
 }
 
 export interface GitFolder {
   type?: string;
-  gitId?: string;
+  gitId: string;
 }
 
 export interface LocalFolder {
+  localPath: string;
   type?: string;
-  localPath?: string;
+}
+
+export interface EmptyFolder {
+  type: string;
 }
 
 export interface folderEditable {
-  name?: string;
-  isWritable?: boolean;
+  name: string;
+  isWritable: boolean;
 }
 
-export type NeedUploadFolder = GlobusFolder | GitFolder | LocalFolder;
+export type NeedUploadFolder = 
+  GlobusFolder | GitFolder | LocalFolder;
+
+export type AnyFolder = NeedUploadFolder | EmptyFolder;
+
+export interface authReqBody {
+  jupyterhubApiToken: string
+}
+
+export interface updateFolderBody { 
+  jupyterhubApiToken: string, 
+  name?: string, 
+  isWritable?: boolean 
+}
+
+export interface initGlobusDownloadBody { 
+  jupyterhubApiToken: string, 
+  toEndpoint: string, 
+  toPath: string, 
+  jobId?: string, 
+  fromPath?: string 
+}
+
+export interface createJobBody { 
+  jupyterhubApiToken: string, 
+  maintainer?: string, 
+  hpc?: string, 
+  user?: string, 
+  password?: string 
+}
+
+export interface updateJobBody {
+  jupyterhubApiToken: string,
+  param?: object,
+  env?: object,
+  slurm?: object,
+  localExecutableFolder?: object,
+  localDataFolder?: object,
+  remoteDataFolder?: object,
+  remoteExecutableFolder?: object,
+}
+
+export interface refreshCacheBody {
+  hpc?: string
+}
+
+export type PushFunction = (_args: unknown[]) => Promise<number>;
+export type ShiftFunction = (_key: unknown) => Promise<unknown>;
+export type PeekFunction = (
+  _key: unknown, 
+  _start: number, 
+  _end: number
+) => Promise<unknown>;
+export type LengthFunction = (_key: unknown) => Promise<number>;
+
+export type GetValueFunction = (_key: unknown) => Promise<string>;
+export type SetValueFunction = (
+  _key: unknown, 
+  _value: string
+) => Promise<string>;  // possibly not string
+export type DelValueFunction = (_keys: unknown) => Promise<number>;

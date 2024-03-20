@@ -8,8 +8,9 @@ import {
   BeforeInsert,
   BeforeUpdate,
   ManyToOne,
-  JoinColumn,
+  // JoinColumn,
 } from "typeorm";
+import BaseMaintainer from "../maintainers/BaseMaintainer";
 import {
   credential,
   GitFolder,
@@ -19,36 +20,35 @@ import {
   slurm,
 } from "../types";
 import { Event } from "./Event";
-import { Log } from "./Log";
-import BaseMaintainer from "../maintainers/BaseMaintainer";
 import { Folder } from "./Folder";
+import { Log } from "./Log";
 
 /** Class representing a job. */
 @Entity({ name: "jobs" })
 export class Job {
   @PrimaryColumn()
-  id: string;
+    id: string;
 
   @Column({ nullable: true, default: null })
-  userId?: string;
+    userId?: string;
 
   @Column({ nullable: true, default: null })
-  name?: string;
+    name?: string;
 
   @Column()
-  maintainer: string;
+    maintainer: string;
 
   @Column()
-  hpc: string;
+    hpc: string;
 
-  @ManyToOne((type) => Folder, { onDelete: "CASCADE", nullable: true })
-  remoteExecutableFolder: Folder;
+  @ManyToOne((_type) => Folder, { onDelete: "CASCADE", nullable: true })
+    remoteExecutableFolder: Folder;
 
-  @ManyToOne((type) => Folder, { onDelete: "CASCADE", nullable: true })
-  remoteDataFolder: Folder;
+  @ManyToOne((_type) => Folder, { onDelete: "CASCADE", nullable: true })
+    remoteDataFolder: Folder;
 
-  @ManyToOne((type) => Folder, { onDelete: "CASCADE", nullable: true })
-  remoteResultFolder: Folder;
+  @ManyToOne((_type) => Folder, { onDelete: "CASCADE", nullable: true })
+    remoteResultFolder: Folder;
 
   @Column({
     type: "text",
@@ -57,184 +57,209 @@ export class Job {
     transformer: {
       to: (
         i: LocalFolder | GitFolder | GlobusFolder | null | undefined
-      ): string => (i ? JSON.stringify(i) : null),
+      ): string | null => (i ? JSON.stringify(i) : null),
       from: (
         i: string | null | undefined | object
-      ): LocalFolder | GitFolder | GlobusFolder =>
-        typeof i == "string" ? JSON.parse(i) : i,
+      ): LocalFolder | GitFolder | GlobusFolder
+       | undefined | string | null | object =>
+        typeof i === "string" ? JSON.parse(i) as LocalFolder | GitFolder | GlobusFolder : i,
     },
   })
-  localExecutableFolder: LocalFolder | GitFolder | GlobusFolder;
+    localExecutableFolder: LocalFolder | GitFolder | GlobusFolder;
 
   @Column({
     type: "text",
     nullable: true,
     default: null,
     transformer: {
-      to: (i: NeedUploadFolder | null | undefined): string =>
-        i ? JSON.stringify(i) : null,
-      from: (i: string | null | undefined | object): NeedUploadFolder =>
-        typeof i == "string" ? JSON.parse(i) : i,
-    },
-  })
-  localDataFolder: NeedUploadFolder;
-
-  @Column({
-    type: "text",
-    nullable: true,
-    default: null,
-    transformer: {
-      to: (i: { [keys: string]: string } | null | undefined): string =>
+      to: (i: NeedUploadFolder | null | undefined): string | null =>
         i ? JSON.stringify(i) : null,
       from: (
         i: string | null | undefined | object
-      ): { [keys: string]: string } =>
-        typeof i == "string" ? JSON.parse(i) : {},
+      ): NeedUploadFolder | string | null | undefined | object =>
+        typeof i === "string" ? JSON.parse(i) as NeedUploadFolder : i,
     },
   })
-  param: { [keys: string]: string };
+    localDataFolder: NeedUploadFolder;
 
   @Column({
     type: "text",
     nullable: true,
     default: null,
     transformer: {
-      to: (i: { [keys: string]: string } | null | undefined): string =>
+      to: (i: Record<string, string> | null | undefined): string | null =>
         i ? JSON.stringify(i) : null,
       from: (
         i: string | null | undefined | object
-      ): { [keys: string]: string } =>
-        typeof i == "string" ? JSON.parse(i) : {},
+      ): Record<string, string> =>
+        typeof i === "string" ? JSON.parse(i) as Record<string, string> : {},
     },
   })
-  env: { [keys: string]: string };
+    param: Record<string, string>;
 
   @Column({
     type: "text",
     nullable: true,
     default: null,
     transformer: {
-      to: (i: slurm | null | undefined): string =>
+      to: (i: Record<string, string> | null | undefined): string | null =>
+        i ? JSON.stringify(i) : null,
+      from: (
+        i: string | null | undefined | object
+      ): Record<string, string> =>
+        typeof i === "string" ? JSON.parse(i) as Record<string, string> : {},
+    },
+  })
+    env: Record<string, string>;
+
+  @Column({
+    type: "text",
+    nullable: true,
+    default: null,
+    transformer: {
+      to: (i: slurm | null | undefined): string | null =>
         i ? JSON.stringify(i) : null,
       from: (i: string | null | undefined | object): slurm =>
-        typeof i == "string" ? JSON.parse(i) : {},
+        typeof i === "string" ? JSON.parse(i) as slurm : {},
     },
   })
-  slurm?: slurm;
+    slurm?: slurm;
 
   @Column({ nullable: true, default: null })
-  slurmId?: string;
+    slurmId?: string;
 
   @Column({ nullable: true, default: null })
-  credentialId?: string;
+    credentialId?: string;
 
-  @OneToMany((type) => Event, (event: Event) => event.job)
-  events: Event[];
+  @OneToMany((_type) => Event, (event: Event) => event.job)
+    events: Event[];
 
-  @OneToMany((type) => Log, (log: Log) => log.job)
-  logs: Log[];
+  @OneToMany((_type) => Log, (log: Log) => log.job)
+    logs: Log[];
 
   @Column({
     type: "bigint",
     transformer: {
-      to: (i: Date | null | undefined): number => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
+      to: (
+        i: Date | null | undefined
+      ): number | null => (i ? i.getTime() : null),
+      from: (
+        i: number | null | undefined
+      ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-  createdAt: Date;
+    createdAt: Date;
 
   @Column({
     type: "bigint",
     nullable: true,
     transformer: {
-      to: (i: Date | null | undefined): number => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
+      to: (
+        i: Date | null | undefined
+      ): number | null => (i ? i.getTime() : null),
+      from: (
+        i: number | null | undefined
+      ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-  updatedAt: Date;
+    updatedAt: Date;
 
   @DeleteDateColumn({
     type: "bigint",
     nullable: true,
     transformer: {
-      to: (i: Date | null | undefined): number => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
+      to: (
+        i: Date | null | undefined
+      ): number | null => (i ? i.getTime() : null),
+      from: (
+        i: number | null | undefined
+      ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-  deletedAt: Date;
+    deletedAt: Date;
 
   @Column({
     type: "bigint",
     nullable: true,
     transformer: {
-      to: (i: Date | null | undefined): number => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
+      to: (
+        i: Date | null | undefined
+      ): number | null=> (i ? i.getTime() : null),
+      from: (
+        i: number | null | undefined
+      ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-  initializedAt: Date;
+    initializedAt: Date;
 
   @Column({
     type: "bigint",
     nullable: true,
     transformer: {
-      to: (i: Date | null | undefined): number => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
+      to: (
+        i: Date | null | undefined
+      ): number | null => (i ? i.getTime() : null),
+      from: (
+        i: number | null | undefined
+      ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-  finishedAt: Date;
+    finishedAt: Date;
 
   @Column({
     type: "bigint",
     nullable: true,
     transformer: {
-      to: (i: Date | null | undefined): number => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
+      to: (
+        i: Date | null | undefined
+      ): number | null => (i ? i.getTime() : null),
+      from: (
+        i: number | null | undefined
+      ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-  queuedAt: Date;
+    queuedAt: Date;
 
   /**
    * Set the createdAt time to the current time.
    *
-   * @async
    * @return {Date} date - Date this job was created.
    */
   @BeforeInsert()
-  async setCreatedAt() {
+  setCreatedAt() {
     this.createdAt = new Date();
   }
 
   /**
    * Set the updatedAt time to the current time.
    *
-   * @async
    * @return {Date} date - Date this job was last updated.
    */
   @BeforeUpdate()
-  async setUpdatedAt() {
+  setUpdatedAt() {
     return (this.updatedAt = new Date());
   }
 
   @Column({ default: false })
-  isFailed: boolean;
+    isFailed: boolean;
 
   @Column({ nullable: true, default: null })
-  nodes: number;
+    nodes: number;
 
   @Column({ nullable: true, default: null })
-  cpus: number;
+    cpus: number;
 
   @Column({ nullable: true, default: null })
-  cpuTime: number;
+    cpuTime: number;
 
   @Column({ nullable: true, default: null })
-  memory: number;
+    memory: number;
 
   @Column({ nullable: true, default: null })
-  memoryUsage: number;
+    memoryUsage: number;
 
   @Column({ nullable: true, default: null })
-  walltime: number;
+    walltime: number;
 
   /**
    * Sorts the logs in the order that they were created

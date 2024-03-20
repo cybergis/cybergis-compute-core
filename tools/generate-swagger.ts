@@ -1,5 +1,5 @@
-const fs = require("fs");
-const swaggerJsdoc = require("swagger-jsdoc");
+import swaggerJsdoc = require("swagger-jsdoc");
+import fs = require("fs");
 
 const options = {
   definition: {
@@ -12,9 +12,13 @@ const options = {
   apis: ["./server.ts"], // files containing annotations as above
 };
 
-const output = swaggerJsdoc(options);
+const output: object = swaggerJsdoc(options);
 fs.writeFile(
   "./production/swagger.json",
   JSON.stringify(output),
-  function (err) {}
+  function (err) {
+    if (err) {
+      console.log("Writing failed");
+    }
+  }
 );

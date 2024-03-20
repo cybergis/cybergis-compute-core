@@ -1,8 +1,8 @@
 import "jest";
-import TestHelper from "../TestHelper";
-import Emitter from "../../src/Emitter";
 import { config } from "../../configs/config";
 import DB from "../../src/DB";
+import Emitter from "../../src/Emitter";
+import TestHelper from "../TestHelper";
 const db = new DB();
 
 beforeAll(() => {
@@ -58,7 +58,7 @@ describe("test Emitter.getEvents", () => {
       maintainer,
       hpc
     );
-    for (var i = 0; i < eventsCount; i++)
+    for (let i = 0; i < eventsCount; i++)
       await TestHelper.createEvent(
         job,
         `${eventType}_${i}`,
@@ -66,8 +66,8 @@ describe("test Emitter.getEvents", () => {
       );
     const queriedEvents = await emitter.getEvents(job.id);
     //
-    expect(queriedEvents.length == eventsCount);
-    for (var i = 0; i < eventsCount; i++) {
+    expect(queriedEvents.length === eventsCount);
+    for (let i = 0; i < eventsCount; i++) {
       expect(queriedEvents[i].jobId).toEqual(job.id);
       expect(queriedEvents[i].type).toEqual(`${eventType}_${i}`);
     }
@@ -103,12 +103,12 @@ describe("test Emitter.getLogs", () => {
       maintainer,
       hpc
     );
-    for (var i = 0; i < logsCount; i++)
+    for (let i = 0; i < logsCount; i++)
       await TestHelper.createLog(job, `${logMessage}_${i}`);
     const queriedLogs = await emitter.getLogs(job.id);
     //
-    expect(queriedLogs.length == logsCount);
-    for (var i = 0; i < logsCount; i++) {
+    expect(queriedLogs.length === logsCount);
+    for (let i = 0; i < logsCount; i++) {
       expect(queriedLogs[i].jobId).toEqual(job.id);
       expect(queriedLogs[i].message).toEqual(`${logMessage}_${i}`);
     }

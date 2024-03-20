@@ -1,11 +1,13 @@
 import NodeSSH = require("node-ssh");
-import { SSH, SSHConfig } from "../types";
 import { config, hpcConfigMap } from "../../configs/config";
+import { SSH, SSHConfig } from "../types";
 
-const connectionPool: { [keys: string]: { counter: number; ssh: SSH } } = {};
+// dictionary recording ssh connections for community accounts (which have public ssh ability)
+const connectionPool: Record<string, { counter: number, ssh: SSH }> = {};
 
-for (var hpcName in hpcConfigMap) {
-  var hpcConfig = hpcConfigMap[hpcName];
+// populates the connectionPool with community account HPCs
+for (const hpcName in hpcConfigMap) {
+  const hpcConfig = hpcConfigMap[hpcName];
   if (!hpcConfig.is_community_account) continue;
 
   // register community account SSH
@@ -18,7 +20,7 @@ for (var hpcName in hpcConfigMap) {
   if (hpcConfig.community_login.use_local_key) {
     sshConfig.privateKey = config.local_key.private_key_path;
     if (config.local_key.passphrase) {
-      sshConfig.passphrase = config.local_key.passphrase;
+      sshConfig.passphrase = config.local_key.passphrase as string;
     }
   } else {
     sshConfig.privateKey =

@@ -1,7 +1,16 @@
-import sys
 import logging
-import time
-from globus_sdk import GlobusAPIError, NetworkError, NativeAppAuthClient, RefreshTokenAuthorizer, TransferClient, TransferData
+import sys
+
+# import time
+from globus_sdk import (
+    GlobusAPIError,
+    NativeAppAuthClient,
+    NetworkError,
+    RefreshTokenAuthorizer,
+    TransferClient,
+    TransferData,
+)
+
 
 def output(k, i):
     print('@' + k + '=[' + i + ']')

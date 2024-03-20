@@ -1,14 +1,14 @@
-import Supervisor from "./src/Supervisor";
-import { Git } from "./src/models/Git";
-import Helper from "./src/Helper";
-import {
-  hpcConfig,
-  maintainerConfig,
-  containerConfig,
-  folderEditable,
-  jupyterGlobusMapConfig,
-  announcementsConfig
-} from "./src/types";
+import express = require("express");
+// import { Console } from "console";
+const swaggerDocument: Record<string, unknown> = require("../production/swagger.json");  // eslint-disable-line
+// import bodyParser = require("body-parser");
+import { Request, NextFunction, Response } from "express";
+import fileUpload = require("express-fileupload");
+import jsonschema = require("jsonschema");
+import morgan = require("morgan");
+import swaggerUI = require("swagger-ui-express");
+import fs = require("fs");
+import * as path from "path";
 import {
   config,
   containerConfigMap,
@@ -16,29 +16,45 @@ import {
   maintainerConfigMap,
   jupyterGlobusMap
 } from "./configs/config";
-import GlobusUtil, { GlobusTaskListManager } from "./src/lib/GlobusUtil";
-import express = require("express");
-import { Job } from "./src/models/Job";
-import JupyterHub from "./src/JupyterHub";
 import DB from "./src/DB";
-import Statistic from "./src/Statistic";
-import * as path from "path";
-import JobUtil, { ResultFolderContentManager } from "./src/lib/JobUtil";
+import { FolderUploaderHelper } from "./src/FolderUploader";
+import JupyterHub from "./src/JupyterHub";
 import GitUtil from "./src/lib/GitUtil";
-import SSHCredentialGuard from "./src/SSHCredentialGuard";
+import GlobusUtil, { GlobusTaskListManager } from "./src/lib/GlobusUtil";
+import * as Helper from "./src/lib/Helper";
+import JobUtil, { ResultFolderContentManager } from "./src/lib/JobUtil";
 import { Folder } from "./src/models/Folder";
-import { Console } from "console";
-const swaggerUI = require("swagger-ui-express");
-const swaggerDocument = require("../production/swagger.json");
-const bodyParser = require("body-parser");
-const Validator = require("jsonschema").Validator;
-const fileUpload = require("express-fileupload");
-const morgan = require("morgan");
+import { Git } from "./src/models/Git";
+import { Job } from "./src/models/Job";
+import { SSHCredentialGuard } from "./src/SSHCredentialGuard";
+import Statistic from "./src/Statistic";
+import Supervisor from "./src/Supervisor";
+import type {
+  hpcConfig,
+  maintainerConfig,
+  containerConfig,
+  // folderEditable,
+  jupyterGlobusMapConfig,
+  announcementsConfig,
+  authReqBody,
+  updateFolderBody,
+  initGlobusDownloadBody,
+  createJobBody,
+  updateJobBody,
+  refreshCacheBody,
+} from "./src/types";
 
+// create the express app
 const app = express();
-app.use(bodyParser.json());
+
+// handle parsing arguments
+// app.use(bodyParser.json());  // possibly unneeded now with newer versions of express
+app.use(express.json());
 app.use(morgan("combined"));
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true }));
+// app.use(bodyParser.urlencoded({ extended: true }));
+
+// uploading files
 app.use(
   fileUpload({
     limits: { fileSize: config.local_file_system.limit_in_mb * 1024 * 1024 },
@@ -46,15 +62,16 @@ app.use(
     abortOnLimit: true,
     tempFileDir: config.local_file_system.cache_path,
     safeFileNames: true,
-    limitHandler: (req, res, next) => {
+    limitHandler: (req, res, _next) => {
       res.json({ error: "file too large" });
       res.status(402);
     },
   })
 );
 
+// global object instantiation
 const supervisor = new Supervisor();
-const validator = new Validator();
+const validator = new jsonschema.Validator();
 const db = new DB();
 const sshCredentialGuard = new SSHCredentialGuard();
 const resultFolderContent = new ResultFolderContentManager();
@@ -62,19 +79,8 @@ const jupyterHub = new JupyterHub();
 const statistic = new Statistic();
 const globusTaskList = new GlobusTaskListManager();
 
-app.use(async function (req, res, next) {
-  if (req.body.jupyterhubApiToken) {
-    try {
-      res.locals.username = await jupyterHub.getUsername(
-        req.body.jupyterhubApiToken
-      );
-      res.locals.host = await jupyterHub.getHost(req.body.jupyterhubApiToken);
-    } catch {}
-  }
-  next();
-});
-
-var schemas = {
+// object for vadidating API calls
+const schemas = {
   user: {
     type: "object",
     properties: {
@@ -86,7 +92,7 @@ var schemas = {
     type: "object",
     properties: {
       jupyterhubApiToken: { type: "string" },
-      jobId: { type: "string"}
+      jobId: { type: "string" },
     },
     required: ["jupyterhubApiToken", "jobId"],
   },
@@ -127,7 +133,7 @@ var schemas = {
   initGlobusDownload: {
     type: "object",
     properties: {
-      jobId: { type: "string"},
+      jobId: { type: "string" },
       jupyterhubApiToken: { type: "string" },
       toEndpoint: { type: "string" },
       toPath: { type: "string" },
@@ -135,57 +141,106 @@ var schemas = {
     },
     required: ["jupyterhubApiToken", "toEndpoint", "toPath"],
   },
+  refreshCache: {
+    type: "object",
+    properties: {
+      hpc: { type: "string" },
+    }
+  }
 };
 
-function requestErrors(v) {
+// handler for route errors
+function requestErrors(v: jsonschema.ValidatorResult): string[] {
   if (v.valid) return [];
-  var errors = [];
-  for (var i in v.errors) errors.push(v.errors[i].message);
+
+  const errors: string[] = [];
+  for (const error of v.errors) errors.push(error.message);
+
   return errors;
 }
 
-async function prepareDataForDB(data, properties) {
+// function to take data and get it into dictionary format for DB interfacing
+async function prepareDataForDB(
+  data: updateFolderBody, 
+  properties: string[]
+): Promise<Record<string, string>> {
   const out = {};
   const connection = await db.connect();
-  for (var i in properties) {
-    const property = properties[i];
+
+  for (const property of properties) {
     if (data[property]) {
       if (
-        property == "remoteExecutableFolder" ||
-        property == "remoteDataFolder"
+        property === "remoteExecutableFolder" ||
+        property === "remoteDataFolder"
       ) {
-        const folder = connection.getRepository(Folder).findOne(data[property]);
+        const folder: Folder | undefined = await (connection.
+          getRepository(Folder).
+          findOne(data[property] as string)
+        );
+
         if (!folder) throw new Error("could not find " + property);
+
         out[property] = folder;
       } else {
-        out[property] = data[property];
+        out[property] = data[property] as string;
       }
     }
   }
+
   return out;
 }
 
+// initializes a hello world repository in the DB
 async function initHelloWorldGit() {
   const connection = await db.connect();
   const helloWorldGit = await connection
     .getRepository(Git)
     .findOne("hello_world");
-  if (helloWorldGit == undefined) {
+
+  if (helloWorldGit === undefined) {
     const git = {
       id: "hello_world",
-      address: `https://github.com/cybergis/cybergis-compute-hello-world.git`,
+      address: "https://github.com/cybergis/cybergis-compute-hello-world.git",
       isApproved: true,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
+
     await connection.getRepository(Git).save(git);
   }
 }
 
-initHelloWorldGit();
+initHelloWorldGit();  // eslint-disable-line
 
+const authMiddleWare = async (
+  req: Request, 
+  res: Response, 
+  next: NextFunction
+) => {
+  const body = req.body as authReqBody;
+  
+  // if there is an api token in the body
+  if (body.jupyterhubApiToken) {
+    try {
+      // try to extract username/host and store into local variables
+      res.locals.username = await jupyterHub.getUsername(
+        body.jupyterhubApiToken
+      );
+      res.locals.host = jupyterHub.getHost(body.jupyterhubApiToken);
+    } catch {}
+
+    // continue onto the actual route
+    next();
+  // if there isn't, just give a 402 error
+  } else {
+    res.status(402).json(
+      { error: "Malformed input. No jupyterhub api token passed with request."}
+    );
+  }
+};
+
+// create documentation routes
 app.use("/ts-docs", express.static("production/tsdoc"));
-
 app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swaggerDocument));
 
 /**
@@ -227,31 +282,31 @@ app.get("/statistic", async (req, res) => {
  *          401:
  *              description: Returns a list of errors rasied when validating the job access token.
  *          402:
- *              description: Returns 'invalid input' and a list of errors with the format of the req body or 'invalid token' if a valid jupyter token is not provided
+ *              description: Returns "invalid input" and a list of errors with the format of the req body or "invalid token" if a valid jupyter token is not provided
  *
  */
-app.get("/statistic/job/:jobId", async (req, res) => {
-  var body = req.body;
-  var errors = requestErrors(validator.validate(body, schemas.user));
-
-  if (errors.length > 0) {
-    res.status(402).json({ error: "invalid input", messages: errors });
-    return;
-  }
+app.get("/statistic/job/:jobId", authMiddleWare, async (req, res) => {
   if (!res.locals.username) {
     res.status(402).json({ error: "invalid token" });
     return;
   }
 
   try {
+    // query the job matching the params
     const connection = await db.connect();
     const job = await connection
       .getRepository(Job)
-      .findOne({ id: req.params.jobId, userId: res.locals.username });
+      .findOne({ id: req.params.jobId, userId: res.locals.username as string });
+
+    if (job === undefined) {
+      throw new Error("job not found.");
+    }
+
     res.json({ runtime_in_seconds: await statistic.getRuntimeByJobId(job.id) });
   } catch (e) {
-    res.status(401).json({ error: "invalid access", messages: [e.toString()] });
-    return;
+    res.status(401).json(
+      { error: "invalid access", messages: [Helper.assertError(e).toString()] }
+    );
   }
 });
 
@@ -259,25 +314,17 @@ app.get("/statistic/job/:jobId", async (req, res) => {
  * @openapi
  * /user:
  *  get:
- *      description: Returns the current user's username (Authentication REQUIRED)
+ *      description: Returns the current user"s username (Authentication REQUIRED)
  *      responses:
  *          200:
- *              description: Returns the current user's username
+ *              description: Returns the current user"s username
  *          402:
- *              description: Returns 'invalid input' and a list of errors with the format of the req body or 'invalid token' if a valid jupyter token authentication is not provided
+ *              description: Returns "invalid input" and a list of errors with the format of the req body or "invalid token" if a valid jupyter token authentication is not provided
  *          404:
- *              description: Returns an error if the user's username is not in the allowlist
+ *              description: Returns an error if the user"s username is not in the allowlist
  */
-app.get("/user", (req, res) => {
-  var body = req.body;
-  var errors = requestErrors(validator.validate(body, schemas.user));
-
-  if (errors.length > 0) {
-    res.status(402).json({ error: "invalid input", messages: errors });
-    return;
-  }
-
-  if (!Helper.isAllowlisted(res.locals.host)) {
+app.get("/user", authMiddleWare, (req, res) => {
+  if (!Helper.isAllowlisted(res.locals.host as string)) {
     res.status(404).json({ error: "Cannot find jupyterhubHost in allowlist" });
     return;
   }
@@ -287,7 +334,7 @@ app.get("/user", (req, res) => {
     return;
   }
 
-  res.json({ username: res.locals.username });
+  res.json({ username: res.locals.username as string });
 });
 
 /**
@@ -299,22 +346,14 @@ app.get("/user", (req, res) => {
  *          200:
  *              description: Returns the jupyter-globus endpoint, root path and container home path as a single dictionary
  *          402:
- *              description: Returns 'invalid input' and a list of errors with the format of the req body or 'invalid token' if a valid jupyter token authentication is not provided
+ *              description: Returns "invalid input" and a list of errors with the format of the req body or "invalid token" if a valid jupyter token authentication is not provided
  *          403:
  *              description: Returns an error if the current user does not map to a jupyter-globus user
  *          404:
- *              description: Returns an error if the user's username is not in the allowlist
+ *              description: Returns an error if the user"s username is not in the allowlist
  */
-app.get("/user/jupyter-globus", async (req, res) => {
-  var body = req.body;
-  var errors = requestErrors(validator.validate(body, schemas.user));
-
-  if (errors.length > 0) {
-    res.status(402).json({ error: "invalid input", messages: errors });
-    return;
-  }
-
-  if (!Helper.isAllowlisted(res.locals.host)) {
+app.get("/user/jupyter-globus", authMiddleWare, async (req, res) => {
+  if (!Helper.isAllowlisted(res.locals.host as string)) {
     res.status(404).json({ error: "Cannot find jupyterhubHost in allowlist" });
     return;
   }
@@ -324,18 +363,25 @@ app.get("/user/jupyter-globus", async (req, res) => {
     return;
   }
 
-  var username_array = res.locals.username.split("@");
-  var username = username_array.slice(0, username_array.length - 1).join("@");
-  var jupyterGlobus = jupyterGlobusMap[res.locals.host]
+  // extract username minus the last segment after an @
+  const username_array: string[] = (res.locals.username as string).split("@");
+  let username = username_array.slice(0, username_array.length - 1).join("@");
+  const jupyterGlobus = jupyterGlobusMap[res.locals.host as string];
+
   try {
+    // get a processed username (mapping changes depending on the host)
     username = await GlobusUtil.mapUsername(
       username,
-      jupyterGlobus.user_mapping
+      jupyterGlobus.user_mapping ?? null
     );
   } catch (err) {
     res
       .status(403)
-      .json({ error: `Failed to map jupyter-globus: ${err.toString()}` });
+      .json({
+        error: `Failed to map jupyter-globus: ${
+          Helper.assertError(err).toString()
+        }`
+      });
     return;
   }
 
@@ -350,25 +396,17 @@ app.get("/user/jupyter-globus", async (req, res) => {
  * @openapi
  * /user/job:
  *  get:
- *      description: Returns a list of all of the current user's jobs (Authentication REQUIRED)
+ *      description: Returns a list of all of the current user"s jobs (Authentication REQUIRED)
  *      responses:
  *          200:
  *              description: Returns all of the jobs for the current user in a list of dictionary objects representing each job
  *          402:
- *              description: Returns 'invalid input' and a list of errors with the format of the req body or 'invalid token' if a valid jupyter token authentication is not provided
+ *              description: Returns "invalid input" and a list of errors with the format of the req body or "invalid token" if a valid jupyter token authentication is not provided
  *          404:
- *              description: Returns an error if the user's username is not in the allowlist
+ *              description: Returns an error if the user"s username is not in the allowlist
  */
-app.get("/user/job", async (req, res) => {
-  var body = req.body;
-  var errors = requestErrors(validator.validate(body, schemas.user));
-
-  if (errors.length > 0) {
-    res.status(402).json({ error: "invalid input", messages: errors });
-    return;
-  }
-
-  if (!Helper.isAllowlisted(res.locals.host)) {
+app.get("/user/job", authMiddleWare, async (req, res) => {
+  if (!Helper.isAllowlisted(res.locals.host as string)) {
     res.status(404).json({ error: "Cannot find jupyterhubHost in allowlist" });
     return;
   }
@@ -378,15 +416,17 @@ app.get("/user/job", async (req, res) => {
     return;
   }
 
+  // get all jobs associated with user
   const connection = await db.connect();
   const jobs = await connection.getRepository(Job).find({
-    where: { userId: res.locals.username },
+    where: { userId: res.locals.username as string },
     relations: [
       "remoteDataFolder",
       "remoteResultFolder",
       "remoteExecutableFolder",
     ],
   });
+
   res.json({ job: Helper.job2object(jobs) });
 });
 
@@ -399,22 +439,18 @@ app.get("/user/job", async (req, res) => {
  *          200:
  *              description: Returns dictionary object of slurm usage for the current user
  *          402:
- *              description: Returns 'invalid input' and a list of errors with the format of the req body or 'invalid token' if a valid jupyter token authentication is not provided
+ *              description: Returns "invalid input" and a list of errors with the format of the req body or "invalid token" if a valid jupyter token authentication is not provided
  */
-app.get("/user/slurm-usage", async (req, res) => {
-  var body = req.body;
-  var errors = requestErrors(validator.validate(body, schemas.user));
-
-  if (errors.length > 0) {
-    res.status(402).json({ error: "invalid input", messages: errors });
-    return;
-  }
+app.get("/user/slurm-usage", authMiddleWare, async (req, res) => {
   if (!res.locals.username) {
     res.status(402).json({ error: "invalid token" });
     return;
   }
 
-  res.json(await JobUtil.getUserSlurmUsage(res.locals.username, true));
+  // get all jobs associated with user, then aggregate, then return that
+  res.json(
+    await JobUtil.getUserSlurmUsage(res.locals.username as string, true)
+  );
 });
 
 /**
@@ -427,10 +463,14 @@ app.get("/user/slurm-usage", async (req, res) => {
  *              description: Returns current hpc configurations for existing linked hpc clusters as a dictionaruy
  */
 app.get("/hpc", function (req, res) {
-  var parseHPC = (dest: { [key: string]: hpcConfig }) => {
-    var out = {};
-    for (var i in dest) {
-      var d: hpcConfig = JSON.parse(JSON.stringify(dest[i])); // hard copy
+  const parseHPC = (dest: Record<string, hpcConfig>) => {
+    // create truncated version of all hpc configs
+    const out = {};
+    for (const i in dest) {
+      const d: Partial<hpcConfig> = JSON.parse(
+        JSON.stringify(dest[i])
+      ) as hpcConfig; // hard copy
+
       delete d.init_sbatch_script;
       delete d.init_sbatch_options;
       delete d.community_login;
@@ -439,6 +479,7 @@ app.get("/hpc", function (req, res) {
     }
     return out;
   };
+
   res.json({ hpc: parseHPC(hpcConfigMap) });
 });
 
@@ -452,14 +493,18 @@ app.get("/hpc", function (req, res) {
  *              description: Returns current maintainer configurations as a dictionary object
  */
 app.get("/maintainer", function (req, res) {
-  var parseMaintainer = (dest: { [key: string]: maintainerConfig }) => {
-    var out = {};
-    for (var i in dest) {
-      var d: maintainerConfig = JSON.parse(JSON.stringify(dest[i])); // hard copy
+  const parseMaintainer = (dest: Record<string, maintainerConfig>) => {
+    const out = {};
+    for (const i in dest) {
+      const d: maintainerConfig = JSON.parse(
+        JSON.stringify(dest[i])
+      ) as maintainerConfig; // hard copy
+
       out[i] = d;
     }
     return out;
   };
+
   res.json({ maintainer: parseMaintainer(maintainerConfigMap) });
 });
 
@@ -470,18 +515,22 @@ app.get("/maintainer", function (req, res) {
  *      description: Returns current container configurations as a dictionary object (Authentication NOT REQUIRED)
  *      responses:
  *          200:
- *              description: Returns current container configurations as a dictionary object 
+ *              description: Returns current container configurations as a dictionary object
  */
 app.get("/container", function (req, res) {
-  var parseContainer = (dest: { [key: string]: containerConfig }) => {
-    var out = {};
-    for (var i in dest) {
-      var d: containerConfig = JSON.parse(JSON.stringify(dest[i])); // hard copy
-      if (!(i in ["dockerfile", "dockerhub"])) out[i] = d;
+  const parseContainer = (dest: Record<string, containerConfig>) => {
+    const out = {};
+    for (const i in dest) {
+      const d: containerConfig = JSON.parse(
+        JSON.stringify(dest[i])
+      ) as containerConfig; // hard copy
+
+      if (!(i in ["dockerfile", "dockerhub"])) out[i] = d;  // exclude dockerfiles/dockerhub configs
     }
     return out;
   };
-  res.json({ container: parseContainer(containerConfigMap)});
+
+  res.json({ container: parseContainer(containerConfigMap) });
 });
 
 /**
@@ -494,15 +543,16 @@ app.get("/container", function (req, res) {
  *              description: Returns current allowlist
  */
 app.get("/whitelist", function (req, res) {
-  var parseHost = (dest: { [key: string]: jupyterGlobusMapConfig }) => {
-    var out = {};
-    for (var i in dest) {
-      var d: jupyterGlobusMapConfig = JSON.parse(JSON.stringify(dest[i])); // hard copy
+  const parseHost = (dest: Record<string, jupyterGlobusMapConfig>) => {
+    const out = {};
+    for (const i in dest) {
+      const d = JSON.parse(JSON.stringify(dest[i])) as jupyterGlobusMapConfig; // hard copy
       out[i] = d.comment;
     }
     return out;
   };
-  res.json({ whitelist: parseHost(jupyterGlobusMap)});
+
+  res.json({ whitelist: parseHost(jupyterGlobusMap) });
 });
 
 /**
@@ -515,15 +565,19 @@ app.get("/whitelist", function (req, res) {
  *              description: Returns current allowlist
  */
 app.get("/allowlist", function (req, res) {
-  var parseHost = (dest: { [key: string]: jupyterGlobusMapConfig }) => {
-    var out = {};
-    for (var i in dest) {
-      var d: jupyterGlobusMapConfig = JSON.parse(JSON.stringify(dest[i])); // hard copy
+  const parseHost = (dest: Record<string, jupyterGlobusMapConfig>) => {
+    const out = {};
+    for (const i in dest) {
+      const d: jupyterGlobusMapConfig = JSON.parse(
+        JSON.stringify(dest[i])
+      ) as jupyterGlobusMapConfig; // hard copy
+
       out[i] = d.comment;
     }
     return out;
   };
-  res.json({ allowlist: parseHost(jupyterGlobusMap)});
+
+  res.json({ allowlist: parseHost(jupyterGlobusMap) });
 });
 
 /**
@@ -536,18 +590,23 @@ app.get("/allowlist", function (req, res) {
  *              description: Returns array of current announcements
  */
 app.get("/announcement", function (req, res) {
+  // read announcements from the announcements.json file
+  fs.readFile("./configs/announcement.json", "utf8", function (err, data) {
+    const parseHost = (dest: Record<string, announcementsConfig>) => {
+      const out = {};
+      for (const i in dest) {
+        const d: announcementsConfig = JSON.parse(
+          JSON.stringify(dest[i])
+        ) as announcementsConfig; // hard copy
 
-  var fs = require('fs');
-  fs.readFile('./configs/announcement.json', 'utf8', function(err, data){
-    var parseHost = (dest: { [key: string]: announcementsConfig }) => {
-      var out = {};
-      for (var i in dest) {
-        var d: announcementsConfig = JSON.parse(JSON.stringify(dest[i])); // hard copy
         out[i] = d;
       }
       return out;
     };
-    res.json(parseHost(JSON.parse(data)));
+
+    res.json(
+      parseHost(JSON.parse(data) as Record<string, announcementsConfig>)
+    );
   });
 });
 
@@ -561,24 +620,146 @@ app.get("/announcement", function (req, res) {
  *              description: Returns JSON dictionary of git jobs including specs for each job
  */
 app.get("/git", async function (req, res) {
-  var parseGit = async (dest: Git[]) => {
-    var out = {};
-    for (var i in dest) {
+  const parseGit = async (dest: Git[]) => {
+    const out = {};
+    for (const d of dest) {
       try {
-        await GitUtil.refreshGit(dest[i]);
-        out[dest[i].id] = await GitUtil.getExecutableManifest(dest[i]);
-      } catch (e) {
-        console.error(`cannot clone git: ${e.toString()}`);
+        // refresh git (updating the database), then get the manifest.json from the repo and append it
+        // await GitUtil.refreshGit(d);
+        // out[d.id] = await GitUtil.getExecutableManifest(d);
+
+        await GitUtil.refreshGitManifest(d);
+        out[d.id] = await GitUtil.getExecutableManifestSpecialized(d);
+      } catch (e) {  // pulling/cloning went wrong
+        console.error(`cannot clone git: ${Helper.assertError(e).toString()}`);
       }
     }
     return out;
   };
 
-  var connection = await db.connect();
-  var gits = await connection
+  const connection = await db.connect();
+  const gits = await connection
     .getRepository(Git)
     .find({ order: { id: "DESC" } });
   res.json({ git: await parseGit(gits) });
+});
+
+/**
+ * @openapi
+ * /git/refresh/:id:
+ *  put:
+ *      description: Refreshes a given git repo (with id :id) on the specified HPC, or all HPCs if HPC is not provided
+ *      responses:
+ *          200:
+ *              description: Refresh completed successfully
+ *          401:
+ *              description: Cache refresh failed
+ *          402:
+ *              description: Request body malformed
+ *          404:
+ *              description: Provided git id was not found
+ */
+app.put("/git/refresh/:id", async function (req, res) {
+  const errors = requestErrors(
+    validator.validate(req.body, schemas.refreshCache)
+  );
+
+  if (errors.length > 0) {
+    res.status(402).json({ error: "invalid input", messages: errors });
+    return;
+  }
+
+  const body = req.body as refreshCacheBody;
+
+  const gitId = req.params.id;
+
+  const connection = await db.connect();
+  const git = await connection
+    .getRepository(Git)
+    .findOneOrFail({id: gitId});
+
+  if (!git) {
+    res.status(404).json({ error: "unknown folder with id " + gitId });
+    return;
+  }
+
+  try {
+    await GitUtil.refreshGit(git);
+
+    if (body.hpc) {
+      await FolderUploaderHelper.cachedUpload({ gitId: git.id }, body.hpc, "cache");
+    } else {
+      for (const hpc of Object.keys(hpcConfigMap)) {
+        // vv fun fact! you can avoid awaiting for a promise with the void keyword
+        await FolderUploaderHelper.cachedUpload({gitId: git.id}, hpc, "cache");
+      }
+    }
+  } catch (err) {
+    res.status(401).json({ error: `something went wrong with refreshing the cache; experienced error: ${Helper.assertError(err).toString()}`});
+    return;
+  }
+
+});
+
+/**
+ * @openapi
+ * /git/refresh/hpc/:id:
+ *  put:
+ *      description: For the given HPC id (:id), refresh all git repos on it.
+ *      responses:
+ *          200:
+ *              description: Refresh completed successfully
+ *          401:
+ *              description: Something went wrong with the cache reloading
+ */
+app.put("/git/refresh/hpc/:id", async function (req, res) {
+  const hpc = req.params.id;
+
+  const connection = await db.connect();
+  const repos = await connection
+    .getRepository(Git)
+    .find();
+
+  try {
+    for (const repo of repos) {
+      await GitUtil.refreshGit(repo);
+      await FolderUploaderHelper.cachedUpload({ gitId: repo.id }, hpc, "cache");
+    }
+  } catch (err) {
+    res.status(401).json({ error: `something went wrong with refreshing the cache; experienced error: ${Helper.assertError(err).toString()}`});
+    return;
+  }
+});
+
+/**
+ * @openapi
+ * /git/refresh:
+ *  put:
+ *      description: Refresh all git repos on all HPCs.
+ *      responses:
+ *          200:
+ *              description: Refresh completed successfully
+ *          401:
+ *              description: Something went wrong with the cache reloading
+ */
+app.put("/git/refresh", async function (req, res) {
+  const connection = await db.connect();
+
+  const repos = await connection.getRepository(Git).find();
+
+  try {
+    for (const repo of repos) {
+      await GitUtil.refreshGit(repo);
+      
+      for (const hpc of Object.keys(hpcConfigMap)) {
+        // vv fun fact! you can avoid awaiting for a promise with the void keyword
+        await FolderUploaderHelper.cachedUpload({gitId: repo.id}, hpc, "cache");
+      }        
+    }
+  } catch (err) {
+    res.status(401).json({ error: `something went wrong with refreshing the cache; experienced error: ${Helper.assertError(err).toString()}`});
+    return;
+  }
 });
 
 /**
@@ -590,25 +771,19 @@ app.get("/git", async function (req, res) {
  *          200:
  *              description: Returns list of folders as dictionary objects with metadata
  *          402:
- *              description: Returns 'invalid input' and a list of errors with the format of the req body or 'invalid token' if a valid jupyter token authentication is not provided
+ *              description: Returns "invalid input" and a list of errors with the format of the req body or "invalid token" if a valid jupyter token authentication is not provided
  */
-app.get("/folder", async function (req, res) {
-  const body = req.body;
-  const errors = requestErrors(validator.validate(body, schemas.user));
-
-  if (errors.length > 0) {
-    res.status(402).json({ error: "invalid input", messages: errors });
-    return;
-  }
+app.get("/folder", authMiddleWare, async function (req, res) {
   if (!res.locals.username) {
     res.status(402).json({ error: "invalid token" });
     return;
   }
 
+  // get all folders associated with the user from the database
   const connection = await db.connect();
   const folder = await connection
     .getRepository(Folder)
-    .find({ userId: res.locals.username });
+    .find({ userId: res.locals.username as string });
   res.json({ folder: folder });
 });
 
@@ -621,25 +796,19 @@ app.get("/folder", async function (req, res) {
  *          200:
  *              description: Returns a folder as a dictionary object with metadata
  *          402:
- *              description: Returns 'invalid input' and a list of errors with the format of the req body or 'invalid token' if a valid jupyter token authentication is not provided
+ *              description: Returns "invalid input" and a list of errors with the format of the req body or "invalid token" if a valid jupyter token authentication is not provided
  */
-app.get("/folder/:folderId", async function (req, res) {
-  const body = req.body;
-  const errors = requestErrors(validator.validate(body, schemas.user));
-
-  if (errors.length > 0) {
-    res.status(402).json({ error: "invalid input", messages: errors });
-    return;
-  }
+app.get("/folder/:folderId", authMiddleWare, async function (req, res) {
   if (!res.locals.username) {
     res.status(402).json({ error: "invalid token" });
     return;
   }
 
+  // get all folders associated with the user and with the given folder Id from the database
   const connection = await db.connect();
   const folder = await connection
     .getRepository(Folder)
-    .find({ userId: res.locals.username, id: req.params.folderId });
+    .find({ userId: res.locals.username as string, id: req.params.folderId });
   res.json(folder);
 });
 
@@ -654,38 +823,35 @@ app.get("/folder/:folderId", async function (req, res) {
  *          401:
  *              description: Returns "encountered error" when the folder deletion throws an exception
  *          402:
- *              description: Returns 'invalid input' and a list of errors with the format of the req body or 'invalid token' if a valid jupyter token authentication is not provided
+ *              description: Returns "invalid input" and a list of errors with the format of the req body or "invalid token" if a valid jupyter token authentication is not provided
  *          404:
  *              description: Returns "unknown folder with id" when the specified folder is not found
  */
-app.delete("/folder/:folderId", async function (req, res) {
-  const body = req.body;
-  const errors = requestErrors(validator.validate(body, schemas.user));
-
-  if (errors.length > 0) {
-    res.status(402).json({ error: "invalid input", messages: errors });
-    return;
-  }
+app.delete("/folder/:folderId", authMiddleWare, async function (req, res) {
   if (!res.locals.username) {
     res.status(402).json({ error: "invalid token" });
     return;
   }
 
+  // try to find the folder with the given id/associated user; if not found, give a 404
   const folderId = req.params.folderId;
   const connection = await db.connect();
   const folder = await connection
     .getRepository(Folder)
-    .findOne({ userId: res.locals.username, id: folderId });
+    .findOne({ userId: res.locals.username as string, id: folderId });
   if (!folder) {
     res.status(404).json({ error: "unknown folder with id " + folderId });
     return;
   }
 
   try {
-    await connection.getRepository(Folder).softDelete(folderId);
+    await connection.getRepository(Folder).softDelete(folderId);  // not actually deleted, just marked as such
     res.status(200).json({ success: true });
   } catch (err) {
-    res.status(401).json({ error: "encountered error: " + err.toString() });
+    res.status(401).json(
+      { error: "encountered error: " + Helper.assertError(err).toString() }
+    );
+
     return;
   }
 });
@@ -701,36 +867,44 @@ app.delete("/folder/:folderId", async function (req, res) {
  *          401:
  *              description: Returns "encountered error" when updating the folder throws an exception
  *          402:
- *              description: Returns 'invalid input' and a list of errors with the format of the req body or 'invalid token' if a valid jupyter token authentication is not provided
+ *              description: Returns "invalid input" and a list of errors with the format of the req body or "invalid token" if a valid jupyter token authentication is not provided
  *          404:
  *              description: Returns "unknown folder with id" when the specified folder is not found
  */
-app.put("/folder/:folderId", async function (req, res) {
-  const body = req.body;
-  const errors = requestErrors(validator.validate(body, schemas.updateFolder));
+app.put("/folder/:folderId", authMiddleWare, async function (req, res) {
+  const errors = requestErrors(
+    validator.validate(req.body, schemas.updateFolder)
+  );
 
   if (errors.length > 0) {
     res.status(402).json({ error: "invalid input", messages: errors });
     return;
   }
+
+  const body = req.body as updateFolderBody;
+
   if (!res.locals.username) {
     res.status(402).json({ error: "invalid token" });
     return;
   }
 
+  // try to find the folder specified in the body, if not found, give a 404
   const folderId = req.params.folderId;
   const connection = await db.connect();
   const folder = await connection
     .getRepository(Folder)
-    .findOne({ userId: res.locals.username, id: folderId });
+    .findOne({ userId: res.locals.username as string, id: folderId });
   if (!folder) {
     res.status(404).json({ error: "unknown folder with id " + folderId });
     return;
   }
 
+  // body parameters to pass as folder properties
   if (body.name) folder.name = body.name;
   if (body.isWritable) folder.isWritable = body.isWritable;
+
   try {
+    // update the folder entry and return it
     await connection
       .createQueryBuilder()
       .update(Folder)
@@ -741,9 +915,13 @@ app.put("/folder/:folderId", async function (req, res) {
     const updatedFolder = await connection
       .getRepository(Folder)
       .findOne(folderId);
+
     res.status(200).json(updatedFolder);
   } catch (err) {
-    res.status(401).json({ error: "encountered error: " + err.toString() });
+    res.status(401).json(
+      { error: "encountered error: " + Helper.assertError(err).toString() }
+    );
+
     return;
   }
 });
@@ -757,71 +935,99 @@ app.put("/folder/:folderId", async function (req, res) {
  *          200:
  *              description: Globus download of the specific folder is successful
  *          402:
- *              description: Returns 'invalid input' and a list of errors with the format of the req body or 'invalid token' if a valid jupyter token authentication is not provided
+ *              description: Returns "invalid input" and a list of errors with the format of the req body or "invalid token" if a valid jupyter token authentication is not provided
  *          403:
  *              description: Returns error when the folder ID cannot be found, when the hpc config for globus cannot be found, when the globus download fails, or when a download is already running for the folder
  */
-app.post("/folder/:folderId/download/globus-init", async function (req, res) {
-  const body = req.body;
-  const errors = requestErrors(
-    validator.validate(body, schemas.initGlobusDownload)
-  );
-  if (errors.length > 0) {
-    res.status(402).json({ error: "invalid input", messages: errors });
-    return;
-  }
-  if (!res.locals.username) {
-    res.status(402).json({ error: "invalid token" });
-    return;
-  }
-
-  // get jobId
-  const jobId = body.jobId;
-
-  // get folder
-  const folderId = req.params.folderId;
-  const connection = await db.connect();
-  const folder = await connection.getRepository(Folder).findOneOrFail(folderId);
-  if (!folder) {
-    res.status(403).json({ error: `cannot find folder with id ${folderId}` });
-    return;
-  }
-  const existingTransferJob = await globusTaskList.get(folderId);
-  if (existingTransferJob) {
-    res.status(403).json({
-      error: `a globus job is currently running on folder with id ${folderId}`,
-    });
-    return;
-  }
-  // get jupyter globus config
-  const hpcConfig = hpcConfigMap[folder.hpc];
-  if (!hpcConfig) {
-    res.status(403).json({ error: `cannot find hpc ${folder.hpc}` });
-    return;
-  }
-  // init transfer
-  const fromPath = body.fromPath
-    ? path.join(folder.globusPath, body.fromPath)
-    : folder.globusPath;
-  const from = { path: fromPath, endpoint: hpcConfig.globus.endpoint };
-  const to = { path: body.toPath, endpoint: body.toEndpoint };
-  console.log(from, to);
-  try {
-    const globusTaskId = await GlobusUtil.initTransfer(
-      from,
-      to,
-      hpcConfig,
-      `job-id-${jobId}-download-folder-${folder.id}`
+app.post(
+  "/folder/:folderId/download/globus-init", 
+  authMiddleWare, 
+  async function (req, res) {
+    const errors = requestErrors(
+      validator.validate(req.body, schemas.initGlobusDownload)
     );
-    await globusTaskList.put(folderId, globusTaskId);
-    res.json({ globus_task_id: globusTaskId });
-  } catch (err) {
-    res
-      .status(403)
-      .json({ error: `failed to init globus with error: ${err.toString()}` });
-    return;
+
+    if (errors.length > 0) {
+      res.status(402).json({ error: "invalid input", messages: errors });
+      return;
+    }
+
+    const body = req.body as initGlobusDownloadBody;
+
+    if (!res.locals.username) {
+      res.status(402).json({ error: "invalid token" });
+      return;
+    }
+
+    // get jobId from body
+    const jobId = body.jobId;
+
+    // get folder; if not found, error out
+    const folderId = req.params.folderId;
+    const connection = await db.connect();
+    const folder = await (connection
+      .getRepository(Folder)
+      .findOneOrFail(folderId)
+    );
+    
+    if (!folder) {
+      res.status(403).json({ error: `cannot find folder with id ${folderId}` });
+      return;
+    }
+
+    // check if there is an existing globus job from the redis DB -- if so, error out
+    const existingTransferJob: string | null = (
+      await globusTaskList.get(folderId)
+    );
+
+    if (existingTransferJob) {
+      res.status(403).json({
+        error: `a globus job is currently running on folder with id ${folderId}`,  // eslint-disable-line
+      });
+      return;
+    }
+
+    // get jupyter globus config
+    const hpcConfig = hpcConfigMap[folder.hpc];
+    if (!hpcConfig) {
+      res.status(403).json({ error: `cannot find hpc ${folder.hpc}` });
+      return;
+    }
+
+    Helper.nullGuard(hpcConfig.globus);
+
+    // init transfer
+    const fromPath = body.fromPath
+      ? path.join(folder.globusPath, body.fromPath)
+      : folder.globusPath;
+    const from = { path: fromPath, endpoint: hpcConfig.globus.endpoint };
+    const to = { path: body.toPath, endpoint: body.toEndpoint };
+    // console.log(from, to);
+
+    try {
+      Helper.nullGuard(hpcConfig.globus);
+    
+      // start the transfer
+      const globusTaskId = await GlobusUtil.initTransfer(
+        from,
+        to,
+        hpcConfig,
+        `job-id-${jobId}-download-folder-${folder.id}`
+      );
+
+      // record the task as ongoing for the given folder
+      await globusTaskList.put(folderId, globusTaskId);
+      res.json({ globus_task_id: globusTaskId });
+    } catch (err) {
+      res
+        .status(403)
+        .json({ 
+          error: `failed to init globus with error: ${Helper.assertError(err).toString()}`
+        });
+      return;
+    }
   }
-});
+);
 
 /**
  * @openapi
@@ -832,70 +1038,85 @@ app.post("/folder/:folderId/download/globus-init", async function (req, res) {
  *          200:
  *              description: Returns status of current globus download (if no download is occuring {} is returned)
  *          402:
- *              description: Returns 'invalid input' and a list of errors with the format of the req body or 'invalid token' if a valid jupyter token authentication is not provided
+ *              description: Returns "invalid input" and a list of errors with the format of the req body or "invalid token" if a valid jupyter token authentication is not provided
  *          403:
  *              description: Returns error when the folder ID cannot be found or when the globus query fails
  */
-app.get("/folder/:folderId/download/globus-status", async function (req, res) {
-  const body = req.body;
-  const errors = requestErrors(validator.validate(body, schemas.user));
-  if (errors.length > 0) {
-    res.status(402).json({ error: "invalid input", messages: errors });
-    return;
-  }
-  if (!res.locals.username) {
-    res.status(402).json({ error: "invalid token" });
-    return;
-  }
+app.get(
+  "/folder/:folderId/download/globus-status", 
+  authMiddleWare, 
+  async function (req, res) {
+    if (!res.locals.username) {
+      res.status(402).json({ error: "invalid token" });
+      return;
+    }
 
-  // get folder
-  const folderId = req.params.folderId;
-  const connection = await db.connect();
-  const folder = await connection.getRepository(Folder).findOneOrFail(folderId);
-  if (!folder) {
-    res.status(403).json({ error: `cannot find folder with id ${folderId}` });
-    return;
-  }
-  // query status
-  const globusTaskId = await globusTaskList.get(folderId);
-  try {
-    const status = await GlobusUtil.queryTransferStatus(
-      globusTaskId,
-      hpcConfigMap[folder.hpc]
+    // get folder -- if doesn't exist, error out
+    const folderId = req.params.folderId;
+    const connection = await db.connect();
+    const folder = await (connection
+      .getRepository(Folder)
+      .findOneOrFail(folderId)
     );
-    if (["SUCCEEDED", "FAILED"].includes(status))
-      await globusTaskList.remove(folderId);
-    res.json({ status: status });
-  } catch (err) {
-    res
-      .status(403)
-      .json({ error: `failed to query globus with error: ${err.toString()}` });
-    return;
+
+    if (!folder) {
+      res.status(403).json({ error: `cannot find folder with id ${folderId}` });
+      return;
+    }
+
+    // query status
+    const globusTaskId = await globusTaskList.get(folderId);
+    try {
+      if (!globusTaskId) {
+        throw new Error("No task id found.");
+      }
+
+      const status = await GlobusUtil.queryTransferStatus(
+        globusTaskId,
+        hpcConfigMap[folder.hpc]
+      );
+
+      // remove the folder from the ongoing globus task list if the globus transfer finished
+      if (["SUCCEEDED", "FAILED"].includes(status))
+        await globusTaskList.remove(folderId);  
+
+      res.json({ status: status });
+    } catch (err) {
+      res
+        .status(403)
+        .json({ 
+          error: `failed to query globus with error: ${Helper.assertError(err).toString()}`
+        });
+      return;
+    }
   }
-});
+);
 
 /**
  * @openapi
  * /job:
  *  post:
- *      description: Posts a job to run with the corresponding metatdata in the request (Authentication REQUIRED)
+ *      description: Posts a job to run with the corresponding metadata in the request (Authentication REQUIRED)
  *      responses:
  *          200:
  *              description: Returns when job is successfully posted
  *          401:
  *              description: Returns an error when the request passes an unrecognized maintainer or hpc or if SSH credentials are invalid
  *          402:
- *              description: Returns 'invalid input' and a list of errors with the format of the req body
+ *              description: Returns "invalid input" and a list of errors with the format of the req body
  */
-app.post("/job", async function (req, res) {
-  const body = req.body;
-  const errors = requestErrors(validator.validate(body, schemas.createJob));
+app.post("/job", authMiddleWare, async function (req, res) {
+  const errors = requestErrors(validator.validate(req.body, schemas.createJob));
+
   if (errors.length > 0) {
     res.status(402).json({ error: "invalid input", messages: errors });
     return;
   }
 
-  const maintainerName = body.maintainer ?? "community_contribution";
+  const body = req.body as createJobBody;
+
+  // try to extract maintainer and hpc associated with the job
+  const maintainerName: string = body.maintainer ?? "community_contribution";  // default to community contribution job maintainer
   const maintainer = maintainerConfigMap[maintainerName];
   if (maintainer === undefined) {
     res.status(401).json({ error: "unrecognized maintainer", message: null });
@@ -908,16 +1129,21 @@ app.post("/job", async function (req, res) {
     res.status(401).json({ error: "unrecognized hpc", message: null });
     return;
   }
+
   // check if the user can use the HPC
-  var allowedOnHPC = Helper.canAccessHPC(res.locals.username, hpcName);
-  console.log(allowedOnHPC);
+  const allowedOnHPC = Helper.canAccessHPC(
+    res.locals.username as string, 
+    hpcName
+  );
+  // console.log(allowedOnHPC);
+  
   if (!allowedOnHPC) {
-    res.status(401).json({ error: "Not authorized for HPC", message: null});
+    res.status(401).json({ error: "Not authorized for HPC", message: null });
     return;
   }
 
-
   try {
+    // need to validate if hpc is not a community account
     if (!hpc.is_community_account) {
       await sshCredentialGuard.validatePrivateAccount(
         hpcName,
@@ -928,29 +1154,39 @@ app.post("/job", async function (req, res) {
   } catch (e) {
     res
       .status(401)
-      .json({ error: "invalid SSH credentials", messages: [e.toString()] });
+      .json({ 
+        error: "invalid SSH credentials", 
+        messages: [Helper.assertError(e).toString()] 
+      });
     return;
   }
 
+  // start job db connection & create the job object to upload
   const connection = await db.connect();
   const jobRepo = connection.getRepository(Job);
 
   const job: Job = new Job();
   job.id = Helper.generateId();
-  job.userId = res.locals.username ? res.locals.username : null;
+  job.userId = (res.locals.username as string 
+    ? res.locals.username as string 
+    : undefined
+  );
   job.maintainer = maintainerName;
   job.hpc = hpcName;
   job.param = {};
   job.slurm = {};
   job.env = {};
+
+  // store credentials if not community account/need verification
   if (!hpc.is_community_account)
     job.credentialId = await sshCredentialGuard.registerCredential(
       body.user,
       body.password
     );
+
   await jobRepo.save(job);
 
-  res.json(Helper.job2object(job));
+  res.json(Helper.job2object(job));  // return the job converted to a dictionary
 });
 
 /**
@@ -962,18 +1198,20 @@ app.post("/job", async function (req, res) {
  *          200:
  *              description: Returns updated job when it is successfully updated
  *          402:
- *              description: Returns 'invalid input' and a list of errors with the format of the req body, 'invalid token' if a valid jupyter token authentication is not provided, or an error if the job does not exist
+ *              description: Returns "invalid input" and a list of errors with the format of the req body, "invalid token" if a valid jupyter token authentication is not provided, or an error if the job does not exist
  *          403:
  *              description: Returns internal error when there is an exception while updating the job details
-*/
-app.put("/job/:jobId", async function (req, res) {
-  const body = req.body;
-  const errors = requestErrors(validator.validate(body, schemas.updateJob));
+ */
+app.put("/job/:jobId", authMiddleWare, async function (req, res) {
+  const errors = requestErrors(validator.validate(req.body, schemas.updateJob));
 
   if (errors.length > 0) {
     res.status(402).json({ error: "invalid input", messages: errors });
     return;
   }
+
+  const body = req.body as updateJobBody;
+
   if (!res.locals.username) {
     res.status(402).json({ error: "invalid token" });
     return;
@@ -985,8 +1223,9 @@ app.put("/job/:jobId", async function (req, res) {
     const connection = await db.connect();
     await connection
       .getRepository(Job)
-      .findOneOrFail({ id: jobId, userId: res.locals.username });
-    // update
+      .findOneOrFail({ id: jobId, userId: res.locals.username as string });
+
+    // update the job with the given id
     try {
       await connection
         .createQueryBuilder()
@@ -1007,16 +1246,24 @@ app.put("/job/:jobId", async function (req, res) {
     } catch (err) {
       res
         .status(403)
-        .json({ error: "internal error", messages: err.toString() });
+        .json({ 
+          error: "internal error", 
+          messages: Helper.assertError(err).toString() 
+        });
       return;
     }
-    // return updated job
+
+    // return updated job as a dictionary
     const job = await connection.getRepository(Job).findOne(jobId);
+
+    if (job === undefined) {
+      throw new Error("Updated job not found in the database.");
+    }
+
     res.json(Helper.job2object(job));
   } catch (e) {
-    res.json({ error: e.toString() });
+    res.json({ error: Helper.assertError(e).toString() });
     res.status(402);
-    return;
   }
 });
 
@@ -1031,16 +1278,9 @@ app.put("/job/:jobId", async function (req, res) {
  *          401:
  *              description: Returns "submit without login is not allowed" if the user is not logged in, "invalid access" if job folders are not accessible, or "job already submitted or in queue" if the job is already suibmitted
  *          402:
- *              description: Returns 'invalid input' and a list of errors with the format of the req body or a list of errors if the job does not successfully submit
-*/
-app.post("/job/:jobId/submit", async function (req, res) {
-  const body = req.body;
-  const errors = requestErrors(validator.validate(body, schemas.user));
-
-  if (errors.length > 0) {
-    res.status(402).json({ error: "invalid input", messages: errors });
-    return;
-  }
+ *              description: Returns "invalid input" and a list of errors with the format of the req body or a list of errors if the job does not successfully submit
+ */
+app.post("/job/:jobId/submit", authMiddleWare, async function (req, res) {
   if (!res.locals.username) {
     res
       .status(401)
@@ -1048,13 +1288,14 @@ app.post("/job/:jobId/submit", async function (req, res) {
     return;
   }
 
-  var job = null;
+  let job: Job | null = null;
   const jobId = req.params.jobId;
 
+  // try to find the specified job
   try {
     const connection = await db.connect();
     job = await connection.getRepository(Job).findOneOrFail(
-      { id: jobId, userId: res.locals.username },
+      { id: jobId, userId: res.locals.username as string },
       {
         relations: [
           "remoteExecutableFolder",
@@ -1064,10 +1305,14 @@ app.post("/job/:jobId/submit", async function (req, res) {
       }
     );
   } catch (e) {
-    res.status(401).json({ error: "invalid access", messages: [e.toString()] });
+    res.status(401).json({ 
+      error: "invalid access", 
+      messages: [Helper.assertError(e).toString()] 
+    });
     return;
   }
 
+  // if already queued, do nothing
   if (job.queuedAt) {
     res
       .status(401)
@@ -1076,10 +1321,12 @@ app.post("/job/:jobId/submit", async function (req, res) {
   }
 
   try {
-    await JobUtil.validateJob(job);
+    // validate job and push it to the job queue
+    JobUtil.validateJob(job);
     await supervisor.pushJobToQueue(job);
-    // update status
-    var connection = await db.connect();
+
+    // update status of the job
+    const connection = await db.connect();
     job.queuedAt = new Date();
     await connection
       .createQueryBuilder()
@@ -1088,7 +1335,7 @@ app.post("/job/:jobId/submit", async function (req, res) {
       .set({ queuedAt: job.queuedAt })
       .execute();
   } catch (e) {
-    res.status(402).json({ error: e.toString() });
+    res.status(402).json({ error: Helper.assertError(e).toString() });
     return;
   }
 
@@ -1100,24 +1347,24 @@ app.post("/job/:jobId/submit", async function (req, res) {
  * /clean:
  *  put:
  *      description: Not yet implemented
-*/
-app.put("/clean", async function (req, res) {});
+ */
+app.put("/clean", async function (_req, _res) { });  // eslint-disable-line
 
 /**
  * @openapi
  * /job/:jobId/pause:
  *  put:
  *      description: Not yet implemented
-*/
-app.put("/job/:jobId/pause", async function (req, res) {});
+ */
+app.put("/job/:jobId/pause", async function (_req, _res) { }); // eslint-disable-line
 
 /**
  * @openapi
  * /job/:jobId/resume:
  *  put:
  *      description: Not yet implemented
-*/
-app.put("/job/:jobId/resume", async function (req, res) {});
+ */
+app.put("/job/:jobId/resume", async function (_req, _res) { }); // eslint-disable-line
 
 /**
  * @openapi
@@ -1130,42 +1377,36 @@ app.put("/job/:jobId/resume", async function (req, res) {});
  *          401:
  *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access token" if the events cannot be accessed
  *          402:
- *              description: Returns 'invalid input' and a list of errors with the format of the req body - jobId may be invalid or job may not be in queue
-*/
-app.put("/job/:jobId/cancel", async function (req, res) {
-  console.log("made it to cancel");
-  const body = req.body;
-  const errors = requestErrors(validator.validate(body, schemas.user));
-
-  if (errors.length > 0) {
-    res.status(402).json({ error: "invalid input", messages: errors });
-    return;
-  }
+ *              description: Returns "invalid input" and a list of errors with the format of the req body - jobId may be invalid or job may not be in queue
+ */
+app.put("/job/:jobId/cancel", function (req, res) {
+  // console.log("made it to cancel");
   if (!res.locals.username) {
     res
       .status(401)
-      .json({ error: "submit without login is not allowed", messages: [] });
+      .json({ error: "cancel without login is not allowed", messages: [] });
     return;
   }
-  
+
   try {
+    // try to cancel the job on the supervisor job manager
     const jobId = req.params.jobId;
-    var job = supervisor.cancelJob(jobId);
-    if (job == null) {
-      res
-        .status(402)
-        .json({ error: "job is not in queue or running jobs" });
+    const job = supervisor.cancelJob(jobId);
+
+    // check if the job was successfully cancelled (per the return value from cancelJob)
+    if (job === null) {
+      res.status(402).json({ error: "job is not in queue or running jobs" });
       return;
     }
-    res
-      .status(200)
-      .json({ messages: ["job successfully added to cancel queue"] });
-    return;
+
+    res.status(200).json({ 
+      messages: ["job successfully added to cancel queue"] 
+    });
   } catch (e) {
-    res
-      .status(402)
-      .json({ error: "invalid jobId", messages: [e.toString()] });
-    return;
+    res.status(402).json({ 
+      error: "invalid jobId", 
+      messages: [Helper.assertError(e).toString()] 
+    });
   }
 });
 
@@ -1180,37 +1421,34 @@ app.put("/job/:jobId/cancel", async function (req, res) {
  *          401:
  *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access token" if the events cannot be accessed
  *          402:
- *              description: Returns 'invalid input' and a list of errors with the format of the req body
-*/
-app.get("/job/:jobId/events", async function (req, res) {
-  const body = req.body;
-  const errors = requestErrors(validator.validate(body, schemas.user));
-
-  if (errors.length > 0) {
-    res.status(402).json({ error: "invalid input", messages: errors });
-    return;
-  }
+ *              description: Returns "invalid input" and a list of errors with the format of the req body
+ */
+app.get("/job/:jobId/events", authMiddleWare, async function (req, res) {
   if (!res.locals.username) {
     res
       .status(401)
-      .json({ error: "submit without login is not allowed", messages: [] });
+      .json({ error: "listing events without login is not allowed", messages: [] });
     return;
   }
 
   try {
+    // get events from the job repo (updated in the supervisor/with individual maintainers)
     const jobId = req.params.jobId;
     const connection = await db.connect();
     const job = await connection
       .getRepository(Job)
       .findOneOrFail(
-        { id: jobId, userId: res.locals.username },
+        { id: jobId, userId: res.locals.username as string },
         { relations: ["events"] }
       );
     res.json(job.events);
   } catch (e) {
     res
       .status(401)
-      .json({ error: "invalid access token", messages: [e.toString()] });
+      .json({ 
+        error: "invalid access token", 
+        messages: [Helper.assertError(e).toString()] 
+      });
     return;
   }
 });
@@ -1222,42 +1460,42 @@ app.get("/job/:jobId/events", async function (req, res) {
  *      description: Gets an array of the directories in the result folder for a given job ID (Authentication REQUIRED)
  *      responses:
  *          200:
- *              description: Returns array of dirrectories in the given job's result folder
+ *              description: Returns array of dirrectories in the given job"s result folder
  *          401:
  *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access" if the folder cannot be accessed
  *          402:
- *              description: Returns 'invalid input' and a list of errors with the format of the req body
-*/
-app.get("/job/:jobId/result-folder-content", async function (req, res) {
-  const body = req.body;
-  const errors = requestErrors(validator.validate(body, schemas.user));
+ *              description: Returns "invalid input" and a list of errors with the format of the req body
+ */
+app.get(
+  "/job/:jobId/result-folder-content", 
+  authMiddleWare, 
+  async function (req, res) {
+    if (!res.locals.username) {
+      res
+        .status(401)
+        .json({ error: "getting results without login is not allowed", messages: [] });
+      return;
+    }
 
-  if (errors.length > 0) {
-    res
-      .status(402)
-      .json({ error: "invalid input", messages: errors });
-    return;
+    try {
+    // query the result folder content from the job repo
+      const jobId = req.params.jobId;
+      const connection = await db.connect();
+      const job = await connection
+        .getRepository(Job)
+        .findOneOrFail({ id: jobId, userId: res.locals.username as string });
+    
+      const out = await resultFolderContent.get(job.id);
+      res.json(out ? out : []);
+    } catch (e) {
+      res.status(401).json({ 
+        error: "invalid access", 
+        messages: [Helper.assertError(e).toString()] 
+      });
+      return;
+    }
   }
-  if (!res.locals.username) {
-    res
-      .status(401)
-      .json({ error: "submit without login is not allowed", messages: [] });
-    return;
-  }
-
-  try {
-    const jobId = req.params.jobId;
-    const connection = await db.connect();
-    const job = await connection
-      .getRepository(Job)
-      .findOneOrFail({ id: jobId, userId: res.locals.username });
-    const out = await resultFolderContent.get(job.id);
-    res.json(out ? out : []);
-  } catch (e) {
-    res.status(401).json({ error: "invalid access", messages: [e.toString()] });
-    return;
-  }
-});
+);
 
 /**
  * @openapi
@@ -1270,37 +1508,34 @@ app.get("/job/:jobId/result-folder-content", async function (req, res) {
  *          401:
  *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access" if the logs cannot be accessed
  *          402:
- *              description: Returns 'invalid input' and a list of errors with the format of the req body
-*/
-app.get("/job/:jobId/logs", async function (req, res) {
-  var body = req.body;
-  var errors = requestErrors(validator.validate(body, schemas.user));
-
-  if (errors.length > 0) {
-    res
-      .status(402)
-      .json({ error: "invalid input", messages: errors });
-    return;
-  }
+ *              description: Returns "invalid input" and a list of errors with the format of the req body
+ */
+app.get("/job/:jobId/logs", authMiddleWare, async function (req, res) {
   if (!res.locals.username) {
-    res
-      .status(401)
-      .json({ error: "submit without login is not allowed", messages: [] });
+    res.status(401).json({ 
+      error: "getting logs without login is not allowed", 
+      messages: [] 
+    });
     return;
   }
 
   try {
+    // try to get the logs from teh jobs database (continuously updated in the maintainer)
     const jobId = req.params.jobId;
     const connection = await db.connect();
+
     const job = await connection
       .getRepository(Job)
       .findOneOrFail(
-        { id: jobId, userId: res.locals.username },
+        { id: jobId, userId: res.locals.username as string },
         { relations: ["logs"] }
       );
     res.json(job.logs);
   } catch (e) {
-    res.status(401).json({ error: "invalid access", messages: [e.toString()] });
+    res.status(401).json({ 
+      error: "invalid access", 
+      messages: [Helper.assertError(e).toString()] 
+    });
     return;
   }
 });
@@ -1316,28 +1551,23 @@ app.get("/job/:jobId/logs", async function (req, res) {
  *          401:
  *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access" if the job and job information cannot be accessed
  *          402:
- *              description: Returns 'invalid input' and a list of errors with the format of the req body
-*/
-app.get("/job/:jobId", async function (req, res) {
-  var body = req.body;
-  var errors = requestErrors(validator.validate(body, schemas.user));
-
-  if (errors.length > 0) {
-    res.status(402).json({ error: "invalid input", messages: errors });
-    return;
-  }
+ *              description: Returns "invalid input" and a list of errors with the format of the req body
+ */
+app.get("/job/:jobId", authMiddleWare, async function (req, res) {
   if (!res.locals.username) {
     res
       .status(401)
-      .json({ error: "submit without login is not allowed", messages: [] });
+      .json({ error: "getting job info without login is not allowed", messages: [] });
     return;
   }
 
   try {
+    // query job database for all requested things, return it as a dictionary json
     const jobId = req.params.jobId;
     const connection = await db.connect();
+    
     const job = await connection.getRepository(Job).findOneOrFail(
-      { id: jobId, userId: res.locals.username },
+      { id: jobId, userId: res.locals.username as string },
       {
         relations: [
           "remoteExecutableFolder",
@@ -1350,7 +1580,10 @@ app.get("/job/:jobId", async function (req, res) {
     );
     res.json(Helper.job2object(job));
   } catch (e) {
-    res.json({ error: "invalid access", messages: [e.toString()] });
+    res.json({ 
+      error: "invalid access", 
+      messages: [Helper.assertError(e).toString()] 
+    });
     res.status(401);
     return;
   }

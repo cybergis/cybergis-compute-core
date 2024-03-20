@@ -1,19 +1,26 @@
-import { GlobusTransferRefreshToken } from "../models/GlobusTransferRefreshToken";
-import PythonUtil from "./PythonUtil";
+import redis = require("redis");
+import { promisify } from "util";
 import { config } from "../../configs/config";
-import { GlobusFolder, hpcConfig } from "../types";
 import DB from "../DB";
-const redis = require("redis");
-const { promisify } = require("util");
+import { GlobusTransferRefreshToken } from 
+  "../models/GlobusTransferRefreshToken";
+import { GlobusFolder, 
+  hpcConfig, 
+  GetValueFunction, 
+  SetValueFunction,
+  DelValueFunction } from "../types";
+import * as Helper from "./Helper";
+import PythonUtil from "./PythonUtil";
 
+/**
+ * Class for managing globus tasks, TODO: port the python scripts to the JS Globus SDK (https://www.globus.org/blog/globus-javascript-sdk-now-available)
+ */
 export class GlobusTaskListManager {
-  /**
-   * Class for managing globus tasks
-   */
+
   private redis = {
-    getValue: null,
-    setValue: null,
-    delValue: null,
+    getValue: null as null | GetValueFunction,
+    setValue: null as null | SetValueFunction,
+    delValue: null as null | DelValueFunction,
   };
 
   private isConnected = false;
@@ -21,36 +28,36 @@ export class GlobusTaskListManager {
   /**
    * Assigns label to taskId
    *
-   * @param{string} label - input label
-   * @param{string} taskId - setValue id
+   * @param {string} label - input label
+   * @param {string} taskId - setValue id
    */
   async put(label: string, taskId: string) {
     await this.connect();
-    await this.redis.setValue(`globus_task_${label}`, taskId);
+    await this.redis.setValue!(`globus_task_${label}`, taskId);
   }
 
   /**
    * Get taskId for specified label
    *
-   * @param{string} label - input label
-   * @return{string} out - redis output
+   * @param {string} label - input label
+   * @return {Promise<string>} out - redis output
    */
-  async get(label: string): Promise<string> {
+  async get(label: string): Promise<string | null> {
     await this.connect();
-    var out = await this.redis.getValue(`globus_task_${label}`);
+    const out = await this.redis.getValue!(`globus_task_${label}`);
     return out ? out : null;
   }
 
   /**
    * removes taskId for specified label
    *
-   * @param{string} label - input label
+   * @param {string} label - input label
    */
   async remove(label: string) {
     await this.connect();
-    var out = await this.get(label);
+    const out = await this.get(label);
     if (!out) return;
-    this.redis.delValue(`globus_task_${label}`);
+    await this.redis.delValue!(`globus_task_${label}`);
   }
 
   /**
@@ -60,13 +67,21 @@ export class GlobusTaskListManager {
   private async connect() {
     if (this.isConnected) return;
 
-    var client = new redis.createClient({
+    // TODO: rework this redis code to be less hacky
+    /* eslint-disable 
+      @typescript-eslint/no-unsafe-assignment, 
+      @typescript-eslint/no-unsafe-argument, 
+      @typescript-eslint/no-unsafe-member-access, 
+      @typescript-eslint/no-unsafe-call 
+    */
+
+    const client = new redis.createClient({
       host: config.redis.host,
       port: config.redis.port,
     });
 
-    if (config.redis.password != null && config.redis.password != undefined) {
-      var redisAuth = promisify(client.auth).bind(client);
+    if (config.redis.password !== null && config.redis.password !== undefined) {
+      const redisAuth = promisify(client.auth).bind(client);
       await redisAuth(config.redis.password);
     }
 
@@ -74,6 +89,13 @@ export class GlobusTaskListManager {
     this.redis.setValue = promisify(client.set).bind(client);
     this.redis.delValue = promisify(client.del).bind(client);
     this.isConnected = true;
+
+    /* eslint-disable 
+      @typescript-eslint/no-unsafe-assignment, 
+      @typescript-eslint/no-unsafe-argument, 
+      @typescript-eslint/no-unsafe-member-access, 
+      @typescript-eslint/no-unsafe-call 
+    */
   }
 }
 
@@ -81,34 +103,42 @@ export default class GlobusUtil {
   /**
    * Class for accessing Globus commands
    */
+
   static db = new DB();
 
   /**
-   * @static
    * Initializes globus job
-   * @param{GlobusFile} from - from transfer folder
-   * @param{GlobusFile} to - to transfer folder
-   * @param{hpcConfig} hpcConfig - hpcConfiguration
-   * @param{string} label - task label
-   * @throw{Error} - Thrown if globus query status fails
-   * @return{string} - taskId
+   *
+   * @static
+   * @async
+   * @param {GlobusFolder} from - from transfer folder
+   * @param {GlobusFolder} to - to transfer folder
+   * @param {hpcConfig} hpcConfig - hpcConfiguration
+   * @param {string} [label=""] - task label
+   * @return {Promise<string>} - taskId
+   * @throws {Error} - thrown if globus query status fails
    */
   static async initTransfer(
     from: GlobusFolder,
     to: GlobusFolder,
     hpcConfig: hpcConfig,
-    label: string = ""
+    label = ""
   ): Promise<string> {
     const connection = await this.db.connect();
     const globusTransferRefreshTokenRepo = connection.getRepository(
       GlobusTransferRefreshToken
     );
+
+    Helper.nullGuard(hpcConfig.globus);
     const g = await globusTransferRefreshTokenRepo.findOne(
       hpcConfig.globus.identity
     );
 
+    let out: Record<string, unknown>;
     try {
-      var out = await PythonUtil.run(
+      Helper.nullGuard(g);
+      // run python helpers with cmd line arguments to initialize globus
+      out = await PythonUtil.run(
         "globus_init.py",
         [
           config.globus_client_id,
@@ -125,18 +155,18 @@ export default class GlobusUtil {
       throw new Error(`Globus query status failed with error: ${e}`);
     }
 
-    if (!out["task_id"])
-      throw new Error(`cannot initialize Globus job: ${out["error"]}`);
-    return out["task_id"];
+    Helper.nullGuard(out.task_id);
+
+    return out.task_id as string;
   }
 
   /**
    * @static
    * @async
    * Returns output of querying 'globus_monitor.py'
-   * @param{string} taskId - taskId of transfer
-   * @param{hpcConfig} hpcConfig - hpcConfiguration
-   * @return{Promise<string>} - queryStatus string
+   * @param {string} taskId - taskId of transfer
+   * @param {hpcConfig} hpcConfig - hpcConfiguration
+   * @return {Promise<string>} - queryStatus string
    */
   static async monitorTransfer(
     taskId: string,
@@ -149,9 +179,9 @@ export default class GlobusUtil {
    * @static
    * @async
    * Returns output of querying 'globus_query_status.py'
-   * @param{string} taskId - taskId of transfer
-   * @param{hpcConfig} hpcConfig - hpcConfiguration
-   * @return{Promise<string>} - queryStatus string
+   * @param {string} taskId - taskId of transfer
+   * @param {hpcConfig} hpcConfig - hpcConfiguration
+   * @return {Promise<string>} - queryStatus string
    */
   static async queryTransferStatus(
     taskId: string,
@@ -160,46 +190,58 @@ export default class GlobusUtil {
     return await this._queryStatus(taskId, hpcConfig, "globus_query_status.py");
   }
 
+  /**
+   * Maps username according to a specified function. Only nontrivial for the mapping_func `iguide-mapping`.
+   * 
+   * @param initial_username pre-mapping username
+   * @param mapping_func function to use for mapping
+   * @returns mapped string
+   */
   static async mapUsername(
     initial_username: string,
-    mapping_func: string
+    mapping_func: string | null
   ): Promise<string> {
+    let username: Record<string, unknown>;
     try {
-      var username = await PythonUtil.run(
+      username = await PythonUtil.run(
         "globus_user_mapping.py",
-        [initial_username, mapping_func],
+        [initial_username, mapping_func ?? ""],
         ["mapped_username"]
       );
     } catch (e) {
       throw new Error(`Jupyter-Globus mapping failed with error: ${e}`);
     }
-    return username["mapped_username"];
+
+    return username.mapped_username as string;
   }
   /**
    * @static
    * @async
    * Implements the specified globus query
-   * @param{string} taskId - taskId of transfer
-   * @param{hpcConfig} hpcConfig - hpcConfiguration
-   * @param{string} script - query string
-   * @throw{Error} - thrown when Globus query status fails
-   * @return{string} - queryStatus string
+   * @param {string} taskId - taskId of transfer
+   * @param {hpcConfig} hpcConfig - hpcConfiguration
+   * @param {string} script - query string
+   * @throws {Error} - thrown when Globus query status fails
+   * @return {Promise<string>} - queryStatus string
    */
   static async _queryStatus(
     taskId: string,
     hpcConfig: hpcConfig,
     script: string
-  ) {
-    var connection = await this.db.connect();
-    var globusTransferRefreshTokenRepo = connection.getRepository(
+  ): Promise<string> {
+    const connection = await this.db.connect();
+    const globusTransferRefreshTokenRepo = connection.getRepository(
       GlobusTransferRefreshToken
     );
-    var g = await globusTransferRefreshTokenRepo.findOne(
-      hpcConfig.globus.identity
+    const g = await globusTransferRefreshTokenRepo.findOne(
+      hpcConfig.globus?.identity
     );
 
+    let out: Record<string, unknown>;
     try {
-      var out = await PythonUtil.run(
+      Helper.nullGuard(g);
+      
+      out = await PythonUtil.run(
         script,
         [config.globus_client_id, g.transferRefreshToken, taskId],
         ["status"]
@@ -208,6 +250,6 @@ export default class GlobusUtil {
       throw new Error(`Globus query status failed with error: ${e}`);
     }
 
-    return out["status"];
+    return out.status as string;
   }
 }

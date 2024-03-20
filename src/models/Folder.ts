@@ -5,82 +5,92 @@ import {
   DeleteDateColumn,
   BeforeInsert,
   BeforeUpdate,
-  OneToMany,
+  // OneToMany,
 } from "typeorm";
-import { Job } from "./Job";
+// import { Job } from "./Job";
 
 /** Class representing a job event. */
 @Entity({ name: "folders" })
 export class Folder {
   @PrimaryColumn()
-  id: string;
+    id: string;
 
   @Column({ nullable: true })
-  name: string;
+    name: string;
 
   @Column()
-  hpc: string;
+    hpc: string;
 
   @Column()
-  hpcPath: string;
+    hpcPath: string;
 
   @Column()
-  globusPath: string;
+    globusPath: string;
 
   @Column({ nullable: true })
-  userId: string;
+    userId: string;
 
   @Column({ default: false })
-  isWritable: boolean;
+    isWritable: boolean;
 
   @Column({
     type: "bigint",
     transformer: {
-      to: (i: Date | null | undefined): number => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
+      to: (
+        i: Date | null | undefined
+      ): number | null => (i ? i.getTime() : null),
+      from: (
+        i: number | null | undefined
+      ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-  createdAt: Date;
+    createdAt: Date;
 
   @Column({
     type: "bigint",
     nullable: true,
     transformer: {
-      to: (i: Date | null | undefined): number => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
+      to: (
+        i: Date | null | undefined
+      ): number | null => (i ? i.getTime() : null),
+      from: (
+        i: number | null | undefined
+      ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-  updatedAt: Date;
+    updatedAt: Date;
 
   @DeleteDateColumn({
     type: "bigint",
     nullable: true,
     transformer: {
-      to: (i: Date | null | undefined): number => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
+      to: (
+        i: Date | null | undefined
+      ): number | null => (i ? i.getTime() : null),
+      from: (
+        i: number | null | undefined
+      ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-  deletedAt: Date;
+    deletedAt: Date;
 
   /**
    * Set the createdAt time to the current time.
    *
-   * @async
    * @return {Date} date - Date this job was created.
    */
   @BeforeInsert()
-  async setCreatedAt() {
+  setCreatedAt() {
     this.createdAt = new Date();
   }
 
   /**
    * Set the updatedAt time to the current time.
    *
-   * @async
    * @return {Date} date - Date this job was last updated.
    */
   @BeforeUpdate()
-  async setUpdatedAt() {
+  setUpdatedAt() {
     return (this.updatedAt = new Date());
   }
 }

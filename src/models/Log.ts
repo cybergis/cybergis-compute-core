@@ -13,65 +13,75 @@ import { Job } from "./Job";
 @Entity({ name: "logs" })
 export class Log {
   @PrimaryGeneratedColumn()
-  id: number;
+    id: number;
 
   @Column()
-  jobId: string;
+    jobId: string;
 
   @Column("text")
-  message: string;
+    message: string;
 
-  @ManyToOne((type) => Job, (job: Job) => job.logs)
-  job: Job;
+  @ManyToOne((_type) => Job, (job: Job) => job.logs)
+    job: Job;
 
   @Column({
     type: "bigint",
     transformer: {
-      to: (i: Date | null | undefined): number => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
+      to: (
+        i: Date | null | undefined
+      ): number | null => (i ? i.getTime() : null),
+      from: (
+        i: number | null | undefined
+      ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-  createdAt: Date;
+    createdAt: Date;
 
   @Column({
     type: "bigint",
     nullable: true,
     transformer: {
-      to: (i: Date | null | undefined): number => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
+      to: (
+        i: Date | null | undefined
+      ): number | null => (i ? i.getTime() : null),
+      from: (
+        i: number | null | undefined
+      ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-  updatedAt: Date;
+    updatedAt: Date;
 
   @DeleteDateColumn({
     type: "bigint",
     nullable: true,
     transformer: {
-      to: (i: Date | null | undefined): number => (i ? i.getTime() : null),
-      from: (i: number | null | undefined): Date => (i ? new Date(Math.trunc(i)) : null),
+      to: (
+        i: Date | null | undefined
+      ): number | null => (i ? i.getTime() : null),
+      from: (
+        i: number | null | undefined
+      ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-  deletedAt: Date;
+    deletedAt: Date;
 
   /**
    * Set the createdAt time to the current time.
    *
-   * @async
    * @return {Date} date - Date this job was created.
    */
   @BeforeInsert()
-  async setCreatedAt() {
+  setCreatedAt() {
     this.createdAt = new Date();
   }
 
   /**
    * Set the updatedAt time to the current time.
    *
-   * @async
    * @return {Date} date - Date this job was last updated.
    */
   @BeforeUpdate()
-  async setUpdatedAt() {
+  setUpdatedAt() {
     return (this.updatedAt = new Date());
   }
 }

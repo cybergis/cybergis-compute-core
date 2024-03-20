@@ -1,29 +1,31 @@
+import redis = require("redis");
+import { promisify } from "util";
+import {
+  hpcConfigMap,
+  // jupyterGlobusMap,
+  // maintainerConfigMap,
+  config } from "../../configs/config";
+// import path = require("path");
+import DB from "../DB";
+import { Job } from "../models/Job";
 import {
   slurm_integer_storage_unit_config,
   slurm_integer_time_unit_config,
   slurmInputRules,
   slurm_integer_configs,
+  GetValueFunction,
+  SetValueFunction,
+  DelValueFunction
 } from "../types";
-import { Job } from "../models/Job";
-import {
-  hpcConfigMap,
-  jupyterGlobusMap,
-  maintainerConfigMap,
-} from "../../configs/config";
-import { config } from "../../configs/config";
-import path = require("path");
-import DB from "../DB";
-const redis = require("redis");
-const { promisify } = require("util");
 
 /**
- * Some comment
+ * Helper class to interface with the jobs redis result folder.
  */
 export class ResultFolderContentManager {
   private redis = {
-    getValue: null,
-    setValue: null,
-    delValue: null,
+    getValue: null as null | GetValueFunction,
+    setValue: null as null | SetValueFunction,
+    delValue: null as null | DelValueFunction,
   };
 
   private isConnected = false;
@@ -37,7 +39,7 @@ export class ResultFolderContentManager {
    */
   async put(jobId: string, contents: string[]) {
     await this.connect();
-    await this.redis.setValue(
+    await this.redis.setValue!(
       `job_result_folder_content${jobId}`,
       JSON.stringify(contents)
     );
@@ -48,12 +50,12 @@ export class ResultFolderContentManager {
    *
    * @async
    * @param {string} jobId - This job
-   * @returns {string[]} - Contents of the results folder
+   * @returns {string[] | null} - Contents of the results folder
    */
-  async get(jobId: string): Promise<string[]> {
+  async get(jobId: string): Promise<string[] | null> {
     await this.connect();
-    var out = await this.redis.getValue(`job_result_folder_content${jobId}`);
-    return out ? JSON.parse(out) : null;
+    const out = await this.redis.getValue!(`job_result_folder_content${jobId}`);
+    return out ? JSON.parse(out) as string[] : null;
   }
 
   /**
@@ -64,9 +66,9 @@ export class ResultFolderContentManager {
    */
   async remove(jobId: string) {
     await this.connect();
-    var out = await this.get(jobId);
+    const out = await this.get(jobId);
     if (!out) return;
-    this.redis.delValue(`job_result_folder_content${jobId}`);
+    await this.redis.delValue!(`job_result_folder_content${jobId}`);
   }
 
   /**
@@ -77,13 +79,20 @@ export class ResultFolderContentManager {
   private async connect() {
     if (this.isConnected) return;
 
-    var client = new redis.createClient({
+    // TODO: rework this redis code to be less hacky
+    /* eslint-disable 
+      @typescript-eslint/no-unsafe-assignment, 
+      @typescript-eslint/no-unsafe-argument, 
+      @typescript-eslint/no-unsafe-member-access, 
+      @typescript-eslint/no-unsafe-call 
+    */
+    const client = new redis.createClient({
       host: config.redis.host,
       port: config.redis.port,
     });
 
-    if (config.redis.password != null && config.redis.password != undefined) {
-      var redisAuth = promisify(client.auth).bind(client);
+    if (config.redis.password !== null && config.redis.password !== undefined) {
+      const redisAuth = promisify(client.auth).bind(client);
       await redisAuth(config.redis.password);
     }
 
@@ -91,20 +100,30 @@ export class ResultFolderContentManager {
     this.redis.setValue = promisify(client.set).bind(client);
     this.redis.delValue = promisify(client.del).bind(client);
     this.isConnected = true;
+
+    /* eslint-disable 
+      @typescript-eslint/no-unsafe-assignment, 
+      @typescript-eslint/no-unsafe-argument, 
+      @typescript-eslint/no-unsafe-member-access, 
+      @typescript-eslint/no-unsafe-call 
+    */
   }
 }
 
+/**
+ * Class providing various useful (static) functions for handling jobs. 
+ */
 export default class JobUtil {
   /**
-   * Ensure the job has all the nessecary input parameters
+   * Ensure the job has all the necessary input parameters
    *
    * @static
-   * @param job - This job
-   * @param paramRules - Parameter rules for this job
+   * @param {Job} job - This job
+   * @param { [keys: string]: unknown } paramRules - Parameter rules for this job
    * @throws Job must have a complete parameter list
    */
-  static validateParam(job: Job, paramRules: { [keys: string]: any }) {
-    for (var i in paramRules) {
+  static validateParam(job: Job, paramRules: Record<string, unknown>) {
+    for (const i in paramRules) {
       if (!job.param[i]) {
         throw new Error(`job missing input param ${i}`);
       }
@@ -118,14 +137,17 @@ export default class JobUtil {
    * @async
    * @param {string} userID - User to collect slurm usage from
    * @param {boolean} format - Whether or not the cputume, memory, memoryusage, and walltime are already formatted
-   * @returns {Object} - Total slurm usage of the indicated user
+   * @returns {Record<string, number | string>} - Total slurm usage of the indicated user
    */
-  static async getUserSlurmUsage(userId: string, format = false) {
+  static async getUserSlurmUsage(
+    userId: string, 
+    format = false
+  ): Promise<Record<string, number | string>> {
     const db = new DB();
     const connection = await db.connect();
     const jobs = await connection.getRepository(Job).find({ userId: userId });
 
-    var userSlurmUsage = {
+    const userSlurmUsage = {
       nodes: 0,
       cpus: 0,
       cpuTime: 0,
@@ -134,8 +156,7 @@ export default class JobUtil {
       walltime: 0,
     };
 
-    for (var i in jobs) {
-      const job = jobs[i];
+    for (const job of jobs) {
       if (job.nodes) userSlurmUsage.nodes += job.nodes;
       if (job.cpus) userSlurmUsage.cpus += job.cpus;
       if (job.cpuTime) userSlurmUsage.cpuTime += job.cpuTime;
@@ -164,32 +185,33 @@ export default class JobUtil {
       };
     }
   }
+  
   /**
    * Ensure this job has valid input data and slurm config rules
    *
    * @static
-   * @async
    * @param {Job} job - This job
    * @param {string} jupyterHost - Jupyter host for this job
    * @param {string} username - Username of the user who submitted this job
    * @throws - DataFolder must have a valid path, the job must have upload data, and there must be an executable folder in the maintainerConfig
    */
-  static async validateJob(job: Job) {
+  static validateJob(job: Job) {
     // create slurm config rules
     const providedSlurmInputRules: slurmInputRules = {};
-    const providedParamRules: { [keys: string]: any } = {};
+    const providedParamRules: Record<string, unknown> = {};
     const requireUploadData = false;
 
     if (requireUploadData && !job.localDataFolder && !job.remoteDataFolder) {
-      throw new Error(`job missing data file`);
+      throw new Error("job missing data file");
     }
-    if (job.localExecutableFolder == undefined) {
+    if (job.localExecutableFolder === undefined) {
       throw new Error("job missing executable file");
     }
 
     JobUtil.validateSlurmConfig(job, providedSlurmInputRules);
     JobUtil.validateParam(job, providedParamRules);
   }
+
   /**
    * Set the slurm rules for this job, and ensure that those rules don't exceed the default slurm ceiling
    *
@@ -199,15 +221,15 @@ export default class JobUtil {
    * @throws - Slurm input rules associated with this job must not exceed the default slurm ceiling
    */
   static validateSlurmConfig(job: Job, slurmInputRules: slurmInputRules) {
-    var slurmCeiling = {};
-    var globalInputCap = hpcConfigMap[job.hpc].slurm_global_cap;
+    const slurmCeiling = {};
+    let globalInputCap = hpcConfigMap[job.hpc].slurm_global_cap;
     if (!globalInputCap) globalInputCap = {};
     slurmInputRules = Object.assign(
-      hpcConfigMap[job.hpc].slurm_input_rules,
+      hpcConfigMap[job.hpc].slurm_input_rules as Record<string, unknown>,
       slurmInputRules
     );
 
-    var defaultSlurmCeiling = {
+    const defaultSlurmCeiling = {
       num_of_node: 50,
       num_of_task: 50,
       cpu_per_task: 50,
@@ -221,39 +243,52 @@ export default class JobUtil {
       time: "10:00:00",
     };
 
-    for (var i in slurmInputRules) {
-      if (!slurmInputRules[i].max) continue;
-      if (slurm_integer_storage_unit_config.includes(i)) {
-        slurmCeiling[i] = slurmInputRules[i].max + slurmInputRules[i].unit;
-      } else if (slurm_integer_time_unit_config.includes(i)) {
-        var val = slurmInputRules[i].max;
-        var unit = slurmInputRules[i].unit;
-        var sec = JobUtil.unitTimeToSeconds(val, unit);
-        slurmCeiling[i] = JobUtil.secondsToTime(sec);
-      } else if (slurm_integer_configs.includes(i)) {
-        slurmCeiling[i] = slurmInputRules[i].max;
+    for (const rule_name in slurmInputRules) {
+      if (!slurmInputRules[rule_name].max) continue;
+
+      if (slurm_integer_storage_unit_config.includes(rule_name)) {
+        slurmCeiling[rule_name] = slurmInputRules[rule_name].max + 
+          slurmInputRules[rule_name].unit;
+
+      } else if (slurm_integer_time_unit_config.includes(rule_name)) {
+        const val = slurmInputRules[rule_name].max;
+        const unit = slurmInputRules[rule_name].unit;
+        const sec = JobUtil.unitTimeToSeconds(val, unit);
+
+        slurmCeiling[rule_name] = JobUtil.secondsToTime(sec);
+      } else if (slurm_integer_configs.includes(rule_name)) {
+        slurmCeiling[rule_name] = slurmInputRules[rule_name].max;
       }
     }
 
-    for (var i in globalInputCap) {
-      if (!slurmCeiling[i]) slurmCeiling[i] = globalInputCap[i];
-      else if (this.compareSlurmConfig(i, globalInputCap[i], slurmCeiling[i])) {
-        slurmCeiling[i] = globalInputCap[i];
+    for (const field in globalInputCap) {
+      if (!slurmCeiling[field]) slurmCeiling[field] = globalInputCap[field];
+      else if (this.compareSlurmConfig(
+        field, 
+        globalInputCap[field], 
+        slurmCeiling[field])
+      ) {
+        slurmCeiling[field] = globalInputCap[field];
       }
     }
 
-    for (var i in defaultSlurmCeiling) {
-      if (!slurmCeiling[i]) {
-        slurmCeiling[i] = defaultSlurmCeiling[i];
+    for (const field in defaultSlurmCeiling) {
+      if (!slurmCeiling[field]) {
+        slurmCeiling[field] = defaultSlurmCeiling[field];
         continue;
       }
     }
 
-    for (var i in slurmCeiling) {
-      if (!job.slurm[i]) continue;
-      if (this.compareSlurmConfig(i, slurmCeiling[i], job.slurm[i])) {
+    for (const field in slurmCeiling) {
+      if (!job.slurm?.[field]) continue;
+      
+      if (this.compareSlurmConfig(
+        field, 
+        slurmCeiling[field], 
+        job.slurm[field])
+      ) {
         throw new Error(
-          `slurm config ${i} exceeds the threshold of ${slurmCeiling[i]} (current value ${job.slurm[i]})`
+          `slurm config ${field} exceeds the threshold of ${slurmCeiling[field]} (current value ${job.slurm[field]})`  // eslint-disable-line @stylistic/max-len
         );
       }
     }
@@ -268,7 +303,7 @@ export default class JobUtil {
    * @param {string} b - Storage or projected time for this job for this job
    * @return {boolean} - If the slurm config exceeds the threshold of the slurm ceiling
    */
-  static compareSlurmConfig(i, a, b) {
+  static compareSlurmConfig(i: string, a: string, b: string): boolean {
     if (slurm_integer_storage_unit_config.includes(i)) {
       return this.storageUnitToKB(a) < this.storageUnitToKB(b);
     }
@@ -285,17 +320,31 @@ export default class JobUtil {
    * @param {string} i - Amount of storage in original unit
    * @return {number} - Storage in kb
    */
-  static storageUnitToKB(i: string) {
+  static storageUnitToKB(i: string): number {
     i = i.toLowerCase().replace(/b/gi, "");
+
+    // petabytes
     if (i.includes("p")) {
-      return parseInt(i.replace("p", "").trim()) * 1024 * 1024 * 1024;
+      return parseInt(i.replace("p", "").trim()) * 1024 * 1024 * 1024 * 1024;
     }
+
+    // terabytes
+    if (i.includes("t")) {
+      return parseInt(i.replace("t", "").trim()) * 1024 * 1024 * 1024;
+    }
+
+    // gigabytes
     if (i.includes("g")) {
       return parseInt(i.replace("g", "").trim()) * 1024 * 1024;
     }
+
+    // megabytes
     if (i.includes("m")) {
       return parseInt(i.replace("m", "").trim()) * 1024;
     }
+
+    // kilobytes
+    return parseInt(i.trim());
   }
 
   /**
@@ -306,9 +355,9 @@ export default class JobUtil {
    * @return {string} - Storage in most convenient unit (kb, mb, gb, tb, pb, eb)
    */
   static kbToStorageUnit(i: number) {
-    var units = ["kb", "mb", "gb", "tb", "pb", "eb"].reverse();
+    const units = ["kb", "mb", "gb", "tb", "pb", "eb"].reverse();
     while (units.length > 0) {
-      var unit = units.pop();
+      const unit = units.pop();
       if (i < 1024) return `${i}${unit}`;
       i = i / 1024;
     }
@@ -318,17 +367,19 @@ export default class JobUtil {
    * Turns the passed time into a string specifying each unit
    *
    * @static
-   * @param {number} seconds - Time in seconds
+   * @param {number} seconds_in - Time in seconds
    * @return {string} - Passed time converted into dayds, hours, minutes, seconds format
    */
-  static secondsToTimeDelta(seconds: number) {
-    var days = Math.floor(seconds / (60 * 60 * 24));
-    var hours = Math.floor(seconds / (60 * 60) - days * 24);
-    var minutes = Math.floor(seconds / 60 - days * 60 * 24 - hours * 60);
-    var seconds = Math.floor(seconds - days * 60 * 60 * 24 - hours * 60 * 60);
-    //
-    var format = (j) => {
-      if (j == 0) return "00";
+  static secondsToTimeDelta(seconds_in: number) {
+    const days = Math.floor(seconds_in / (60 * 60 * 24));
+    const hours = Math.floor(seconds_in / (60 * 60) - days * 24);
+    const minutes = Math.floor(seconds_in / 60 - days * 60 * 24 - hours * 60);
+    const seconds = Math.floor(
+      seconds_in - days * 60 * 60 * 24 - hours * 60 * 60
+    );
+
+    const format = (j) => {
+      if (j === 0) return "00";
       else if (j < 10) return `0${j}`;
       else return `${j}`;
     };
@@ -345,9 +396,9 @@ export default class JobUtil {
    * @return {int} - Passed time converted into seconds
    */
   static unitTimeToSeconds(time: number, unit: string) {
-    if (unit == "Minutes") return time * 60;
-    if (unit == "Hours") return time * 60 * 60;
-    if (unit == "Days") return time * 60 * 60 * 24;
+    if (unit === "Minutes") return time * 60;
+    if (unit === "Hours") return time * 60 * 60;
+    if (unit === "Days") return time * 60 * 60 * 24;
     return 0;
   }
   /**
@@ -358,16 +409,16 @@ export default class JobUtil {
    * @return {int} time - Passed seconds time converted to days-hours:minutes:seconds format.
    */
   static secondsToTime(seconds: number) {
-    var days = Math.floor(seconds / (60 * 60 * 24));
-    var hours = Math.floor(seconds / (60 * 60) - days * 24);
-    var minutes = Math.floor(seconds / 60 - days * 60 * 24 - hours * 60);
+    const days = Math.floor(seconds / (60 * 60 * 24));
+    const hours = Math.floor(seconds / (60 * 60) - days * 24);
+    const minutes = Math.floor(seconds / 60 - days * 60 * 24 - hours * 60);
 
-    var d = days < 10 ? `0${days}` : `${days}`;
-    var h = hours < 10 ? `0${hours}` : `${hours}`;
-    var m = minutes < 10 ? `0${minutes}` : `${minutes}`;
+    const d = days < 10 ? `0${days}` : `${days}`;
+    const h = hours < 10 ? `0${hours}` : `${hours}`;
+    const m = minutes < 10 ? `0${minutes}` : `${minutes}`;
 
-    if (days == 0) {
-      if (hours == 0) {
+    if (days === 0) {
+      if (hours === 0) {
         return `${m}:00`;
       } else {
         return `${h}:${m}:00`;
@@ -385,19 +436,19 @@ export default class JobUtil {
    * @return {int} - Passed days-hours:minutes:seconds time converted to seconds.
    */
   static timeToSeconds(raw: string) {
-    var i = raw.split(":");
-    if (i.length == 1) {
-      var j = i[0].split("-");
-      if (j.length == 1) {
+    const i = raw.split(":");
+    if (i.length === 1) {
+      const j = i[0].split("-");
+      if (j.length === 1) {
         // minutes
         return parseInt(i[0]) * 60;
       } else {
         // days-hours
         return parseInt(j[0]) * 60 * 60 * 24 + parseInt(j[0]) * 60 * 60;
       }
-    } else if (i.length == 2) {
-      var j = i[0].split("-");
-      if (j.length == 2) {
+    } else if (i.length === 2) {
+      const j = i[0].split("-");
+      if (j.length === 2) {
         // days-hours:minutes
         return (
           parseInt(j[0]) * 60 * 60 * 24 +
@@ -408,9 +459,9 @@ export default class JobUtil {
         // minutes:seconds
         return parseInt(i[0]) * 60 + parseInt(i[0]);
       }
-    } else if (i.length == 3) {
-      var j = i[0].split("-");
-      if (j.length == 2) {
+    } else if (i.length === 3) {
+      const j = i[0].split("-");
+      if (j.length === 2) {
         // days-hours:minutes:seconds
         return (
           parseInt(j[0]) * 60 * 60 * 24 +

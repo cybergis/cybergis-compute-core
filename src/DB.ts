@@ -1,23 +1,24 @@
-import { Event } from "../src/models/Event";
-import { Log } from "../src/models/Log";
-import { Job } from "../src/models/Job";
-import { config } from "../configs/config";
 import {
   ConnectionOptions,
   getConnection,
   Connection,
   createConnection,
 } from "typeorm";
+import { config } from "../configs/config";
+import { Event } from "../src/models/Event";
+import { Job } from "../src/models/Job";
+import { Log } from "../src/models/Log";
+import { Folder } from "./models/Folder";
 import { Git } from "./models/Git";
 import { GlobusTransferRefreshToken } from "./models/GlobusTransferRefreshToken";
-import { Folder } from "./models/Folder";
 
 const entities = [Event, Log, Job, Git, GlobusTransferRefreshToken, Folder];
 
 /**
- * Connection helper class as a wrapper around TypeORM Connection
+ * Connection helper class as a wrapper around TypeORM Connection (MySQL)
  */
 class DB {
+
   /** @private */
   private config: ConnectionOptions = {
     name: "default",
@@ -80,7 +81,7 @@ class DB {
    */
   async connect(): Promise<Connection> {
     try {
-      return await getConnection(this.config.name);
+      return getConnection(this.config.name);
     } catch (error) {
       return await createConnection(this.config);
     }
@@ -93,11 +94,16 @@ class DB {
     await (await this.connect()).close();
   }
 
+  /**
+   * Completely clears all tables in the database.
+   * 
+   * @throws Thrown if clearing the database fails.
+   */
   async clearAll() {
     try {
       for (const entity of entities) {
         const connection = await this.connect();
-        const repository = await connection.getRepository(entity);
+        const repository = connection.getRepository(entity);
         await repository.clear();
       }
     } catch (error) {
