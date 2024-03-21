@@ -7,6 +7,7 @@ import * as path from "path";
 import connectionPool from "./ConnectionPool";
 import { config, hpcConfigMap } from "../../configs/config";
 import FileUtil from "../lib/FolderUtil";
+import Helper from "../Helper";
 
 class BaseConnector {
   /**
@@ -169,7 +170,10 @@ class BaseConnector {
           "SSH_SCP_DOWNLOAD",
           `get file from ${from} to ${to}`
         );
-      await this.ssh().connection.getFile(to, fromZipFilePath);
+      // wraps command with backoff -> takes lambda function and array of inputs to execute command
+      await Helper.runCommandWithBackoff.call(this, async (to1: string, zipPath: string) => {
+        await this.ssh().connection.getFile(to1, zipPath);
+      }, [to, fromZipFilePath], "Trying to download file again");
       await this.rm(fromZipFilePath);
       await FileUtil.putFileFromZip(to, toZipFilePath);
     } catch (e) {
@@ -195,7 +199,10 @@ class BaseConnector {
           "SSH_SCP_UPLOAD",
           `put file from ${from} to ${to}`
         );
-      await this.ssh().connection.putFile(from, to);
+      // wraps command with backoff -> takes lambda function and array of inputs to execute command
+      await Helper.runCommandWithBackoff.call(this, async (from1: string, to1: string) => {
+        await this.ssh().connection.putFile(from1, to1);
+      }, [from, to], "Trying again to transfer file");
     } catch (e) {
       const error =
         `unable to put file from ${from} to ${to}: ` + e.toString();

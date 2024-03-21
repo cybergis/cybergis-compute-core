@@ -7,6 +7,7 @@ import connectionPool from "./connectors/ConnectionPool";
 import * as events from "events";
 import DB from "./DB";
 import NodeSSH = require("node-ssh");
+import Helper from "./Helper";
 
 class Supervisor {
   private db = new DB();
@@ -126,7 +127,7 @@ class Supervisor {
 
   async createMaintainerWorker(job: Job) {
     var self = this;
-
+    const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
     while (true) {
       // get ssh connector from pool
       var ssh: SSH;
@@ -136,21 +137,31 @@ class Supervisor {
         ssh = connectionPool[job.id].ssh;
       }
 
-      // connect ssh & run
-      try {
-        if (!ssh.connection.isConnected())
-          await ssh.connection.connect(ssh.config);
-        await ssh.connection.execCommand("echo"); // test connection
-        if (job.maintainerInstance.isInit) {
-          await job.maintainerInstance.maintain();
-        } else {
-          await job.maintainerInstance.init();
+      if (!ssh.connection.isConnected()) {
+        try {
+          // wraps command with backoff -> takes lambda function and array of inputs to execute command
+          await Helper.runCommandWithBackoff(async (ssh1: SSH) => {
+            if (!ssh1.connection.isConnected()) {
+              await ssh1.connection.connect(ssh1.config);
+            }
+            ssh1.connection.execCommand("echo");
+          }, [ssh], null);
+        } catch (e) {
+          console.log(`job [${job.id}]: Caught ${e}`)
+          self.emitter.registerEvents(
+            job,
+            "JOB_FAILED",
+            `job [${job.id}] failed because the HPC could not connect within the allotted time`
+          );
         }
-      } catch (e) {
-        if (config.is_testing) console.error(e.stack);
-        continue;
+        
       }
 
+      if (job.maintainerInstance.isInit) {
+        await job.maintainerInstance.maintain();
+      } else {
+        await job.maintainerInstance.init();
+      }
       // emit events & logs
       var events = job.maintainerInstance.dumpEvents();
       var logs = job.maintainerInstance.dumpLogs();
@@ -252,3 +263,4 @@ class Supervisor {
 }
 
 export default Supervisor;
+
