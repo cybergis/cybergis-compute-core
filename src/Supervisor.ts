@@ -7,8 +7,6 @@ import connectionPool from "./connectors/ConnectionPool";
 import * as events from "events";
 import DB from "./DB";
 import NodeSSH = require("node-ssh");
-import BaseConnector from "./connectors/BaseConnector";
-import { Console } from "console";
 import Helper from "./Helper";
 
 class Supervisor {
@@ -140,12 +138,23 @@ class Supervisor {
       }
 
       if (!ssh.connection.isConnected()) {
-        await Helper.runCommandWithBackoff(async (ssh1: SSH) => {
-          if (!ssh1.connection.isConnected()) {
-            await ssh1.connection.connect(ssh1.config);
-          }
-          ssh1.connection.execCommand("echo");
-        }, [ssh], null);
+        try {
+          // wraps command with backoff -> takes lambda function and array of inputs to execute command
+          await Helper.runCommandWithBackoff(async (ssh1: SSH) => {
+            if (!ssh1.connection.isConnected()) {
+              await ssh1.connection.connect(ssh1.config);
+            }
+            ssh1.connection.execCommand("echo");
+          }, [ssh], null);
+        } catch (e) {
+          console.log(`job [${job.id}]: Caught ${e}`)
+          self.emitter.registerEvents(
+            job,
+            "JOB_FAILED",
+            `job [${job.id}] failed because the HPC could not connect within the allotted time`
+          );
+        }
+        
       }
 
       if (job.maintainerInstance.isInit) {
