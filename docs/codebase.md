@@ -21,7 +21,6 @@ Improvements:
 - migrate the configs from json to yaml for a much greater ease of use
 - don't export objects -- think of a better way to approach configs
 - actually figure out what field are required & not required for configs & update typings accordingly
-- ~~move all configs to the configs folder~~
 - ~~separate out the example configs from the real ones~~
 
 ### Connectors

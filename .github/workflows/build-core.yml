@@ -20,6 +20,8 @@ jobs:
           cp "$file" "configs/$new_filename.json"
         done
 
+        cp configs/examples/config.example.json example.json
+
         npm run build
 
   lint:
@@ -39,5 +41,7 @@ jobs:
           
           cp "$file" "configs/$new_filename.json"
         done
+
+        cp configs/examples/config.example.json example.json
 
         npm run lint
