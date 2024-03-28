@@ -73,11 +73,9 @@ class CommunityContributionMaintainer extends BaseMaintainer {
       
       this.emitEvent("SLURM_UPLOAD_EXECUTABLE", "uploading executable folder");  // isn't this SCP?
       let uploader: BaseFolderUploader = (
-        await FolderUploaderHelper.cachedUpload(
+        await FolderUploaderHelper.cachedUploadGit(
           localExecutableFolder,
           this.job.hpc,
-          "cache", // this.job.userId // upload it under the 'cache' user
-          this.job.id,
           this.connector
         )
       );

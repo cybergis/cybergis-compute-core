@@ -4,11 +4,8 @@ import { config, maintainerConfigMap, hpcConfigMap } from "../configs/config";
 import connectionPool from "./connectors/ConnectionPool";
 import DB from "./DB";
 import Emitter from "./Emitter";
-import { FolderUploaderHelper } from "./FolderUploader";
-import GitUtil from "./lib/GitUtil";
 import * as Helper from "./lib/Helper";
 import BaseMaintainer from "./maintainers/BaseMaintainer";
-import { Git } from "./models/Git";
 import { Job } from "./models/Job";
 import Queue from "./Queue";
 import { SSH } from "./types";
@@ -32,8 +29,6 @@ class Supervisor {
   private maintainerMasterThread: NodeJS.Timeout | null = null;  // main loop
 
   private maintainerMasterEventEmitter = new events.EventEmitter();
-
-  private prevRefreshTime: number = Date.now();
 
   private queueConsumeTimePeriodInSeconds =
     config.queue_consume_time_period_in_seconds;
@@ -65,22 +60,6 @@ class Supervisor {
     // queue consumer
     // this function defined here will repeat every x seconds (specified in second parameter)
     this.maintainerMasterThread = setInterval(async () => {
-
-      // in the main loop, check if we should rezip things to keep things up to date
-      if (Date.now() - this.prevRefreshTime >= 24 * 60 * 60 * 1000) {  // number of milliseconds in a day
-        const connection = await this.db.connect();
-
-        const repos = await connection.getRepository(Git).find();
-
-        for (const repo of repos) {
-          await GitUtil.refreshGit(repo);
-          
-          for (const hpc of Object.keys(hpcConfigMap)) {
-            // vv fun fact! you can avoid awaiting for a promise with the void keyword
-            void FolderUploaderHelper.cacheRefresh({gitId: repo.id, type: "git"}, hpc, "cache");
-          }        
-        }
-      }
 
       // iterate over all HPCs
       for (const hpcName in this.jobPoolCounters) {

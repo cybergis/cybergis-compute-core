@@ -17,7 +17,6 @@ import {
   GlobusFolder,
   hpcConfig,
   LocalFolder,
-  NeedUploadFolder,
 } from "./types";
 
 type Connector =
@@ -428,6 +427,7 @@ export class LocalFolderUploader extends CachedFolderUploader {
 
 /**
  * Specialization of LocalFolderUploader for uploading a git folder (on the local machine).
+ * Always uploads the most updated version.
  * 
  * TODO: verify this cached version actually works
  */
@@ -459,8 +459,23 @@ export class GitFolderUploader extends LocalFolderUploader   {
     this.git = foundGit;
 
     // repull git if old, then upload (via SCP)
-    await GitUtil.refreshGit(this.git);  // unneeded if can guarantee we are good
+    await GitUtil.refreshGit(this.git);
     await super.uploadToPath(path);
+  }
+
+  /**
+   * Specialization of cache upload for uploading a git folder. Has functionality to upload if and only if
+   * the cached git repository is out of date. 
+   *
+   * @protected
+   */
+  protected async uploadToCache(): Promise<void> {
+    const outOfDate = await GitUtil.outOfDate(this.git);
+    if (!outOfDate) {
+      return;
+    }
+
+    await this.uploadToPath(this.getCacheFile());
   }
 }
 
@@ -541,8 +556,11 @@ export class FolderUploaderHelper {
     return uploader;
   }
 
+  stat;
+
   /**
    * Uploads a generic folder and returns the helper used to do so. Uses the cached versions of everything.
+   * Only supported for git folders currently.
    *
    * @static
    * @param {NeedUploadFolder} from either a GlobusFolder, GitFolder, or LocalFolder
@@ -553,132 +571,23 @@ export class FolderUploaderHelper {
    * @throws {Error} invalid file type/format
    * @return {Promise<BaseFolderUploader>} folder uploader object used to upload the folder, can check if upload was successful via {uploader}.isComplete
    */
-  static async  cachedUpload(
-    from: NeedUploadFolder,
+  static async cachedUploadGit(
+    from: GitFolder,
     hpcName: string,
-    userId: string,
-    jobId = "",
     connector: Connector | null = null
   ): Promise<CachedFolderUploader> {
     // if type not specified, throw an error
     if (!from.type) throw new Error("invalid local file format");
 
-    let uploader: CachedFolderUploader;
-    switch (from.type) {
-    case "git":
-      uploader = new GitFolderUploader(
-        from as GitFolder,
-        hpcName,
-        userId,
-        connector
-      );
-      
-      break;
-
-    case "local":
-      uploader = new LocalFolderUploader(
-        from as LocalFolder,
-        hpcName,
-        userId,
-        connector
-      );
-
-      break;
-
-    case "globus":
-      uploader = new GlobusFolderUploader(
-        from as GlobusFolder, 
-        hpcName, 
-        userId, 
-        jobId
-      );
-      
-      break;
-
-      // case "empty":
-      // Helper.nullGuard(connector);
-      
-      // uploader = new EmptyFolderUploader(hpcName, userId, jobId, connector);
-      // await uploader.upload();
-      // break;
-
-    default:
-      throw new Error("undefined file type " + from.type);
-    }
+    const uploader = new GitFolderUploader(
+      from,
+      hpcName,
+      "cache",
+      connector
+    );
 
     await uploader.init();
     await uploader.cachedUpload();
-
-    return uploader;
-  }
-
-  /**
-   * Refreshes the remote cache for a given cache entry.
-   *
-   * @static
-   * @param {NeedUploadFolder} from either a GlobusFolder, GitFolder, or LocalFolder
-   * @param {string} hpcName name of hpc to uplaod to
-   * @param {string} userId current user
-   * @param {string} [jobId=""] job associated with the folder upload (optional)
-   * @param {Connector} [connector=null] connector to connect to HPC with, if needed
-   * @throws {Error} invalid file type/format
-   * @return {Promise<BaseFolderUploader>} folder uploader object used to upload the folder, can check if upload was successful via {uploader}.isComplete
-   */
-  static async cacheRefresh(
-    from: NeedUploadFolder,
-    hpcName: string,
-    userId: string,
-    jobId = "",
-    connector: Connector | null = null
-  ): Promise<CachedFolderUploader> {
-    // if type not specified, throw an error
-    if (!from.type) throw new Error("invalid local file format");
-
-    let uploader: CachedFolderUploader;
-    switch (from.type) {
-    case "git":
-      uploader = new GitFolderUploader(
-        from as GitFolder,
-        hpcName,
-        userId,
-        connector
-      );
-      
-      break;
-
-    case "local":
-      uploader = new LocalFolderUploader(
-        from as LocalFolder,
-        hpcName,
-        userId,
-        connector
-      );
-
-      break;
-
-    case "globus":
-      uploader = new GlobusFolderUploader(
-        from as GlobusFolder, 
-        hpcName, 
-        userId, 
-        jobId
-      );
-      
-      break;
-
-      // case "empty":
-      // Helper.nullGuard(connector);
-      
-      // uploader = new EmptyFolderUploader(hpcName, userId, jobId, connector);
-      // await uploader.upload();
-      // break;
-
-    default:
-      throw new Error("undefined file type " + from.type);
-    }
-
-    await uploader.init();
-    await uploader.refreshCache();
 
     return uploader;
   }

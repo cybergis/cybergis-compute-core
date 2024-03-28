@@ -154,7 +154,7 @@ General Improvements
     - make the redis connection actually persistent and not local
 - ~~get an actual git sdk to avoid having to exec~~
 - the Helper generateId function has a chance of collisions (expected 1 in every 62 ** 5 for every millisecond)
-- unlink vs rm in FolderUtil.removeZip -- unlink doesn't actually remove but rm does (changed to rm)
+- ~~unlink vs rm in FolderUtil.removeZip -- unlink doesn't actually remove but rm does~~ (changed to rm)
 
 ### Maintainers
 
@@ -222,7 +222,7 @@ Dependents:
 Improvements:
 
 - Job may be too bloated
-- add other helpful fields to Git repo to support the manifest retrievals
+- ~~add other helpful fields to Git repo to support the manifest retrievals~~ (no longer needed with branch resolution)
 
 ### DB
 
@@ -302,6 +302,7 @@ Improvements:
 - is there any point in having connectors be passed to it instead of just making a baseconnector
 - think if globus transfers of data should be cached
 - remove the FolderUploaderHelper -- too generic for its own good
+- make the Folders database be better integrated for cached uploads (just uploads under a cache user right now)
 
 ### JupyterHub
 
@@ -419,6 +420,7 @@ Overall Improvements and TODOs:
 - get rid of all execs or add better error handling for execs
 - add explicit scoping for class functions (protected/public/private)
 - take a second look at some of the prebuild stuff (tsdoc, typeorm, etc.)
+- add access stuff to functions (public/private/protected)
 
 ## Job lifecycle
 
