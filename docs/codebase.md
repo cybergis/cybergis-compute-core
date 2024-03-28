@@ -19,7 +19,7 @@ Dependents: nearly everything
 
 Improvements: 
 - migrate the configs from json to yaml for a much greater ease of use
-- don't export objects -- think of a better way to approach configs
+- ~~don't export objects -- think of a better way to approach configs~~ (it's fine)
 - actually figure out what field are required & not required for configs & update typings accordingly
 - ~~separate out the example configs from the real ones~~
 
@@ -69,7 +69,8 @@ Improvements
 - no connectors are actually explicitly initialized -- they are only created through a maintainer function due to a weird two-way relationship between the two (a maintainer needs a connector, which needs a maintainer)
 - many unused functions (particularly specialized shell commands like `ls` in BaseConnector)
 - modularize `connectionPool` into a class and make the ability to add in job-specific connections more transparent
-- switch to a more modern & error-friendly sdk for ssh execs
+- ~~switch to a more modern & error-friendly sdk for ssh execs~~
+    - add more rigorous error checking for execs
 
 ### Utility classes
 

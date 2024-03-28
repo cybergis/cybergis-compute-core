@@ -164,7 +164,7 @@ export interface localFileSystem {
   root_path: string;
 }
 
-export interface config {
+export interface baseConfig {
   local_key: localKey;
   server_port: number;
   server_ip: string;

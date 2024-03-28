@@ -1,5 +1,5 @@
 import {
-  config,
+  baseConfig,
   hpcConfig,
   maintainerConfig,
   containerConfig,
@@ -14,7 +14,7 @@ import rawJupyterGlobusMapConfig from "./jupyter-globus-map.json";  // globus co
 import rawKernelConfig from "./kernel.json";  // python kernel configs
 import rawMaintainer from "./maintainer.json";  // maintainer config
 
-const config: config = JSON.parse(JSON.stringify(rawConfig)) as config;
+const config: baseConfig = JSON.parse(JSON.stringify(rawConfig)) as baseConfig;
 
 // create and populate configs
 
