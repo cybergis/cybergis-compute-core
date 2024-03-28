@@ -1,3 +1,5 @@
+import { clone, pull, checkout } from "isomorphic-git";
+import http from "isomorphic-git/http/node";
 import rimraf from "rimraf";
 import * as fs from "fs";
 import * as path from "path";
@@ -60,11 +62,22 @@ export default class GitUtil {
     rimraf.sync(localPath);  // deletes everything
 
     await fs.promises.mkdir(localPath);
-    await exec(`cd ${localPath} && git clone ${git.address} ${localPath}`);
+    clone({
+      fs, 
+      http,
+      dir: localPath,
+      url: git.address
+    })
+      .catch((err) => {console.error(err);});
 
     if (git.sha) {
       // if a sha is specified, checkout that commit
-      await exec(`cd ${localPath} && git checkout ${git.sha}`);
+      checkout({
+        fs,
+        dir: localPath,
+        ref: git.sha
+      })
+        .catch((err) => {console.error(err);});
     }
   }
 
@@ -107,7 +120,12 @@ export default class GitUtil {
     // clone if git repo not exits locally
     if (!fs.existsSync(localPath)) {
       await fs.promises.mkdir(localPath);
-      await exec(`cd ${localPath} && git clone ${git.address} ${localPath}`);
+      clone({
+        fs, 
+        http,
+        dir: localPath,
+        url: git.address
+      }).catch((err) => {console.error(err);});
     }
 
     //check when last updated
@@ -125,9 +143,17 @@ export default class GitUtil {
       try {
         // try checking out the sha or pulling latest
         if (git.sha) {
-          await exec(`cd ${localPath} && git checkout ${git.sha}`);
+          checkout({
+            fs,
+            dir: localPath,
+            ref: git.sha
+          }).catch((err) => {console.error(err);});
         } else {
-          await exec(`cd ${localPath} && git pull`);
+          pull({
+            fs, 
+            http,
+            dir: localPath
+          }).catch(err => {console.error(err);});
         }
       } catch {
         // if there is an error, delete and repull

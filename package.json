@@ -35,6 +35,7 @@
     "commander": "^6.2.1",
     "express": "^4.18.2",
     "express-fileupload": "^1.2.0",
+    "isomorphic-git": "^1.25.6",
     "jsonschema": "^1.2.6",
     "morgan": "^1.10.0",
     "mysql": "^2.18.1",
