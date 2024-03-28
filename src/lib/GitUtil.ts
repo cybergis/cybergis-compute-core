@@ -63,7 +63,7 @@ export default class GitUtil {
 
     await fs.promises.mkdir(localPath);
     clone({
-      fs, 
+      fs: fs.promises, 
       http,
       dir: localPath,
       url: git.address
@@ -73,7 +73,7 @@ export default class GitUtil {
     if (git.sha) {
       // if a sha is specified, checkout that commit
       checkout({
-        fs,
+        fs: fs.promises,
         dir: localPath,
         ref: git.sha
       })
@@ -121,7 +121,7 @@ export default class GitUtil {
     if (!fs.existsSync(localPath)) {
       await fs.promises.mkdir(localPath);
       clone({
-        fs, 
+        fs: fs.promises, 
         http,
         dir: localPath,
         url: git.address
@@ -144,13 +144,13 @@ export default class GitUtil {
         // try checking out the sha or pulling latest
         if (git.sha) {
           checkout({
-            fs,
+            fs: fs.promises,
             dir: localPath,
             ref: git.sha
           }).catch((err) => {console.error(err);});
         } else {
           pull({
-            fs, 
+            fs: fs.promises, 
             http,
             dir: localPath
           }).catch(err => {console.error(err);});
