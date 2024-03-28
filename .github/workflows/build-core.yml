@@ -13,20 +13,11 @@ jobs:
     - run: |
         npm ci
         
-        for file in *.example.json; do
-          # Remove the .example part from the filename
-          new_file="${file%.example.json}.json"
+        for file in configs/examples/*.example.json; do
+          filename=$(basename "$file" .example.json)
+          new_filename="${filename%.example}"
           
-          # Copy the file to the new filename
-          cp "$file" "$new_file"
-        done
-
-        for file in configs/*.example.json; do
-          # Remove the .example part from the filename
-          new_file="${file%.example.json}.json"
-          
-          # Copy the file to the new filename
-          cp "$file" "$new_file"
+          cp "$file" "configs/$new_filename.json"
         done
 
         npm run build
@@ -41,21 +32,12 @@ jobs:
     - name: Run eslint
       run: |
         npm ci
-        
-        for file in *.example.json; do
-          # Remove the .example part from the filename
-          new_file="${file%.example.json}.json"
-          
-          # Copy the file to the new filename
-          cp "$file" "$new_file"
-        done
 
-        for file in configs/*.example.json; do
-          # Remove the .example part from the filename
-          new_file="${file%.example.json}.json"
+        for file in configs/examples/*.example.json; do
+          filename=$(basename "$file" .example.json)
+          new_filename="${filename%.example}"
           
-          # Copy the file to the new filename
-          cp "$file" "$new_file"
+          cp "$file" "configs/$new_filename.json"
         done
 
         npm run lint

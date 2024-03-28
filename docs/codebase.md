@@ -21,8 +21,8 @@ Improvements:
 - migrate the configs from json to yaml for a much greater ease of use
 - don't export objects -- think of a better way to approach configs
 - actually figure out what field are required & not required for configs & update typings accordingly
-- move all configs to the configs folder
-- separate out the example configs from the real ones
+- ~~move all configs to the configs folder~~
+- ~~separate out the example configs from the real ones~~
 
 ### Connectors
 
@@ -153,7 +153,7 @@ General Improvements
 - make a RedisUtil class to encapsulate all of the individual redis interfaces (which are essentially the same with a few naming differences)
     - make the redis connections less weird
     - make the redis connection actually persistent and not local
-- get an actual git sdk to avoid having to exec
+- ~~get an actual git sdk to avoid having to exec~~
 - the Helper generateId function has a chance of collisions (expected 1 in every 62 ** 5 for every millisecond)
 - unlink vs rm in FolderUtil.removeZip -- unlink doesn't actually remove but rm does (changed to rm)
 
