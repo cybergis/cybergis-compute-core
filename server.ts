@@ -753,7 +753,7 @@ app.put("/git/refresh", async function (req, res) {
       
       for (const hpc of Object.keys(hpcConfigMap)) {
         // vv fun fact! you can avoid awaiting for a promise with the void keyword
-        await FolderUploaderHelper.cachedUpload({gitId: repo.id}, hpc, "cache");
+        await FolderUploaderHelper.cachedUpload({gitId: repo.id, type: "git"}, hpc, "cache");
       }        
     }
   } catch (err) {
