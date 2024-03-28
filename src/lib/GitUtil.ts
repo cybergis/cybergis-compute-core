@@ -1,4 +1,4 @@
-import { clone, pull, checkout } from "isomorphic-git";
+import { clone, pull, fetch, checkout, log } from "isomorphic-git";
 import http from "isomorphic-git/http/node";
 import rimraf from "rimraf";
 import * as fs from "fs";
@@ -103,8 +103,59 @@ export default class GitUtil {
       // if a sha is specified, checkout that commit
       await exec(`cd ${localPath} && wget -O manifest.json ${getManifestUrl(git.sha)}`);
     } else {
-      await exec(`cd ${localPath} && wget -O manifest.json ${getManifestUrl("main")}`);
+      await exec(`cd ${localPath} && wget -O manifest.json ${getManifestUrl(await this.getDefaultBranch(git))}`);
     }
+  }
+
+  static async getDefaultBranch(git: Git): Promise<string> {
+    const remote = await fetch({
+      fs,
+      http,
+      dir: this.getLocalPath(git.id),
+      url: git.address
+    });
+
+    const branch = remote.defaultBranch;
+
+    if (branch === null) {
+      return "main";
+    }
+
+    const branch_sections = branch.split("/");
+
+    return branch_sections[branch_sections.length - 1];
+  }
+  
+  static async outOfDate(git: Git): Promise<boolean> {
+    // if the commit is specified, we cannot be out of date
+    if (git.sha) {
+      return false;
+    }
+
+    const localPath = this.getLocalPath(git.id);
+
+    // get the remote most recent commit
+    const remote = await fetch({
+      fs,
+      http,
+      dir: localPath,
+      url: git.address
+    });
+    const remoteSha = remote.fetchHead;
+
+    if (remoteSha === null) {
+      return true;
+    }
+
+    const local = await log({
+      fs,
+      dir: localPath,
+      depth: 1
+    });
+
+    const localSha = local[0].oid;
+
+    return remoteSha !== localSha;
   }
   
   /**
