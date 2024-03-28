@@ -317,35 +317,29 @@ export interface jobMaintainerUpdatable {
   remoteDataFolder?: Folder;
 }
 
-export interface GlobusFolder {
-  type?: string;
+export interface BaseFolder {
+  type: "globus" | "git" | "local" | "empty";
+}
+
+export interface GlobusFolder extends BaseFolder {
+  type: "globus";
   endpoint: string;
   path: string;
 }
 
-export interface GitFolder {
-  type?: string;
+export interface GitFolder extends BaseFolder {
+  type: "git";
   gitId: string;
 }
 
-export interface LocalFolder {
+export interface LocalFolder extends BaseFolder {
+  type: "local";
   localPath: string;
-  type?: string;
 }
 
 export interface EmptyFolder {
-  type: string;
+  type: "empty"
 }
-
-export interface folderEditable {
-  name: string;
-  isWritable: boolean;
-}
-
-export type NeedUploadFolder = 
-  GlobusFolder | GitFolder | LocalFolder;
-
-export type AnyFolder = NeedUploadFolder | EmptyFolder;
 
 export interface authReqBody {
   jupyterhubApiToken: string
@@ -382,10 +376,6 @@ export interface updateJobBody {
   localDataFolder?: object,
   remoteDataFolder?: object,
   remoteExecutableFolder?: object,
-}
-
-export interface refreshCacheBody {
-  hpc?: string
 }
 
 export type PushFunction = (_args: unknown[]) => Promise<number>;

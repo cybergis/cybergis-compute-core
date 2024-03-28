@@ -12,7 +12,7 @@ import * as Helper from "./lib/Helper";
 import { Folder } from "./models/Folder";
 import { Git } from "./models/Git";
 import {
-  AnyFolder,
+  BaseFolder,
   GitFolder,
   GlobusFolder,
   hpcConfig,
@@ -298,6 +298,7 @@ class GlobusFolderUploader extends CachedFolderUploader {  // eslint-disable-lin
 
     this.from = from;
     this.to = {
+      type: "globus",
       endpoint: this.hpcConfig.globus.endpoint,
       path: this.globusPath,
     };
@@ -360,7 +361,8 @@ class GlobusFolderUploader extends CachedFolderUploader {  // eslint-disable-lin
     const uploadPath = this.getCacheFile().slice(0, -3);
     await this.uploadToFolder({
       endpoint: this.hpcConfig.globus.endpoint,  
-      path: uploadPath // get rid of the .zip
+      path: uploadPath, // get rid of the .zip
+      type: "globus"
     });
 
     await this.connector.zip(uploadPath, this.getCacheFile());
@@ -443,7 +445,7 @@ export class GitFolderUploader extends LocalFolderUploader   {
   ) {
     const localPath: string = GitUtil.getLocalPath(from.gitId);
     
-    super({ localPath }, hpcName, userId, connector);
+    super({ type: "local", localPath }, hpcName, userId, connector);
     this.gitId = from.gitId;
   }
 
@@ -500,14 +502,12 @@ export class FolderUploaderHelper {
    * @return {Promise<BaseFolderUploader>} folder uploader object used to upload the folder, can check if upload was successful via {uploader}.isComplete
    */
   static async upload(
-    from: AnyFolder,
+    from: BaseFolder,
     hpcName: string,
     userId: string,
     jobId = "",
     connector: Connector | null = null
   ): Promise<BaseFolderUploader> {
-    // if type not specified, throw an error
-    if (!from.type) throw new Error("invalid local file format");
 
     let uploader: BaseFolderUploader;
     switch (from.type) {
@@ -548,15 +548,10 @@ export class FolderUploaderHelper {
       uploader = new EmptyFolderUploader(hpcName, userId, jobId, connector);
       await uploader.upload();
       break;
-
-    default:
-      throw new Error("undefined file type " + from.type);
     }
 
     return uploader;
   }
-
-  stat;
 
   /**
    * Uploads a generic folder and returns the helper used to do so. Uses the cached versions of everything.
