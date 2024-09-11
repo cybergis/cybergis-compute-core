@@ -31,7 +31,7 @@
       "axios": "^0.21.4",
       "better-sqlite3": "^7.5.1",
       "commander": "^6.2.1",
-      "express": "^4.18.2",
+      "express": "^4.20.0",
       "express-fileupload": "^1.2.0",
       "isomorphic-git": "^1.25.6",
       "jsonschema": "^1.2.6",
