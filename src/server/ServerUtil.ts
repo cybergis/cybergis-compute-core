@@ -85,6 +85,14 @@ export const schemas = {
     },
     required: ["jupyterhubApiToken", "toEndpoint", "toPath"],
   },
+  initBrowserDownload: {
+    type: "object",
+    properties: {
+      jobId: { type: "string" },
+      jupyterhubApiToken: { type: "string" },
+    },
+    required: ["jupyterhubApiToken"],
+  },
   refreshCache: {
     type: "object",
     properties: {
