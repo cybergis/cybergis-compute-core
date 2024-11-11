@@ -13,10 +13,19 @@ import dataSource from "../utils/DB";
 import type {
   updateFolderBody,
   initGlobusDownloadBody,
-  GlobusFolder
+  GlobusFolder,
+  initBrowserDownloadBody
 } from "../utils/types";
 
 import { authMiddleWare, requestErrors, validator, schemas, prepareDataForDB, globusTaskList } from "./ServerUtil";
+import multer from "multer";
+import Busboy from 'busboy';
+import type { BusboyConfig } from 'busboy';
+import * as fs from "fs";
+import * as os from "os";
+import e = require("express");
+import FolderUtil from "../helpers/FolderUtil";
+import DownloadUploadUtil from "../helpers/DownloadUploadUtil";
 
 const folderRouter = express.Router();
 
@@ -338,6 +347,126 @@ folderRouter.get(
         .status(403)
         .json({ 
           error: `failed to query globus with error: ${Helper.assertError(err).toString()}`
+        });
+      return;
+    }
+  }
+);
+
+// // const storage = multer.memoryStorage();
+// // const upload = multer({ storage: storage }).single("file");
+// const busboy = require('busboy');
+
+// folderRouter.post(
+//   "/:folderId/uploadFile",
+//   async function (req, res) {
+//     const bb = busboy({ headers: req.headers });
+//     const uploadPath = path.join(__dirname, 'uploads');
+//     console.log(`Upload path: ${uploadPath}`);
+    
+//     if (!fs.existsSync(uploadPath)) {
+//         fs.mkdirSync(uploadPath);
+//     }
+
+//     bb.on('file', (fieldname: string, file: NodeJS.ReadableStream, filename: string, encoding: string, mimetype: string) => {
+//         console.log(`Received file: ${filename}`);
+//         const saveTo = path.join(uploadPath, filename);
+//         file.pipe(fs.createWriteStream(saveTo));
+//     });
+
+//     bb.on('finish', () => {
+//         res.writeHead(200, { 'Connection': 'close' });
+//         res.end("File upload complete");
+//     });
+
+//     bb.on('error', (err: any) => {
+//         console.error('Busboy error:', err);
+//         res.status(500).send({ error: 'File upload failed' });
+//     });
+
+//     req.pipe(bb);
+
+//     req.on('aborted', () => {
+//         bb.destroy();
+//     });
+
+//     req.on('error', (err) => {
+//       console.error('Request stream error:', err);
+//       res.status(500).send({ error: 'Request stream failed' });
+//     });
+//   }
+// );
+
+/**
+   * @openapi
+   * /folder/:folderId/download/globus-init:
+   *  post:
+   *      description: Posts a request to initiate a globus download of the specified folder (Authentication REQUIRED)
+   *      responses:
+   *          200:
+   *              description: Globus download of the specific folder is successful
+   *          402:
+   *              description: Returns "invalid input" and a list of errors with the format of the req body or "invalid token" if a valid jupyter token authentication is not provided
+   *          403:
+   *              description: Returns error when the folder ID cannot be found, when the hpc config for globus cannot be found, when the globus download fails, or when a download is already running for the folder
+   */
+folderRouter.get(
+  "/:folderId/download/browser", 
+  authMiddleWare, 
+  async function (req, res) {
+    const errors = requestErrors(
+      validator.validate(req.body, schemas.initBrowserDownload)
+    );
+    
+    if (errors.length > 0) {
+      res.status(402).json({ error: "invalid input", messages: errors });
+      return;
+    }
+    
+    const body = req.body as initBrowserDownloadBody;
+    
+    if (!res.locals.username) {
+      res.status(402).json({ error: "invalid token" });
+      return;
+    }
+    
+    // get jobId from body
+    const jobId = body.jobId;
+    
+    // get folder; if not found, error out
+    const folderId = req.params.folderId;
+    const folder = await (dataSource
+      .getRepository(Folder)
+      .findOneByOrFail({
+        id: folderId
+      })
+    );
+        
+    if (!folder) {
+      res.status(403).json({ error: `cannot find folder with id ${folderId}` });
+      return;
+    }
+
+    const downloadPath = path.join(__dirname, 'uploads');
+    if (!fs.existsSync(downloadPath)) {
+      fs.mkdirSync(downloadPath);
+    }
+    try {
+      // const connector = new BaseConnector(hpcConfigMap[folder.hpc]);
+      // const connector = new BaseConnector(folder.hpc);
+      // await connector.ssh(); // Ensure the connector is connected
+      // await connector.download(folder.globusPath, downloadPath);
+      // const file = path.join(downloadPath, folder.globusPath);
+      const download_util = new DownloadUploadUtil();
+      await download_util.download(folder.globusPath, downloadPath, jobId!);
+      const file = downloadPath;
+      res.download(file);
+      res.status(200).json({ success: true });
+    } catch (err) {
+      res
+        .status(403)
+        .json({ 
+          error: `failed to download with error: ${Helper.assertError(err).toString()}`
         });
       return;
     }
