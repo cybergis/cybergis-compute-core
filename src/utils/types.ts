@@ -178,8 +178,11 @@ export interface baseConfig {
   is_testing: boolean;
   is_jest: boolean; // reserve only for jest testing
   cilogon_secret: string;
-  cilogon_redirect_uri: string;
+  cilogon_base_uri: string;
   cilogon_client_id: string;
+  admin_emails: string[];
+  confirmation_email: string;
+  smtp_server: string;
 }
 
 export interface externalKey {

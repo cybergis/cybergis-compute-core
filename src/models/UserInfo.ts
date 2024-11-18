@@ -25,13 +25,7 @@ export class UserInfo {
 
   @Column({ type: "datetime", default: () => "CURRENT_TIMESTAMP" })
     createdAt!: Date;
-
-  @Column({ 
-    type: "datetime",
-    nullable: true
-  })
-    approvedAt?: Date;
-
+    
   /**
    * Set the createdAt time to the current time.
    *
@@ -40,10 +34,6 @@ export class UserInfo {
   @BeforeInsert()
   setCreatedUpdated() {
     this.createdAt = new Date();
-  }
-
-  approve() {
-    this.approvedAt = new Date();
   }
 }
     

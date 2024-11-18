@@ -5,6 +5,7 @@ import { config, hpcConfigMap } from "../../configs/config";
 import * as Helper from "../helpers/Helper";
 import { AllowList, Approvals, DenyList, UserInfo } from "../models";
 import dataSource from "../utils/DB";
+import { sendRequest } from "../utils/email";
 import { modifyUserBody, ApprovalType, CILogonTokenBody, CILogonUserInfo } from "../utils/types";
 
 import { validator, requestErrors, schemas } from "./ServerUtil";
@@ -51,12 +52,16 @@ authRouter.post("/request/addUser", async function (req, res) {
     return;
   }
 
+  const hash = Helper.randomHash(100);
+
   await approvalRepo.insert({
     user: body.user,
     hpc: body.hpc,
     type: ApprovalType.APPROVAL,
-    hash: Helper.randomHash(100)
+    hash
   });
+
+  await sendRequest(`${config.cilogon_base_uri}/auth/approve?approvalId=${hash}`, body.user, true, info);
 
   res.status(200).json({ 
     messages: ["allowlist approval successfully requested"] 
@@ -93,12 +98,16 @@ authRouter.post("/request/denyUser", async function (req, res) {
     return;
   }
 
+  const hash = Helper.randomHash(100);
+
   await approvalRepo.insert({
     user: body.user,
     hpc: body.hpc,
     type: ApprovalType.DENIAL,
-    hash: Helper.randomHash(100)
+    hash
   });
+
+  await sendRequest(`${config.cilogon_base_uri}/auth/approve?approvalId=${hash}`, body.user, false);
 
   res.status(200).json({ 
     messages: ["denylist approval successfully requested"] 
@@ -120,8 +129,6 @@ authRouter.get("/approve", async (req, res) => {
   const existing = await approvalRepo.findOneBy({
     hash
   });
-
-  console.log;
 
   if (existing === null || existing.approvedAt != null) {
     res.status(400).json({ error: "non-existent or invalid approval id parameter" });
@@ -183,12 +190,23 @@ authRouter.get("cilogon/callback", async (req, res) => {
     return;
   }
 
+  const userRepo = dataSource.getRepository(UserInfo);
+
+  const existing = await userRepo.findOneBy({
+    user: state
+  });
+
+  if (existing !== null) {
+    res.status(400).json({ error: "user already registered" });
+    return;
+  }
+
   const response: AxiosResponse<CILogonTokenBody> = await axios.post("https://cilogon.org/oauth2/token", {
     grant_type: "authorization_code",
     client_id: config.cilogon_client_id,
     code: code,
     client_secret: config.cilogon_secret,
-    redirect_uri: config.cilogon_redirect_uri,
+    redirect_uri: `${config.cilogon_base_uri}/auth/cilogon/callback`,
   });
 
   if (response.status !== 200) {
@@ -214,8 +232,6 @@ authRouter.get("cilogon/callback", async (req, res) => {
     res.status(400).json({ error: "need to log in with ACCESS, please try again" });
     return;
   }
-
-  const userRepo = dataSource.getRepository(UserInfo);
 
   await userRepo.insert({
     user: state,
