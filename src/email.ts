@@ -11,7 +11,7 @@ async function main() {
   });
   
   const mailOptions = {
-    from: "ianz2@illinois.edu", // Replace with your valid email address
+    from: "cybergis-no-reply@illinois.edu", // Replace with your valid email address
     to: "yianzhang14@gmail.com", // Replace with recipient email
     subject: "Test Email from Nodemailer",
     text: "Hello! This is a test email sent using Nodemailer and outbound-relays.",
