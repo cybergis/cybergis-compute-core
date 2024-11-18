@@ -7,8 +7,7 @@ import { AllowList, Approvals, DenyList, UserInfo } from "../models";
 import dataSource from "../utils/DB";
 import { modifyUserBody, ApprovalType, CILogonTokenBody, CILogonUserInfo } from "../utils/types";
 
-import { validator } from "./ServerUtil";
-import { requestErrors, schemas } from "./ServerUtil";
+import { validator, requestErrors, schemas } from "./ServerUtil";
 
 const authRouter = express.Router();
 
@@ -26,6 +25,16 @@ authRouter.post("/request/addUser", async function (req, res) {
 
   if (!(body.hpc in hpcConfigMap)) {
     res.status(402).json({ error: "invalid hpc passed in" });
+    return;
+  }
+
+  const userRepo = dataSource.getRepository(UserInfo);
+  const info = await userRepo.findOneBy({
+    user: body.user
+  });
+
+  if (info === null) {
+    res.status(400).json({ error: "user is not recorded in the user info database yet, need to authorize using access credentials" });
     return;
   }
 
