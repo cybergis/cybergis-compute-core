@@ -2,7 +2,7 @@ import express = require("express");
 
 import GitUtil from "../helpers/GitUtil";
 import * as Helper from "../helpers/Helper";
-import { Git } from "../models/Git";
+import { Git } from "../models";
 import dataSource from "../utils/DB";
 import { executableManifest } from "../utils/types";
 

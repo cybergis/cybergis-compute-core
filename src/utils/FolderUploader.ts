@@ -11,8 +11,7 @@ import FolderUtil from "../helpers/FolderUtil";
 import GitUtil from "../helpers/GitUtil";
 import { GlobusClient } from "../helpers/GlobusTransferUtil";
 import * as Helper from "../helpers/Helper";
-import { Cache } from "../models/Cache";
-import { Folder } from "../models/Folder";
+import { Cache, Folder } from "../models";
 
 import dataSource from "./DB";
 import { NotImplementedError } from "./errors";

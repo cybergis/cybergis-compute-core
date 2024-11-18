@@ -1,9 +1,7 @@
 import getRandomValues from "get-random-values";
 
 import { config, hpcConfigMap, jupyterGlobusMap } from "../../configs/config";
-import { AllowList } from "../models/AllowList";
-import { DenyList } from "../models/DenyList";
-import { Job } from "../models/Job";
+import { AllowList, DenyList, Job } from "../models";
 import dataSource from "../utils/DB";
 import { callableFunction } from "../utils/types";
 // import * as fs from "fs";

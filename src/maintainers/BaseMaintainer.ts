@@ -9,7 +9,7 @@ import BaseConnector from "../connectors/BaseConnector";
 import SingularityConnector from "../connectors/SingularityConnector";
 import SlurmConnector from "../connectors/SlurmConnector";
 import * as Helper from "../helpers/Helper";
-import { Job } from "../models/Job";
+import { Job } from "../models";
 import dataSource from "../utils/DB";
 // import Supervisor from "../Supervisor";
 import {

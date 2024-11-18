@@ -1,7 +1,7 @@
 import axios, { AxiosResponse } from "axios";
 
 import { config } from "../../configs/config";
-import { GlobusTransferRefreshToken } from "../models/GlobusTransferRefreshToken";
+import { GlobusTransferRefreshToken } from "../models";
 import dataSource from "../utils/DB";
 import { GlobusFolder } from "../utils/types";
 

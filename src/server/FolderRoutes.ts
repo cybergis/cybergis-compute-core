@@ -8,7 +8,7 @@ import {
 } from "../../configs/config";
 import { GlobusClient } from "../helpers/GlobusTransferUtil";
 import * as Helper from "../helpers/Helper";
-import { Folder } from "../models/Folder";
+import { Folder } from "../models";
 import dataSource from "../utils/DB";
 import type {
   updateFolderBody,

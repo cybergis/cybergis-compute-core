@@ -7,7 +7,7 @@ import * as path from "path";
 import { promisify } from "util";
 
 import { config } from "../../configs/config";
-import { Git } from "../models/Git";
+import { Git } from "../models";
 import dataSource from "../utils/DB";
 import {
   executableManifest,

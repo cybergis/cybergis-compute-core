@@ -1,0 +1,49 @@
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  BeforeInsert,
+} from "typeorm";
+    
+/** Class representing a pending allow/deny approval. */
+@Entity({ name: "user_info" })
+export class UserInfo {
+  @PrimaryGeneratedColumn()
+    id!: number;
+
+  @Column()
+    user!: string;
+
+  @Column()
+    access_eppn!: string;
+
+  @Column()
+    email!: string;
+
+  @Column()
+    name!: string;
+
+  @Column({ type: "datetime", default: () => "CURRENT_TIMESTAMP" })
+    createdAt!: Date;
+
+  @Column({ 
+    type: "datetime",
+    nullable: true
+  })
+    approvedAt?: Date;
+
+  /**
+   * Set the createdAt time to the current time.
+   *
+   * @return {Date} date - Date this job was created.
+   */
+  @BeforeInsert()
+  setCreatedUpdated() {
+    this.createdAt = new Date();
+  }
+
+  approve() {
+    this.approvedAt = new Date();
+  }
+}
+    

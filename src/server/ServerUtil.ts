@@ -1,7 +1,7 @@
 import { Request, NextFunction, Response } from "express";
 import jsonschema = require("jsonschema");
 
-import { Folder } from "../models/Folder";
+import { Folder } from "../models";
 import dataSource from "../utils/DB";
 import JupyterHub from "../utils/JupyterHub";
 import { ResultFolderContentManager, GlobusTaskListManager } from "../utils/Redis";

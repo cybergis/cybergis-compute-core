@@ -6,7 +6,7 @@ import {
 } from "../../configs/config";
 import * as Helper from "../helpers/Helper";
 import JobUtil from "../helpers/JobUtil";
-import { Job } from "../models/Job";
+import { Job } from "../models";
 import dataSource from "../utils/DB";
 import type {
   createJobBody,

@@ -3,7 +3,7 @@ import NodeSSH = require("node-ssh");
 import { ConnectConfig } from "ssh2";
 import { Prompt } from "ssh2-streams";
 
-import { Folder } from "../models/Folder";
+import { Folder } from "../models";
 
 type unit = "GB" | "MB" | "Minutes" | "Hours" | "Days" | "None";
 
@@ -177,6 +177,9 @@ export interface baseConfig {
   queue_consume_time_period_in_seconds: number;
   is_testing: boolean;
   is_jest: boolean; // reserve only for jest testing
+  cilogon_secret: string;
+  cilogon_redirect_uri: string;
+  cilogon_client_id: string;
 }
 
 export interface externalKey {
@@ -394,4 +397,20 @@ export type callableFunction = (..._args: unknown[]) => unknown;
 export enum ApprovalType {
   APPROVAL = "approval",
   DENIAL = "deny"
+}
+
+export interface CILogonTokenBody {
+  access_token: string,
+  id_token: string,
+  token_type: string,
+  expires_in: number
+}
+
+export interface CILogonUserInfo {
+  email?: string,
+  name?: string,
+  idp?: string,
+  idp_name?: string
+  sub?: string,
+  nbf?: number
 }

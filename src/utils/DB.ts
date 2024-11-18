@@ -5,19 +5,11 @@ import {
 
 import { config } from "../../configs/config";
 import * as Helper from "../helpers/Helper"; 
-import { AllowList } from "../models/AllowList";
-import { Approvals } from "../models/Approvals";
-import { Cache } from "../models/Cache";
-import { DenyList } from "../models/DenyList";
-import { Event } from "../models/Event";
-import { Folder } from "../models/Folder";
-import { Git } from "../models/Git";
-import { GlobusTransferRefreshToken } from "../models/GlobusTransferRefreshToken";
-import { Job } from "../models/Job";
-import { Log } from "../models/Log";
+import { AllowList, Approvals, Cache, DenyList, Event, Folder, Git, GlobusTransferRefreshToken, Job, Log, UserInfo } from "../models";
 
 const entities = [
-  Cache, Event, Folder, Git, GlobusTransferRefreshToken, Job, Log, AllowList, DenyList, Approvals
+  Cache, Event, Folder, Git, GlobusTransferRefreshToken, 
+  Job, Log, AllowList, DenyList, Approvals, UserInfo
 ];
 
 let dbConfig: DataSourceOptions = {

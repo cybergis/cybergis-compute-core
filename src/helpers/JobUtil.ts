@@ -1,6 +1,6 @@
 import { hpcConfigMap } from "../../configs/config";
 // import path = require("path");
-import { Job } from "../models/Job";
+import { Job } from "../models";
 import dataSource from "../utils/DB";
 import {
   slurm_integer_storage_unit_config,

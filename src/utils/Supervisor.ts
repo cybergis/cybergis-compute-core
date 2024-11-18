@@ -6,7 +6,7 @@ import { config, maintainerConfigMap, hpcConfigMap } from "../../configs/config"
 import connectionPool from "../connectors/ConnectionPool";
 import * as Helper from "../helpers/Helper";
 import BaseMaintainer from "../maintainers/BaseMaintainer";
-import { Job } from "../models/Job";
+import { Job } from "../models";
 
 import dataSource from "./DB";
 import Emitter from "./Emitter";
