@@ -5,7 +5,7 @@ import { config, hpcConfigMap } from "../../configs/config";
 import * as Helper from "../helpers/Helper";
 import { AllowList, Approvals, DenyList, UserInfo } from "../models";
 import dataSource from "../utils/DB";
-import { sendRequest } from "../utils/email";
+import { sendRequest } from "../utils/Email";
 import { modifyUserBody, ApprovalType, CILogonTokenBody, CILogonUserInfo } from "../utils/types";
 
 import { validator, requestErrors, schemas } from "./ServerUtil";
