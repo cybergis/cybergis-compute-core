@@ -1,12 +1,11 @@
+import axios, { AxiosResponse } from "axios";
 import express from "express";
 
-import { hpcConfigMap } from "../../configs/config";
+import { config, hpcConfigMap } from "../../configs/config";
 import * as Helper from "../helpers/Helper";
-import { AllowList } from "../models/AllowList";
-import { Approvals } from "../models/Approvals";
-import { DenyList } from "../models/DenyList";
+import { AllowList, Approvals, DenyList, UserInfo } from "../models";
 import dataSource from "../utils/DB";
-import { modifyUserBody, ApprovalType } from "../utils/types";
+import { modifyUserBody, ApprovalType, CILogonTokenBody, CILogonUserInfo } from "../utils/types";
 
 import { validator } from "./ServerUtil";
 import { requestErrors, schemas } from "./ServerUtil";
@@ -23,7 +22,7 @@ authRouter.post("/request/addUser", async function (req, res) {
     return;
   }
 
-  const body = req.body as modifyUserBody;
+  const body = req.body as modifyUserBody; 
 
   if (!(body.hpc in hpcConfigMap)) {
     res.status(402).json({ error: "invalid hpc passed in" });
@@ -161,8 +160,62 @@ authRouter.get("/approve", async (req, res) => {
   });
 });
 
-authRouter.get("cilogon/callback", (req, res) => {
-  res.status(200);
+authRouter.get("cilogon/callback", async (req, res) => {
+  const code = req.query.code;
+  const state = req.query.state;
+
+  if (typeof(code) !== "string") {
+    res.status(400).json({ error: "invalid cilogon code" });
+    return;
+  }
+
+  if (typeof(state) !== "string") {
+    res.status(400).json({ error: "invalid request, no state found" });
+    return;
+  }
+
+  const response: AxiosResponse<CILogonTokenBody> = await axios.post("https://cilogon.org/oauth2/token", {
+    grant_type: "authorization_code",
+    client_id: config.cilogon_client_id,
+    code: code,
+    client_secret: config.cilogon_secret,
+    redirect_uri: config.cilogon_redirect_uri,
+  });
+
+  if (response.status !== 200) {
+    res.status(400).json({ error: "couldn't get access token" });
+    return;
+  }
+
+  const info: AxiosResponse<CILogonUserInfo> = await axios.post("https://cilogon.org/oauth2/userinfo", {
+    access_token: response.data.access_token,
+  });
+
+  if (info.status !== 200) {
+    res.status(400).json({ error: "couldn't get user info" });
+    return;
+  }
+
+  if (info.data.idp_name === undefined 
+    || info.data.idp_name !== "ACCESS" 
+    || info.data.idp_name === undefined 
+    || info.data.email === undefined 
+    || info.data.name === undefined
+  ) {
+    res.status(400).json({ error: "need to log in with ACCESS, please try again" });
+    return;
+  }
+
+  const userRepo = dataSource.getRepository(UserInfo);
+
+  await userRepo.insert({
+    user: state,
+    access_eppn: info.data.idp_name,
+    email: info.data.email,
+    name: info.data.name,
+  });
+
+  res.status(200).redirect("https://cybergisx.cigi.illinois.edu");
 });
 
 export default authRouter;
