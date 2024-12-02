@@ -204,13 +204,21 @@ authRouter.get("/cilogon/callback", async (req, res) => {
   let access_token: string;
 
   try {
-    const response: AxiosResponse<CILogonTokenBody> = await axios.post("https://cilogon.org/oauth2/token", {
-      grant_type: "authorization_code",
-      client_id: config.cilogon_client_id,
-      code: code,
-      client_secret: config.cilogon_secret,
-      redirect_uri: `${config.cilogon_base_uri}/auth/cilogon/callback`,
-    });
+    const data = new URLSearchParams();
+    data.append("grant_type", "authorization_code");
+    data.append("client_id", config.cilogon_client_id);
+    data.append("code", code);
+    data.append("client_secret", config.cilogon_secret);
+    data.append("redirect_uri", `${config.cilogon_base_uri}/auth/cilogon/callback`);
+    
+    const response: AxiosResponse<CILogonTokenBody> = await axios.post("https://cilogon.org/oauth2/token", 
+      data,
+      { 
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        } 
+      }
+    );
 
     if (response.status !== 200) {
       res.status(400).json({ error: "couldn't get access token" });
@@ -220,7 +228,7 @@ authRouter.get("/cilogon/callback", async (req, res) => {
     access_token = response.data.access_token;
   } catch (err) {
     if (axios.isAxiosError(err)) {
-      res.status(400).json({ error: `failed to get authorization code for cilogon: ${err.message}` });
+      res.status(400).json({ error: `failed to get authorization code for cilogon: ${err.message} ${err.response?.data ?? ""}` });
     } else {
       res.status(400).json({ error: "something went wrong getting authorization code for cilogon" });
     }
@@ -228,22 +236,30 @@ authRouter.get("/cilogon/callback", async (req, res) => {
     return;
   }
 
-  let data: CILogonUserInfo;
+  let userInfo: CILogonUserInfo;
 
   try {
-    const info: AxiosResponse<CILogonUserInfo> = await axios.post("https://cilogon.org/oauth2/userinfo", {
-      access_token: access_token,
-    });
+    const data = new URLSearchParams();
+    data.append("access_token", access_token);
+
+    const info: AxiosResponse<CILogonUserInfo> = await axios.post("https://cilogon.org/oauth2/userinfo", 
+      data,
+      {
+        headers: {
+          "Content-Type": "appliaction/x-www-form-urlencoded"
+        }
+      }
+    );
   
     if (info.status !== 200) {
       res.status(400).json({ error: "couldn't get user info" });
       return;
     }
 
-    data = info.data;
+    userInfo = info.data;
   } catch (err) {
     if (axios.isAxiosError(err)) {
-      res.status(400).json({ error: `failed to get user info from cilogon: ${err.message}` });
+      res.status(400).json({ error: `failed to get user info from cilogon: ${err.message} ${err.response?.data ?? ""}` });
     } else {
       res.status(400).json({ error: "something went wrong getting user info from cilogon" });
     }
@@ -252,11 +268,11 @@ authRouter.get("/cilogon/callback", async (req, res) => {
   }
   
 
-  if (data.idp_name === undefined 
-    || data.idp_name !== "ACCESS" 
-    || data.idp_name === undefined 
-    || data.email === undefined 
-    || data.name === undefined
+  if (userInfo.idp_name === undefined 
+    || userInfo.idp_name !== "ACCESS" 
+    || userInfo.idp_name === undefined 
+    || userInfo.email === undefined 
+    || userInfo.name === undefined
   ) {
     res.status(400).json({ error: "need to log in with ACCESS, please try again" });
     return;
@@ -264,9 +280,9 @@ authRouter.get("/cilogon/callback", async (req, res) => {
 
   await userRepo.insert({
     user: state,
-    access_eppn: data.idp_name,
-    email: data.email,
-    name: data.name,
+    access_eppn: userInfo.idp_name,
+    email: userInfo.email,
+    name: userInfo.name,
   });
 
   res.status(200).redirect("https://cybergisx.cigi.illinois.edu");
