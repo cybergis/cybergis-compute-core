@@ -176,7 +176,7 @@ authRouter.get("/approve", async (req, res) => {
   });
 });
 
-authRouter.get("cilogon/callback", async (req, res) => {
+authRouter.get("/cilogon/callback", async (req, res) => {
   const code = req.query.code;
   const state = req.query.state;
 
