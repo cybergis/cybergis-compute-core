@@ -8,7 +8,7 @@ import dataSource from "../utils/DB";
 import { sendRequest } from "../utils/Email";
 import { modifyUserBody, ApprovalType, CILogonTokenBody, CILogonUserInfo } from "../utils/types";
 
-import { validator, requestErrors, schemas } from "./ServerUtil";
+import { validator, requestErrors, schemas, jupyterHub } from "./ServerUtil";
 
 const authRouter = express.Router();
 
@@ -190,10 +190,17 @@ authRouter.get("/cilogon/callback", async (req, res) => {
     return;
   }
 
+  const user = await jupyterHub.getUsername(state);
+
+  if (user === null) {
+    res.status(400).json({ error: "could not get the username of the jupyterhub token" });
+    return;
+  }
+
   const userRepo = dataSource.getRepository(UserInfo);
 
   const existing = await userRepo.findOneBy({
-    user: state
+    user
   });
 
   if (existing !== null) {
@@ -280,7 +287,7 @@ authRouter.get("/cilogon/callback", async (req, res) => {
   }
 
   await userRepo.insert({
-    user: state,
+    user: user,
     access_eppn: userInfo.eppn,
     email: userInfo.email,
     name: userInfo.name,
