@@ -246,7 +246,7 @@ authRouter.get("/cilogon/callback", async (req, res) => {
       data,
       {
         headers: {
-          "Content-Type": "appliaction/x-www-form-urlencoded"
+          "Content-Type": "application/x-www-form-urlencoded"
         }
       }
     );
