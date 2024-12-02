@@ -23,6 +23,9 @@ export class UserInfo {
   @Column()
     name!: string;
 
+  @Column()
+    nbf?: number;
+
   @Column({ type: "datetime", default: () => "CURRENT_TIMESTAMP" })
     createdAt!: Date;
     

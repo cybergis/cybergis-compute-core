@@ -273,6 +273,7 @@ authRouter.get("/cilogon/callback", async (req, res) => {
     || userInfo.idp_name === undefined 
     || userInfo.email === undefined 
     || userInfo.name === undefined
+    || userInfo.eppn === undefined
   ) {
     res.status(400).json({ error: "need to log in with ACCESS, please try again" });
     return;
@@ -280,9 +281,10 @@ authRouter.get("/cilogon/callback", async (req, res) => {
 
   await userRepo.insert({
     user: state,
-    access_eppn: userInfo.idp_name,
+    access_eppn: userInfo.eppn,
     email: userInfo.email,
     name: userInfo.name,
+    nbf: userInfo.nbf
   });
 
   res.status(200).redirect("https://cybergisx.cigi.illinois.edu");

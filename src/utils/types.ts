@@ -416,4 +416,5 @@ export interface CILogonUserInfo {
   idp_name?: string
   sub?: string,
   nbf?: number
+  eppn?: string
 }
