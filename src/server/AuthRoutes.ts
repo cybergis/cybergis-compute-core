@@ -210,6 +210,9 @@ authRouter.get("/cilogon/callback", async (req, res) => {
     data.append("code", code);
     data.append("client_secret", config.cilogon_secret);
     data.append("redirect_uri", `${config.cilogon_base_uri}/auth/cilogon/callback`);
+
+    console.log(config.cilogon_client_id);
+    console.log(data);
     
     const response: AxiosResponse<CILogonTokenBody> = await axios.post("https://cilogon.org/oauth2/token", 
       data,
