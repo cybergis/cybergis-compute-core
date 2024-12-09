@@ -27,15 +27,14 @@ let dbConfig: DataSourceOptions = {
   logging: false,
   migrationsRun: true,
   entities: entities,
-  // cache: {
-  //   type: "redis",
-  //   options: {
-  //     host: config.redis.host,
-  //     port: config.redis.port,
-  //     // TODO: add password support
-  //   },
-  //   ignoreErrors: true,
-  // },
+  cache: {
+    type: "redis",
+    options: {
+      host: config.redis.host,
+      port: config.redis.port,
+      // TODO: add password support
+    }
+  },
 };
 
 if (config.is_jest) {
