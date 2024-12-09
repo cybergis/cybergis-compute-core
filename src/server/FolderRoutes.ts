@@ -18,14 +18,10 @@ import type {
 } from "../utils/types";
 
 import { authMiddleWare, requestErrors, validator, schemas, prepareDataForDB, globusTaskList } from "./ServerUtil";
-import multer from "multer";
-import Busboy from 'busboy';
-import type { BusboyConfig } from 'busboy';
 import * as fs from "fs";
-import * as os from "os";
 import e = require("express");
-import FolderUtil from "../helpers/FolderUtil";
 import DownloadUploadUtil from "../helpers/DownloadUploadUtil";
+import { Job } from "../models/Job";
 
 const folderRouter = express.Router();
 
@@ -353,58 +349,14 @@ folderRouter.get(
   }
 );
 
-// // const storage = multer.memoryStorage();
-// // const upload = multer({ storage: storage }).single("file");
-// const busboy = require('busboy');
-
-// folderRouter.post(
-//   "/:folderId/uploadFile",
-//   async function (req, res) {
-//     const bb = busboy({ headers: req.headers });
-//     const uploadPath = path.join(__dirname, 'uploads');
-//     console.log(`Upload path: ${uploadPath}`);
-    
-//     if (!fs.existsSync(uploadPath)) {
-//         fs.mkdirSync(uploadPath);
-//     }
-
-//     bb.on('file', (fieldname: string, file: NodeJS.ReadableStream, filename: string, encoding: string, mimetype: string) => {
-//         console.log(`Received file: ${filename}`);
-//         const saveTo = path.join(uploadPath, filename);
-//         file.pipe(fs.createWriteStream(saveTo));
-//     });
-
-//     bb.on('finish', () => {
-//         res.writeHead(200, { 'Connection': 'close' });
-//         res.end("File upload complete");
-//     });
-
-//     bb.on('error', (err: any) => {
-//         console.error('Busboy error:', err);
-//         res.status(500).send({ error: 'File upload failed' });
-//     });
-
-//     req.pipe(bb);
-
-//     req.on('aborted', () => {
-//         bb.destroy();
-//     });
-
-//     req.on('error', (err) => {
-//       console.error('Request stream error:', err);
-//       res.status(500).send({ error: 'Request stream failed' });
-//     });
-//   }
-// );
-
 /**
    * @openapi
-   * /folder/:folderId/download/globus-init:
+   * /folder/:folderId/download/browser:
    *  post:
-   *      description: Posts a request to initiate a globus download of the specified folder (Authentication REQUIRED)
+   *      description: Get sends a request to initiate a download of the specified folder (Authentication REQUIRED)
    *      responses:
    *          200:
-   *              description: Globus download of the specific folder is successful
+   *              description: Download of the specific folder is successful and file returned
    *          402:
    *              description: Returns "invalid input" and a list of errors with the format of the req body or "invalid token" if a valid jupyter token authentication is not provided
    *          403:
@@ -447,21 +399,67 @@ folderRouter.get(
       return;
     }
 
-    const downloadPath = path.join(__dirname, 'uploads');
+    var downloadPath = path.join(__dirname, 'uploads');
     if (!fs.existsSync(downloadPath)) {
       fs.mkdirSync(downloadPath);
     }
+
+    const jobs = await dataSource.getRepository(Job).find({
+      where: { userId: res.locals.username as string },
+      relations: [
+        "remoteDataFolder",
+        "remoteResultFolder",
+        "remoteExecutableFolder",
+      ],
+    });
+
+    var curr_job = null;
+
+    for (const job of jobs) {
+      if (job.id == jobId) {
+        curr_job = job;
+        break;
+      }
+    }
+
+    if (curr_job == null) {
+      res.status(403).json({ error: `cannot find job with id ${jobId}` });
+      return;
+    }
+
+    var hpcPath = null;
+    var hpc = null;
+
     try {
-      // const connector = new BaseConnector(hpcConfigMap[folder.hpc]);
-      // const connector = new BaseConnector(folder.hpc);
-      // await connector.ssh(); // Ensure the connector is connected
-      // await connector.download(folder.globusPath, downloadPath);
-      // const file = path.join(downloadPath, folder.globusPath);
+      if (curr_job.remoteExecutableFolder!.id == folderId) {
+        hpcPath = curr_job.remoteExecutableFolder!.hpcPath;
+        hpc = curr_job.remoteExecutableFolder!.hpc;
+      } else {
+        hpcPath = curr_job.remoteResultFolder!.hpcPath;
+        hpc = curr_job.remoteResultFolder!.hpc;
+      }
+    } catch (err) {
+      res.status(403).json({ error: `failed to get hpc path or hpc with error: ${Helper.assertError(err).toString()}` });
+      return;
+    }
+
+    if (hpcPath == null) {
+      res.status(403).json({ error: `cannot find hpc path with folderId ${folderId}` });
+      return;
+    }
+
+    if (hpc == null) {
+      res.status(403).json({ error: `cannot find hpc with folderId ${folderId}` });
+      return;
+    }
+
+    try {
+      // res.download(path.join(__dirname, 'FolderRoutes.js'));
+      downloadPath = path.join(downloadPath, folderId + '.zip');
       const download_util = new DownloadUploadUtil();
-      await download_util.download(folder.globusPath, downloadPath, jobId!);
+      await download_util.download(hpcPath, downloadPath, hpc);
       const file = downloadPath;
       res.download(file);
-      res.status(200).json({ success: true });
     } catch (err) {
       res
         .status(403)
