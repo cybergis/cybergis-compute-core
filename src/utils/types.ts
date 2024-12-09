@@ -365,6 +365,11 @@ export interface initGlobusDownloadBody {
   fromPath?: string 
 }
 
+export interface initBrowserDownloadBody { 
+  jupyterhubApiToken: string,
+  jobId: string,
+}
+
 export interface createJobBody { 
   jupyterhubApiToken: string, 
   maintainer?: string, 
