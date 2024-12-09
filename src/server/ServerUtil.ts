@@ -91,7 +91,7 @@ export const schemas = {
       jobId: { type: "string" },
       jupyterhubApiToken: { type: "string" },
     },
-    required: ["jupyterhubApiToken"],
+    required: ["jupyterhubApiToken", "jobId"],
   },
   refreshCache: {
     type: "object",
