@@ -1,13 +1,14 @@
 import { createTransport } from "nodemailer";
 import { MailOptions } from "nodemailer/lib/json-transport";
 
-import { config } from "../../configs/config";
+import { config, hpcConfigMap } from "../../configs/config";
 import { UserInfo } from "../models";
 
 export async function sendRequest(
   link: string, 
   user: string, 
   approval: boolean, 
+  hpc: string,
   userInfo?: UserInfo
 ) {
   const transporter = createTransport({
@@ -19,7 +20,7 @@ export async function sendRequest(
     }
   });
 
-  for (const email of config.admin_emails) {
+  for (const email of hpcConfigMap[hpc].admins) {
     let mailOptions: MailOptions;
     if (approval) {
       console.assert(userInfo !== undefined, "should require user info registration before allowing a request to go through");

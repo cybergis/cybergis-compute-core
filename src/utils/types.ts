@@ -180,7 +180,6 @@ export interface baseConfig {
   cilogon_secret: string;
   cilogon_base_uri: string;
   cilogon_client_id: string;
-  admin_emails: string[];
   confirmation_email: string;
   smtp_server: string;
 }
@@ -219,6 +218,7 @@ export interface hpcConfig {
   denylist: string[];
   allocation?: string;
   partition?: string;
+  admins: string[];
 }
 
 export interface XSEDEJobLogCredential {

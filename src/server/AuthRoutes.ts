@@ -61,7 +61,7 @@ authRouter.post("/request/addUser", async function (req, res) {
     hash
   });
 
-  await sendRequest(`${config.cilogon_base_uri}/auth/approve?approvalId=${hash}`, body.user, true, info);
+  await sendRequest(`${config.cilogon_base_uri}/auth/approve?approvalId=${hash}`, body.user, true, body.hpc, info);
 
   res.status(200).json({ 
     messages: ["allowlist approval successfully requested"] 
@@ -107,7 +107,7 @@ authRouter.post("/request/denyUser", async function (req, res) {
     hash
   });
 
-  await sendRequest(`${config.cilogon_base_uri}/auth/approve?approvalId=${hash}`, body.user, false);
+  await sendRequest(`${config.cilogon_base_uri}/auth/approve?approvalId=${hash}`, body.user, false, body.hpc);
 
   res.status(200).json({ 
     messages: ["denylist approval successfully requested"] 
