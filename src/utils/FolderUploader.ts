@@ -228,10 +228,21 @@ abstract class CachedFolderUploader extends BaseFolderUploader {
     }
   }
 
+  /**
+   * Determines whether a cached directory actually exists on a remote HPC.
+   *
+   * @private
+   * @return {Promise<boolean>} true if the directory exists, false otherwise
+   */
   private async cacheExists(): Promise<boolean> {
     return this.connector.remoteFsExists(this.cachePath);
   }
 
+  /**
+   * Explicitly removes a remote cached directory, if it exists.
+   *
+   * @private
+   */
   private async clearCache() {
     if (!(await this.cacheExists())) {
       return;
@@ -240,28 +251,60 @@ abstract class CachedFolderUploader extends BaseFolderUploader {
     await this.connector.rm(this.cachePath);
   }
 
+  /**
+   * Unzips a cached zip file to the hpc path, where it will be used in jobs.
+   *
+   * @private
+   */
   private async pullFromCache() {
     // assert cached file exists
     await this.connector.unzip(this.cachePath, this.hpcPath);
   }
 
+  /**
+   * Abstract function implemented by more concrete folder uploaders. Encompasses the general functionality
+   * of uploading the files associated with a given job (as encapsulated by a general folder uploader) to
+   * the internally stored cache path.
+   *
+   * @protected
+   * @abstract
+   * @param {boolean} _force whether or not to force upload (used for force refresh)
+   */
   protected abstract uploadToCache(): Promise<void>;
 
-  public async refreshCache() {
-    await this.clearCache();
 
-    await this.uploadToCache();
-  }
+  /**
+   * Abstract function implemented by more concrete folder uploaders. Encompasses the general requirement to
+   * determine when job files were last truly updated externally, to be compared with the stored update times in
+   * the database to decide whether to refrehs.
+   *
+   * @protected
+   * @abstract
+   * @return {Promise<number>} Last update time in UNIX time (milliseconds)
+   */
+  protected abstract getCanonicalUpdateTime(): Promise<number>;
 
   public async cachedUpload() {
-    if (!(await this.cacheExists())) {
-      await this.refreshCache();
+    const recordedUpdate = await this.getRecordedUpdateTime(); 
+    const canonicalUpdate = await this.getCanonicalUpdateTime();
+
+    if (recordedUpdate >= 0 && canonicalUpdate >= 0 
+      && (recordedUpdate / canonicalUpdate > 100 || canonicalUpdate / recordedUpdate > 100)) {
+      console.error("Comparing seconds and milliseconds for cache refresh check", recordedUpdate, canonicalUpdate);
+    }
+    
+    // upload if it doesn't exist or the cache is stale
+    if (!(await this.cacheExists()) 
+      || recordedUpdate < canonicalUpdate
+    ) {
+      await this.uploadToCache();
+      await this.registerCache();
     }
 
     await this.pullFromCache();
   }
 
-  protected async getUpdateTime(): Promise<number> {
+  protected async getRecordedUpdateTime(): Promise<number> {
     const exists = await dataSource.getRepository(Cache).findOneBy({
       hpc: this.hpcName,
       hpcPath: this.cachePath
@@ -392,6 +435,11 @@ class GlobusFolderUploader extends CachedFolderUploader {  // eslint-disable-lin
     // await this.connector.zip(uploadPath, this.cachePath);
     // await this.connector.rm(uploadPath);
   }
+
+  // eslint-disable-next-line @typescript-eslint/require-await
+  protected async getCanonicalUpdateTime(): Promise<number> {
+    throw new NotImplementedError("Not implemented");
+  }
 }
 
 /**
@@ -452,6 +500,11 @@ export class LocalFolderUploader extends CachedFolderUploader {
     // need some way to detect cache invalidation
     throw new NotImplementedError("Not implemented");
   }
+
+  // eslint-disable-next-line @typescript-eslint/require-await
+  protected async getCanonicalUpdateTime(): Promise<number> {
+    throw new NotImplementedError("Not implemented");
+  }
 }
 
 /**
@@ -474,28 +527,19 @@ export class GitFolderUploader extends LocalFolderUploader   {
     super({ type: "local", localPath }, hpcName, userId, connector);
     this.gitId = from.gitId;
   }
-  /**
-   * Specialization of cache upload for uploading a git folder. Has functionality to upload if and only if
-   * the cached git repository is out of date. 
-   *
-   * @protected
-   */
-  protected async uploadToCache(): Promise<void> {
+
+  protected async getCanonicalUpdateTime(): Promise<number> {
     const git = await GitUtil.findGit(this.gitId);
 
     if (!git) {
       throw Error("Could not find git repository to upload.");
     }
 
-    const cacheUpdateTime = await this.getUpdateTime();
-    // account for milliseconds
-    const localUpdateTime = await GitUtil.getLastCommitTime(git) * 1000;
+    return (await GitUtil.getLastCommitTime(git)) * 1000;
+  }
 
-    if (cacheUpdateTime < localUpdateTime) {
-      await this.uploadToPath(this.cachePath);
-
-      await this.registerCache();
-    } 
+  protected async uploadToCache() {
+    await this.uploadToPath(this.cachePath);
 
     await this.register();
   }
