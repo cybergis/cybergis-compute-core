@@ -388,4 +388,5 @@ export interface updateJobBody {
   remoteExecutableFolder?: object,
 }
 
-export type callableFunction = (..._args: unknown[]) => unknown;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type callableFunction = (..._args: any[]) => unknown;

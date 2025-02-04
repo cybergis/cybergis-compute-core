@@ -403,8 +403,11 @@ folderRouter.get(
       fs.mkdirSync(downloadPath);
     }
 
-    const jobs = await dataSource.getRepository(Job).find({
-      where: { userId: res.locals.username as string },
+    const job = await dataSource.getRepository(Job).findOne({
+      where: {
+        userId: res.locals.username as string,
+        id: jobId
+      },
       relations: [
         "remoteDataFolder",
         "remoteResultFolder",
@@ -412,16 +415,7 @@ folderRouter.get(
       ],
     });
 
-    let curr_job = null;
-
-    for (const job of jobs) {
-      if (job.id == jobId) {
-        curr_job = job;
-        break;
-      }
-    }
-
-    if (curr_job == null) {
+    if (job === null) {
       res.status(403).json({ error: `cannot find job with id ${jobId}` });
       return;
     }
@@ -455,10 +449,10 @@ folderRouter.get(
     try {
       // res.download(path.join(__dirname, 'FolderRoutes.js'));
       downloadPath = path.join(downloadPath, folderId + ".zip");
-      const download_util = new DownloadUploadUtil();
-      await download_util.download(hpcPath, downloadPath, hpc);
+      await DownloadUploadUtil.download(hpcPath, downloadPath, hpc);
       const file = downloadPath;
       res.download(file);
+
     } catch (err) {
       res
         .status(403)

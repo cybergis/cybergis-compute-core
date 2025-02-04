@@ -3,13 +3,13 @@ import * as path from "path";
 
 import connectionPool from "../connectors/ConnectionPool";
 import { ConnectorError } from "../utils/errors";
-import { callableFunction, SSH } from "../utils/types";
+import { SSH } from "../utils/types";
 
 import FolderUtil from "./FolderUtil";
 import * as Helper from "./Helper";
 
 export default class DownloadUploadUtil {
-  private async exec(
+  private static async exec(
     command: string,
     options: SpawnOptionsWithoutStdio
   ): Promise<{ stdout: string, stderr: string }> {
@@ -40,15 +40,17 @@ export default class DownloadUploadUtil {
       child.on("error", (err) => {
         reject(new Error(`Exec failed with ${err.toString()}`));
       });
+
       console.log("executed command", command);
     });
   }
 
-  private async ssh(hpc: string): Promise<SSH> {
+  private static async ssh(hpc: string): Promise<SSH> {
     const connection = connectionPool[hpc].ssh;
     if (!connection) {
       throw new ConnectorError(`No connection found for HPC: ${hpc}`);
     }
+
     console.log("ssh connection found", connection);
     try {
       await Helper.runCommandWithBackoff((async (ssh: SSH) => {
@@ -56,7 +58,7 @@ export default class DownloadUploadUtil {
           await ssh.connection.connect(ssh.config);
         }
         await ssh.connection.execCommand("echo");
-      }) as callableFunction, [connection], null);
+      }), [connection], null);
     } catch (e) {
       console.log("error connecting to HPC", hpc, e);
       throw new ConnectorError(`Failed to connect to HPC: ${hpc} with error ${Helper.assertError(e).toString()}`);
@@ -64,7 +66,7 @@ export default class DownloadUploadUtil {
     return connection;
   }
 
-  private async zip(
+  private static async zip(
     from: string,
     to: string,
     hpc: string
@@ -82,7 +84,7 @@ export default class DownloadUploadUtil {
     return stdout;
   }
 
-  private async rm(
+  private static async rm(
     path: string
   ): Promise<string | null> {
     console.log("removing path", path);
@@ -91,7 +93,7 @@ export default class DownloadUploadUtil {
     return out.stdout;
   }
 
-  async download(from: string, to: string, hpc: string): Promise<void> {
+  public static async download(from: string, to: string, hpc: string): Promise<void> {
     console.log("downloading file from", from, "to", to);
     if (to === undefined)
       throw new ConnectorError("please init input file first");
@@ -106,10 +108,10 @@ export default class DownloadUploadUtil {
     try {
       // try to get the from file via ssh/scp and remove the compressed folder afterwards
       // wraps command with backoff -> takes lambda function and array of inputs to execute command
-      await Helper.runCommandWithBackoff.call(this, (async (to1: string, zipPath: string) => {
+      await Helper.runCommandWithBackoff(async (to1: string, zipPath: string) => {
         const ssh = await this.ssh(hpc);
         await ssh.connection.getFile(to1, zipPath);
-      }) as callableFunction, [to, fromZipFilePath], "Trying to download file again");
+      }, [to, fromZipFilePath], "Trying to download file again");
       await this.rm(fromZipFilePath);
 
       // decompress the transferred file into the toZipFilePath directory
