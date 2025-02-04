@@ -54,20 +54,19 @@ export abstract class BaseFolderUploader {
 
     this.id = Helper.generateId();
     this.userId = userId;
-    
+
     this.hpcPath = path.join(this.hpcConfig.root_path, this.id);
 
     this.isComplete = false;
     this.isFailed = false;
-    this.globusPath = (this.hpcConfig.globus 
-      ? path.join(this.hpcConfig.globus.root_path, this.id) 
+    this.globusPath = (this.hpcConfig.globus
+      ? path.join(this.hpcConfig.globus.root_path, this.id)
       : null
-    ); 
+    );
 
     this.connector = connector ?? new BaseConnector(hpcName);
   }
 
-  // eslint-disable-next-line
   abstract upload(): Promise<void>;
 
   /**
@@ -285,16 +284,16 @@ abstract class CachedFolderUploader extends BaseFolderUploader {
   protected abstract getCanonicalUpdateTime(): Promise<number>;
 
   public async cachedUpload() {
-    const recordedUpdate = await this.getRecordedUpdateTime(); 
+    const recordedUpdate = await this.getRecordedUpdateTime();
     const canonicalUpdate = await this.getCanonicalUpdateTime();
 
-    if (recordedUpdate >= 0 && canonicalUpdate >= 0 
+    if (recordedUpdate >= 0 && canonicalUpdate >= 0
       && (recordedUpdate / canonicalUpdate > 100 || canonicalUpdate / recordedUpdate > 100)) {
       console.error("Comparing seconds and milliseconds for cache refresh check", recordedUpdate, canonicalUpdate);
     }
-    
+
     // upload if it doesn't exist or the cache is stale
-    if (!(await this.cacheExists()) 
+    if (!(await this.cacheExists())
       || recordedUpdate < canonicalUpdate
     ) {
       await this.uploadToCache();
@@ -328,13 +327,13 @@ abstract class CachedFolderUploader extends BaseFolderUploader {
         const cache = new Cache();
         cache.hpc = this.hpcName;
         cache.hpcPath = this.cachePath;
-      
+
         await dataSource.getRepository(Cache).save(cache);
       } else {
         exists.update();
       }
     }
-    
+
   }
 }
 
@@ -344,7 +343,7 @@ abstract class CachedFolderUploader extends BaseFolderUploader {
  * TODO: figure out how to actually do this and if it is worthwhile (e.g., do users usually run on the same data multiple times); would need to globus, then cp
  * initially
  */
-class GlobusFolderUploader extends CachedFolderUploader {  // eslint-disable-line
+class GlobusFolderUploader extends CachedFolderUploader {
   private from: GlobusFolder;
   private to: GlobusFolder;
 
@@ -402,7 +401,7 @@ class GlobusFolderUploader extends CachedFolderUploader {  // eslint-disable-lin
 
     if (status.includes("SUCCEEDED")) {
       this.isComplete = true;
-    }    
+    }
   }
 
   /**
@@ -446,7 +445,7 @@ class GlobusFolderUploader extends CachedFolderUploader {  // eslint-disable-lin
  * Specialization of BaseFolderUploader for uploading a local folder.
  */
 export class LocalFolderUploader extends CachedFolderUploader {
-  protected localPath: string; 
+  protected localPath: string;
 
   constructor(
     from: LocalFolder,
@@ -513,7 +512,7 @@ export class LocalFolderUploader extends CachedFolderUploader {
  * 
  * TODO: verify this cached version actually works
  */
-export class GitFolderUploader extends LocalFolderUploader   {
+export class GitFolderUploader extends LocalFolderUploader {
   private gitId: string;
 
   constructor(
@@ -523,7 +522,7 @@ export class GitFolderUploader extends LocalFolderUploader   {
     connector: Connector | null = null
   ) {
     const localPath: string = GitUtil.getLocalPath(from.gitId);
-    
+
     super({ type: "local", localPath }, hpcName, userId, connector);
     this.gitId = from.gitId;
   }
@@ -575,43 +574,43 @@ export class FolderUploaderHelper {
 
     let uploader: BaseFolderUploader;
     switch (from.type) {
-    case "git":
-      uploader = new GitFolderUploader(
-        from as GitFolder,
-        hpcName,
-        userId,
-        connector
-      );
-      await uploader.upload();
-      break;
+      case "git":
+        uploader = new GitFolderUploader(
+          from as GitFolder,
+          hpcName,
+          userId,
+          connector
+        );
+        await uploader.upload();
+        break;
 
-    case "local":
-      uploader = new LocalFolderUploader(
-        from as LocalFolder,
-        hpcName,
-        userId,
-        connector
-      );
-      await uploader.upload();
-      break;
+      case "local":
+        uploader = new LocalFolderUploader(
+          from as LocalFolder,
+          hpcName,
+          userId,
+          connector
+        );
+        await uploader.upload();
+        break;
 
-    case "globus":
-      uploader = new GlobusFolderUploader(
-        from as GlobusFolder, 
-        hpcName, 
-        userId, 
-        jobId
-      );
+      case "globus":
+        uploader = new GlobusFolderUploader(
+          from as GlobusFolder,
+          hpcName,
+          userId,
+          jobId
+        );
 
-      await uploader.upload();
-      break;
+        await uploader.upload();
+        break;
 
-    case "empty":
-      Helper.nullGuard(connector);
-      
-      uploader = new EmptyFolderUploader(hpcName, userId, jobId, connector);
-      await uploader.upload();
-      break;
+      case "empty":
+        Helper.nullGuard(connector);
+
+        uploader = new EmptyFolderUploader(hpcName, userId, jobId, connector);
+        await uploader.upload();
+        break;
     }
 
     return uploader;

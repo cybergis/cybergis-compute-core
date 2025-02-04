@@ -1,30 +1,35 @@
-import { spawn } from "child_process";
+import { spawn, SpawnOptionsWithoutStdio } from "child_process";
 import * as path from "path";
 
-import { ConnectorError } from "../utils/errors";
-import * as Helper from "./Helper"; 
 import connectionPool from "../connectors/ConnectionPool";
+import { ConnectorError } from "../utils/errors";
 import { callableFunction, SSH } from "../utils/types";
+
 import FolderUtil from "./FolderUtil";
+import * as Helper from "./Helper";
 
 export default class DownloadUploadUtil {
-  private async exec(command: string, options: any): Promise<{ stdout: string, stderr: string }> {
+  private async exec(
+    command: string,
+    options: SpawnOptionsWithoutStdio
+  ): Promise<{ stdout: string, stderr: string }> {
     return new Promise((resolve, reject) => {
       console.log("executing command", command);
       const child = spawn(command, { shell: true, ...options });
 
-      let stdout = '';
-      let stderr = '';
 
-      child.stdout.on('data', (data) => {
+      let stdout = "";
+      let stderr = "";
+
+      child.stdout.on("data", (data) => {
         stdout += data;
       });
 
-      child.stderr.on('data', (data) => {
+      child.stderr.on("data", (data) => {
         stderr += data;
       });
 
-      child.on('close', (code) => {
+      child.on("close", (code) => {
         if (code === 0) {
           resolve({ stdout, stderr });
         } else {
@@ -32,14 +37,14 @@ export default class DownloadUploadUtil {
         }
       });
 
-      child.on('error', (err) => {
-        reject(new Error(`Exec failed with ${err}`));
+      child.on("error", (err) => {
+        reject(new Error(`Exec failed with ${err.toString()}`));
       });
       console.log("executed command", command);
     });
   }
 
-  private async ssh(hpc: string) : Promise<SSH> {
+  private async ssh(hpc: string): Promise<SSH> {
     const connection = connectionPool[hpc].ssh;
     if (!connection) {
       throw new ConnectorError(`No connection found for HPC: ${hpc}`);
@@ -54,7 +59,7 @@ export default class DownloadUploadUtil {
       }) as callableFunction, [connection], null);
     } catch (e) {
       console.log("error connecting to HPC", hpc, e);
-      throw new ConnectorError(`Failed to connect to HPC: ${hpc} with error ${e}`);
+      throw new ConnectorError(`Failed to connect to HPC: ${hpc} with error ${Helper.assertError(e).toString()}`);
     }
     return connection;
   }
@@ -67,7 +72,9 @@ export default class DownloadUploadUtil {
     console.log("zipping file from", from, "to", to);
     const ssh = await this.ssh(hpc);
     const command = `zip -q -r ${to} ${path.basename(from)}`;
-    const { stdout, stderr } = await ssh.connection.execCommand(command, { cwd: path.dirname(from) });
+    const { stdout, stderr } = await ssh.connection.execCommand(
+      command, { cwd: path.dirname(from) }
+    );
     if (stderr) {
       throw new Error(`Failed to zip file: ${stderr}`);
     }
@@ -96,7 +103,7 @@ export default class DownloadUploadUtil {
 
     console.log("start download");
 
-    try {      
+    try {
       // try to get the from file via ssh/scp and remove the compressed folder afterwards
       // wraps command with backoff -> takes lambda function and array of inputs to execute command
       await Helper.runCommandWithBackoff.call(this, (async (to1: string, zipPath: string) => {

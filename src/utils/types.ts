@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 import NodeSSH = require("node-ssh");
 import { ConnectConfig } from "ssh2";
 import { Prompt } from "ssh2-streams";
@@ -351,31 +350,31 @@ export interface authReqBody {
   jupyterhubApiToken: string
 }
 
-export interface updateFolderBody { 
-  jupyterhubApiToken: string, 
-  name?: string, 
-  isWritable?: boolean 
+export interface updateFolderBody {
+  jupyterhubApiToken: string,
+  name?: string,
+  isWritable?: boolean
 }
 
-export interface initGlobusDownloadBody { 
-  jupyterhubApiToken: string, 
-  toEndpoint: string, 
-  toPath: string, 
-  jobId?: string, 
-  fromPath?: string 
+export interface initGlobusDownloadBody {
+  jupyterhubApiToken: string,
+  toEndpoint: string,
+  toPath: string,
+  jobId?: string,
+  fromPath?: string
 }
 
-export interface initBrowserDownloadBody { 
+export interface initBrowserDownloadBody {
   jupyterhubApiToken: string,
   jobId: string,
 }
 
-export interface createJobBody { 
-  jupyterhubApiToken: string, 
-  maintainer?: string, 
-  hpc?: string, 
-  user?: string, 
-  password?: string 
+export interface createJobBody {
+  jupyterhubApiToken: string,
+  maintainer?: string,
+  hpc?: string,
+  user?: string,
+  password?: string
 }
 
 export interface updateJobBody {

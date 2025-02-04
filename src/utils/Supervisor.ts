@@ -74,11 +74,10 @@ class Supervisor {
           if (!job) continue;
 
           // eslint-disable-next-line
-          const maintainer: new(job: Job) => BaseMaintainer = require(`../maintainers/${
-            maintainerConfigMap[job.maintainer].maintainer
-          }`).default;  // eslint-disable-line
-            // ^ typescript compilation hack 
-            // TODO: don't do this
+          const maintainer: new (job: Job) => BaseMaintainer = require(`../maintainers/${maintainerConfigMap[job.maintainer].maintainer
+            }`).default;  // eslint-disable-line
+          // ^ typescript compilation hack 
+          // TODO: don't do this
 
           try {
             // push the job
@@ -159,7 +158,8 @@ class Supervisor {
     Helper.nullGuard(job.maintainerInstance);  // should have been initialized on job creation
     // const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
     // keep looping while the job is not finished
-    while (true) {  // eslint-disable-line no-constant-condition
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
       // get ssh connector from pool
       let ssh: SSH;
       if (job
@@ -188,7 +188,7 @@ class Supervisor {
             `job [${job.id}] failed because the HPC could not connect within the allotted time`
           );
         }
-        
+
       }
 
       if (job.maintainerInstance.isInit) {
@@ -212,7 +212,7 @@ class Supervisor {
           shouldCancel = true;
         }
       }
-      
+
       if (shouldCancel && job.maintainerInstance.jobOnHpc) {
         await job.maintainerInstance.onCancel();
         const index = this.cancelJobs[job.hpc].indexOf(job, 0);
@@ -307,7 +307,7 @@ class Supervisor {
       // look for the job in the running jobs
       if (config.is_testing) {
         console.log(`looking in ${hpc}`);
-        
+
         for (const job of this.runningJobs[hpc]) {
           console.log(`RunningJobs: checking is ${job.id.toString()}`);
           if (job.id === jobId.toString()) {
@@ -316,9 +316,9 @@ class Supervisor {
           }
         }
       }
-      
+
     }
-    
+
     // if found, cancel it; otherwise log it
     if (toReturn !== null && hpcToAdd !== null) {
       this.cancelJobs[hpcToAdd].push(toReturn);

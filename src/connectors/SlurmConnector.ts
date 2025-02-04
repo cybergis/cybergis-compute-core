@@ -12,7 +12,7 @@ import BaseConnector from "./BaseConnector";
  * Specialization of BaseConnector that, in addition to offering ssh connection, supports slurm connections with the HPC. 
  */
 class SlurmConnector extends BaseConnector {
-  
+
   public slurm_id!: string;
   public modules: string[] = [];  // list of modules to load in slurm environment
   public template!: string;
@@ -67,46 +67,32 @@ class SlurmConnector extends BaseConnector {
     // https://researchcomputing.princeton.edu/support/knowledge-base/slurm
     this.template = `#!/bin/bash
 #SBATCH --job-name=${this.jobId}
-${
-  this.connectorConfig.init_sbatch_options
-    ? this.connectorConfig.init_sbatch_options.join("\n")
-    : ""
-}
+${this.connectorConfig.init_sbatch_options
+        ? this.connectorConfig.init_sbatch_options.join("\n")
+        : ""}
 ${config.num_of_node ? `#SBATCH --nodes=${config.num_of_node}` : ""}
 #SBATCH --ntasks=${config.num_of_task}
 #SBATCH --time=${config.time}
-#SBATCH --error=${path.join(
-    this.remote_result_folder_path,
-    "slurm_log",
-    "job.stderr"
-  )}
-#SBATCH --output=${path.join(
-    this.remote_result_folder_path,
-    "slurm_log",
-    "job.stdout"
-  )}
+#SBATCH --error=${path.join(this.remote_result_folder_path, "slurm_log", "job.stderr")}
+#SBATCH --output=${path.join(this.remote_result_folder_path, "slurm_log", "job.stdout")}
 ${config.cpu_per_task ? `#SBATCH --cpus-per-task=${config.cpu_per_task}` : ""}
 ${config.memory_per_gpu ? `#SBATCH --mem-per-gpu=${config.memory_per_gpu}` : ""}
 ${config.memory_per_cpu ? `#SBATCH --mem-per-cpu=${config.memory_per_cpu}` : ""}
 ${config.memory ? `#SBATCH --mem=${config.memory}` : ""}
 ${config.gpus ? `#SBATCH --gpus=${config.gpus}` : ""}
 ${config.gpus_per_node ? `#SBATCH --gpus-per-node=${config.gpus_per_node}` : ""}
-${
-  config.gpus_per_socket
-    ? `#SBATCH --gpus-per-socket=${config.gpus_per_socket}`
-    : ""
-}
+${config.gpus_per_socket
+        ? `#SBATCH --gpus-per-socket=${config.gpus_per_socket}`
+        : ""}
 ${config.gpus_per_task ? `#SBATCH --gpus-per-task=${config.gpus_per_task}` : ""}
 ${config.partition ? `#SBATCH --partition=${config.partition}` : ""}
 ${config.allocation ? `#SBATCH -A ${config.allocation}` : ""}
 ${this.getSBatchTagsFromArray("mail-type", config.mail_type)}
 ${this.getSBatchTagsFromArray("mail-user", config.mail_user)}
 module purge
-${
-  this.connectorConfig.init_sbatch_script
-    ? this.connectorConfig.init_sbatch_script.join("\n")
-    : ""
-}
+${this.connectorConfig.init_sbatch_script
+        ? this.connectorConfig.init_sbatch_script.join("\n")
+        : ""}
 ${modules}
 ${cmd}`;
   }
@@ -180,16 +166,16 @@ ${cmd}`;
         this.maintainer.emitEvent(
           "SLURM_SUBMIT_ERROR",
           "cannot submit job " +
-            this.maintainer.id +
-            ": " +
-            JSON.stringify(sbatchResult)
+          this.maintainer.id +
+          ": " +
+          JSON.stringify(sbatchResult)
         );
 
       throw new ConnectorError(
         "cannot submit job " +
-          this.maintainer?.id +
-          ": " +
-          JSON.stringify(sbatchResult)
+        this.maintainer?.id +
+        ": " +
+        JSON.stringify(sbatchResult)
       );
     }
 
@@ -457,7 +443,7 @@ ${cmd}`;
       }
 
       const tmp = seffResult.stdout.split("\n");
-      
+
       // iterate over the lines in the usage output and do string processing
       // to motivate this string processing see the above output example
       for (const i of tmp) {
@@ -465,85 +451,85 @@ ${cmd}`;
         const k = j[0].trim();
         j.shift();
         let v = j.join(":").trim();
-        
-        switch (k) {
-        case "Nodes":
-          seffOutput.nodes = parseInt(v);
-          break;
-        case "Cores per node":
-          seffOutput.cpus = parseInt(v);
-          break;
-        case "CPU Utilized": {
-          const l = v.split(":");
-          if (l.length !== 3) continue;
-          const seconds =
-              parseInt(l[0]) * 60 * 60 + parseInt(l[1]) * 60 + parseInt(l[2]);
-          seffOutput.cpuTime = seconds;
-          break;
-        }
-        case "Job Wall-clock time": {
-          const l = v.split(":");
-          if (l.length !== 3) continue;
-          const seconds =
-              parseInt(l[0]) * 60 * 60 + parseInt(l[1]) * 60 + parseInt(l[2]);
-          seffOutput.walltime = seconds;
-          break;
-        }
-        case "Memory Utilized": {
-          v = v.toLowerCase();
-          let kb = parseFloat(v.substring(0, v.length - 2).trim());
-          const units = ["kb", "mb", "gb", "tb", "pb", "eb"];
-          let isValid = false;
-          for (const unit of units) {
-            if (v.includes(unit)) {
-              isValid = true;
-              break;
-            }
-          }
-          if (!isValid) continue;
-          for (const unit of units) {
-            if (v.includes(unit)) break;
-            kb = kb * 1024;
-          }
-          seffOutput.memoryUsage = kb;
-          break;
-        }
-        case "Memory Efficiency": {
-          v = v.toLowerCase();
-          let l = v.split("of");
-          if (l.length !== 2) continue;
-          l = l[1].trim().split("(");
-          if (l.length !== 2) continue;
-          v = l[0].trim();
 
-          let kb = parseFloat(v.substring(0, v.length - 2).trim());
-          const units = ["kb", "mb", "gb", "tb", "pb", "eb"];
-          let isValid = false;
-          for (const unit of units) {
-            if (v.includes(unit)) {
-              isValid = true;
-              break;
+        switch (k) {
+          case "Nodes":
+            seffOutput.nodes = parseInt(v);
+            break;
+          case "Cores per node":
+            seffOutput.cpus = parseInt(v);
+            break;
+          case "CPU Utilized": {
+            const l = v.split(":");
+            if (l.length !== 3) continue;
+            const seconds =
+              parseInt(l[0]) * 60 * 60 + parseInt(l[1]) * 60 + parseInt(l[2]);
+            seffOutput.cpuTime = seconds;
+            break;
+          }
+          case "Job Wall-clock time": {
+            const l = v.split(":");
+            if (l.length !== 3) continue;
+            const seconds =
+              parseInt(l[0]) * 60 * 60 + parseInt(l[1]) * 60 + parseInt(l[2]);
+            seffOutput.walltime = seconds;
+            break;
+          }
+          case "Memory Utilized": {
+            v = v.toLowerCase();
+            let kb = parseFloat(v.substring(0, v.length - 2).trim());
+            const units = ["kb", "mb", "gb", "tb", "pb", "eb"];
+            let isValid = false;
+            for (const unit of units) {
+              if (v.includes(unit)) {
+                isValid = true;
+                break;
+              }
             }
+            if (!isValid) continue;
+            for (const unit of units) {
+              if (v.includes(unit)) break;
+              kb = kb * 1024;
+            }
+            seffOutput.memoryUsage = kb;
+            break;
           }
-          if (!isValid) continue;
-          for (const unit of units) {
-            if (v.includes(unit)) break;
-            kb = kb * 1024;
+          case "Memory Efficiency": {
+            v = v.toLowerCase();
+            let l = v.split("of");
+            if (l.length !== 2) continue;
+            l = l[1].trim().split("(");
+            if (l.length !== 2) continue;
+            v = l[0].trim();
+
+            let kb = parseFloat(v.substring(0, v.length - 2).trim());
+            const units = ["kb", "mb", "gb", "tb", "pb", "eb"];
+            let isValid = false;
+            for (const unit of units) {
+              if (v.includes(unit)) {
+                isValid = true;
+                break;
+              }
+            }
+            if (!isValid) continue;
+            for (const unit of units) {
+              if (v.includes(unit)) break;
+              kb = kb * 1024;
+            }
+            seffOutput.memory = kb;
+            break;
           }
-          seffOutput.memory = kb;
-          break;
-        }
-        default:
-          break;
+          default:
+            break;
         }
       }
-      
+
       if (seffOutput.cpus && seffOutput.nodes) {
         seffOutput.cpus = seffOutput.cpus * seffOutput.nodes;
       } else {
         seffOutput.cpus = null;
       }
-    } catch {}
+    } catch { }
 
     return seffOutput;
   }

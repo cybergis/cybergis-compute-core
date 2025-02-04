@@ -41,7 +41,7 @@ export function generateId(): string {
  * @return {(object | object[])} job object including all attributes in the job list and excluding fields specified in exclude
  */
 export function job2object(
-  job: Job | Job[], 
+  job: Job | Job[],
   exclude: string[] = []
 ): object | object[] {
   if (Array.isArray(job)) {
@@ -51,7 +51,7 @@ export function job2object(
     }
     return outArray;
   }
-  
+
   const out: Record<string, unknown> = {};
   const include = Object.getOwnPropertyNames(job);
 
@@ -63,10 +63,10 @@ export function job2object(
       // } else {
       out[i] = job[i as keyof Job];
       // }
-    } 
+    }
     else out[i] = null;
   }
-  
+
   return out;
 }
 
@@ -142,8 +142,6 @@ export function canAccessHPC(user: string, hpc: string): boolean {
     return allowList.includes(user);
   }
 
-  // shouldn't be reachable, but print false just in case
-  return false;
 }
 
 export function assertError(err: unknown): Error {
@@ -163,8 +161,8 @@ export function nullGuard<T>(x: null | T | undefined): asserts x is T {
   const frame = e.stack?.split("\n");
   if (!frame) {
     console.assert(
-      x !== null && x !== undefined, 
-      "%o", "Variable is undefined/null when it should not be. No stack frame found."  // eslint-disable-line
+      x !== null && x !== undefined,
+      "%o", "Variable is undefined/null when it should not be. No stack frame found."
     );
     return;
   }
@@ -172,8 +170,8 @@ export function nullGuard<T>(x: null | T | undefined): asserts x is T {
   const lineNumber = frame[2].split(":").reverse()[1];
   const functionName = frame[2].split(" ")[5];
   console.assert(
-    x !== null && x !== undefined, 
-    "%o", 
+    x !== null && x !== undefined,
+    "%o",
     `Variable is undefined/null when it should not be. Assertion at ${frame[0]}, ${functionName}: ${lineNumber}`
   );
 }
@@ -185,8 +183,8 @@ export function nullGuard<T>(x: null | T | undefined): asserts x is T {
    * @param printOnError - Printed with error when catch block reached
    */
 export async function runCommandWithBackoff(
-  funcCall: callableFunction, 
-  parameters: unknown[], 
+  funcCall: callableFunction,
+  parameters: unknown[],
   printOnError: string | null
 ) {
   const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));

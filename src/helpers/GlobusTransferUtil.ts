@@ -89,7 +89,7 @@ export class GlobusTransferUtil {
   public async initTransfer(
     from: GlobusFolder,
     to: GlobusFolder,
-    label=""
+    label = ""
   ): Promise<string> {
     await this.init();
 
@@ -134,13 +134,14 @@ export class GlobusTransferUtil {
     let tryAgain = true;
 
     try {
-      while (true) {  // eslint-disable-line no-constant-condition
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
         const response: AxiosResponse<{ status: string }> = await axios.get(`${baseUrl}/task/${taskId}`, {
           headers: {
             "Authorization": `Bearer ${this.accessToken}`
           }
         });
-  
+
         if (response.status === 200) {
           if (response.data.status === "SUCCEEDED" || response.data.status === "FAILED") {
             return response.data.status;
@@ -155,7 +156,7 @@ export class GlobusTransferUtil {
           break;
         }
       }
-      
+
 
     } catch (err) {
       console.error("Error getting transfer task status: ", err);
@@ -173,7 +174,7 @@ export class GlobusTransferUtil {
           "Authorization": `Bearer ${this.accessToken}`
         }
       });
-  
+
       if (response.status === 200) {
         return response.data.status;
       } else {
@@ -187,7 +188,7 @@ export class GlobusTransferUtil {
     throw new Error("Something went wrong querying transfer status");
   }
 
-  private escape(username: string, escapeChar="_", safe=new Set("abcdefghijklmnopqrstuvwxyz0123456789")) {
+  private escape(username: string, escapeChar = "_", safe = new Set("abcdefghijklmnopqrstuvwxyz0123456789")) {
     const escapedUsername: string[] = [];
 
     for (const char of username) {
