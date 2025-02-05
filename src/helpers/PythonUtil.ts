@@ -2,8 +2,11 @@ import { spawn } from "child_process";
 
 import { config } from "../../configs/config";
 
+// deprecated
 
 /**
+ * @deprecated
+ * 
  * Helper class for interfacing with python scripts in the ./python directory. Primarily deals with globus.
  */
 export default class PythonUtil {

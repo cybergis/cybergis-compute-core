@@ -1,7 +1,15 @@
 import NodeSSH = require("node-ssh");
 
 import { config, hpcConfigMap } from "../../configs/config";
-import { SSH, SSHConfig } from "../utils/types";
+import { SSH, SSHConfig } from "../definitions";
+
+export class ConnectionPool2 {
+  private config: Record<string, HPCConfig>;
+
+  constructor(hpcConfigMap: Record<string, HPCConfig>) {
+    this.config = hpcConfigMap;
+  }
+}
 
 // dictionary recording ssh connections for community accounts (which have public ssh ability)
 const connectionPool: Record<string, { counter: number, ssh: SSH }> = {};

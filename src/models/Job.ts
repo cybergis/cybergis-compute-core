@@ -11,7 +11,6 @@ import {
   // JoinColumn,
 } from "typeorm";
 
-import BaseMaintainer from "../maintainers/BaseMaintainer";
 import {
   credential,
   GitFolder,
@@ -19,7 +18,8 @@ import {
   LocalFolder,
   NeedUploadFolder,
   slurm,
-} from "../utils/types";
+} from "../definitions";
+import BaseMaintainer from "../maintainers/BaseMaintainer";
 
 import { Event } from "./Event";
 import { Folder } from "./Folder";

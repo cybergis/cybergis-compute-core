@@ -8,17 +8,17 @@ import {
 import BaseConnector from "../connectors/BaseConnector";
 import SingularityConnector from "../connectors/SingularityConnector";
 import SlurmConnector from "../connectors/SlurmConnector";
-import * as Helper from "../helpers/Helper";
-import { Job } from "../models/Job";
-import dataSource from "../utils/DB";
-// import Supervisor from "../Supervisor";
 import {
   maintainerConfig,
   event,
   slurm,
   jobMaintainerUpdatable,
   hpcConfig,
-} from "../utils/types";
+} from "../definitions";
+import * as Helper from "../helpers/Helper";
+import { Job } from "../models/Job";
+import dataSource from "../utils/DB";
+// import Supervisor from "../Supervisor";
 
 /**
  * This is an abstract class for compute core job maintainers, which are responsible for submitting jobs and monitoring them.

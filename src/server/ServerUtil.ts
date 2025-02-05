@@ -1,6 +1,9 @@
 import { Request, NextFunction, Response } from "express";
-import jsonschema = require("jsonschema");
+import { z, ZodError } from "zod";
 
+import {
+  AuthReqBodySchema,
+} from "../definitions";
 import { Folder } from "../models/Folder";
 import dataSource from "../utils/DB";
 import JupyterHub from "../utils/JupyterHub";
@@ -8,108 +11,14 @@ import { ResultFolderContentManager, GlobusTaskListManager } from "../utils/Redi
 import { SSHCredentialGuard } from "../utils/SSHCredentialGuard";
 import Statistic from "../utils/Statistic";
 import Supervisor from "../utils/Supervisor";
-import type {
-  authReqBody,
-  updateFolderBody,
-} from "../utils/types";
-
 
 // global object instantiation
 export const supervisor = new Supervisor();
-export const validator = new jsonschema.Validator();
 export const sshCredentialGuard = new SSHCredentialGuard();
 export const resultFolderContent = new ResultFolderContentManager();
-export const jupyterHub = new JupyterHub();
-export const statistic = new Statistic();
+// export const jupyterHub = new JupyterHub();
+// export const statistic = new Statistic();
 export const globusTaskList = new GlobusTaskListManager();
-
-// object for vadidating API calls
-export const schemas = {
-  user: {
-    type: "object",
-    properties: {
-      jupyterhubApiToken: { type: "string" },
-    },
-    required: ["jupyterhubApiToken"],
-  },
-  cancel: {
-    type: "object",
-    properties: {
-      jupyterhubApiToken: { type: "string" },
-      jobId: { type: "string" },
-    },
-    required: ["jupyterhubApiToken", "jobId"],
-  },
-  updateFolder: {
-    type: "object",
-    properties: {
-      jupyterhubApiToken: { type: "string" },
-      name: { type: "string" },
-      isWritable: { type: "boolean" },
-    },
-    required: ["jupyterhubApiToken"],
-  },
-  updateJob: {
-    type: "object",
-    properties: {
-      jupyterhubApiToken: { type: "string" },
-      param: { type: "object" },
-      env: { type: "object" },
-      slurm: { type: "object" },
-      localExecutableFolder: { type: "object" },
-      localDataFolder: { type: "object" },
-      remoteDataFolder: { type: "string" },
-      remoteExecutableFolder: { type: "string" },
-    },
-    required: ["jupyterhubApiToken"],
-  },
-  createJob: {
-    type: "object",
-    properties: {
-      jupyterhubApiToken: { type: "string" },
-      maintainer: { type: "string" },
-      hpc: { type: "string" },
-      user: { type: "string" },
-      password: { type: "string" },
-    },
-    required: ["jupyterhubApiToken"],
-  },
-  initGlobusDownload: {
-    type: "object",
-    properties: {
-      jobId: { type: "string" },
-      jupyterhubApiToken: { type: "string" },
-      toEndpoint: { type: "string" },
-      toPath: { type: "string" },
-      fromPath: { type: "string" },
-    },
-    required: ["jupyterhubApiToken", "toEndpoint", "toPath"],
-  },
-  initBrowserDownload: {
-    type: "object",
-    properties: {
-      jobId: { type: "string" },
-      jupyterhubApiToken: { type: "string" },
-    },
-    required: ["jupyterhubApiToken", "jobId"],
-  },
-  refreshCache: {
-    type: "object",
-    properties: {
-      hpc: { type: "string" },
-    }
-  }
-};
-
-// handler for route errors
-export function requestErrors(v: jsonschema.ValidatorResult): string[] {
-  if (v.valid) return [];
-
-  const errors: string[] = [];
-  for (const error of v.errors) errors.push(error.message);
-
-  return errors;
-}
 
 // function to take data and get it into dictionary format for DB interfacing
 export async function prepareDataForDB(
@@ -143,12 +52,35 @@ export async function prepareDataForDB(
   return out;
 }
 
+export function validateZodSchema<T>(
+  schema: z.ZodSchema<T>, 
+  data: unknown
+): { success: true; data: T } | { success: false; errors: string[], data?: T } {
+  try {
+    const parsed = schema.parse(data);
+    return { success: true, data: parsed };
+  } catch (err) {
+    if (err instanceof ZodError) {
+      return { success: false, errors: err.errors.map((error) => error.message) };
+    }
+    return { success: false, errors: [] };
+  }
+}
+
+
 export const authMiddleWare = async (
   req: Request, 
   res: Response, 
   next: NextFunction
 ) => {
-  const body = req.body as authReqBody;
+  const validation = validateZodSchema(AuthReqBodySchema, req.body);
+  
+  if (!validation.success) {
+    res.status(402).json({ error: "invalid input", messages: validation.errors });
+    return;
+  }
+  
+  const body = validation.data;
   
   // if there is an api token in the body
   if (body.jupyterhubApiToken) {

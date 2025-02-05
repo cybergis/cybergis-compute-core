@@ -7,8 +7,6 @@ import * as path from "path";
 import { promisify } from "util";
 
 import { config } from "../../configs/config";
-import { Git } from "../models/Git";
-import dataSource from "../utils/DB";
 import {
   executableManifest,
   integerRule,
@@ -20,7 +18,9 @@ import {
   slurm_integer_time_unit_config,
   slurm_string_option_configs,
   stringOptionRule,
-} from "../utils/types";
+} from "../definitions";
+import { Git } from "../models/Git";
+import dataSource from "../utils/DB";
 
 import FolderUtil from "./FolderUtil";
 

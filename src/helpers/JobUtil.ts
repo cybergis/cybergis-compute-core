@@ -1,14 +1,14 @@
 import { hpcConfigMap } from "../../configs/config";
 // import path = require("path");
-import { Job } from "../models/Job";
-import dataSource from "../utils/DB";
 import {
   slurm_integer_storage_unit_config,
   slurm_integer_time_unit_config,
   slurmInputRules,
   slurm_integer_configs,
   slurm
-} from "../utils/types";
+} from "../definitions";
+import { Job } from "../models/Job";
+import dataSource from "../utils/DB";
 
 /**
  * Class providing various useful (static) functions for handling jobs. 
@@ -156,7 +156,7 @@ export default class JobUtil {
       } else if (slurm_integer_time_unit_config.includes(rule_name)) {
         const val = rule.max;
         const unit = rule.unit;
-        const sec = JobUtil.unitTimeToSeconds(val!, unit);
+        const sec = JobUtil.unitTimeToSeconds(val, unit);
 
         slurmCeiling[rule_name] = JobUtil.secondsToTime(sec);
       } else if (slurm_integer_configs.includes(rule_name)) {

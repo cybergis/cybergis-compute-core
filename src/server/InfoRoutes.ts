@@ -6,7 +6,7 @@ import { hpcConfigMap, maintainerConfigMap, containerConfigMap, jupyterGlobusMap
 import * as Helper from "../helpers/Helper";
 import { Job } from "../models/Job";
 import dataSource from "../utils/DB";
-import { hpcConfig, maintainerConfig, containerConfig, jupyterGlobusMapConfig, announcementsConfig } from "../utils/types";
+import { hpcConfig, maintainerConfig, containerConfig, jupyterGlobusMapConfig, announcementsConfig } from "../defines/MiscTypes";
 
 import { authMiddleWare, statistic } from "./ServerUtil";
 

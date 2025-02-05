@@ -1,10 +1,10 @@
 import { RedisClientType, createClient } from "redis";
 
 import { config } from "../../configs/config";
+import { credential } from "../definitions";
 import { Job } from "../models/Job";
 
 import dataSource from "./DB";
-import { credential } from "./types";
 
 class RedisStore {
 

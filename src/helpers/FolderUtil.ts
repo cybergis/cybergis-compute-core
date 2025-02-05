@@ -2,12 +2,12 @@ import { spawn } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 
-import { FileNotExistError } from "../utils/errors";
+import { FileNotExistError } from "../definitions";
 
 /**
  * Utility class for dealing with (zipped) files. 
  */
-export default class registerUtil {
+export default class folderUtil {
 
   /**
    * Determines if a file/path is a zip file. 

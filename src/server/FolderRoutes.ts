@@ -6,20 +6,20 @@ import * as path from "path";
 import {
   hpcConfigMap,
 } from "../../configs/config";
+import {
+  UpdateFolderBodySchema,
+  InitGlobusDownloadBodySchema,
+  GlobusFolder,
+  InitBrowserDownloadBodySchema
+} from "../definitions";
 import DownloadUploadUtil from "../helpers/DownloadUploadUtil";
 import { GlobusClient } from "../helpers/GlobusTransferUtil";
 import * as Helper from "../helpers/Helper";
 import { Folder } from "../models/Folder";
 import { Job } from "../models/Job";
 import dataSource from "../utils/DB";
-import type {
-  updateFolderBody,
-  initGlobusDownloadBody,
-  GlobusFolder,
-  initBrowserDownloadBody
-} from "../utils/types";
 
-import { authMiddleWare, requestErrors, validator, schemas, prepareDataForDB, globusTaskList } from "./ServerUtil";
+import { authMiddleWare, validateZodSchema, prepareDataForDB, globusTaskList } from "./ServerUtil";
 
 
 const folderRouter = express.Router();
@@ -131,16 +131,14 @@ folderRouter.delete("/:folderId", authMiddleWare, async function (req, res) {
    *              description: Returns "unknown folder with id" when the specified folder is not found
    */
 folderRouter.put("/:folderId", authMiddleWare, async function (req, res) {
-  const errors = requestErrors(
-    validator.validate(req.body, schemas.updateFolder)
-  );
-
-  if (errors.length > 0) {
-    res.status(402).json({ error: "invalid input", messages: errors });
+  const validation = validateZodSchema(UpdateFolderBodySchema, req.body);
+  
+  if (!validation.success) {
+    res.status(402).json({ error: "invalid input", messages: validation.errors });
     return;
   }
-
-  const body = req.body as updateFolderBody;
+  
+  const body = validation.data;
 
   if (!res.locals.username) {
     res.status(402).json({ error: "invalid token" });
@@ -203,21 +201,14 @@ folderRouter.post(
   "/:folderId/download/globus-init",
   authMiddleWare,
   async function (req, res) {
-    const errors = requestErrors(
-      validator.validate(req.body, schemas.initGlobusDownload)
-    );
-
-    if (errors.length > 0) {
-      res.status(402).json({ error: "invalid input", messages: errors });
+    const validation = validateZodSchema(InitGlobusDownloadBodySchema, req.body);
+  
+    if (!validation.success) {
+      res.status(402).json({ error: "invalid input", messages: validation.errors });
       return;
     }
-
-    const body = req.body as initGlobusDownloadBody;
-
-    if (!res.locals.username) {
-      res.status(402).json({ error: "invalid token" });
-      return;
-    }
+  
+    const body = validation.data;
 
     // get jobId from body
     const jobId = body.jobId;
@@ -365,16 +356,14 @@ folderRouter.get(
   "/:folderId/download/browser",
   authMiddleWare,
   async function (req, res) {
-    const errors = requestErrors(
-      validator.validate(req.body, schemas.initBrowserDownload)
-    );
-
-    if (errors.length > 0) {
-      res.status(402).json({ error: "invalid input", messages: errors });
+    const validation = validateZodSchema(InitBrowserDownloadBodySchema, req.body);
+  
+    if (!validation.success) {
+      res.status(402).json({ error: "invalid input", messages: validation.errors });
       return;
     }
-
-    const body = req.body as initBrowserDownloadBody;
+  
+    const body = validation.data;
 
     if (!res.locals.username) {
       res.status(402).json({ error: "invalid token" });

@@ -2,8 +2,8 @@ import { spawn, SpawnOptionsWithoutStdio } from "child_process";
 import * as path from "path";
 
 import connectionPool from "../connectors/ConnectionPool";
-import { ConnectorError } from "../utils/errors";
-import { SSH } from "../utils/types";
+import { ConnectorError } from "../defines/Errors";
+import { SSH } from "../definitions";
 
 import FolderUtil from "./FolderUtil";
 import * as Helper from "./Helper";

@@ -4,7 +4,7 @@ import GitUtil from "../helpers/GitUtil";
 import * as Helper from "../helpers/Helper";
 import { Git } from "../models/Git";
 import dataSource from "../utils/DB";
-import { executableManifest } from "../utils/types";
+import { executableManifest } from "../defines/MiscTypes";
 
 const gitRouter = express.Router();
 
