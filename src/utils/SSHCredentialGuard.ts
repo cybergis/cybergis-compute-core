@@ -7,8 +7,6 @@ import { CredentialManager } from "./Redis";
 
 class SSHCredentialGuard {
   private credentialManager = new CredentialManager();
-
-  private ssh = new NodeSSH();
   
   /**
    * Tries to establish an SSH connection with the hpc.
@@ -24,15 +22,16 @@ class SSHCredentialGuard {
     password?: string
   ) {
     const hpc = hpcConfigMap[hpcName];
+    const ssh = new NodeSSH();
 
     try {
-      await this.ssh.connect({
+      await ssh.connect({
         host: hpc.ip,
         port: hpc.port,
         username: user,
         password: password,
       });
-      this.ssh.dispose();
+      ssh.dispose();
     } catch (e) {
       throw new Error(`unable to check credentials with ${hpcName}`);
     }

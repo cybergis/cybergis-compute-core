@@ -1,9 +1,3 @@
-import NodeSSH from "node-ssh";
-import { ConnectConfig } from "ssh2";
-import { Prompt } from "ssh2-streams";
-
-import { Folder } from "../models/Folder";
-
 type unit = "GB" | "MB" | "Minutes" | "Hours" | "Days" | "None";
 
 export const slurm_configs = [
@@ -120,14 +114,6 @@ export interface slurm {
   modules?: string[];
 }
 
-export interface options {
-  cwd?: string;
-  execOptions?: unknown;
-  encoding?: BufferEncoding;
-}
-
-
-
 export interface executableManifest {
   name: string;
   container: string;
@@ -152,38 +138,4 @@ export interface executableManifest {
 export interface event {
   type: string;
   message: string;
-}
-
-export declare type SSHConfig = ConnectConfig & {
-  password?: string;
-  privateKey?: string;
-  tryKeyboard?: boolean;
-  onKeyboardInteractive?: (
-    name: string,
-    instructions: string,
-    lang: string,
-    prompts: Prompt[],
-    finish: (responses: string[]) => void
-  ) => void;
-};
-
-export interface SSH {
-  connection: NodeSSH;
-  config: SSHConfig;
-}
-
-export interface jobMaintainerUpdatable {
-  param?: Record<string, string>;
-  env?: Record<string, string>;
-  slurm?: slurm;
-  slurmId?: string;
-  nodes?: number;
-  cpus?: number;
-  cpuTime?: number;
-  memory?: number;
-  memoryUsage?: number;
-  walltime?: number;
-  remoteResultFolder?: Folder;
-  remoteExecutableFolder?: Folder;
-  remoteDataFolder?: Folder;
 }

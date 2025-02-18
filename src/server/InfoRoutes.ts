@@ -3,12 +3,13 @@ import express = require("express");
 import * as fs from "fs";
 
 import { hpcConfigMap, maintainerConfigMap, containerConfigMap, jupyterGlobusMap } from "../../configs/config";
+import { hpcConfig, maintainerConfig, containerConfig, jupyterGlobusMapConfig, announcementsConfig } from "../definitions";
 import * as Helper from "../helpers/Helper";
+import { getRuntimeByJobId, getRuntimeTotal } from "../helpers/Statistic";
 import { Job } from "../models/Job";
 import dataSource from "../utils/DB";
-import { hpcConfig, maintainerConfig, containerConfig, jupyterGlobusMapConfig, announcementsConfig } from "../defines/MiscTypes";
 
-import { authMiddleWare, statistic } from "./ServerUtil";
+import { authMiddleWare } from "./ServerUtil";
 
 const infoRouter = express.Router();
 
@@ -23,9 +24,9 @@ const infoRouter = express.Router();
  *
  */
 infoRouter.get("/statistic", async (req, res) => {
-  res.json({ runtime_in_seconds: await statistic.getRuntimeTotal() });
+  res.json({ runtime_in_seconds: await getRuntimeTotal() });
 });
-  
+
 /**
    * @openapi
    * /statistic/job/:jobId:
@@ -45,25 +46,25 @@ infoRouter.get("/statistic/job/:jobId", authMiddleWare, async (req, res) => {
     res.status(402).json({ error: "invalid token" });
     return;
   }
-  
+
   try {
     // query the job matching the params
     const job = await dataSource
       .getRepository(Job)
       .findOneBy({ id: req.params.jobId, userId: res.locals.username as string });
-  
+
     if (job === null) {
       throw new Error("job not found.");
     }
-  
-    res.json({ runtime_in_seconds: await statistic.getRuntimeByJobId(job.id) });
+
+    res.json({ runtime_in_seconds: await getRuntimeByJobId(job.id) });
   } catch (e) {
     res.status(401).json(
       { error: "invalid access", messages: [Helper.assertError(e).toString()] }
     );
   }
 });
-  
+
 /**
    * @openapi
    * /hpc:
@@ -81,7 +82,7 @@ infoRouter.get("/hpc", function (req, res) {
       const d: Partial<hpcConfig> = JSON.parse(
         JSON.stringify(dest[i])
       ) as hpcConfig; // hard copy
-  
+
       delete d.init_sbatch_script;
       delete d.init_sbatch_options;
       delete d.community_login;
@@ -90,10 +91,10 @@ infoRouter.get("/hpc", function (req, res) {
     }
     return out;
   };
-  
+
   res.json({ hpc: parseHPC(hpcConfigMap) });
 });
-  
+
 /**
    * @openapi
    * /maintainer:
@@ -110,15 +111,15 @@ infoRouter.get("/maintainer", function (req, res) {
       const d: maintainerConfig = JSON.parse(
         JSON.stringify(dest[i])
       ) as maintainerConfig; // hard copy
-  
+
       out[i] = d;
     }
     return out;
   };
-  
+
   res.json({ maintainer: parseMaintainer(maintainerConfigMap) });
 });
-  
+
 /**
    * @openapi
    * /container:
@@ -135,15 +136,15 @@ infoRouter.get("/container", function (req, res) {
       const d: containerConfig = JSON.parse(
         JSON.stringify(dest[i])
       ) as containerConfig; // hard copy
-  
+
       if (!(i in ["dockerfile", "dockerhub"])) out[i] = d;  // exclude dockerfiles/dockerhub configs
     }
     return out;
   };
-  
+
   res.json({ container: parseContainer(containerConfigMap) });
 });
-  
+
 /**
    * @openapi
    * /whitelist:
@@ -162,10 +163,10 @@ infoRouter.get("/whitelist", function (req, res) {
     }
     return out;
   };
-  
+
   res.json({ whitelist: parseHost(jupyterGlobusMap) });
 });
-  
+
 /**
    * @openapi
    * /allowlist:
@@ -182,15 +183,15 @@ infoRouter.get("/allowlist", function (req, res) {
       const d: jupyterGlobusMapConfig = JSON.parse(
         JSON.stringify(dest[i])
       ) as jupyterGlobusMapConfig; // hard copy
-  
+
       out[i] = d.comment;
     }
     return out;
   };
-  
+
   res.json({ allowlist: parseHost(jupyterGlobusMap) });
 });
-  
+
 /**
    * @openapi
    * /announcement:
@@ -209,12 +210,12 @@ infoRouter.get("/announcement", function (req, res) {
         const d: announcementsConfig = JSON.parse(
           JSON.stringify(dest[i])
         ) as announcementsConfig; // hard copy
-  
+
         out[i] = d;
       }
       return out;
     };
-  
+
     res.json(
       parseHost(JSON.parse(data) as Record<string, announcementsConfig>)
     );

@@ -1,16 +1,14 @@
-import NodeSSH = require("node-ssh");
-
 import * as events from "events";
 
 import { config, maintainerConfigMap, hpcConfigMap } from "../../configs/config";
-import connectionPool from "../connectors/ConnectionPool";
-import { SSH, callableFunction } from "../definitions";
+import { SSH } from "../definitions";
+import { registerEvents, registerLogs } from "../helpers/EmitterUtil";
 import * as Helper from "../helpers/Helper";
-import BaseMaintainer from "../maintainers/BaseMaintainer";
+import { maintainerMap } from "../maintainers/util";
 import { Job } from "../models/Job";
+import { connectionPool } from "../utils/ConnectionPool";
 
 import dataSource from "./DB";
-import Emitter from "./Emitter";
 import { JobQueue } from "./Redis";
 
 /**
@@ -24,8 +22,6 @@ class Supervisor {
   private queues: Record<string, JobQueue> = {};  // queues of jobs
   private runningJobs: Record<string, Job[]> = {};  // running jobs
   private cancelJobs: Record<string, Job[]> = {};  // what jobs to cancel
-
-  private emitter = new Emitter();  // emitter reference
 
   private maintainerMasterThread: NodeJS.Timeout | null = null;  // main loop
 
@@ -73,20 +69,16 @@ class Supervisor {
           const job = await this.queues[hpcName].pop();
           if (!job) continue;
 
-          // eslint-disable-next-line
-          const maintainer: new (job: Job) => BaseMaintainer = require(`../maintainers/${maintainerConfigMap[job.maintainer].maintainer
-            }`).default;  // eslint-disable-line
-          // ^ typescript compilation hack 
-          // TODO: don't do this
+          const maintainerFactory = maintainerMap[maintainerConfigMap[job.maintainer].maintainer];
 
           try {
             // push the job
-            job.maintainerInstance = new maintainer(job);
+            job.maintainerInstance = maintainerFactory(job);
             this.runningJobs[job.hpc].push(job);
             if (config.is_testing) console.log(`Added job to running jobs: ${job.id}`);
           } catch (e) {
             // log error and skip job
-            await this.emitter.registerEvents(
+            await registerEvents(
               job,
               "JOB_INIT_ERROR",
               `job [${job.id}] failed to initialized with error ${Helper.assertError(e).toString()}`
@@ -111,26 +103,13 @@ class Supervisor {
             .connector?.connectorConfig
             .is_community_account
           ) {
-            connectionPool[job.hpc].counter++;
+            connectionPool.initHpcConnection(job.hpc);
           } else {
-            const hpcConfig = hpcConfigMap[job.hpc];
-            connectionPool[job.id] = {
-              counter: 1,
-              ssh: {
-                connection: new NodeSSH(),
-                config: {
-                  host: hpcConfig.ip,
-                  port: hpcConfig.port,
-                  username: job.credential?.user,
-                  password: job.credential?.password,
-                  readyTimeout: 1000,
-                },
-              },
-            };
+            connectionPool.initJobConnection(job);
           }
 
           // emit event
-          await this.emitter.registerEvents(
+          await registerEvents(
             job,
             "JOB_REGISTERED",
             `job [${job.id}] is registered with the supervisor, waiting for initialization`
@@ -161,33 +140,22 @@ class Supervisor {
     // eslint-disable-next-line no-constant-condition
     while (true) {
       // get ssh connector from pool
-      let ssh: SSH;
+      let ssh: SSH | null;
       if (job
         .maintainerInstance?.connector?.connectorConfig
         .is_community_account
       ) {
-        ssh = connectionPool[job.hpc].ssh;
+        ssh = await connectionPool.getHpcConnection(job.hpc);
       } else {
-        ssh = connectionPool[job.id].ssh;
+        ssh = await connectionPool.getJobConnection(job);
       }
 
-      if (!ssh.connection.isConnected()) {
-        try {
-          // wraps command with backoff -> takes lambda function and array of inputs to execute command
-          await Helper.runCommandWithBackoff((async (ssh1: SSH) => {
-            if (!ssh1.connection.isConnected()) {
-              await ssh1.connection.connect(ssh1.config);
-            }
-            await ssh1.connection.execCommand("echo");
-          }) as callableFunction, [ssh], null);
-        } catch (e) {
-          console.log(`job [${job.id}]: Caught ${Helper.assertError(e).toString()}`);
-          await this.emitter.registerEvents(
-            job,
-            "JOB_FAILED",
-            `job [${job.id}] failed because the HPC could not connect within the allotted time`
-          );
-        }
+      if (!ssh.isConnected()) {
+        await registerEvents(
+          job,
+          "JOB_FAILED",
+          `job [${job.id}] failed because the HPC could not connect within the allotted time`
+        );
 
       }
 
@@ -196,14 +164,15 @@ class Supervisor {
       } else {
         await job.maintainerInstance.init();
       }
+
       // emit events & logs
       const events = job.maintainerInstance.dumpEvents();
       const logs = job.maintainerInstance.dumpLogs();
 
       // TODO: no need to dump events or logs outside the maintainer
       for (const event of events)
-        await this.emitter.registerEvents(job, event.type, event.message);
-      for (const log of logs) await this.emitter.registerLogs(job, log);
+        await registerEvents(job, event.type, event.message);
+      for (const log of logs) await registerLogs(job, log);
 
       // check if job should be canceled
       let shouldCancel = false;
@@ -229,13 +198,9 @@ class Supervisor {
           .connector?.connectorConfig
           .is_community_account
         ) {
-          connectionPool[job.hpc].counter--;
-          if (connectionPool[job.hpc].counter === 0) {
-            if (ssh.connection.isConnected()) ssh.connection.dispose();
-          }
+          connectionPool.releaseHpcConnection(job.hpc);
         } else {
-          if (ssh.connection.isConnected()) ssh.connection.dispose();
-          delete connectionPool[job.id];
+          connectionPool.releaseJobConnection(job);
         }
 
         // emit event
@@ -267,7 +232,7 @@ class Supervisor {
    */
   async pushJobToQueue(job: Job) {
     await this.queues[job.hpc].push(job);
-    await this.emitter.registerEvents(
+    await registerEvents(
       job,
       "JOB_QUEUED",
       "job [" + job.id + "] is queued, waiting for registration"

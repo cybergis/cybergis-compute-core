@@ -3,13 +3,12 @@ import { existsSync, unlink, writeFileSync } from "fs";
 import * as path from "path";
 
 import { config, hpcConfigMap } from "../../configs/config";
-import { ConnectorError } from "../defines/Errors";
+import { ConnectorError } from "../definitions";
 import { options, hpcConfig, SSH, callableFunction } from "../definitions";
-import FileUtil from "../helpers/FolderUtil";  // shouldn't this be registerUtil?
+import { putFileFromZip } from "../helpers/FolderUtil";
 import * as Helper from "../helpers/Helper";
 import BaseMaintainer from "../maintainers/BaseMaintainer";
-
-import connectionPool from "./ConnectionPool";
+import { connectionPool } from "../utils/ConnectionPool";
 
 /**
  * Base class for connecting with the HPC environment, mainly via shell scripts.
@@ -62,11 +61,11 @@ class BaseConnector {
   /**
      Returns ssh connection from maintainer configuration (for community accounts).
     */
-  ssh(): SSH {
+  async ssh(): Promise<SSH> {
     if (this.connectorConfig.is_community_account) {
-      return connectionPool[this.hpcName].ssh;
+      return connectionPool.getHpcConnection(this.hpcName);
     } else {
-      return connectionPool[this.jobId!].ssh;
+      return connectionPool.getJobConnection(this.jobId!);
     }
   }
 
@@ -138,7 +137,7 @@ class BaseConnector {
     // run the array of commands as if they were
     for (let command of commands) {
       command = command.trim();
-      
+
       // log execution in maintainer event log
       if (this.maintainer && !muteEvent)
         this.maintainer.emitEvent(
@@ -149,7 +148,7 @@ class BaseConnector {
       // run command via ssh
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore the type is hidden in some file and can't be coerced
-      await this.ssh().connection.execCommand(this.envCmd + command, opt);
+      await (await this.ssh()).execCommand(this.envCmd + command, opt);
 
       // behavior similar to && operator in bash, if desired (break if have an error)
       if (out.stderr && !continueOnError) break;
@@ -184,7 +183,7 @@ class BaseConnector {
           "SSH_SCP_DOWNLOAD",
           `get file from ${from} to ${to}`
         );
-      
+
       // try to get the from file via ssh/scp and remove the compressed folder afterwards
       // wraps command with backoff -> takes lambda function and array of inputs to execute command
       await Helper.runCommandWithBackoff.call(this, (async (to1: string, zipPath: string) => {
@@ -193,7 +192,7 @@ class BaseConnector {
       await this.rm(fromZipFilePath);
 
       // decompress the transferred file into the toZipFilePath directory
-      await FileUtil.putFileFromZip(to, toZipFilePath);
+      await putFileFromZip(to, toZipFilePath);
     } catch (e) {
       const error = `unable to get file from ${from} to ${to}: ` + Helper.assertError(e).toString();
 
@@ -218,7 +217,7 @@ class BaseConnector {
           "SSH_SCP_UPLOAD",
           `put file from ${from} to ${to}`
         );
-      
+
       // attempt to send the from file to the to folder
       // wraps command with backoff -> takes lambda function and array of inputs to execute command
       await Helper.runCommandWithBackoff.call(this, (async (from1: string, to1: string) => {
@@ -227,7 +226,7 @@ class BaseConnector {
     } catch (e) {
       const error =
         `unable to put file from ${from} to ${to}: ` + Helper.assertError(e).toString();
-        
+
       if (this.maintainer && !muteEvent)
         this.maintainer.emitEvent("SSH_SCP_UPLOAD_ERROR", error);
       throw new ConnectorError(error);
@@ -244,7 +243,7 @@ class BaseConnector {
    * @param {boolean} unzip - set to True if you want it to unzip and remove on the remote machine; false just uploads
    * @throws {ConnectorError} - Thrown if maintainer emits 'SSH_SCP_DOWNLOAD_ERROR'
    */
-  async upload(from: string, to: string, muteEvent=false, unzip=true) { // eslint-disable-line
+  async upload(from: string, to: string, muteEvent = false, unzip = true) { // eslint-disable-line
     // get the to zip/not zipped paths
     const toZipFilePath = to.endsWith(".zip") ? to : `${to}.zip`;
     const toFilePath = to.endsWith(".zip") ? to.replace(".zip", "") : to;
@@ -294,7 +293,7 @@ class BaseConnector {
    * @return {Promise<string>} returns command execution output
    */
   async pwd(
-    path?: string, 
+    path?: string,
     options: options = {}
   ): Promise<string | null> {
     let cmd = "pwd;";
@@ -312,7 +311,7 @@ class BaseConnector {
    * @return {Promise<string | null>} returns command execution output
    */
   async ls(
-    path?: string, 
+    path?: string,
     options: options = {}
   ): Promise<string | null> {
     let cmd = "ls;";
@@ -337,7 +336,7 @@ class BaseConnector {
 
   // file operators
 
-  
+
   /**
    * @async
    * Determines whether a passed in (absolute) path exists on the HPC. 
@@ -361,8 +360,8 @@ class BaseConnector {
    * @return {Promise<string | null>} 
    */
   async rm(
-    path: string, 
-    options: options = {}, 
+    path: string,
+    options: options = {},
     muteEvent = false
   ): Promise<string | null> {
     if (this.maintainer && !muteEvent)
@@ -382,7 +381,7 @@ class BaseConnector {
    * @return {Promise<string | null>}  command execution output
    */
   async mkdir(
-    path: string, 
+    path: string,
     options: options = {},
     muteEvent = false
   ): Promise<string | null> {
@@ -542,20 +541,20 @@ class BaseConnector {
     }
 
     // cast to string
-    const contentString  = String(content);
+    const contentString = String(content);
     // use the cache dir
     const tmp_dir: string = config.local_file_system.cache_path;
-    
+
     // create a new tmp file, loop until we find a new one
     let tmp_file = "";
     do {
-      tmp_file = "tmp-" + (Math.random().toString(36)+"00000000000000000").slice(2, 12);
+      tmp_file = "tmp-" + (Math.random().toString(36) + "00000000000000000").slice(2, 12);
       // console.log(tmp_file);
     }
-    while(existsSync(path.join(tmp_dir, tmp_file)));
+    while (existsSync(path.join(tmp_dir, tmp_file)));
 
     // local path of the file
-    const localPath : string = path.join(tmp_dir, tmp_file);
+    const localPath: string = path.join(tmp_dir, tmp_file);
 
     // write the content to the tmp file
     writeFileSync(localPath, contentString, { flag: "w" });
@@ -580,10 +579,10 @@ class BaseConnector {
   getRemoteExecutableFolderPath(providedPath: string | null = null): string {
     if (this.remote_executable_folder_path === null)
       throw new Error("need to set remote_executable_folder_path");
-    
+
     if (providedPath)
       return path.join(this.remote_executable_folder_path, providedPath);
-    else 
+    else
       return this.remote_executable_folder_path;
   }
 
@@ -598,7 +597,7 @@ class BaseConnector {
 
     if (providedPath)
       return path.join(this.remote_data_folder_path, providedPath);
-    else 
+    else
       return this.remote_data_folder_path;
   }
 
@@ -614,7 +613,7 @@ class BaseConnector {
 
     if (providedPath)
       return path.join(this.remote_result_folder_path, providedPath);
-    else 
+    else
       return this.remote_result_folder_path;
   }
 

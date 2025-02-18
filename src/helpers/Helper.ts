@@ -3,7 +3,6 @@ import { callableFunction } from "../definitions";
 import { Job } from "../models/Job";
 // import * as fs from "fs";
 
-
 /**
  * Converts base64 string to binary form.
  *
@@ -202,6 +201,6 @@ export async function runCommandWithBackoff(
     } catch (e) {
       console.error(printOnError ?? "" + assertError(e).stack);
     }
-    wait = wait == 0 ? 2 : wait * wait;
+    wait = wait === 0 ? 2 : wait * wait;
   }
 }

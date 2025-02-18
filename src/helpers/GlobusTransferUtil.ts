@@ -1,20 +1,11 @@
 import axios, { AxiosResponse } from "axios";
 
 import { config } from "../../configs/config";
-import { GlobusFolder } from "../definitions";
+import { GlobusFolder, GlobusAuthResponse } from "../definitions";
 import { GlobusTransferRefreshToken } from "../models/GlobusTransferRefreshToken";
 import dataSource from "../utils/DB";
 
-
 const baseUrl = "https://transfer.api.globus.org/v0.10";
-
-interface GlobusAuthResponse {
-  access_token: string;
-  expires_in: number;
-  token_type: string;
-  refresh_token: string;
-  scope: string;
-}
 
 export class GlobusTransferUtil {
   private accessToken!: string;

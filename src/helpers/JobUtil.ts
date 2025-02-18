@@ -156,7 +156,7 @@ export default class JobUtil {
       } else if (slurm_integer_time_unit_config.includes(rule_name)) {
         const val = rule.max;
         const unit = rule.unit;
-        const sec = JobUtil.unitTimeToSeconds(val, unit);
+        const sec = JobUtil.unitTimeToSeconds(val!, unit);
 
         slurmCeiling[rule_name] = JobUtil.secondsToTime(sec);
       } else if (slurm_integer_configs.includes(rule_name)) {

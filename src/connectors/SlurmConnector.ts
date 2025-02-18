@@ -1,7 +1,7 @@
 import * as path from "path";
 
 import { config, hpcConfigMap } from "../../configs/config";
-import { ConnectorError } from "../defines/Errors";
+import { ConnectorError } from "../definitions";
 import { slurm } from "../definitions";
 import * as Helper from "../helpers/Helper";
 

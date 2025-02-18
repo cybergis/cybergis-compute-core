@@ -3,21 +3,19 @@ import { z, ZodError } from "zod";
 
 import {
   AuthReqBodySchema,
+  UpdateFolderBodySchema,
 } from "../definitions";
+import { getHost, getUsername } from "../helpers/JupyterHub";
 import { Folder } from "../models/Folder";
 import dataSource from "../utils/DB";
-import JupyterHub from "../utils/JupyterHub";
 import { ResultFolderContentManager, GlobusTaskListManager } from "../utils/Redis";
 import { SSHCredentialGuard } from "../utils/SSHCredentialGuard";
-import Statistic from "../utils/Statistic";
 import Supervisor from "../utils/Supervisor";
 
 // global object instantiation
 export const supervisor = new Supervisor();
 export const sshCredentialGuard = new SSHCredentialGuard();
 export const resultFolderContent = new ResultFolderContentManager();
-// export const jupyterHub = new JupyterHub();
-// export const statistic = new Statistic();
 export const globusTaskList = new GlobusTaskListManager();
 
 // function to take data and get it into dictionary format for DB interfacing
@@ -44,7 +42,7 @@ export async function prepareDataForDB(
 
         out[property] = folder;
       } else {
-        out[property] = data[property as keyof updateFolderBody] as string;
+        out[property] = data[property as keyof typeof UpdateFolderBodySchema] as string;
       }
     }
   }
@@ -86,10 +84,10 @@ export const authMiddleWare = async (
   if (body.jupyterhubApiToken) {
     try {
       // try to extract username/host and store into local variables
-      res.locals.username = await jupyterHub.getUsername(
+      res.locals.username = await getUsername(
         body.jupyterhubApiToken
       );
-      res.locals.host = jupyterHub.getHost(body.jupyterhubApiToken);
+      res.locals.host = getHost(body.jupyterhubApiToken);
     } catch {}
 
     // continue onto the actual route

@@ -12,7 +12,7 @@ import {
   GlobusFolder,
   InitBrowserDownloadBodySchema
 } from "../definitions";
-import DownloadUploadUtil from "../helpers/DownloadUploadUtil";
+import { download } from "../helpers/DownloadUploadUtil";
 import { GlobusClient } from "../helpers/GlobusTransferUtil";
 import * as Helper from "../helpers/Helper";
 import { Folder } from "../models/Folder";
@@ -413,12 +413,12 @@ folderRouter.get(
     let hpc = null;
 
     try {
-      if (curr_job.remoteExecutableFolder!.id == folderId) {
-        hpcPath = curr_job.remoteExecutableFolder!.hpcPath;
-        hpc = curr_job.remoteExecutableFolder!.hpc;
+      if (job.remoteExecutableFolder!.id === folderId) {
+        hpcPath = job.remoteExecutableFolder!.hpcPath;
+        hpc = job.remoteExecutableFolder!.hpc;
       } else {
-        hpcPath = curr_job.remoteResultFolder!.hpcPath;
-        hpc = curr_job.remoteResultFolder!.hpc;
+        hpcPath = job.remoteResultFolder!.hpcPath;
+        hpc = job.remoteResultFolder!.hpc;
       }
     } catch (err) {
       res.status(403).json({ error: `failed to get hpc path or hpc with error: ${Helper.assertError(err).toString()}` });
@@ -438,7 +438,7 @@ folderRouter.get(
     try {
       // res.download(path.join(__dirname, 'FolderRoutes.js'));
       downloadPath = path.join(downloadPath, folderId + ".zip");
-      await DownloadUploadUtil.download(hpcPath, downloadPath, hpc);
+      await download(hpcPath, downloadPath, hpc);
       const file = downloadPath;
       res.download(file);
 

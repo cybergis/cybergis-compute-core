@@ -22,7 +22,7 @@ import {
 import { Git } from "../models/Git";
 import dataSource from "../utils/DB";
 
-import FolderUtil from "./FolderUtil";
+import { removeZip } from "./FolderUtil";
 
 const exec: Function = promisify(require("child_process").exec); // eslint-disable-line
 
@@ -135,7 +135,7 @@ export default class GitUtil {
 
     const localSha = local[0].oid;
 
-    return (git.sha && localSha == git.sha) || remoteSha !== localSha;
+    return (git.sha && localSha === git.sha) || remoteSha !== localSha;
   }
 
   /**
@@ -146,7 +146,7 @@ export default class GitUtil {
    */
   protected static async refreshGit(git: Git): Promise<boolean> {
     const localPath = this.getLocalPath(git.id);
-    await FolderUtil.removeZip(localPath);
+    await removeZip(localPath);
 
     // clone if git repo not exits locally
     if (!fs.existsSync(localPath)) {
