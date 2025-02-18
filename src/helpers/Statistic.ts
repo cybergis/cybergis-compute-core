@@ -1,4 +1,4 @@
-import { Job } from "../models/Job";
+import { Job } from "../models";
 import dataSource from "../utils/DB";
 
 /**

@@ -3,7 +3,7 @@ import NodeSSH = require("node-ssh");
 import { config, hpcConfigMap } from "../../configs/config";
 import { SSH, SSHConfig } from "../definitions";
 import * as Helper from "../helpers/Helper";
-import { Job } from "../models/Job";
+import { Job } from "../models";
 
 export class ConnectionPool {
   private jobConnectionPool: Record<string, NodeSSH> = {};

@@ -10,7 +10,7 @@ import {
 } from "../definitions";
 import * as Helper from "../helpers/Helper";
 import JobUtil from "../helpers/JobUtil";
-import { Job } from "../models/Job";
+import { Job } from "../models";
 import dataSource from "../utils/DB";
 
 import { authMiddleWare, sshCredentialGuard, prepareDataForDB, supervisor, resultFolderContent, validateZodSchema } from "./ServerUtil";

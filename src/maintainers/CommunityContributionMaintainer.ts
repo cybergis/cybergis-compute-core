@@ -3,8 +3,7 @@ import { executableManifest, GitFolder } from "../definitions";
 import GitUtil from "../helpers/GitUtil";
 import * as Helper from "../helpers/Helper";
 import XSEDEUtil from "../helpers/XSEDEUtil";
-import { Folder } from "../models/Folder";
-import { Git } from "../models/Git";
+import { Folder, Git } from "../models";
 import dataSource from "../utils/DB";
 import { BaseFolderUploader, FolderUploaderHelper } from "../utils/FolderUploader";
 import { ResultFolderContentManager } from "../utils/Redis";
@@ -213,7 +212,6 @@ class CommunityContributionMaintainer extends BaseMaintainer {
         }
 
         // update redis with this job's contents
-        Helper.nullGuard(this.id);
         await this.resultFolderContentManager.put(this.id, contents);
       }
     } catch (e) {

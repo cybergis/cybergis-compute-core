@@ -19,7 +19,6 @@ class BaseConnector {
   public maintainer: BaseMaintainer | null;
 
   /** properties **/
-  public jobId: string | null;
   public hpcName: string;
   public is_cvmfs: boolean;
   public remote_executable_folder_path: string | null;
@@ -32,13 +31,11 @@ class BaseConnector {
 
   constructor(
     hpcName: string,
-    jobId: string | null = null,
     maintainer: BaseMaintainer | null = null,
     env: Record<string, unknown> = {},
     is_cvmfs = false
   ) {
     this.hpcName = hpcName;
-    this.jobId = jobId;
     this.connectorConfig = hpcConfigMap[hpcName];
     this.maintainer = maintainer;
     this.is_cvmfs = is_cvmfs;
@@ -65,7 +62,7 @@ class BaseConnector {
     if (this.connectorConfig.is_community_account) {
       return connectionPool.getHpcConnection(this.hpcName);
     } else {
-      return connectionPool.getJobConnection(this.jobId!);
+      return connectionPool.getJobConnection(this.maintainer!.job);
     }
   }
 
@@ -184,10 +181,12 @@ class BaseConnector {
           `get file from ${from} to ${to}`
         );
 
+      const ssh = await this.ssh();
+
       // try to get the from file via ssh/scp and remove the compressed folder afterwards
       // wraps command with backoff -> takes lambda function and array of inputs to execute command
       await Helper.runCommandWithBackoff.call(this, (async (to1: string, zipPath: string) => {
-        await this.ssh().connection.getFile(to1, zipPath);
+        await ssh.getFile(to1, zipPath);
       }) as callableFunction, [to, fromZipFilePath], "Trying to download file again");
       await this.rm(fromZipFilePath);
 
@@ -218,10 +217,12 @@ class BaseConnector {
           `put file from ${from} to ${to}`
         );
 
+      const ssh = await this.ssh();
+
       // attempt to send the from file to the to folder
       // wraps command with backoff -> takes lambda function and array of inputs to execute command
       await Helper.runCommandWithBackoff.call(this, (async (from1: string, to1: string) => {
-        await this.ssh().connection.putFile(from1, to1);
+        await ssh.putFile(from1, to1);
       }) as callableFunction, [from, to], "Trying again to transfer file");
     } catch (e) {
       const error =

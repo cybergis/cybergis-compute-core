@@ -3,7 +3,7 @@ import express = require("express");
 import { executableManifest } from "../definitions";
 import GitUtil from "../helpers/GitUtil";
 import * as Helper from "../helpers/Helper";
-import { Git } from "../models/Git";
+import { Git } from "../models";
 import dataSource from "../utils/DB";
 
 const gitRouter = express.Router();

@@ -1,6 +1,6 @@
-import { Event } from "../src/models/Event";
-import { Job } from "../src/models/Job";
-import { Log } from "../src/models/Log";
+import { Event } from "../src/models";
+import { Job } from "../src/models";
+import { Log } from "../src/models";
 import dataSource from "../src/utils/DB";
 
 export default class TestHelper {

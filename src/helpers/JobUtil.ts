@@ -7,7 +7,7 @@ import {
   slurm_integer_configs,
   slurm
 } from "../definitions";
-import { Job } from "../models/Job";
+import { Job } from "../models";
 import dataSource from "../utils/DB";
 
 /**

@@ -16,7 +16,7 @@ import {
   hpcConfig,
 } from "../definitions";
 import * as Helper from "../helpers/Helper";
-import { Job } from "../models/Job";
+import { Job } from "../models";
 import dataSource from "../utils/DB";
 // import Supervisor from "../Supervisor";
 
@@ -277,7 +277,7 @@ abstract class BaseMaintainer {
    * @returns {SlurmConnector} - The slurm connector associated with this job.
    */
   public getSlurmConnector(): SlurmConnector {
-    return new SlurmConnector(this.job.hpc, this.job.id, this, this.job.env);
+    return new SlurmConnector(this.job.hpc, this, this.job.env);
   }
 
   /**
@@ -289,7 +289,6 @@ abstract class BaseMaintainer {
   public getSingularityConnector(): SingularityConnector {
     return new SingularityConnector(
       this.job.hpc,
-      this.job.id,
       this,
       this.job.env
     );
@@ -304,7 +303,6 @@ abstract class BaseMaintainer {
   public getSingCVMFSConnector(): SingularityConnector {
     return new SingularityConnector(
       this.job.hpc,
-      this.job.id,
       this,
       this.job.env,
       true
@@ -318,7 +316,7 @@ abstract class BaseMaintainer {
    * @returns {BaseConnector} - The base connector associated with this job.
    */
   public getBaseConnector(): BaseConnector {
-    return new BaseConnector(this.job.hpc, this.job.id, this, this.job.env);
+    return new BaseConnector(this.job.hpc, this, this.job.env);
   }
 }
 

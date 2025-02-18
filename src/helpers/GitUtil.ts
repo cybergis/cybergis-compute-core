@@ -19,7 +19,7 @@ import {
   slurm_string_option_configs,
   stringOptionRule,
 } from "../definitions";
-import { Git } from "../models/Git";
+import { Git } from "../models";
 import dataSource from "../utils/DB";
 
 import { removeZip } from "./FolderUtil";

@@ -15,8 +15,7 @@ import {
 import { download } from "../helpers/DownloadUploadUtil";
 import { GlobusClient } from "../helpers/GlobusTransferUtil";
 import * as Helper from "../helpers/Helper";
-import { Folder } from "../models/Folder";
-import { Job } from "../models/Job";
+import { Folder, Job } from "../models";
 import dataSource from "../utils/DB";
 
 import { authMiddleWare, validateZodSchema, prepareDataForDB, globusTaskList } from "./ServerUtil";

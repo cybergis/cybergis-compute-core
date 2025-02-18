@@ -146,15 +146,15 @@ These classes are found in the `src/shared/` directory, and these generally serv
 
 General Improvements
 
-- work out the `folderUtil` vs. `registerUtil` naming discrepancy 
+- ~~work out the `folderUtil` vs. `registerUtil` naming discrepancy ~~
 - ~~update the database to support the new manifest-specific GitUtil things and update everything accordingly~~ (no longer needed)
-- port all the python globus scripts to the javascript globus SDK & delete `PythonUtil`
+- ~~port all the python globus scripts to the javascript globus SDK & delete `PythonUtil`~~
 - verify `XSEDEUtil` actually does things & is meaningful
 - ~~make a RedisUtil class to encapsulate all of the individual redis interfaces (which are essentially the same with a few naming differences)~~
     - ~~make the redis connections less weird~~
     - ~~make the redis connection actually persistent and not local~~
 - ~~get an actual git sdk to avoid having to exec~~
-- the Helper generateId function has a chance of collisions (expected 1 in every 62 ** 5 for every millisecond)
+- ~~the Helper generateId function has a chance of collisions (expected 1 in every 62 ** 5 for every millisecond)~~
 - ~~unlink vs rm in FolderUtil.removeZip -- unlink doesn't actually remove but rm does~~ (changed to rm)
 
 ### Maintainers
@@ -237,9 +237,9 @@ Dependencies:
 Dependents: essentially everything that interfaces with the database.
 
 Improvements:
-- `close` function is useless and does nothing
+- ~~`close` function is useless and does nothing~~
 - disable the clearAll function unless explicitly overwritten
-- doesn't necessarily need to be a class, although I can see the motivation for reusing configs
+- ~~doesn't necessarily need to be a class, although I can see the motivation for reusing configs~~
 
 ### Emitter
 
@@ -253,7 +253,7 @@ Dependents:
 - `src/Supervisor.ts`: for registering events regarding job submission statuses and registering logs/events dumped from maintainer instances
 
 Improvements:
-    - not sure this needs to be a class; possibly move to lib since it is more utility
+    - ~~not sure this needs to be a class; possibly move to lib since it is more utility~~
 
 ### errors & types
 
@@ -267,9 +267,9 @@ Dependents:
     - nearly everything
 
 Improvements:
-    - organize the custom types into categories of usage
+    - ~~organize the custom types into categories of usage~~
     - improve the typings of the custom types to be more clear about what fields are required vs. what are optional (i.e., what is actually reflected in the codebase)
-    - move them to another folder (defines?)
+    - ~~move them to another folder (defines?)~~
 
 ### FolderUploader
 
@@ -302,7 +302,7 @@ Improvements:
 - potentially remove some unused classes
 - is there any point in having connectors be passed to it instead of just making a baseconnector
 - ~~think if globus transfers of data should be cached~~ (no)
-- remove the FolderUploaderHelper -- too generic for its own good
+- ~~remove the FolderUploaderHelper -- too generic for its own good~~
 - ~~make the Folders database be better integrated for cached uploads (just uploads under a cache user right now)~~
     - cache exists now but still need to integrate with folders to get the remote executable folder and such -- should fully detach at some point
 
@@ -341,7 +341,7 @@ Dependents:
 
 Improvements:
 - ~~combine all redis things into one~~
-- fix the relatively hacky way of storing functions
+- ~~fix the relatively hacky way of storing functions~~
 
 ### SSHCredentialGuard
 
@@ -373,7 +373,7 @@ Dependents:
 - `server.ts`: uses this class to get statistics
 
 Improvements:
-- possibly coalesce with some more meaningful classes; more of utility class in its current state
+- ~~possibly coalesce with some more meaningful classes; more of utility class in its current state~~
 
 ### Supervisor
 
@@ -398,7 +398,7 @@ Dependents:
 
 Improvements:
 - ~~fix the code for looking inside the redis queue (it curretnly does not work and needs more redis functionality)~~ (not sure what this was referring to)
-- possibly refactor createMaintenanceWorker to not be busy waiting (change it to setInterval?)
+- ~~possibly refactor createMaintenanceWorker to not be busy waiting (change it to setInterval?)~~
 - make supervisor less likely to freak out on an error (infinite loop of prints)--especially assertion errors
 
 ### server.ts
@@ -414,9 +414,9 @@ Overall Improvements and TODOs:
 
 - get to all the TODOs
 - remove all unneeded ~~packages~~/functions/code
-- figure out the purpose of the redis store and possibly archive it
-- do full null checking & revamp types accordingly
-- full commenting & documentation revamp (mostly done)
+- ~~figure out the purpose of the redis store and possibly archive it~~
+- ~~do full null checking & revamp types accordingly~~
+- ~~full commenting & documentation revamp (mostly done)~~
 - build a rigorous test suite
 - update/archive `CVMFS_kernel.md`, `v1_v2_coexisting.md`, `xsede-xkdcdb-api.md`, `FILE_SYS.md`, and `lifecycle.md` to be in-line with this documetation
 - get rid of all execs or add better error handling for execs

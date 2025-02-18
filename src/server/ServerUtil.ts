@@ -6,7 +6,7 @@ import {
   UpdateFolderBodySchema,
 } from "../definitions";
 import { getHost, getUsername } from "../helpers/JupyterHub";
-import { Folder } from "../models/Folder";
+import { Folder } from "../models";
 import dataSource from "../utils/DB";
 import { ResultFolderContentManager, GlobusTaskListManager } from "../utils/Redis";
 import { SSHCredentialGuard } from "../utils/SSHCredentialGuard";

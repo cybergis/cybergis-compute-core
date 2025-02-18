@@ -5,7 +5,7 @@ import { SSH } from "../definitions";
 import { registerEvents, registerLogs } from "../helpers/EmitterUtil";
 import * as Helper from "../helpers/Helper";
 import { maintainerMap } from "../maintainers/util";
-import { Job } from "../models/Job";
+import { Job } from "../models";
 import { connectionPool } from "../utils/ConnectionPool";
 
 import dataSource from "./DB";
@@ -135,7 +135,7 @@ class Supervisor {
    */
   async createMaintainerWorker(job: Job) {
     Helper.nullGuard(job.maintainerInstance);  // should have been initialized on job creation
-    // const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+    const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
     // keep looping while the job is not finished
     // eslint-disable-next-line no-constant-condition
     while (true) {
@@ -157,6 +157,7 @@ class Supervisor {
           `job [${job.id}] failed because the HPC could not connect within the allotted time`
         );
 
+        break;
       }
 
       if (job.maintainerInstance.isInit) {
@@ -172,7 +173,8 @@ class Supervisor {
       // TODO: no need to dump events or logs outside the maintainer
       for (const event of events)
         await registerEvents(job, event.type, event.message);
-      for (const log of logs) await registerLogs(job, log);
+      for (const log of logs) 
+        await registerLogs(job, log);
 
       // check if job should be canceled
       let shouldCancel = false;
@@ -221,6 +223,8 @@ class Supervisor {
         // exit loop
         return;
       }
+
+      await sleep(500);
     }
   }
 

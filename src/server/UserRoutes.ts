@@ -9,7 +9,7 @@ import {
 import { GlobusClient } from "../helpers/GlobusTransferUtil";
 import * as Helper from "../helpers/Helper";
 import JobUtil from "../helpers/JobUtil";
-import { Job } from "../models/Job";
+import { Job } from "../models";
 import dataSource from "../utils/DB";
 
 import { authMiddleWare } from "./ServerUtil";

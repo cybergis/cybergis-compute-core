@@ -2,7 +2,7 @@ import axios, { AxiosResponse } from "axios";
 
 import { config } from "../../configs/config";
 import { GlobusFolder, GlobusAuthResponse } from "../definitions";
-import { GlobusTransferRefreshToken } from "../models/GlobusTransferRefreshToken";
+import { GlobusTransferRefreshToken } from "../models";
 import dataSource from "../utils/DB";
 
 const baseUrl = "https://transfer.api.globus.org/v0.10";
