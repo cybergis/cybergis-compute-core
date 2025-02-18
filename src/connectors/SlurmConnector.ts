@@ -66,7 +66,7 @@ class SlurmConnector extends BaseConnector {
 
     // https://researchcomputing.princeton.edu/support/knowledge-base/slurm
     this.template = `#!/bin/bash
-#SBATCH --job-name=${this.jobId}
+#SBATCH --job-name=${this.maintainer.job.id}
 ${this.connectorConfig.init_sbatch_options
         ? this.connectorConfig.init_sbatch_options.join("\n")
         : ""}
