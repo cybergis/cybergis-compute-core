@@ -3,7 +3,7 @@ import { executableManifest, GitFolder } from "../definitions";
 import GitUtil from "../helpers/GitUtil";
 import * as Helper from "../helpers/Helper";
 import XSEDEUtil from "../helpers/XSEDEUtil";
-import { Folder, Git } from "../models";
+import { Folder, Git, Job } from "../models";
 import dataSource from "../utils/DB";
 import { BaseFolderUploader, FolderUploaderHelper } from "../utils/FolderUploader";
 import { ResultFolderContentManager } from "../utils/Redis";
@@ -15,17 +15,32 @@ import BaseMaintainer from "./BaseMaintainer";
  */
 class CommunityContributionMaintainer extends BaseMaintainer {
 
-  declare public connector: SingularityConnector;  // connector to communicate with HPC
+  public connector: SingularityConnector;  // connector to communicate with HPC
 
   public resultFolderContentManager: ResultFolderContentManager =
     new ResultFolderContentManager();
 
   public executableManifest!: executableManifest;  // details about the job
 
-  onDefine() {
-    this.connector = this.getSingularityConnector();
+  constructor(job: Job,
+    remoteExecutableFolderPath: string,
+    remoteDataFolderPath: string,
+    remoteResultFolderPath: string
+  ) {
+    super(job);
+
+    this.connector = new SingularityConnector(
+      this, 
+      remoteExecutableFolderPath, 
+      remoteDataFolderPath, 
+      remoteResultFolderPath, 
+      job, 
+      job.env
+    );
   }
 
+  onDefine = () => undefined;
+  
   /**
    * On maintainer initialization, set executableManifest, and give it to the connector. 
    * Update the event log to reflect the job being initialized or encountering a system error.
@@ -144,7 +159,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
 
       // log on xsede
       Helper.nullGuard(this.hpc);
-      await XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc, this.job);
+      await XSEDEUtil.jobLog(this.connector.slurm_id, this.hpcSettings, this.job);
     } catch (e) {
       this.emitEvent(
         "JOB_RETRY",
@@ -185,7 +200,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
 
         // submit again to XSEDE
         Helper.nullGuard(this.hpc);
-        await XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc, this.job); // for backup submit
+        await XSEDEUtil.jobLog(this.connector.slurm_id, this.hpcSettings, this.job); // for backup submit
 
         // fetch result folder content
         // TODO: make this shorter

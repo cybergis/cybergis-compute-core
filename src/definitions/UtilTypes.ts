@@ -9,7 +9,6 @@ import { slurm } from "./JobTypes";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type callableFunction = (..._args: any[]) => unknown;
 
-
 export interface options {
   cwd?: string;
   execOptions?: unknown;

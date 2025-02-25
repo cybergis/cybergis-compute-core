@@ -5,8 +5,6 @@ import {
   hpcConfigMap,
   maintainerConfigMap,
 } from "../../configs/config";
-import BaseConnector from "../connectors/BaseConnector";
-import SingularityConnector from "../connectors/SingularityConnector";
 import SlurmConnector from "../connectors/SlurmConnector";
 import {
   maintainerConfig,
@@ -32,7 +30,8 @@ abstract class BaseMaintainer {
 
   /** config **/
   public job: Job;
-  public hpc: hpcConfig | undefined = undefined;
+  public hpc: string;
+  public hpcSettings: hpcConfig;
   public maintainerConfig: maintainerConfig | undefined = undefined;
   public id: string;
   public slurm: slurm | undefined = undefined;
@@ -64,7 +63,7 @@ abstract class BaseMaintainer {
   // public appParam: Record<string, string> = {};
 
   /** HPC connectors **/
-  public connector!: BaseConnector;
+  public abstract connector: SlurmConnector;
 
   /** data **/
   protected logs: string[] = [];
@@ -90,11 +89,9 @@ abstract class BaseMaintainer {
     this.slurm = job.slurm;
 
     // determine if the current hpc exists within the config
-    const hpc = job.hpc ? job.hpc : this.maintainerConfig.default_hpc;
-    this.hpc = hpcConfigMap[hpc];
-    if (!this.hpc) throw new Error("cannot find hpc with name [" + hpc + "]");
-
-    this.onDefine();  // can't instantiate this class, abstract
+    this.hpc = job.hpc ? job.hpc : this.maintainerConfig.default_hpc;
+    this.hpcSettings = hpcConfigMap[this.hpc];
+    if (!this.hpcSettings) throw new Error("cannot find hpc with name [" + this.hpc + "]");
   }
 
   /** abstract lifecycle interfaces **/
@@ -268,55 +265,6 @@ abstract class BaseMaintainer {
     const temp = await jobRepo.findOneBy({ id: this.id });
     Helper.nullGuard(temp);
     this.job = temp;
-  }
-
-  /**
-   * Return the slurm connector associated with this job and hpc.
-   *
-   * @public
-   * @returns {SlurmConnector} - The slurm connector associated with this job.
-   */
-  public getSlurmConnector(): SlurmConnector {
-    return new SlurmConnector(this.job.hpc, this, this.job.env);
-  }
-
-  /**
-   * Return the singularity connector associated with this job and hpc.
-   *
-   * @public
-   * @returns {SingularityConnector} - The singularity connector associated with this job.
-   */
-  public getSingularityConnector(): SingularityConnector {
-    return new SingularityConnector(
-      this.job.hpc,
-      this,
-      this.job.env
-    );
-  }
-
-  /**
-   * Return the Singularity connector associated with this job and hpc.
-   *
-   * @public
-   * @returns {SingularityConnector} - The singularity connector associated with this job with cvmfs turned on.
-   */
-  public getSingCVMFSConnector(): SingularityConnector {
-    return new SingularityConnector(
-      this.job.hpc,
-      this,
-      this.job.env,
-      true
-    );
-  }
-
-  /**
-   * Return the base connector associated with this job and hpc. Never used. 
-   *
-   * @public
-   * @returns {BaseConnector} - The base connector associated with this job.
-   */
-  public getBaseConnector(): BaseConnector {
-    return new BaseConnector(this.job.hpc, this, this.job.env);
   }
 }
 

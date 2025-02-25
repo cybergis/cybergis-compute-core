@@ -1,44 +1,51 @@
 
+import assert from "assert";
 import { existsSync, unlink, writeFileSync } from "fs";
 import * as path from "path";
 
 import { config, hpcConfigMap } from "../../configs/config";
-import { ConnectorError } from "../definitions";
-import { options, hpcConfig, SSH, callableFunction } from "../definitions";
+import { ConnectorError, SSH } from "../definitions";
+import { options, hpcConfig, callableFunction } from "../definitions";
 import { putFileFromZip } from "../helpers/FolderUtil";
 import * as Helper from "../helpers/Helper";
-import BaseMaintainer from "../maintainers/BaseMaintainer";
+import { Job } from "../models";
 import { connectionPool } from "../utils/ConnectionPool";
 
+interface out {
+  stdout: string | null;
+  stderr: string | null;
+}
+
+type emitLogFnType = (s: string) => void;
+type emitEventFnType = (type: string, message: string) => void;
+
 /**
- * Base class for connecting with the HPC environment, mainly via shell scripts.
+ * Base class for connecting to an HPC machine via SSH.
  */
-class BaseConnector {
-
-  /** parent pointer **/
-  public maintainer: BaseMaintainer | null;
-
-  /** properties **/
-  public hpcName: string;
-  public is_cvmfs: boolean;
-  public remote_executable_folder_path: string | null;
-  public remote_data_folder_path: string | null;
-  public remote_result_folder_path: string | null;
-
-  /** config **/
-  public connectorConfig: hpcConfig;
+export class SSHConnector {
+  protected hpcName: string;
+  protected hpcConfig: hpcConfig; 
   protected envCmd = "#!/bin/bash\n";
+
+  protected emitLogFn?: emitLogFnType;
+  protected emitEventFn?: emitEventFnType;
+  protected job?: Job;
 
   constructor(
     hpcName: string,
-    maintainer: BaseMaintainer | null = null,
+    job?: Job,
+    emitLogFn?: emitLogFnType,
+    emitEventFn?: emitEventFnType,
     env: Record<string, unknown> = {},
-    is_cvmfs = false
   ) {
     this.hpcName = hpcName;
-    this.connectorConfig = hpcConfigMap[hpcName];
-    this.maintainer = maintainer;
-    this.is_cvmfs = is_cvmfs;
+    this.hpcConfig = hpcConfigMap[this.hpcName];
+
+    if (!this.hpcConfig.is_community_account) {
+      assert(job !== undefined);
+    }
+
+    this.job = job;
 
     // set environment variables
     let envCmd = "source /etc/profile;";
@@ -48,21 +55,33 @@ class BaseConnector {
     }
     this.envCmd = envCmd;
 
-    this.remote_executable_folder_path = null;
-    this.remote_data_folder_path = null;
-    this.remote_result_folder_path = null;
+    this.emitLogFn = emitLogFn;
+    this.emitEventFn = emitEventFn;
+
+    this.getSSH().then((x) => {
+      if (!x.isConnected()) {
+        throw new ConnectorError("unable to establish ssh connection");
+      }
+    }).catch((_e) => undefined);
   }
 
-  /** actions **/
-
-  /**
-     Returns ssh connection from maintainer configuration (for community accounts).
-    */
-  async ssh(): Promise<SSH> {
-    if (this.connectorConfig.is_community_account) {
+  private async getSSH(): Promise<SSH> {
+    if (this.hpcConfig.is_community_account) {
       return connectionPool.getHpcConnection(this.hpcName);
     } else {
-      return connectionPool.getJobConnection(this.maintainer!.job);
+      return connectionPool.getJobConnection(this.job!);
+    }
+  }
+
+  private emitLog(s: string, muteLog = false) {
+    if (this.emitLogFn && !muteLog) {
+      this.emitLogFn(s);
+    }
+  }
+
+  private emitEvent(type: string, message: string, muteEvent = false) {
+    if (this.emitEventFn && !muteEvent) {
+      this.emitEventFn(type, message);
     }
   }
 
@@ -85,21 +104,15 @@ class BaseConnector {
     muteLog = true,
     continueOnError = false
   ) {
-    interface out {
-      stdout: string | null;
-      stderr: string | null;
-    }
-
     const out: out = {
       stdout: null,
       stderr: null,
     };
-    const maintainer = this.maintainer;
 
     // add cwd to options (current working directory) to set root path
     options = Object.assign(
       {
-        cwd: this.connectorConfig.root_path,
+        cwd: this.hpcConfig.root_path,
       },
       options
     );
@@ -107,6 +120,9 @@ class BaseConnector {
     if (typeof commands === "string") {
       commands = [commands];
     }
+
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const outer = this;
 
     // add functionality to pipe out stdout/stderr to maintainer logs/events into options
     // enabled by NodeSSH library
@@ -117,15 +133,15 @@ class BaseConnector {
           if (out.stdout === null) out.stdout = o;
           else out.stdout += o;
 
-          if (maintainer && !muteLog) maintainer.emitLog(o);
+          outer.emitLog(o, muteLog);
         },
         onStderr(chunk: Buffer) {
           const o: string = chunk.toString();
           if (out.stderr === null) out.stderr = o;
           else out.stderr += o;
 
-          if (maintainer && !muteLog) maintainer.emitLog(o);
-          if (maintainer && !muteEvent) maintainer.emitEvent("SSH_STDERR", o);
+          outer.emitLog(o, muteLog);
+          outer.emitEvent("SSH_STDERR", o, muteEvent);
         },
       },
       options
@@ -134,18 +150,21 @@ class BaseConnector {
     // run the array of commands as if they were
     for (let command of commands) {
       command = command.trim();
+      
 
       // log execution in maintainer event log
-      if (this.maintainer && !muteEvent)
-        this.maintainer.emitEvent(
-          "SSH_RUN",
-          "running command [" + command + "]"
-        );
+      this.emitEvent(
+        "SSH_RUN",
+        "running command [" + command + "]",
+        muteEvent
+      );
+
+      const ssh = await this.getSSH();
 
       // run command via ssh
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore the type is hidden in some file and can't be coerced
-      await (await this.ssh()).execCommand(this.envCmd + command, opt);
+      await ssh.execCommand(this.envCmd + command, opt);
 
       // behavior similar to && operator in bash, if desired (break if have an error)
       if (out.stderr && !continueOnError) break;
@@ -175,13 +194,13 @@ class BaseConnector {
     await this.zip(from, fromZipFilePath);
 
     try {
-      if (this.maintainer && !muteEvent)
-        this.maintainer.emitEvent(
-          "SSH_SCP_DOWNLOAD",
-          `get file from ${from} to ${to}`
-        );
+      this.emitEvent(
+        "SSH_SCP_DOWNLOAD",
+        `get file from ${from} to ${to}`,
+        muteEvent
+      );
 
-      const ssh = await this.ssh();
+      const ssh = await this.getSSH();
 
       // try to get the from file via ssh/scp and remove the compressed folder afterwards
       // wraps command with backoff -> takes lambda function and array of inputs to execute command
@@ -195,8 +214,7 @@ class BaseConnector {
     } catch (e) {
       const error = `unable to get file from ${from} to ${to}: ` + Helper.assertError(e).toString();
 
-      if (this.maintainer && !muteEvent)
-        this.maintainer.emitEvent("SSH_SCP_DOWNLOAD_ERROR", error);
+      this.emitEvent("SSH_SCP_DOWNLOAD_ERROR", error, muteEvent);
       throw new ConnectorError(error);
     }
   }
@@ -211,13 +229,13 @@ class BaseConnector {
    */
   async transferFile(from: string, to: string, muteEvent = false) {
     try {
-      if (this.maintainer && !muteEvent)
-        this.maintainer.emitEvent(
-          "SSH_SCP_UPLOAD",
-          `put file from ${from} to ${to}`
-        );
+      this.emitEvent(
+        "SSH_SCP_UPLOAD",
+        `put file from ${from} to ${to}`,
+        muteEvent
+      );
 
-      const ssh = await this.ssh();
+      const ssh = await this.getSSH();
 
       // attempt to send the from file to the to folder
       // wraps command with backoff -> takes lambda function and array of inputs to execute command
@@ -227,9 +245,7 @@ class BaseConnector {
     } catch (e) {
       const error =
         `unable to put file from ${from} to ${to}: ` + Helper.assertError(e).toString();
-
-      if (this.maintainer && !muteEvent)
-        this.maintainer.emitEvent("SSH_SCP_UPLOAD_ERROR", error);
+      this.emitEvent("SSH_SCP_UPLOAD_ERROR", error, muteEvent);
       throw new ConnectorError(error);
     }
   }
@@ -365,8 +381,7 @@ class BaseConnector {
     options: options = {},
     muteEvent = false
   ): Promise<string | null> {
-    if (this.maintainer && !muteEvent)
-      this.maintainer.emitEvent("SSH_RM", `removing ${path}`);
+    this.emitEvent("SSH_RM", `removing ${path}`, muteEvent);
 
     const out = await this.exec(`rm -rf ${path};`, options);
     return out.stdout;
@@ -386,8 +401,7 @@ class BaseConnector {
     options: options = {},
     muteEvent = false
   ): Promise<string | null> {
-    if (this.maintainer && !muteEvent)
-      this.maintainer.emitEvent("SSH_MKDIR", `removing ${path}`);
+    this.emitEvent("SSH_MKDIR", `removing ${path}`, muteEvent);
 
     const out = await this.exec(`mkdir -p ${path};`, options);
     return out.stdout;
@@ -409,8 +423,7 @@ class BaseConnector {
     options: options = {},
     muteEvent = false
   ): Promise<string | null> {
-    if (this.maintainer && !muteEvent)
-      this.maintainer.emitEvent("SSH_ZIP", `zipping ${from} to ${to}`);
+    this.emitEvent("SSH_ZIP", `zipping ${from} to ${to}`, muteEvent);
 
     const out = await this.exec(
       `zip -q -r ${to} . ${path.basename(from)}`,  // quiet, recursive, to to at the current directory from the from directory path
@@ -441,8 +454,7 @@ class BaseConnector {
     options: options = {},
     muteEvent = false
   ): Promise<string | null> {
-    if (this.maintainer && !muteEvent)
-      this.maintainer.emitEvent("SSH_UNZIP", `unzipping ${from} to ${to}`);
+    this.emitEvent("SSH_UNZIP", `unzipping ${from} to ${to}`, muteEvent);
 
     const out = await this.exec(`unzip -o -q ${from} -d ${to}`, options);  // quiet mode, overwrite, destination to
 
@@ -475,8 +487,7 @@ class BaseConnector {
     options: options = {},
     muteEvent = false
   ): Promise<string | null> {
-    if (this.maintainer && !muteEvent)
-      this.maintainer.emitEvent("SSH_TAR", `taring ${from} to ${to}`);
+    this.emitEvent("SSH_TAR", `taring ${from} to ${to}`, muteEvent);
 
     to = to.endsWith(".tar") ? to : to + ".tar";
 
@@ -510,8 +521,7 @@ class BaseConnector {
     options: options = {},
     muteEvent = false
   ): Promise<string | null> {
-    if (this.maintainer && !muteEvent)
-      this.maintainer.emitEvent("SSH_UNTAR", `untaring ${from} to ${to}`);
+    this.emitEvent("SSH_UNTAR", `untaring ${from} to ${to}`, muteEvent);
 
     // extract the from tar file to the to directory
     const out = await this.exec(`tar -C ${to} -xvf ${from}`, options);
@@ -534,8 +544,7 @@ class BaseConnector {
     options: options = {},  // eslint-disable-line
     muteEvent = false
   ) {
-    if (this.maintainer && !muteEvent)
-      this.maintainer.emitEvent("SSH_CREATE_FILE", `create file to ${remotePath}`);
+    this.emitEvent("SSH_CREATE_FILE", `create file to ${remotePath}`, muteEvent);
 
     if (typeof content !== "string") {
       content = JSON.stringify(content);
@@ -570,8 +579,4 @@ class BaseConnector {
       }
     });
   }
-
-  
 }
-
-export default BaseConnector;

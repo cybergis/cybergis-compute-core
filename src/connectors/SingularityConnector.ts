@@ -52,10 +52,10 @@ class SingularityConnector extends SlurmConnector {
       const container = containerConfigMap[manifest.container];
       if (!container) throw new Error(`unknown container ${manifest.container}`);
 
-      containerPath = container.hpc_path[this.hpcName];
+      containerPath = container.hpc_path[this.maintainer.hpc];
       if (!containerPath)
         throw new Error(
-          `container ${manifest.container} is not supported on HPC ${this.hpcName}`
+          `container ${manifest.container} is not supported on HPC ${this.maintainer.hpc}`
         );
       // remove buffer: https://dashboard.hpc.unimelb.edu.au/job_submission/
     }
@@ -196,7 +196,7 @@ class SingularityConnector extends SlurmConnector {
     }
 
     if (manifest && !this.is_cvmfs) {
-      const hpc = hpcConfigMap[this.hpcName];
+      const hpc = hpcConfigMap[this.maintainer.hpc];
       if (hpc?.mount) {
         for (const i in hpc.mount){
           this.volumeBinds[i] = hpc.mount[i];
@@ -204,9 +204,9 @@ class SingularityConnector extends SlurmConnector {
       }
 
       const container = containerConfigMap[manifest.container];
-      if (container?.mount?.[this.hpcName]) {
-        for (const i in container.mount[this.hpcName]) {
-          this.volumeBinds[i] = container.mount[this.hpcName][i];
+      if (container?.mount?.[this.maintainer.hpc]) {
+        for (const i in container.mount[this.maintainer.hpc]) {
+          this.volumeBinds[i] = container.mount[this.maintainer.hpc][i];
         }
       }
     }
@@ -275,7 +275,7 @@ class SingularityConnector extends SlurmConnector {
     let kernelBash = "#!/bin/bash\n";
     kernelBash+= `${kernelConfigMap[manifest.container].env.join("\n")}`;
     
-    await this.createFile(
+    await this.sshConnector.createFile(
       kernelBash,
       path.join(this.getRemoteExecutableFolderPath(), "kernel_init.sh")
     );
