@@ -295,7 +295,14 @@
     },
     "mount": {
     }
+  },
+  "demprocessing": {
+      "dockerfile": "",
+      "dockerhub": "",
+      "hpc_path": {
+          "anvil_community": "/anvil/projects/x-cis220065/x-cybergis/simages/DEMProcessing.sif"
+    },
+    "mount": {
+    }
   }
-
-
 }
