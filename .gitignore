@@ -140,3 +140,8 @@ dump.rdb
 
 !data/tmp/.gitkeep
 docker/docker
+
+mysql_data/
+
+# temp things
+temp.*

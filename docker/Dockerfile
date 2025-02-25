@@ -1,4 +1,4 @@
-FROM node:16.2.0-alpine3.13
+FROM node:18.18.0-alpine3.17
 RUN set -ex; \
     apk add --update --no-cache \
     bash nettle iptables redis dumb-init openrc \

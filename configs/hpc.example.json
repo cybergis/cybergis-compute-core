@@ -26,7 +26,9 @@
         "/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared"
       },
       "allowlist": [],
-      "denylist": []
+      "denylist": [],
+      "allocation": null,
+      "partition": null
     },
     "expanse_community": {
       "ip": "login.expanse.sdsc.edu",
@@ -56,16 +58,16 @@
       ],
       "init_sbatch_options": [
         "#SBATCH --constraint=lustre",
-        "#SBATCH --partition=shared",
-        "#SBATCH --nodes=1",
-        "#SBATCH --account=TG-EAR190007"
+        "#SBATCH --nodes=1"
       ],
       "xsede_job_log_credential": {
         "xsederesourcename": "expanse.sdsc.xsede.org",
         "apikey": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
       },
       "allowlist": [],
-      "denylist": []
+      "denylist": [],
+      "allocation": "TG-EAR190007",
+      "partition": "shared"
     },
     "bridges_community_gpu": {
       "ip": "bridges2.psc.edu",
@@ -114,9 +116,41 @@
         "/anvil/scratch/x-cybergis/compute": "/compute_scratch"
       },
       "init_sbatch_script": ["module load gcc", "module load openmpi"],
-      "init_sbatch_options": ["#SBATCH --partition=shared", "#SBATCH --nodes=1"],
+      "init_sbatch_options": ["#SBATCH --nodes=1"],
       "allowlist": [],
-      "denylist": []
+      "denylist": [],
+      "allocation": null,
+      "partition": "shared"
+    },
+    "anvil_community_highmem": {
+      "ip": "anvil.rcac.purdue.edu",
+      "port": 22,
+      "is_community_account": true,
+      "community_login": {
+        "user": "x-cybergis",
+        "use_local_key": false,
+        "external_key": {
+          "private_key_path": "/job_supervisor/keys/cigi-gisolve.key",
+          "passphrase": null
+        }
+      },
+      "root_path": "/anvil/scratch/x-cybergis/compute/",
+      "job_pool_capacity": 10,
+      "globus": {
+        "identity": "apadmana@illinois.edu",
+        "endpoint": "57b5b1f2-4bc5-41b9-a0e1-5337f5a9df4f",
+        "root_path": "/"
+      },
+      "mount": {
+        "/anvil/projects/x-cis220065/x-cybergis/compute": "/compute_shared",
+        "/anvil/scratch/x-cybergis/compute": "/compute_scratch"
+      },
+      "init_sbatch_script": ["module load gcc", "module load openmpi"],
+      "init_sbatch_options": [],
+      "allowlist": [],
+      "denylist": [],
+      "allocation": null,
+      "partition": "highmem"
     },
     "anvil_community_highmem": {
       "ip": "anvil.rcac.purdue.edu",
@@ -173,7 +207,9 @@
         "alexandermichels@cybergisx.cigi.illinois.edu",
         "rohan_debayan@cybergisx.cigi.illinois.edu"
       ],
-      "denylist": []
+      "denylist": [],
+      "allocation": null,
+      "partition": null
     }
   
   }

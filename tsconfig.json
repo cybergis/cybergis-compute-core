@@ -1,23 +1,29 @@
 {
     "compilerOptions": {
-        "target": "es5",
-        "module": "commonjs",
+        "target": "ES2022",
+        "module": "CommonJS",
         "declaration": false,
-        "noImplicitAny": false,
+        "strict": true,
+        "noImplicitAny": true,
         "noLib": false,
         "outDir": "production",
         "skipLibCheck": true,
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
-        "removeComments": true,
-        "resolveJsonModule" : true
-    },
+        "resolveJsonModule" : true,
+        "strictNullChecks": true,
+        "esModuleInterop": true,
+         "moduleResolution": "node",
+         "sourceMap": true,
+      },
     "include": [
         "**/*",
-        "src/maintainers/*"
+        ".eslintrc.js"
     ],
     "exclude": [
         "node_modules",
-        "**/*.spec.ts"
+        "**/*.spec.ts",
+        "temp.*",
+        "production/*"
     ]
 }

@@ -11,5 +11,37 @@ jobs:
       with:
         node-version: 16
     - run: |
-        npm install
+        npm ci
+        
+        for file in configs/*.example.json; do
+          filename=$(basename "$file" .example.json)
+          new_filename="${filename%.example}"
+          
+          cp "$file" "configs/$new_filename.json"
+        done
+
+        cp configs/config.example.json config.json
+
         npm run build
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 16
+    - name: Run eslint
+      run: |
+        npm ci
+
+        for file in configs/*.example.json; do
+          filename=$(basename "$file" .example.json)
+          new_filename="${filename%.example}"
+          
+          cp "$file" "configs/$new_filename.json"
+        done
+
+        cp configs/config.example.json config.json
+
+        npm run lint

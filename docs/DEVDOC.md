@@ -15,7 +15,7 @@
 
 ## Singularity Hello World Development
 
-#### SlrumConnector
+#### SlurmConnector
 
 This connector generates, runs, and monitors remote slurm job
 
@@ -62,22 +62,22 @@ SlurmConnector.prepare('python hello_world.py', config)
 3. Submit slurm job
 
 ```TypeScript
-await SlrumConnector.submit()
+await SlurmConnector.submit()
 ```
 
 4. Get job status
 
 ```TypeScript
-await SlrumConnector.getStatus()
+await SlurmConnector.getStatus()
 // returns: C/UNKNOWN -> job finished; R -> job running
 ```
 
 5. Cancel, pause, and resume
 
 ```TypeScript
-await SlrumConnector.cancel()
-await SlrumConnector.pause()
-await SlrumConnector.resume()
+await SlurmConnector.cancel()
+await SlurmConnector.pause()
+await SlurmConnector.resume()
 ```
 
 #### SingularityConnector

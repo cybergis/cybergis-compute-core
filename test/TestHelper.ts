@@ -1,7 +1,7 @@
-import DB from "../src/DB";
 import { Event } from "../src/models/Event";
-import { Log } from "../src/models/Log";
 import { Job } from "../src/models/Job";
+import { Log } from "../src/models/Log";
+import dataSource from "../src/utils/DB";
 
 export default class TestHelper {
   static async createJob(
@@ -11,9 +11,7 @@ export default class TestHelper {
     maintainer: string,
     hpc: string
   ): Promise<Job> {
-    const db = new DB();
-    const connection = await db.connect();
-    const jobRepository = connection.getRepository(Job);
+    const jobRepository = dataSource.getRepository(Job);
     const job = new Job();
     job.id = id;
     job.userId = userId;
@@ -27,9 +25,7 @@ export default class TestHelper {
     type: string,
     message: string
   ): Promise<Event> {
-    const db = new DB();
-    const connection = await db.connect();
-    const eventRepository = connection.getRepository(Event);
+    const eventRepository = dataSource.getRepository(Event);
     const event = new Event();
     event.job = job;
     event.jobId = job.id;
@@ -39,9 +35,7 @@ export default class TestHelper {
   }
 
   static async createLog(job: Job, message: string): Promise<Log> {
-    const db = new DB();
-    const connection = await db.connect();
-    const logRepository = connection.getRepository(Log);
+    const logRepository = dataSource.getRepository(Log);
     const log = new Log();
     log.job = job;
     log.jobId = job.id;

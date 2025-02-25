@@ -29,4 +29,7 @@ EOT
 
 # run server
 redis-server /job_supervisor/docker/redis.conf --daemonize yes
-node /job_supervisor/production/server.js
+
+echo "127.0.0.1 localhost" > /etc/hosts
+
+npm run start
