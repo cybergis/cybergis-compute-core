@@ -25,7 +25,7 @@ class SingularityConnector extends SlurmConnector {
    * @param {string} cmd - command to be executed
    * @param {slurm} config - slurm configuration
    */
-  execCommandWithinImage(image: string, cmd: string, config: slurm) {
+  public execCommandWithinImage(image: string, cmd: string, config: slurm) {
     if (this.is_cvmfs){
       cmd = `srun --mpi=pmi2 singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://cybergisx/compute-cvmfs:0.1.0 ${cmd}`;
     }
@@ -43,7 +43,7 @@ class SingularityConnector extends SlurmConnector {
    * @param {slurm} config - slurm configuration
    * @throw {Error} - thrown when container is not supported
    */
-  async execExecutableManifestWithinImage(
+  public async execExecutableManifestWithinImage(
     manifest: executableManifest,
     config: slurm
   ) {
@@ -142,7 +142,7 @@ class SingularityConnector extends SlurmConnector {
    * @param {string} image - singularity image
    * @param {slurm} config - slurm configuration
    */
-  runImage(image: string, config: slurm) {
+  public runImage(image: string, config: slurm) {
     const jobENV = this._getJobENV();
 
     let cmd: string;
@@ -164,7 +164,7 @@ class SingularityConnector extends SlurmConnector {
    *
    * @param {{[keys: string]: string}} volumeBinds - volumeBinds that need to be registered
    */
-  registerContainerVolumeBinds(volumeBinds: Record<string, string>) {
+  public registerContainerVolumeBinds(volumeBinds: Record<string, string>) {
     for (const from in volumeBinds) {
       const to = volumeBinds[from];
       this.volumeBinds[from] = to;
@@ -271,7 +271,7 @@ class SingularityConnector extends SlurmConnector {
    * Creates a bash script using kernelConfig
    * @param{executableManifest} manifest - manifest that needs toe be executed
    */
-  async createKernelInit(manifest: executableManifest){
+  public async createKernelInit(manifest: executableManifest){
     let kernelBash = "#!/bin/bash\n";
     kernelBash+= `${kernelConfigMap[manifest.container].env.join("\n")}`;
     

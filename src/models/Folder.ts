@@ -13,25 +13,25 @@ import {
 @Entity({ name: "folders" })
 export class Folder {
   @PrimaryColumn()
-    id!: string;
+  public id!: string;
 
   @Column({ nullable: true })
-    name?: string;
+  public name?: string;
 
   @Column()
-    hpc!: string;
+  public hpc!: string;
 
   @Column()
-    hpcPath!: string;
+  public hpcPath!: string;
 
   @Column()
-    globusPath!: string;
+  public globusPath!: string;
 
   @Column({ nullable: true })
-    userId?: string;
+  public userId?: string;
 
   @Column({ default: false })
-    isWritable!: boolean;
+  public isWritable!: boolean;
 
   @Column({
     type: "bigint",
@@ -44,7 +44,7 @@ export class Folder {
       ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-    createdAt!: Date;
+  public createdAt!: Date;
 
   @Column({
     type: "bigint",
@@ -58,7 +58,7 @@ export class Folder {
       ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-    updatedAt?: Date;
+  public updatedAt?: Date;
 
   @DeleteDateColumn({
     type: "bigint",
@@ -72,7 +72,7 @@ export class Folder {
       ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-    deletedAt?: Date;
+  public deletedAt?: Date;
 
   /**
    * Set the createdAt time to the current time.
@@ -80,7 +80,7 @@ export class Folder {
    * @return {Date} date - Date this job was created.
    */
   @BeforeInsert()
-  setCreatedAt() {
+  public setCreatedAt() {
     this.createdAt = new Date();
   }
 
@@ -90,7 +90,7 @@ export class Folder {
    * @return {Date} date - Date this job was last updated.
    */
   @BeforeUpdate()
-  setUpdatedAt() {
+  public setUpdatedAt() {
     return (this.updatedAt = new Date());
   }
 }

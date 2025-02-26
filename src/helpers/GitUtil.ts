@@ -31,7 +31,7 @@ const exec: Function = promisify(require("child_process").exec); // eslint-disab
  */
 export default class GitUtil {
 
-  static cache: Record<string, executableManifest> = {};
+  private static cache: Record<string, executableManifest> = {};
 
   /**
    * Gets the local path of a given git repository. 
@@ -40,7 +40,7 @@ export default class GitUtil {
    * @param {string} gitId
    * @return {string} resulting path 
    */
-  static getLocalPath(gitId: string): string {
+  private static getLocalPath(gitId: string): string {
     return path.join(config.local_file_system.root_path, gitId);
   }
 
@@ -519,7 +519,7 @@ class ManifestUtil extends GitUtil {
    * @param {Git} git git object to get the manifest 
    * @return {executableManifest} the cleaned manifest 
    */
-  static async getExecutableManifest(
+  public static async getExecutableManifest(
     git: Git
   ): Promise<executableManifest> {
     await this.refreshGitManifest(git);

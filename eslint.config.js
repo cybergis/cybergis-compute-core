@@ -102,7 +102,8 @@ module.exports = tseslint.config(
         {
           ignoreStatic: true
         }
-      ]
+      ],
+      "@typescript-eslint/explicit-member-accessibility": "error",
     },
   },
 

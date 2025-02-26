@@ -34,7 +34,7 @@ class Supervisor {
    * Constructs the supervisor. Populates the instance variables with trackers for all the HPCs in the config. Creates the 
    * master maintainer. 
    */
-  constructor() {
+  public constructor() {
     for (const hpcName in hpcConfigMap) {
       const hpcConfig = hpcConfigMap[hpcName];
 
@@ -53,7 +53,7 @@ class Supervisor {
   /**
    * Creates the main maintainer for all job execution. Runs in an infinite spaced loop. Ends on destruction. 
    */
-  createMaintainerMaster() {
+  private createMaintainerMaster() {
     // queue consumer
     // this function defined here will repeat every x seconds (specified in second parameter)
     this.maintainerMasterThread = setInterval(async () => {
@@ -97,17 +97,6 @@ class Supervisor {
 
           this.jobPoolCounters[hpcName]++;
 
-          // manage ssh pool -- diferent behavior for community/noncommunity accounts
-          if (job
-            .maintainerInstance
-            .connector?.connectorConfig
-            .is_community_account
-          ) {
-            connectionPool.initHpcConnection(job.hpc);
-          } else {
-            connectionPool.initJobConnection(job);
-          }
-
           // emit event
           await registerEvents(
             job,
@@ -133,7 +122,7 @@ class Supervisor {
    *
    * @param {Job} job
    */
-  async createMaintainerWorker(job: Job) {
+  private async createMaintainerWorker(job: Job) {
     Helper.nullGuard(job.maintainerInstance);  // should have been initialized on job creation
     const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
     // keep looping while the job is not finished
@@ -142,8 +131,7 @@ class Supervisor {
       // get ssh connector from pool
       let ssh: SSH | null;
       if (job
-        .maintainerInstance?.connector?.connectorConfig
-        .is_community_account
+        .maintainerInstance?.connector?.isCommunityAccount()
       ) {
         ssh = await connectionPool.getHpcConnection(job.hpc);
       } else {
@@ -194,17 +182,6 @@ class Supervisor {
 
       // ending conditions
       if (job.maintainerInstance.isEnd) {
-        // exit or deflag ssh pool
-        if (job
-          .maintainerInstance
-          .connector?.connectorConfig
-          .is_community_account
-        ) {
-          connectionPool.releaseHpcConnection(job.hpc);
-        } else {
-          connectionPool.releaseJobConnection(job);
-        }
-
         // emit event
         this.maintainerMasterEventEmitter.emit("job_end", job.hpc, job.id);
 
@@ -234,7 +211,7 @@ class Supervisor {
    *
    * @param {Job} job job to add
    */
-  async pushJobToQueue(job: Job) {
+  private async pushJobToQueue(job: Job) {
     await this.queues[job.hpc].push(job);
     await registerEvents(
       job,
@@ -246,7 +223,7 @@ class Supervisor {
   /**
    * Stops the master thread execution. 
    */
-  destroy() {
+  public destroy() {
     clearInterval(this.maintainerMasterThread ?? undefined);
   }
 
@@ -257,7 +234,7 @@ class Supervisor {
    * @param {string} jobId
    * @return {Job | null} the job that was cancelled
    */
-  cancelJob(jobId: string): Job | null {
+  public cancelJob(jobId: string): Job | null {
     if (config.is_testing) console.log(`cancelJob(${jobId}) looking for job`);
     let toReturn: Job | null = null;
     let hpcToAdd: string | null = null;

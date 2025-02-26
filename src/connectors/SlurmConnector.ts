@@ -35,7 +35,7 @@ class SlurmConnector {
 
   protected sshConnector: SSHConnector;
 
-  constructor(
+  public constructor(
     maintainer: BaseMaintainer,
     remoteExecutableFolderPath: string,
     remoteDataFolderPath: string,
@@ -74,7 +74,7 @@ class SlurmConnector {
    *
    * @param {Array<string>} modules - Array of strings
    */
-  registerModules(modules: string[]) {
+  public registerModules(modules: string[]) {
     this.modules = this.modules.concat(modules);
   }
 
@@ -84,7 +84,7 @@ class SlurmConnector {
    * @param {string} cmd - command that needs to be executed
    * @param {slurm} config - slurm configuration
    */
-  prepare(cmd: string, config: slurm) {
+  protected prepare(cmd: string, config: slurm) {
     // prepare sbatch script
     const hpc = hpcConfigMap[this.maintainer.job.hpc];
     config = Object.assign(
@@ -151,7 +151,7 @@ ${cmd}`;
    * @async
    * Submit the slurm job.
    */
-  async submit() {
+  protected async submit() {
     // create job.sbatch on HPC
     await this.sshConnector.mkdir(path.join(this.remoteResultFolderPath, "slurm_log"));
     await this.sshConnector.createFile(
@@ -255,7 +255,7 @@ ${cmd}`;
    * 
    * @returns {Promise<string>} job status (RETRY, UNKNOWN, or a slurm job status)
    */
-  async getStatus(): Promise<string> {
+  public async getStatus(): Promise<string> {
     try {
       // check the status of the current slurm job
       const squeueResult = await this.sshConnector.exec(
@@ -299,7 +299,7 @@ ${cmd}`;
    * @async
    * cancels the job
    */
-  async cancel() {
+  public async cancel() {
     await this.sshConnector.exec(`scancel ${this.slurm_id}`, {}, true);
   }
 
@@ -307,7 +307,7 @@ ${cmd}`;
    * @async
    * pauses the job
    */
-  async pause() {
+  public async pause() {
     await this.sshConnector.exec(`scontrol suspend ${this.slurm_id}`, {}, true);
   }
 
@@ -315,7 +315,7 @@ ${cmd}`;
    * @async
    * resumes the job
    */
-  async resume() {
+  public async resume() {
     await this.sshConnector.exec(`scontrol resume ${this.slurm_id}`, {}, true);
   }
 
@@ -323,7 +323,7 @@ ${cmd}`;
    * @async
    * gets SlurmStdOut and emit it as a log in the maintainer
    */
-  async getSlurmStdout() {
+  public async getSlurmStdout() {
     const out = await this.sshConnector.cat(
       path.join(this.remoteResultFolderPath, "slurm_log", "job.stdout"),
       {}
@@ -336,7 +336,7 @@ ${cmd}`;
    * @async
    * gets SlurmStderr and emit it as a log in the maintainer
    */
-  async getSlurmStderr() {
+  public async getSlurmStderr() {
     const out = await this.sshConnector.cat(
       path.join(this.remoteResultFolderPath ?? "", "slurm_log", "job.stderr"),
       {}
@@ -368,7 +368,7 @@ ${cmd}`;
    * @param {string} [providedPath=null] specified path
    * @return {string} command execution output
    */
-  getRemoteExecutableFolderPath(providedPath: string | null = null): string {
+  public getRemoteExecutableFolderPath(providedPath: string | null = null): string {
     if (providedPath)
       return path.join(this.remoteExecutableFolderPath, providedPath);
     else
@@ -381,7 +381,7 @@ ${cmd}`;
    * @param {string} [providedPath=null] specified path
    * @return {string | null} command execution output
    */
-  getRemoteDataFolderPath(providedPath: string | null = null): string | null {
+  public getRemoteDataFolderPath(providedPath: string | null = null): string | null {
     if (providedPath)
       return path.join(this.remoteDataFolderPath, providedPath);
     else
@@ -394,7 +394,7 @@ ${cmd}`;
    * @param {string} [providedPath=null] specified path
    * @return {string} command execution output
    */
-  getRemoteResultFolderPath(providedPath: string | null = null): string {
+  public getRemoteResultFolderPath(providedPath: string | null = null): string {
     if (providedPath)
       return path.join(this.remoteResultFolderPath, providedPath);
     else
@@ -407,7 +407,7 @@ ${cmd}`;
    * @param {string} [providedPath=null] specified path
    * @return {string}  executable path
    */
-  getContainerExecutableFolderPath(providedPath: string | null = null): string {
+  public getContainerExecutableFolderPath(providedPath: string | null = null): string {
     if (providedPath) return path.join("/job/executable", providedPath);
     else return "/job/executable";
   }
@@ -418,7 +418,7 @@ ${cmd}`;
    * @param {string} [providedPath=null] specified path
    * @return {string} executable path
    */
-  getContainerCVMFSFolderPath(providedPath: string | null = null): string {
+  public getContainerCVMFSFolderPath(providedPath: string | null = null): string {
     if (providedPath) return path.join("/tmp/cvmfs", providedPath);
     else return "/tmp/cvmfs";
   }
@@ -429,7 +429,7 @@ ${cmd}`;
    * @param {string} [providedPath=null] specified path
    * @return {string} executable path
    */
-  getContainerDataFolderPath(providedPath: string | null = null): string {
+  public getContainerDataFolderPath(providedPath: string | null = null): string {
     if (providedPath) return path.join("/job/data", providedPath);
     else return "/job/data";
   }
@@ -440,7 +440,7 @@ ${cmd}`;
    * @param {string} [providedPath=null] specified path
    * @return {string} executable path
    */
-  getContainerResultFolderPath(providedPath: string | null = null): string {
+  public getContainerResultFolderPath(providedPath: string | null = null): string {
     if (providedPath) return path.join("/job/result", providedPath);
     else return "/job/result";
   }
@@ -451,7 +451,7 @@ ${cmd}`;
    *
    * @return {Promise<string[]>} file content
    */
-  async getRemoteResultFolderContent(): Promise<string[]> {
+  public async getRemoteResultFolderContent(): Promise<string[]> {
     const findResult = await this.sshConnector.exec(
       "find . -type d -print",  // find all directories in the cwd and print it out
       { cwd: this.getRemoteResultFolderPath() },  // set cwd to the result folder path
@@ -512,7 +512,7 @@ ${cmd}`;
    *
    * @return {Promise<Record<string, number | null>>} - usage dictionary
    */
-  async getUsage(): Promise<Record<string, number | null>> {
+  public async getUsage(): Promise<Record<string, number | null>> {
     const seffOutput: Record<string, number | null> = {
       nodes: null,
       cpus: null,
@@ -621,6 +621,10 @@ ${cmd}`;
     } catch { }
 
     return seffOutput;
+  }
+
+  public isCommunityAccount(): boolean {
+    return this.sshConnector.isCommunityAccount;
   }
 }
 

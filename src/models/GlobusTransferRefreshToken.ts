@@ -12,10 +12,10 @@ import {
 @Entity({ name: "globus_transfer_refresh_token" })
 export class GlobusTransferRefreshToken {
   @PrimaryColumn()
-    identity!: string;
+  public identity!: string;
 
   @Column()
-    transferRefreshToken!: string;
+  public transferRefreshToken!: string;
 
   @Column({
     type: "bigint",
@@ -28,7 +28,7 @@ export class GlobusTransferRefreshToken {
       ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-    createdAt!: Date;
+  public createdAt!: Date;
 
   @Column({
     type: "bigint",
@@ -42,7 +42,7 @@ export class GlobusTransferRefreshToken {
       ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-    updatedAt?: Date;
+  public updatedAt?: Date;
 
   @DeleteDateColumn({
     type: "bigint",
@@ -56,7 +56,7 @@ export class GlobusTransferRefreshToken {
       ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-    deletedAt?: Date;
+  public deletedAt?: Date;
 
   /**
    * Set the createdAt time to the current time.
@@ -64,7 +64,7 @@ export class GlobusTransferRefreshToken {
    * @return {Date} date - Date this job was created.
    */
   @BeforeInsert()
-  setCreatedAt() {
+  public setCreatedAt() {
     this.createdAt = new Date();
   }
 
@@ -74,7 +74,7 @@ export class GlobusTransferRefreshToken {
    * @return {Date} date - Date this job was last updated.
    */
   @BeforeUpdate()
-  setUpdatedAt() {
+  public setUpdatedAt() {
     return (this.updatedAt = new Date());
   }
 }

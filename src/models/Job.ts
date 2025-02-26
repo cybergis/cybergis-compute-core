@@ -29,28 +29,28 @@ import { Log } from "./Log";
 @Entity({ name: "jobs" })
 export class Job {
   @PrimaryColumn()
-    id!: string;
+  public id!: string;
 
   @Column({ nullable: true })
-    userId?: string;
+  public userId?: string;
 
   @Column({ nullable: true })
-    name?: string;
+  public name?: string;
 
   @Column()
-    maintainer!: string;
+  public maintainer!: string;
 
   @Column()
-    hpc!: string;
+  public hpc!: string;
 
   @ManyToOne((_type) => Folder, { onDelete: "CASCADE", nullable: true })
-    remoteExecutableFolder?: Folder;
+  public remoteExecutableFolder?: Folder;
 
   @ManyToOne((_type) => Folder, { onDelete: "CASCADE", nullable: true })
-    remoteDataFolder?: Folder;
+  public remoteDataFolder?: Folder;
 
   @ManyToOne((_type) => Folder, { onDelete: "CASCADE", nullable: true })
-    remoteResultFolder?: Folder;
+  public remoteResultFolder?: Folder;
 
   @Column({
     type: "text",
@@ -67,7 +67,7 @@ export class Job {
         typeof i === "string" ? JSON.parse(i) as NeedUploadFolder : i,
     },
   })
-    localExecutableFolder?: NeedUploadFolder;
+  public localExecutableFolder?: NeedUploadFolder;
 
   @Column({
     type: "text",
@@ -82,7 +82,7 @@ export class Job {
         typeof i === "string" ? JSON.parse(i) as NeedUploadFolder : i,
     },
   })
-    localDataFolder?: NeedUploadFolder;
+  public localDataFolder?: NeedUploadFolder;
 
   @Column({
     type: "text",
@@ -97,7 +97,7 @@ export class Job {
         typeof i === "string" ? JSON.parse(i) as Record<string, string> : {},
     },
   })
-    param?: Record<string, string>;
+  public param?: Record<string, string>;
 
   @Column({
     type: "text",
@@ -112,7 +112,7 @@ export class Job {
         typeof i === "string" ? JSON.parse(i) as Record<string, string> : {},
     },
   })
-    env?: Record<string, string>;
+  public env?: Record<string, string>;
 
   @Column({
     type: "text",
@@ -124,19 +124,19 @@ export class Job {
         typeof i === "string" ? JSON.parse(i) as slurm : {},
     },
   })
-    slurm?: slurm;
+  public slurm?: slurm;
 
   @Column({ nullable: true })
-    slurmId?: string;
+  public slurmId?: string;
 
   @Column({ nullable: true })
-    credentialId?: string;
+  public credentialId?: string;
 
   @OneToMany((_type) => Event, (event: Event) => event.job)
-    events!: Event[];
+  public events!: Event[];
 
   @OneToMany((_type) => Log, (log: Log) => log.job)
-    logs!: Log[];
+  public logs!: Log[];
 
   @Column({
     type: "bigint",
@@ -149,7 +149,7 @@ export class Job {
       ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-    createdAt!: Date;
+  public createdAt!: Date;
 
   @Column({
     type: "bigint",
@@ -163,7 +163,7 @@ export class Job {
       ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-    updatedAt?: Date;
+  public updatedAt?: Date;
 
   @DeleteDateColumn({
     type: "bigint",
@@ -177,7 +177,7 @@ export class Job {
       ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-    deletedAt?: Date;
+  public deletedAt?: Date;
 
   @Column({
     type: "bigint",
@@ -191,7 +191,7 @@ export class Job {
       ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-    initializedAt?: Date;
+  public initializedAt?: Date;
 
   @Column({
     type: "bigint",
@@ -205,7 +205,7 @@ export class Job {
       ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-    finishedAt?: Date;
+  public finishedAt?: Date;
 
   @Column({
     type: "bigint",
@@ -219,7 +219,7 @@ export class Job {
       ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-    queuedAt!: Date;
+  public queuedAt!: Date;
 
   /**
    * Set the createdAt time to the current time.
@@ -227,7 +227,7 @@ export class Job {
    * @return {Date} date - Date this job was created.
    */
   @BeforeInsert()
-  setCreatedAt() {
+  public setCreatedAt() {
     this.createdAt = new Date();
   }
 
@@ -237,30 +237,30 @@ export class Job {
    * @return {Date} date - Date this job was last updated.
    */
   @BeforeUpdate()
-  setUpdatedAt() {
+  public setUpdatedAt() {
     return (this.updatedAt = new Date());
   }
 
   @Column({ default: false })
-    isFailed!: boolean;
+  public isFailed!: boolean;
 
   @Column({ nullable: true })
-    nodes?: number;
+  public nodes?: number;
 
   @Column({ nullable: true })
-    cpus?: number;
+  public cpus?: number;
 
   @Column({ nullable: true })
-    cpuTime?: number;
+  public cpuTime?: number;
 
   @Column({ nullable: true })
-    memory?: number;
+  public memory?: number;
 
   @Column({ nullable: true })
-    memoryUsage?: number;
+  public memoryUsage?: number;
 
   @Column({ nullable: true })
-    walltime?: number;
+  public walltime?: number;
 
   /**
    * Sorts the logs in the order that they were created
@@ -268,7 +268,7 @@ export class Job {
    * @return {None} None - Updates this.logs
    */
   @AfterLoad()
-  sortLogs() {
+  public sortLogs() {
     if (this.logs) {
       if (this.logs.length) {
         this.logs.sort((a, b) =>
@@ -286,7 +286,7 @@ export class Job {
    * @return {None} None - Updates this.events
    */
   @AfterLoad()
-  sortEvents() {
+  public sortEvents() {
     if (this.events) {
       if (this.events.length) {
         this.events.sort((a, b) =>
@@ -300,7 +300,7 @@ export class Job {
 
   // runtime properties
 
-  credential?: credential;
+  public credential?: credential;
 
-  maintainerInstance?: BaseMaintainer;
+  public maintainerInstance?: BaseMaintainer;
 }

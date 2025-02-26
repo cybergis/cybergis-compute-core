@@ -5,7 +5,6 @@ import {
   hpcConfigMap,
   maintainerConfigMap,
 } from "../../configs/config";
-import SlurmConnector from "../connectors/SlurmConnector";
 import {
   maintainerConfig,
   event,
@@ -63,7 +62,7 @@ abstract class BaseMaintainer {
   // public appParam: Record<string, string> = {};
 
   /** HPC connectors **/
-  public abstract connector: SlurmConnector;
+  // public abstract connector: SlurmConnector;
 
   /** data **/
   protected logs: string[] = [];
@@ -71,7 +70,7 @@ abstract class BaseMaintainer {
 
 
   /** constructor **/
-  constructor(job: Job) {
+  public constructor(job: Job) {
     // try to validate the job's environment
     if (job.env !== undefined) {
       for (const i in this.envParamValidators) {
@@ -99,7 +98,7 @@ abstract class BaseMaintainer {
   /**
    * This function is called when the maintainer is created (during the constructor). Can leave empty. 
    */
-  abstract onDefine(): void;
+  protected abstract onDefine(): void;
 
   /**
    * This function is called when the maintainer is initialized--i.e., it begins work on maintaining the job. Called in the supervisor-facing
@@ -107,28 +106,28 @@ abstract class BaseMaintainer {
    * 
    * @async
    */
-  abstract onInit(): Promise<void>;
+  protected abstract onInit(): Promise<void>;
 
   /**
    * This function is called when the supervisor-facing maintain() function is called to maintain (monitor the status of) the job. 
    * 
    * @async
    */
-  abstract onMaintain(): Promise<void>;
+  protected abstract onMaintain(): Promise<void>;
 
   /**
    * This function is called when the supervisor tries to pause the current job/maintainer. Not used.
    * 
    * @async
    */
-  abstract onPause(): Promise<void>;
+  protected abstract onPause(): Promise<void>;
 
   /**
    * This function is called when the supervisor tries to resume the current job/maintainer after pause. Not used.
    * 
    * @async
    */
-  abstract onResume(): Promise<void>;
+  protected abstract onResume(): Promise<void>;
 
   /**
    * This function is called when the supervisor tries to cancel the current job/maintainer.
@@ -136,7 +135,7 @@ abstract class BaseMaintainer {
    * 
    * @async
    */
-  abstract onCancel(): Promise<void>;
+  protected abstract onCancel(): Promise<void>;
 
   /** emitters **/
   /**
@@ -145,7 +144,7 @@ abstract class BaseMaintainer {
    * @param {string} type - Type of event to be recorded
    * @param {string} message - Message associated with the event
    */
-  emitEvent(type: string, message: string) {
+  public emitEvent(type: string, message: string) {
     if (type === "JOB_INIT") this.isInit = true;
     if (type === "JOB_ENDED" || type === "JOB_FAILED") this.isEnd = true;
 
@@ -160,7 +159,7 @@ abstract class BaseMaintainer {
    *
    * @param {string} message - Message associated with the event
    */
-  emitLog(message: string) {
+  public emitLog(message: string) {
     this.logs.push(message);
   }
 
@@ -171,7 +170,7 @@ abstract class BaseMaintainer {
    *
    * @async
    */
-  async init() {
+  protected async init() {
     // check if already trying to init -- if so, don't start another async instance
     if (this._lock) return;
     this._lock = true;
@@ -194,7 +193,7 @@ abstract class BaseMaintainer {
    *
    * @async
    */
-  async maintain() {
+  public async maintain() {
     // check if already trying to do this -- if so, don't start another async instance
     if (this._lock) return;
     this._lock = true;
@@ -228,7 +227,7 @@ abstract class BaseMaintainer {
    * @async
    * @return {string[]} - List of jobs that were just deleted.
    */
-  dumpLogs(): string[] {
+  public dumpLogs(): string[] {
     const logs = this.logs;
     this.logs = [];
     return logs;
@@ -240,7 +239,7 @@ abstract class BaseMaintainer {
    * @async
    * @return {event[]} - List of events that were just deleted.
    */
-  dumpEvents(): event[] {
+  public dumpEvents(): event[] {
     const events = this.events;
     this.events = [];
     return events;

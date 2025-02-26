@@ -1,4 +1,3 @@
-import SingularityConnector from "../connectors/SingularityConnector";
 import { executableManifest, GitFolder } from "../definitions";
 import GitUtil from "../helpers/GitUtil";
 import * as Helper from "../helpers/Helper";
@@ -15,31 +14,17 @@ import BaseMaintainer from "./BaseMaintainer";
  */
 class CommunityContributionMaintainer extends BaseMaintainer {
 
-  public connector: SingularityConnector;  // connector to communicate with HPC
-
   public resultFolderContentManager: ResultFolderContentManager =
     new ResultFolderContentManager();
 
   public executableManifest!: executableManifest;  // details about the job
 
-  constructor(job: Job,
-    remoteExecutableFolderPath: string,
-    remoteDataFolderPath: string,
-    remoteResultFolderPath: string
+  public constructor(job: Job
   ) {
     super(job);
-
-    this.connector = new SingularityConnector(
-      this, 
-      remoteExecutableFolderPath, 
-      remoteDataFolderPath, 
-      remoteResultFolderPath, 
-      job, 
-      job.env
-    );
   }
 
-  onDefine = () => undefined;
+  private onDefine = () => undefined;
   
   /**
    * On maintainer initialization, set executableManifest, and give it to the connector. 
@@ -47,7 +32,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
    *
    * @async
    */
-  async onInit() {
+  private async onInit() {
     try {
       let localExecutableFolder: GitFolder;
       if (
@@ -173,7 +158,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
    *
    * @async
    */
-  async onMaintain() {
+  private async onMaintain() {
     try {
       // query HPC status via connector
       const status = await this.connector.getStatus();
@@ -241,21 +226,21 @@ class CommunityContributionMaintainer extends BaseMaintainer {
   /**
    * Pause the connector
    */
-  async onPause() {
+  private async onPause() {
     await this.connector.pause();
   }
 
   /**
    * Resume the connector
    */
-  async onResume() {
+  private async onResume() {
     await this.connector.resume();
   }
 
   /**
    * Cancel the connector
    */
-  async onCancel() {
+  private async onCancel() {
     await this.connector.cancel();
   }
 }

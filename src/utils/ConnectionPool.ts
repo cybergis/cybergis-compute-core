@@ -5,15 +5,22 @@ import { SSH, SSHConfig } from "../definitions";
 import * as Helper from "../helpers/Helper";
 import { Job } from "../models";
 
-export class ConnectionPool {
-  private jobConnectionPool: Record<string, NodeSSH> = {};
-  private jobConnectionCounts: Record<string, number> = {};
+// TODO: have more sophisticated way to do this
+interface Connection {
+  ssh: NodeSSH;
+  timeout?: NodeJS.Timeout;
+  count: number;
+}
 
-  private hpcConnectionPool: Record<string, NodeSSH> = {};
-  private hpcConnectionCounts: Record<string, number> = {};
+const TIMEOUT = 3 * 60 * 1000;
+
+export class ConnectionPool {
+  private jobConnectionPool: Record<string, Connection> = {};
+
+  private hpcConnectionPool: Record<string, Connection> = {};
   private hpcConnectionSettings: Record<string, SSHConfig> = {};
 
-  constructor() {
+  public constructor() {
     for (const hpcName in hpcConfigMap) {
       const hpcConfig = hpcConfigMap[hpcName];
       if (!hpcConfig.is_community_account) continue;
@@ -38,82 +45,75 @@ export class ConnectionPool {
         }
       }
 
-      this.hpcConnectionPool[hpcName] = new NodeSSH();
+      this.hpcConnectionPool[hpcName] = { ssh: new NodeSSH(), count: 0 };
       this.hpcConnectionSettings[hpcName] = sshConfig;
-      this.hpcConnectionCounts[hpcName] = 0;
-    }
-  }
-
-  public initHpcConnection(hpcName: string) {
-    this.hpcConnectionCounts[hpcName]++;
-  }
-
-  public initJobConnection(job: Job) {
-    if (job.id in this.jobConnectionCounts) {
-      this.jobConnectionCounts[job.id]++;
-    } else {
-      this.jobConnectionCounts[job.id] = 1;
-      this.jobConnectionPool[job.id] = new NodeSSH();
-    }
-  }
-
-  public releaseHpcConnection(hpcName: string) {
-    if (this.hpcConnectionCounts[hpcName] === 0) {
-      return;
-    }
-
-
-    this.hpcConnectionCounts[hpcName]--;
-
-    if (this.hpcConnectionCounts[hpcName] === 0 && this.hpcConnectionPool[hpcName].isConnected()) {
-      this.hpcConnectionPool[hpcName].dispose();
-    }
-  }
-
-  public releaseJobConnection(job: Job) {
-    if (!(job.id in this.jobConnectionCounts)) {
-      return;
-    }
-
-    this.jobConnectionCounts[job.id]--;
-    if (this.jobConnectionCounts[job.id] === 0) {
-      delete this.jobConnectionCounts[job.id];
-      this.jobConnectionPool[job.id].dispose();
-      delete this.jobConnectionPool[job.id];
     }
   }
 
   public async getHpcConnection(hpcName: string): Promise<SSH> {
-    this.hpcConnectionCounts[hpcName]++;
+    if (!(hpcName in this.hpcConnectionPool)) {
+      return new NodeSSH();
+    }
+
     const connection = this.hpcConnectionPool[hpcName];
 
-    if (connection.isConnected()) {
-      return connection;
+    if (connection.ssh.isConnected()) {
+      return connection.ssh;
     }
+
+    clearTimeout(connection.timeout);
 
     try {
       // wraps command with backoff -> takes lambda function and array of inputs to execute command
       await Helper.runCommandWithBackoff((async (ssh: SSH, config: SSHConfig) => {
         await ssh.connect(config);
         await ssh.execCommand("echo");
-      }), [connection, this.hpcConnectionSettings[hpcName]], null);
+      }), [connection.ssh, this.hpcConnectionSettings[hpcName]], null);
+
+      connection.timeout = this.startHpcTimeoutLoop(hpcName);
     } catch (e) {
       return new NodeSSH();
     }
 
-    return connection;
+    return connection.ssh;
+  }
+
+  public releaseJobConnection(job: Job) {
+    if (!(job.id in this.hpcConnectionPool)) {
+      return;
+    }
+
+    const connection = this.jobConnectionPool[job.id];
+
+    if (connection.count > 0) {
+      connection.count -= 1;
+    }
+  }
+
+  public releaseHpcConnection(hpcName: string) {
+    if (!(hpcName in this.hpcConnectionPool)) {
+      return;
+    }
+
+    const connection = this.hpcConnectionPool[hpcName];
+
+    if (connection.count > 0) {
+      connection.count -= 1;
+    }
   }
 
   public async getJobConnection(job: Job): Promise<NodeSSH> {
     if (!(job.id in this.jobConnectionPool)) {
-      throw Error("Job has not been initialized yet");
+      this.jobConnectionPool[job.id] = {
+        ssh: new NodeSSH(),
+        count: 0
+      };
     }
 
-    this.hpcConnectionCounts[job.id]++;
-    const ssh = this.jobConnectionPool[job.id];
+    const connection = this.jobConnectionPool[job.id];
 
-    if (ssh.isConnected()) {
-      return ssh;
+    if (connection.ssh.isConnected()) {
+      return connection.ssh;
     }
 
     const hpcConfig = hpcConfigMap[job.hpc];
@@ -130,13 +130,54 @@ export class ConnectionPool {
       await Helper.runCommandWithBackoff((async (ssh: SSH, config: SSHConfig) => {
         await ssh.connect(config);
         await ssh.execCommand("echo");
-      }), [ssh, config], null);
+
+        connection.timeout = this.startJobTimeoutLoop(job.id);
+      }), [connection.ssh, config], null);
     } catch (e) {
       return new NodeSSH();
     }
 
 
-    return ssh;
+    return connection.ssh;
+  }
+
+  private startHpcTimeoutLoop(key: string): NodeJS.Timeout {
+    return setTimeout(() => {
+      if (!(key in this.hpcConnectionPool)) {
+        return; 
+      }
+
+      const connection = this.hpcConnectionPool[key];
+
+      if (connection.count === 0) {
+        if (connection.ssh.isConnected()) {
+          connection.ssh.dispose();
+        }
+        return;
+      } else {
+        connection.timeout = this.startHpcTimeoutLoop(key);
+      }
+    }, TIMEOUT);
+  }
+
+  private startJobTimeoutLoop(id: string): NodeJS.Timeout {
+    return setTimeout(() => {
+      if (!(id in this.jobConnectionPool)) {
+        return; 
+      }
+
+      const connection = this.jobConnectionPool[id];
+
+      if (connection.count === 0) {
+        if (connection.ssh.isConnected()) {
+          connection.ssh.dispose();
+        }
+
+        delete this.jobConnectionPool[id];
+      } else {
+        connection.timeout = this.startJobTimeoutLoop(id);
+      }
+    }, TIMEOUT);
   }
 }
 

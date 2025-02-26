@@ -5,7 +5,7 @@ import * as path from "path";
 
 import { config, hpcConfigMap } from "../../configs/config";
 import { ConnectorError, SSH } from "../definitions";
-import { options, hpcConfig, callableFunction } from "../definitions";
+import { options, hpcConfig } from "../definitions";
 import { putFileFromZip } from "../helpers/FolderUtil";
 import * as Helper from "../helpers/Helper";
 import { Job } from "../models";
@@ -19,6 +19,8 @@ interface out {
 type emitLogFnType = (s: string) => void;
 type emitEventFnType = (type: string, message: string) => void;
 
+
+
 /**
  * Base class for connecting to an HPC machine via SSH.
  */
@@ -31,7 +33,9 @@ export class SSHConnector {
   protected emitEventFn?: emitEventFnType;
   protected job?: Job;
 
-  constructor(
+  public isCommunityAccount: boolean;
+
+  public constructor(
     hpcName: string,
     job?: Job,
     emitLogFn?: emitLogFnType,
@@ -44,6 +48,8 @@ export class SSHConnector {
     if (!this.hpcConfig.is_community_account) {
       assert(job !== undefined);
     }
+
+    this.isCommunityAccount = this.hpcConfig.is_community_account;
 
     this.job = job;
 
@@ -62,7 +68,8 @@ export class SSHConnector {
       if (!x.isConnected()) {
         throw new ConnectorError("unable to establish ssh connection");
       }
-    }).catch((_e) => undefined);
+    }).catch((e) => {this.releaseSSH(); throw e;})
+      .finally(() => this.releaseSSH());
   }
 
   private async getSSH(): Promise<SSH> {
@@ -70,6 +77,14 @@ export class SSHConnector {
       return connectionPool.getHpcConnection(this.hpcName);
     } else {
       return connectionPool.getJobConnection(this.job!);
+    }
+  }
+
+  public releaseSSH() {
+    if (this.hpcConfig.is_community_account) {
+      connectionPool.releaseHpcConnection(this.hpcName);
+    } else {
+      connectionPool.releaseJobConnection(this.job!);
     }
   }
 
@@ -97,7 +112,7 @@ export class SSHConnector {
    * @return {Record<string, string>} out - maintainer output
    *
    */
-  async exec(
+  public async exec(
     commands: string | string[],
     options: options = {},
     muteEvent = true,
@@ -184,7 +199,7 @@ export class SSHConnector {
    * @param {boolean} muteEvent - set to True if you want to mute maintainer emitted Event
    * @throws {ConnectorError} - Thrown if maintainer emits 'SSH_SCP_DOWNLOAD_ERROR' or if input file not given
    */
-  async download(from: string, to: string, muteEvent = false) {
+  public async download(from: string, to: string, muteEvent = false) {
     if (to === undefined)
       throw new ConnectorError("please init input file first");
 
@@ -206,7 +221,7 @@ export class SSHConnector {
       // wraps command with backoff -> takes lambda function and array of inputs to execute command
       await Helper.runCommandWithBackoff.call(this, (async (to1: string, zipPath: string) => {
         await ssh.getFile(to1, zipPath);
-      }) as callableFunction, [to, fromZipFilePath], "Trying to download file again");
+      }) , [to, fromZipFilePath], "Trying to download file again");
       await this.rm(fromZipFilePath);
 
       // decompress the transferred file into the toZipFilePath directory
@@ -227,7 +242,7 @@ export class SSHConnector {
    * @param {boolean} muteEvent - set to True if you want to mute maintauner emitted Event
    * @throws {ConnectorError} - Thrown if maintainer emits 'SSH_SCP_DOWNLOAD_ERROR'
    */
-  async transferFile(from: string, to: string, muteEvent = false) {
+  public async transferFile(from: string, to: string, muteEvent = false) {
     try {
       this.emitEvent(
         "SSH_SCP_UPLOAD",
@@ -241,13 +256,18 @@ export class SSHConnector {
       // wraps command with backoff -> takes lambda function and array of inputs to execute command
       await Helper.runCommandWithBackoff.call(this, (async (from1: string, to1: string) => {
         await ssh.putFile(from1, to1);
-      }) as callableFunction, [from, to], "Trying again to transfer file");
+      }), [from, to], "Trying again to transfer file");
+
+      this.releaseSSH();
     } catch (e) {
+      this.releaseSSH();
       const error =
         `unable to put file from ${from} to ${to}: ` + Helper.assertError(e).toString();
       this.emitEvent("SSH_SCP_UPLOAD_ERROR", error, muteEvent);
       throw new ConnectorError(error);
     }
+    
+    
   }
   /**
    * @async
@@ -284,7 +304,7 @@ export class SSHConnector {
    * @param {options} [options={}] dictionary with string options
    * @return {Promise<string>} returns command execution output
    */
-  async homeDirectory(options: options = {}): Promise<string | null> {
+  public async homeDirectory(options: options = {}): Promise<string | null> {
     const out = await this.exec("cd ~;pwd;", options);
     return out.stdout;
   }
@@ -296,7 +316,7 @@ export class SSHConnector {
    * @param {options} [options={}] dictionary with string options
    * @return {Promise<string | null>} returns command execution output
    */
-  async whoami(options: options = {}): Promise<string | null> {
+  public async whoami(options: options = {}): Promise<string | null> {
     const out = await this.exec("whoami;", options);
     return out.stdout;
   }
@@ -309,7 +329,7 @@ export class SSHConnector {
    * @param {options} [options={}] dictionary with string options
    * @return {Promise<string>} returns command execution output
    */
-  async pwd(
+  public async pwd(
     path?: string,
     options: options = {}
   ): Promise<string | null> {
@@ -327,7 +347,7 @@ export class SSHConnector {
    * @param {options} [options={}] dictionary with string options
    * @return {Promise<string | null>} returns command execution output
    */
-  async ls(
+  public async ls(
     path?: string,
     options: options = {}
   ): Promise<string | null> {
@@ -345,7 +365,7 @@ export class SSHConnector {
    * @param {options} [options={}] dictionary with string options
    * @return {Promise<string | null>} command execution output
    */
-  async cat(path: string, options: options = {}): Promise<string | null> {
+  public async cat(path: string, options: options = {}): Promise<string | null> {
     const cmd = "cat " + path;
     const out = await this.exec(cmd, options);
     return out.stdout;
@@ -362,7 +382,7 @@ export class SSHConnector {
    * @param options options for doing an exec
    * @returns {Promise<boolean>} true if path exists; false if not
    */
-  async remoteFsExists(path: string, options?: options): Promise<boolean> {
+  public async remoteFsExists(path: string, options?: options): Promise<boolean> {
     const out = await this.exec(`test -d ${path} && echo a`, options ?? {});
     return out.stdout !== null;
   }
@@ -376,7 +396,7 @@ export class SSHConnector {
    * @param {boolean} [muteEvent=false] command execution output
    * @return {Promise<string | null>} 
    */
-  async rm(
+  public async rm(
     path: string,
     options: options = {},
     muteEvent = false
@@ -396,7 +416,7 @@ export class SSHConnector {
    * @param {boolean} [muteEvent=false] set to True if you want to mute maintauner emitted Event
    * @return {Promise<string | null>}  command execution output
    */
-  async mkdir(
+  public async mkdir(
     path: string,
     options: options = {},
     muteEvent = false
@@ -417,7 +437,7 @@ export class SSHConnector {
    * @param {boolean} [muteEvent=false] set to True if you want to mute maintauner emitted Event
    * @return {Promise<string | null>} command execution output
    */
-  async zip(
+  public async zip(
     from: string,
     to: string,
     options: options = {},
@@ -448,7 +468,7 @@ export class SSHConnector {
    * @param {boolean} [muteEvent=false] set to True if you want to mute maintauner emitted Event
    * @return {Promise<string | null>} command execution output
    */
-  async unzip(
+  public async unzip(
     from: string,
     to: string,
     options: options = {},
@@ -481,7 +501,7 @@ export class SSHConnector {
    * @param {boolean} [muteEvent=false] set to True if you want to mute maintauner emitted Event
    * @return {Promise<string | null>}  command execution output
    */
-  async tar(
+  public  async tar(
     from: string,
     to: string,
     options: options = {},
@@ -515,7 +535,7 @@ export class SSHConnector {
    * @param {boolean} [muteEvent=false] set to True if you want to mute maintauner emitted Event
    * @return {Promise<string | null>} command execution output
    */
-  async untar(
+  public async untar(
     from: string,
     to: string,
     options: options = {},
@@ -538,7 +558,7 @@ export class SSHConnector {
    * @param {options} options dictionary with string options (not used)
    * @param {boolean} [muteEvent=false] set to True if you want to mute maintauner emitted Event
    */
-  async createFile(
+  public async createFile(
     content: string | Record<string, unknown>,
     remotePath: string,
     options: options = {},  // eslint-disable-line

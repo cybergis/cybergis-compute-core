@@ -14,19 +14,19 @@ import { Job } from "./Job";
 @Entity({ name: "events" })
 export class Event {
   @PrimaryGeneratedColumn()
-    id!: number;
+  public id!: number;
 
   @Column()
-    jobId!: string;
+  public jobId!: string;
 
   @Column()
-    type!: string;
+  public type!: string;
 
   @Column("text")
-    message!: string;
+  public message!: string;
 
   @ManyToOne((_type) => Job, (job: Job) => job.events)
-    job!: Job;
+  public job!: Job;
 
   @Column({
     type: "bigint",
@@ -39,7 +39,7 @@ export class Event {
       ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-    createdAt!: Date;
+  public createdAt!: Date;
 
   @Column({
     type: "bigint",
@@ -53,7 +53,7 @@ export class Event {
       ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-    updatedAt?: Date;
+  public updatedAt?: Date;
 
   @DeleteDateColumn({
     type: "bigint",
@@ -67,7 +67,7 @@ export class Event {
       ): Date | null => (i ? new Date(Math.trunc(i)) : null),
     },
   })
-    deletedAt?: Date;
+  public deletedAt?: Date;
 
   /**
    * Set the createdAt time to the current time.
@@ -75,7 +75,7 @@ export class Event {
    * @return {Date} date - Date this job was created.
    */
   @BeforeInsert()
-  setCreatedAt() {
+  public setCreatedAt() {
     this.createdAt = new Date();
   }
 
@@ -85,7 +85,7 @@ export class Event {
    * @return {Date} date - Date this job was last updated.
    */
   @BeforeUpdate()
-  setUpdatedAt() {
+  public setUpdatedAt() {
     return (this.updatedAt = new Date());
   }
 }

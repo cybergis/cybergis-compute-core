@@ -4,9 +4,7 @@ import * as fs from "fs";
 import * as path from "path";
 
 import { hpcConfigMap } from "../../configs/config";
-import BaseConnector from "../connectors/BaseConnector";
-import SingularityConnector from "../connectors/SingularityConnector";
-import SlurmConnector from "../connectors/SlurmConnector";
+import { SSHConnector } from "../connectors/SSHConnector";
 import { NotImplementedError } from "../definitions";
 import {
   BaseFolder,
@@ -23,11 +21,6 @@ import { Cache, Folder } from "../models";
 
 import dataSource from "./DB";
 
-type Connector =
-  | BaseConnector
-  | SlurmConnector
-  | SingularityConnector
-
 /**
  * Base class for encapsulating information about a folder upload.
  */
@@ -43,9 +36,9 @@ export abstract class BaseFolderUploader {
   public isComplete: boolean;
   public isFailed: boolean;
 
-  protected connector: Connector;
+  protected connector: SSHConnector;
 
-  constructor(hpcName: string, userId: string, connector?: Connector) {
+  public constructor(hpcName: string, userId: string) {
     this.hpcName = hpcName;
     this.hpcConfig = hpcConfigMap[hpcName];
     if (!this.hpcConfig)
@@ -63,10 +56,10 @@ export abstract class BaseFolderUploader {
       : null
     );
 
-    this.connector = connector ?? new BaseConnector(hpcName);
+    this.connector = new SSHConnector(hpcName);
   }
 
-  abstract upload(): Promise<void>;
+  public abstract upload(): Promise<void>;
 
   /**
    * Registers the current folder into the Folder database.
@@ -94,13 +87,12 @@ export abstract class BaseFolderUploader {
  */
 export class EmptyFolderUploader extends BaseFolderUploader {
 
-  constructor(
+  public constructor(
     hpcName: string,
     userId: string,
-    jobId: string,
-    connector?: Connector
+    _jobId: string,
   ) {
-    super(hpcName, userId, connector);
+    super(hpcName, userId);
   }
 
   /**
@@ -202,13 +194,12 @@ export class EmptyFolderUploader extends BaseFolderUploader {
 abstract class CachedFolderUploader extends BaseFolderUploader {
   protected cachePath: string;
 
-  constructor(
+  public constructor(
     cacheFile: string,
     hpcName: string,
-    userId: string,
-    connector?: Connector,
+    userId: string
   ) {
-    super(hpcName, userId, connector);
+    super(hpcName, userId);
 
     this.cachePath = path.join(this.hpcConfig.root_path, "cache", `${cacheFile}.zip`);
   }
@@ -349,7 +340,7 @@ class GlobusFolderUploader extends CachedFolderUploader {
   private taskId!: string;
   private jobId: string;
 
-  constructor(
+  public constructor(
     from: GlobusFolder,
     hpcName: string,
     userId: string,
@@ -446,16 +437,14 @@ class GlobusFolderUploader extends CachedFolderUploader {
 export class LocalFolderUploader extends CachedFolderUploader {
   protected localPath: string;
 
-  constructor(
+  public constructor(
     from: LocalFolder,
     hpcName: string,
     userId: string,
-    connector: Connector | null = null
   ) {
     const parts = from.localPath.split("/");
     super(parts[parts.length - 1], hpcName, userId);
     this.localPath = from.localPath;
-    this.connector = connector ?? new BaseConnector(hpcName);
   }
 
   /**
@@ -514,15 +503,14 @@ export class LocalFolderUploader extends CachedFolderUploader {
 export class GitFolderUploader extends LocalFolderUploader {
   private gitId: string;
 
-  constructor(
+  public constructor(
     from: GitFolder,
     hpcName: string,
-    userId: string,
-    connector: Connector | null = null
+    userId: string
   ) {
     const localPath: string = GitUtil.getLocalPath(from.gitId);
 
-    super({ type: "local", localPath }, hpcName, userId, connector);
+    super({ type: "local", localPath }, hpcName, userId);
     this.gitId = from.gitId;
   }
 
@@ -563,12 +551,11 @@ export class FolderUploaderHelper {
    * @throws {Error} invalid file type/format
    * @return {Promise<BaseFolderUploader>} folder uploader object used to upload the folder, can check if upload was successful via {uploader}.isComplete
    */
-  static async upload(
+  public static async upload(
     from: BaseFolder,
     hpcName: string,
     userId: string,
-    jobId = "",
-    connector: Connector | null = null
+    jobId = ""
   ): Promise<BaseFolderUploader> {
 
     let uploader: BaseFolderUploader;
@@ -578,7 +565,6 @@ export class FolderUploaderHelper {
           from as GitFolder,
           hpcName,
           userId,
-          connector
         );
         await uploader.upload();
         break;
@@ -588,7 +574,6 @@ export class FolderUploaderHelper {
           from as LocalFolder,
           hpcName,
           userId,
-          connector
         );
         await uploader.upload();
         break;
@@ -605,9 +590,7 @@ export class FolderUploaderHelper {
         break;
 
       case "empty":
-        Helper.nullGuard(connector);
-
-        uploader = new EmptyFolderUploader(hpcName, userId, jobId, connector);
+        uploader = new EmptyFolderUploader(hpcName, userId, jobId);
         await uploader.upload();
         break;
     }
@@ -627,11 +610,10 @@ export class FolderUploaderHelper {
    * @throws {Error} invalid file type/format
    * @return {Promise<BaseFolderUploader>} folder uploader object used to upload the folder, can check if upload was successful via {uploader}.isComplete
    */
-  static async cachedUploadGit(
+  public static async cachedUploadGit(
     from: GitFolder,
     hpcName: string,
-    userId: string,
-    connector: Connector | null = null
+    userId: string
   ): Promise<CachedFolderUploader> {
     // if type not specified, throw an error
     if (!from.type) throw new Error("invalid local file format");
@@ -639,8 +621,7 @@ export class FolderUploaderHelper {
     const uploader = new GitFolderUploader(
       from,
       hpcName,
-      userId,
-      connector
+      userId
     );
 
     await uploader.init();
