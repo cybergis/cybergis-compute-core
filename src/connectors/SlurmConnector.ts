@@ -35,7 +35,7 @@ class SlurmConnector extends BaseConnector {
     for (const module of this.modules) {
       modules += `module load ${module}\n`;
     }
-    return modules
+    return modules;
   }
 
   /**
@@ -65,10 +65,9 @@ class SlurmConnector extends BaseConnector {
       config.partition = hpc.partition;
     }
 
-    let modules = "";
     if (config.modules) {
-      // modules += `module load ${config.modules}\n`;
-      this.registerModules(config.modules.split(/\s/))
+      // TODO: make this split more robust
+      this.registerModules(config.modules.split(/\s/));
     }
 
 
