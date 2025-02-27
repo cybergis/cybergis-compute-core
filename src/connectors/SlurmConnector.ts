@@ -56,8 +56,7 @@ class SlurmConnector extends BaseConnector {
 
     let modules = "";
     if (config.modules) {
-      for (const module of config.modules)
-        modules += `module load ${module}\n`;
+      modules += `module load ${config.modules}\n`;
     }
 
     Helper.nullGuard(this.remote_result_folder_path);
