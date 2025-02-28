@@ -58,9 +58,7 @@
       ],
       "init_sbatch_options": [
         "#SBATCH --constraint=lustre",
-        "#SBATCH --partition=shared",
-        "#SBATCH --nodes=1",
-        "#SBATCH --account=TG-EAR190007"
+        "#SBATCH --nodes=1"
       ],
       "xsede_job_log_credential": {
         "xsederesourcename": "expanse.sdsc.xsede.org",
@@ -90,9 +88,11 @@
         "endpoint": "8e5f3a0a-542d-11eb-a45a-0e095b4c2e55",
         "root_path": "/jet/home/cybergis/data"
       },
-      "init_sbatch_options": ["#SBATCH --partition=GPU-shared"],
+      "init_sbatch_options": [],
       "allowlist": [],
-      "denylist": []
+      "denylist": [],
+      "allocation": null,
+      "partition": "GPU-shared"
     },
     "anvil_community": {
       "ip": "anvil.rcac.purdue.edu",
@@ -118,7 +118,7 @@
         "/anvil/scratch/x-cybergis/compute": "/compute_scratch"
       },
       "init_sbatch_script": ["module load gcc", "module load openmpi"],
-      "init_sbatch_options": ["#SBATCH --partition=shared", "#SBATCH --nodes=1"],
+      "init_sbatch_options": ["#SBATCH --nodes=1"],
       "allowlist": [],
       "denylist": [],
       "allocation": null,
@@ -148,9 +148,11 @@
         "/anvil/scratch/x-cybergis/compute": "/compute_scratch"
       },
       "init_sbatch_script": ["module load gcc", "module load openmpi"],
-      "init_sbatch_options": ["#SBATCH --partition=highmem"],
+      "init_sbatch_options": [],
       "allowlist": [],
-      "denylist": []
+      "denylist": [],
+      "allocation": null,
+      "partition": "highmem"      
     },
     "aces_community": {
       "ip": "aces-login1.hprc.tamu.edu",
