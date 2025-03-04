@@ -410,7 +410,7 @@ export default class GitUtil {
 
 }
 
-// eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 class ManifestUtil extends GitUtil {
   
   /**
@@ -421,7 +421,7 @@ class ManifestUtil extends GitUtil {
    */
   protected static async deleteAndPullManifest(git: Git) {
     const localPath = this.getLocalManifestPath(git.id);
-    // eslint-disable-next-line
+     
     rimraf.sync(localPath);  // deletes everything
 
     const getManifestUrl = (

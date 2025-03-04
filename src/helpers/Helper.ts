@@ -164,7 +164,7 @@ export function nullGuard<T>(x: null | T | undefined): asserts x is T {
   if (!frame) {
     console.assert(
       x !== null && x !== undefined, 
-      "%o", "Variable is undefined/null when it should not be. No stack frame found."  // eslint-disable-line
+      "%o", "Variable is undefined/null when it should not be. No stack frame found."   
     );
     return;
   }

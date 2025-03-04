@@ -10,12 +10,12 @@
         "skipLibCheck": true,
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
-        "resolveJsonModule" : true,
+        "resolveJsonModule": true,
         "strictNullChecks": true,
         "esModuleInterop": true,
-         "moduleResolution": "node",
-         "sourceMap": true,
-      },
+        "moduleResolution": "node",
+        "sourceMap": true,
+    },
     "include": [
         "**/*",
         ".eslintrc.js"

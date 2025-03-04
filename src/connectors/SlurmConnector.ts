@@ -467,74 +467,74 @@ ${cmd}`;
         let v = j.join(":").trim();
         
         switch (k) {
-        case "Nodes":
-          seffOutput.nodes = parseInt(v);
-          break;
-        case "Cores per node":
-          seffOutput.cpus = parseInt(v);
-          break;
-        case "CPU Utilized": {
-          const l = v.split(":");
-          if (l.length !== 3) continue;
-          const seconds =
+          case "Nodes":
+            seffOutput.nodes = parseInt(v);
+            break;
+          case "Cores per node":
+            seffOutput.cpus = parseInt(v);
+            break;
+          case "CPU Utilized": {
+            const l = v.split(":");
+            if (l.length !== 3) continue;
+            const seconds =
               parseInt(l[0]) * 60 * 60 + parseInt(l[1]) * 60 + parseInt(l[2]);
-          seffOutput.cpuTime = seconds;
-          break;
-        }
-        case "Job Wall-clock time": {
-          const l = v.split(":");
-          if (l.length !== 3) continue;
-          const seconds =
+            seffOutput.cpuTime = seconds;
+            break;
+          }
+          case "Job Wall-clock time": {
+            const l = v.split(":");
+            if (l.length !== 3) continue;
+            const seconds =
               parseInt(l[0]) * 60 * 60 + parseInt(l[1]) * 60 + parseInt(l[2]);
-          seffOutput.walltime = seconds;
-          break;
-        }
-        case "Memory Utilized": {
-          v = v.toLowerCase();
-          let kb = parseFloat(v.substring(0, v.length - 2).trim());
-          const units = ["kb", "mb", "gb", "tb", "pb", "eb"];
-          let isValid = false;
-          for (const unit of units) {
-            if (v.includes(unit)) {
-              isValid = true;
-              break;
+            seffOutput.walltime = seconds;
+            break;
+          }
+          case "Memory Utilized": {
+            v = v.toLowerCase();
+            let kb = parseFloat(v.substring(0, v.length - 2).trim());
+            const units = ["kb", "mb", "gb", "tb", "pb", "eb"];
+            let isValid = false;
+            for (const unit of units) {
+              if (v.includes(unit)) {
+                isValid = true;
+                break;
+              }
             }
+            if (!isValid) continue;
+            for (const unit of units) {
+              if (v.includes(unit)) break;
+              kb = kb * 1024;
+            }
+            seffOutput.memoryUsage = kb;
+            break;
           }
-          if (!isValid) continue;
-          for (const unit of units) {
-            if (v.includes(unit)) break;
-            kb = kb * 1024;
-          }
-          seffOutput.memoryUsage = kb;
-          break;
-        }
-        case "Memory Efficiency": {
-          v = v.toLowerCase();
-          let l = v.split("of");
-          if (l.length !== 2) continue;
-          l = l[1].trim().split("(");
-          if (l.length !== 2) continue;
-          v = l[0].trim();
+          case "Memory Efficiency": {
+            v = v.toLowerCase();
+            let l = v.split("of");
+            if (l.length !== 2) continue;
+            l = l[1].trim().split("(");
+            if (l.length !== 2) continue;
+            v = l[0].trim();
 
-          let kb = parseFloat(v.substring(0, v.length - 2).trim());
-          const units = ["kb", "mb", "gb", "tb", "pb", "eb"];
-          let isValid = false;
-          for (const unit of units) {
-            if (v.includes(unit)) {
-              isValid = true;
-              break;
+            let kb = parseFloat(v.substring(0, v.length - 2).trim());
+            const units = ["kb", "mb", "gb", "tb", "pb", "eb"];
+            let isValid = false;
+            for (const unit of units) {
+              if (v.includes(unit)) {
+                isValid = true;
+                break;
+              }
             }
+            if (!isValid) continue;
+            for (const unit of units) {
+              if (v.includes(unit)) break;
+              kb = kb * 1024;
+            }
+            seffOutput.memory = kb;
+            break;
           }
-          if (!isValid) continue;
-          for (const unit of units) {
-            if (v.includes(unit)) break;
-            kb = kb * 1024;
-          }
-          seffOutput.memory = kb;
-          break;
-        }
-        default:
-          break;
+          default:
+            break;
         }
       }
       

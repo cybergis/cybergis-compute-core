@@ -67,7 +67,7 @@ export abstract class BaseFolderUploader {
     this.connector = connector ?? new BaseConnector(hpcName);
   }
 
-  // eslint-disable-next-line
+   
   abstract upload(): Promise<void>;
 
   /**
@@ -344,7 +344,7 @@ abstract class CachedFolderUploader extends BaseFolderUploader {
  * TODO: figure out how to actually do this and if it is worthwhile (e.g., do users usually run on the same data multiple times); would need to globus, then cp
  * initially
  */
-class GlobusFolderUploader extends CachedFolderUploader {  // eslint-disable-line
+class GlobusFolderUploader extends CachedFolderUploader {   
   private from: GlobusFolder;
   private to: GlobusFolder;
 
@@ -575,43 +575,43 @@ export class FolderUploaderHelper {
 
     let uploader: BaseFolderUploader;
     switch (from.type) {
-    case "git":
-      uploader = new GitFolderUploader(
+      case "git":
+        uploader = new GitFolderUploader(
         from as GitFolder,
         hpcName,
         userId,
         connector
-      );
-      await uploader.upload();
-      break;
+        );
+        await uploader.upload();
+        break;
 
-    case "local":
-      uploader = new LocalFolderUploader(
+      case "local":
+        uploader = new LocalFolderUploader(
         from as LocalFolder,
         hpcName,
         userId,
         connector
-      );
-      await uploader.upload();
-      break;
+        );
+        await uploader.upload();
+        break;
 
-    case "globus":
-      uploader = new GlobusFolderUploader(
+      case "globus":
+        uploader = new GlobusFolderUploader(
         from as GlobusFolder, 
         hpcName, 
         userId, 
         jobId
-      );
+        );
 
-      await uploader.upload();
-      break;
+        await uploader.upload();
+        break;
 
-    case "empty":
-      Helper.nullGuard(connector);
+      case "empty":
+        Helper.nullGuard(connector);
       
-      uploader = new EmptyFolderUploader(hpcName, userId, jobId, connector);
-      await uploader.upload();
-      break;
+        uploader = new EmptyFolderUploader(hpcName, userId, jobId, connector);
+        await uploader.upload();
+        break;
     }
 
     return uploader;

@@ -159,7 +159,7 @@ class Supervisor {
     Helper.nullGuard(job.maintainerInstance);  // should have been initialized on job creation
     // const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
     // keep looping while the job is not finished
-    while (true) {  // eslint-disable-line no-constant-condition
+    while (true) {   
       // get ssh connector from pool
       let ssh: SSH;
       if (job
