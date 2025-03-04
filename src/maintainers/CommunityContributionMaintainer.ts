@@ -1,7 +1,7 @@
 import { executableManifest, GitFolder } from "../definitions";
 import GitUtil from "../helpers/GitUtil";
 import * as Helper from "../helpers/Helper";
-import XSEDEUtil from "../helpers/XSEDEUtil";
+import * as XSEDEUtil from "../helpers/XSEDEUtil";
 import { Folder, Git, Job } from "../models";
 import dataSource from "../utils/DB";
 import { BaseFolderUploader, FolderUploaderHelper } from "../utils/FolderUploader";

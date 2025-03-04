@@ -6,7 +6,7 @@ import { jupyterGlobusMap } from "../../configs/config";
 
 import * as Helper from "./Helper";
 
-declare interface decodedToken {
+interface decodedToken {
   host: string;
   token: string;
 }

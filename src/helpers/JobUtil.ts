@@ -71,10 +71,10 @@ export async function getUserSlurmUsage(
     return {
       nodes: userSlurmUsage.nodes,
       cpus: userSlurmUsage.cpus,
-      cpuTime: this.secondsToTimeDelta(userSlurmUsage.cpuTime),
-      memory: this.kbToStorageUnit(userSlurmUsage.memory),
-      memoryUsage: this.kbToStorageUnit(userSlurmUsage.memoryUsage),
-      walltime: this.secondsToTimeDelta(userSlurmUsage.walltime),
+      cpuTime: secondsToTimeDelta(userSlurmUsage.cpuTime),
+      memory: kbToStorageUnit(userSlurmUsage.memory),
+      memoryUsage: kbToStorageUnit(userSlurmUsage.memoryUsage),
+      walltime: secondsToTimeDelta(userSlurmUsage.walltime),
     };
   } else {
     return {
@@ -110,8 +110,8 @@ export function validateJob(job: Job) {
     throw new Error("job missing executable file");
   }
 
-  JobUtil.validateSlurmConfig(job, providedSlurmInputRules);
-  JobUtil.validateParam(job, providedParamRules);
+  validateSlurmConfig(job, providedSlurmInputRules);
+  validateParam(job, providedParamRules);
 }
 
 /**
@@ -156,9 +156,9 @@ export function validateSlurmConfig(job: Job, slurmInputRules: slurmInputRules) 
     } else if (slurm_integer_time_unit_config.includes(rule_name)) {
       const val = rule.max;
       const unit = rule.unit;
-      const sec = JobUtil.unitTimeToSeconds(val!, unit);
+      const sec = unitTimeToSeconds(val!, unit);
 
-      slurmCeiling[rule_name] = JobUtil.secondsToTime(sec);
+      slurmCeiling[rule_name] = secondsToTime(sec);
     } else if (slurm_integer_configs.includes(rule_name)) {
       slurmCeiling[rule_name] = rule.max;
     }
@@ -169,7 +169,7 @@ export function validateSlurmConfig(job: Job, slurmInputRules: slurmInputRules) 
       
     if (!val) slurmCeiling[field] = val;
     else if (val && typeof val === "string" && 
-        this.compareSlurmConfig(
+        compareSlurmConfig(
           field, 
           val, 
           slurmCeiling[field] as string
@@ -191,7 +191,7 @@ export function validateSlurmConfig(job: Job, slurmInputRules: slurmInputRules) 
 
     if (!val) continue;
       
-    if (typeof val === "string" && this.compareSlurmConfig(
+    if (typeof val === "string" && compareSlurmConfig(
       field, 
         slurmCeiling[field as keyof slurm] as string, 
         val)
@@ -214,10 +214,10 @@ export function validateSlurmConfig(job: Job, slurmInputRules: slurmInputRules) 
    */
 export function compareSlurmConfig(i: string, a: string, b: string): boolean {
   if (slurm_integer_storage_unit_config.includes(i)) {
-    return this.storageUnitToKB(a) < this.storageUnitToKB(b);
+    return storageUnitToKB(a) < storageUnitToKB(b);
   }
   if (slurm_integer_time_unit_config.includes(i)) {
-    return this.timeToSeconds(a) < this.timeToSeconds(b);
+    return timeToSeconds(a) < timeToSeconds(b);
   }
   return a < b;
 }

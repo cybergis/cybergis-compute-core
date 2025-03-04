@@ -1,12 +1,12 @@
 import * as events from "events";
 
 import { config, maintainerConfigMap, hpcConfigMap } from "../../configs/config";
+import { connectionPool } from "../connectors/ConnectionPool";
 import { SSH } from "../definitions";
 import { registerEvents, registerLogs } from "../helpers/EmitterUtil";
 import * as Helper from "../helpers/Helper";
 import { maintainerMap } from "../maintainers/util";
 import { Job } from "../models";
-import { connectionPool } from "../utils/ConnectionPool";
 
 import dataSource from "./DB";
 import { JobQueue } from "./Redis";
@@ -211,7 +211,7 @@ class Supervisor {
    *
    * @param {Job} job job to add
    */
-  private async pushJobToQueue(job: Job) {
+  public async pushJobToQueue(job: Job) {
     await this.queues[job.hpc].push(job);
     await registerEvents(
       job,

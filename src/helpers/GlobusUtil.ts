@@ -5,7 +5,7 @@ import { GlobusTransferRefreshToken } from
 import dataSource from "../utils/DB";
 
 import * as Helper from "./Helper";
-import PythonUtil from "./PythonUtil";
+import * as PythonUtil from "./PythonUtil";
 
 /**
    * Class for accessing Globus commands

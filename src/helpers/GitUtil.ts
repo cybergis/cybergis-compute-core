@@ -40,7 +40,7 @@ export default class GitUtil {
    * @param {string} gitId
    * @return {string} resulting path 
    */
-  private static getLocalPath(gitId: string): string {
+  public static getLocalPath(gitId: string): string {
     return path.join(config.local_file_system.root_path, gitId);
   }
 

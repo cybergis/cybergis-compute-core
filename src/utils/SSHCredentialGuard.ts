@@ -16,7 +16,7 @@ class SSHCredentialGuard {
    * @param {string} password
    * @throws {Error} may be unable to cross check crecdentials with a given hpc
    */
-  async validatePrivateAccount(
+  public async validatePrivateAccount(
     hpcName: string,
     user?: string,
     password?: string
@@ -44,7 +44,7 @@ class SSHCredentialGuard {
    * @param {string} password
    * @return {Promise<string>} the assigned redis key/id
    */
-  async registerCredential(
+  public async registerCredential(
     user?: string,
     password?: string
   ): Promise<string> {

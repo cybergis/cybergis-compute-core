@@ -1,15 +1,187 @@
+import NodeSSH = require("node-ssh");
 
 import assert from "assert";
 import { existsSync, unlink, writeFileSync } from "fs";
 import * as path from "path";
 
 import { config, hpcConfigMap } from "../../configs/config";
-import { ConnectorError, SSH } from "../definitions";
+import { SSHConfig, ConnectorError, SSH } from "../definitions";
 import { options, hpcConfig } from "../definitions";
 import { putFileFromZip } from "../helpers/FolderUtil";
 import * as Helper from "../helpers/Helper";
 import { Job } from "../models";
-import { connectionPool } from "../utils/ConnectionPool";
+
+
+// TODO: have more sophisticated way to do this
+interface Connection {
+  ssh: NodeSSH;
+  lastUsed: number;
+  count: number;
+}
+
+const TIMEOUT = 3 * 60 * 1000;
+
+class ConnectionPool {
+  private jobConnectionPool: Record<string, Connection> = {};
+
+  private hpcConnectionPool: Record<string, Connection> = {};
+  private hpcConnectionSettings: Record<string, SSHConfig> = {};
+
+  public constructor() {
+    for (const hpcName in hpcConfigMap) {
+      const hpcConfig = hpcConfigMap[hpcName];
+      if (!hpcConfig.is_community_account) continue;
+
+      // register community account SSH
+      const sshConfig: SSHConfig = {
+        host: hpcConfig.ip,
+        port: hpcConfig.port,
+        username: hpcConfig.community_login.user,
+      };
+
+      if (hpcConfig.community_login.use_local_key) {
+        sshConfig.privateKey = config.local_key.private_key_path;
+        if (config.local_key.passphrase) {
+          sshConfig.passphrase = config.local_key.passphrase as string;
+        }
+      } else {
+        sshConfig.privateKey =
+          hpcConfig.community_login.external_key.private_key_path;
+        if (hpcConfig.community_login.external_key.passphrase) {
+          sshConfig.passphrase = hpcConfig.community_login.external_key.passphrase;
+        }
+      }
+
+      this.hpcConnectionPool[hpcName] = { ssh: new NodeSSH(), count: 0, lastUsed: 0 };
+      this.hpcConnectionSettings[hpcName] = sshConfig;
+    }
+
+    setInterval(() => {this.cleanupJobs();}, TIMEOUT);
+  }
+
+  public async getHpcConnection(hpcName: string): Promise<SSH> {
+    if (!(hpcName in this.hpcConnectionPool)) {
+      return new NodeSSH();
+    }
+
+    const connection = this.hpcConnectionPool[hpcName];
+
+    if (connection.ssh.isConnected()) {
+      return connection.ssh;
+    }
+
+    try {
+      // wraps command with backoff -> takes lambda function and array of inputs to execute command
+      await Helper.runCommandWithBackoff((async (ssh: SSH, config: SSHConfig) => {
+        await ssh.connect(config);
+        await ssh.execCommand("echo");
+      }), [connection.ssh, this.hpcConnectionSettings[hpcName]], null);
+    } catch (e) {
+      return new NodeSSH();
+    }
+
+    return connection.ssh;
+  }
+
+  public releaseJobConnection(job: Job) {
+    if (!(job.id in this.hpcConnectionPool)) {
+      return;
+    }
+
+    const connection = this.jobConnectionPool[job.id];
+
+    if (connection.count > 0) {
+      connection.count -= 1;
+    }
+  }
+
+  public releaseHpcConnection(hpcName: string) {
+    if (!(hpcName in this.hpcConnectionPool)) {
+      return;
+    }
+
+    const connection = this.hpcConnectionPool[hpcName];
+
+    if (connection.count > 0) {
+      connection.count -= 1;
+    }
+  }
+
+  public async getJobConnection(job: Job): Promise<NodeSSH> {
+    if (!(job.id in this.jobConnectionPool)) {
+      this.jobConnectionPool[job.id] = {
+        ssh: new NodeSSH(),
+        count: 0,
+        lastUsed: 0
+      };
+    }
+
+    const connection = this.jobConnectionPool[job.id];
+    connection.lastUsed = Date.now();
+    connection.count++;
+
+    if (connection.ssh.isConnected()) {
+      return connection.ssh;
+    }
+
+    const hpcConfig = hpcConfigMap[job.hpc];
+    const config: SSHConfig = {
+      host: hpcConfig.ip,
+      port: hpcConfig.port,
+      username: job.credential?.user,
+      password: job.credential?.password,
+      readyTimeout: 1000,
+    };
+
+    try {
+      // wraps command with backoff -> takes lambda function and array of inputs to execute command
+      await Helper.runCommandWithBackoff((async (ssh: SSH, config: SSHConfig) => {
+        await ssh.connect(config);
+        await ssh.execCommand("echo");
+      }), [connection.ssh, config], null);
+    } catch (e) {
+      return new NodeSSH();
+    }
+
+    return connection.ssh;
+  }
+
+  private cleanupJobs() {
+    const time = Date.now();
+    for (const hpc in this.hpcConnectionPool) {
+      const connection = this.hpcConnectionPool[hpc];
+
+      const shouldDispose = connection.count === 0 && time - connection.lastUsed > TIMEOUT || 
+                      time - connection.lastUsed > 4 * TIMEOUT;
+
+      if (shouldDispose) {
+        connection.ssh.dispose();
+  
+        if (time - connection.lastUsed > 4 * TIMEOUT) {
+          connection.count = 0;
+        }
+      }
+    }
+
+    for (const job in this.jobConnectionPool) {
+      const connection = this.jobConnectionPool[job];
+
+      const shouldDispose = connection.count === 0 && time - connection.lastUsed > TIMEOUT || 
+                      time - connection.lastUsed > 4 * TIMEOUT;
+
+      if (shouldDispose) {
+        delete this.jobConnectionPool[job];
+        connection.ssh.dispose();
+  
+        if (time - connection.lastUsed > 4 * TIMEOUT) {
+          connection.count = 0;
+        }
+      }
+    }
+  }
+}
+
+const connectionPool = new ConnectionPool();
 
 interface out {
   stdout: string | null;
@@ -68,7 +240,7 @@ export class SSHConnector {
       if (!x.isConnected()) {
         throw new ConnectorError("unable to establish ssh connection");
       }
-    }).catch((e) => {this.releaseSSH(); throw e;})
+    }).catch((e) => {throw e;})
       .finally(() => this.releaseSSH());
   }
 
@@ -177,9 +349,16 @@ export class SSHConnector {
       const ssh = await this.getSSH();
 
       // run command via ssh
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      try {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore the type is hidden in some file and can't be coerced
-      await ssh.execCommand(this.envCmd + command, opt);
+        await ssh.execCommand(this.envCmd + command, opt);
+      } catch (e) {
+        console.error("error when calling exec on ssh: ", e);
+        throw e;
+      } finally {
+        this.releaseSSH();
+      }
 
       // behavior similar to && operator in bash, if desired (break if have an error)
       if (out.stderr && !continueOnError) break;
@@ -208,14 +387,14 @@ export class SSHConnector {
     const toZipFilePath = `${to}.zip`;
     await this.zip(from, fromZipFilePath);
 
+    const ssh = await this.getSSH();
+
     try {
       this.emitEvent(
         "SSH_SCP_DOWNLOAD",
         `get file from ${from} to ${to}`,
         muteEvent
       );
-
-      const ssh = await this.getSSH();
 
       // try to get the from file via ssh/scp and remove the compressed folder afterwards
       // wraps command with backoff -> takes lambda function and array of inputs to execute command
@@ -231,6 +410,8 @@ export class SSHConnector {
 
       this.emitEvent("SSH_SCP_DOWNLOAD_ERROR", error, muteEvent);
       throw new ConnectorError(error);
+    } finally {
+      this.releaseSSH();
     }
   }
   /**
@@ -243,14 +424,14 @@ export class SSHConnector {
    * @throws {ConnectorError} - Thrown if maintainer emits 'SSH_SCP_DOWNLOAD_ERROR'
    */
   public async transferFile(from: string, to: string, muteEvent = false) {
+    const ssh = await this.getSSH();
+
     try {
       this.emitEvent(
         "SSH_SCP_UPLOAD",
         `put file from ${from} to ${to}`,
         muteEvent
       );
-
-      const ssh = await this.getSSH();
 
       // attempt to send the from file to the to folder
       // wraps command with backoff -> takes lambda function and array of inputs to execute command
@@ -265,9 +446,9 @@ export class SSHConnector {
         `unable to put file from ${from} to ${to}: ` + Helper.assertError(e).toString();
       this.emitEvent("SSH_SCP_UPLOAD_ERROR", error, muteEvent);
       throw new ConnectorError(error);
+    } finally {
+      this.releaseSSH();
     }
-    
-    
   }
   /**
    * @async
@@ -600,3 +781,43 @@ export class SSHConnector {
     });
   }
 }
+
+
+// // dictionary recording ssh connections for community accounts (which have public ssh ability)
+// const connectionPool: Record<string, { counter: number, ssh: SSH }> = {};
+
+// // populates the connectionPool with community account HPCs
+// for (const hpcName in hpcConfigMap) {
+//   const hpcConfig = hpcConfigMap[hpcName];
+//   if (!hpcConfig.is_community_account) continue;
+
+//   // register community account SSH
+//   const sshConfig: SSHConfig = {
+//     host: hpcConfig.ip,
+//     port: hpcConfig.port,
+//     username: hpcConfig.community_login.user,
+//   };
+
+//   if (hpcConfig.community_login.use_local_key) {
+//     sshConfig.privateKey = config.local_key.private_key_path;
+//     if (config.local_key.passphrase) {
+//       sshConfig.passphrase = config.local_key.passphrase as string;
+//     }
+//   } else {
+//     sshConfig.privateKey =
+//       hpcConfig.community_login.external_key.private_key_path;
+//     if (hpcConfig.community_login.external_key.passphrase) {
+//       sshConfig.passphrase = hpcConfig.community_login.external_key.passphrase;
+//     }
+//   }
+
+//   connectionPool[hpcName] = {
+//     counter: 0,
+//     ssh: {
+//       connection: new NodeSSH(),
+//       config: sshConfig,
+//     },
+//   };
+// }
+
+// export default connectionPool;
