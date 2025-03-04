@@ -294,7 +294,7 @@ authRouter.get("/cilogon/callback", async (req, res) => {
     nbf: userInfo.nbf
   });
 
-  res.status(200).redirect("https://cybergisx.cigi.illinois.edu");
+  res.status(200).json({ message: "successfully authenticated, you can return to cybergisx" });
 });
 
 export default authRouter;
