@@ -219,6 +219,7 @@ export interface hpcConfig {
   allocation?: string;
   partition?: string;
   admins: string[];
+  whitelistEnabled: boolean;
 }
 
 export interface XSEDEJobLogCredential {
