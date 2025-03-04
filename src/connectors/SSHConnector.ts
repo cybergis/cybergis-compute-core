@@ -782,6 +782,19 @@ export class SSHConnector {
   }
 }
 
+export function connectionReady(hpcName: string,
+  job?: Job,
+  emitLogFn?: emitLogFnType,
+  emitEventFn?: emitEventFnType,
+  env: Record<string, unknown> = {}): boolean {
+  try {
+    new SSHConnector(hpcName, job, emitLogFn, emitEventFn, env);
+    return true;
+  } catch (_) {
+    return false;
+  } 
+}
+
 
 // // dictionary recording ssh connections for community accounts (which have public ssh ability)
 // const connectionPool: Record<string, { counter: number, ssh: SSH }> = {};

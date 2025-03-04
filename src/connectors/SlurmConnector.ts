@@ -5,7 +5,6 @@ import { ConnectorError } from "../definitions";
 import { slurm } from "../definitions";
 import * as Helper from "../helpers/Helper";
 import BaseMaintainer from "../maintainers/BaseMaintainer";
-import { Job } from "../models";
 
 import { SSHConnector } from "./SSHConnector";
 
@@ -14,7 +13,7 @@ import { SSHConnector } from "./SSHConnector";
 /**
  * Specialization of BaseConnector that, in addition to offering ssh connection, supports slurm connections with the HPC. 
  */
-class SlurmConnector {
+export class SlurmConnector {
 
   /** parent pointer **/
   protected maintainer: BaseMaintainer;
@@ -31,41 +30,21 @@ class SlurmConnector {
   protected isContainer = false;
 
   /** config **/
-  protected envCmd = "#!/bin/bash\n";
-
   protected sshConnector: SSHConnector;
 
   public constructor(
     maintainer: BaseMaintainer,
-    remoteExecutableFolderPath: string,
-    remoteDataFolderPath: string,
-    remoteResultFolderPath: string,
-    job?: Job,
-    env: Record<string, unknown> = {},
     is_cvmfs = false
   ) {
     this.maintainer = maintainer;
-    
     this.is_cvmfs = is_cvmfs;
-
-    // set environment variables
-    let envCmd = "source /etc/profile;";
-    for (const i in env) {
-      const v = env[i] as string;
-      envCmd += `export ${i}=${v};\n`;
-    }
-    this.envCmd = envCmd;
-
-    this.remoteExecutableFolderPath = remoteExecutableFolderPath;
-    this.remoteDataFolderPath = remoteDataFolderPath;
-    this.remoteResultFolderPath = remoteResultFolderPath;
 
     this.sshConnector = new SSHConnector(
       maintainer.hpc, 
-      job, 
+      maintainer.job, 
       (...args) => maintainer.emitLog(...args),
       (...args) => maintainer.emitEvent(...args),
-      env
+      maintainer.job.env
     );
   }
 
@@ -151,7 +130,7 @@ ${cmd}`;
    * @async
    * Submit the slurm job.
    */
-  protected async submit() {
+  public async submit() {
     // create job.sbatch on HPC
     await this.sshConnector.mkdir(path.join(this.remoteResultFolderPath, "slurm_log"));
     await this.sshConnector.createFile(
@@ -626,6 +605,16 @@ ${cmd}`;
   public isCommunityAccount(): boolean {
     return this.sshConnector.isCommunityAccount;
   }
-}
 
-export default SlurmConnector;
+  public setRemoteExecutableFolderPath(path: string) {
+    this.remoteExecutableFolderPath = path;
+  }
+
+  public setRemoteDataFolderPath(path: string) {
+    this.remoteDataFolderPath = path;
+  }
+
+  public setRemoteResultFolderPath(path: string) {
+    this.remoteResultFolderPath = path;
+  }
+}

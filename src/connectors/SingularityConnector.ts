@@ -4,7 +4,7 @@ import { containerConfigMap, hpcConfigMap, kernelConfigMap } from "../../configs
 import { slurm, executableManifest } from "../definitions";
 import * as Helper from "../helpers/Helper";
 
-import SlurmConnector from "./SlurmConnector";
+import { SlurmConnector } from "./SlurmConnector";
 // import { kernelConfig } from "../types";
 
 /**
@@ -13,7 +13,7 @@ import SlurmConnector from "./SlurmConnector";
  * @class SingularityConnector
  * @extends {SlurmConnector}
  */
-class SingularityConnector extends SlurmConnector {
+export class SingularityConnector extends SlurmConnector {
 
   private volumeBinds: Record<string, string> = {};
   public isContainer = true;  // this is a container -- causes some changes in how job JSONs are generated
@@ -281,5 +281,3 @@ class SingularityConnector extends SlurmConnector {
     );
   }
 }
-
-export default SingularityConnector;

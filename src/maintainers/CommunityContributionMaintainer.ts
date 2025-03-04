@@ -1,3 +1,4 @@
+import { SingularityConnector } from "../connectors";
 import { executableManifest, GitFolder } from "../definitions";
 import GitUtil from "../helpers/GitUtil";
 import * as Helper from "../helpers/Helper";
@@ -13,18 +14,20 @@ import BaseMaintainer from "./BaseMaintainer";
  * Specialized maintainer for handling jobs submitted to community HPCs (no login). Inherits from BaseMaintainer.
  */
 class CommunityContributionMaintainer extends BaseMaintainer {
+  public connector!: SingularityConnector;
 
   public resultFolderContentManager: ResultFolderContentManager =
     new ResultFolderContentManager();
-
   public executableManifest!: executableManifest;  // details about the job
 
   public constructor(job: Job
   ) {
     super(job);
+
+    this.connector = this.getSingularityConnector();
   }
 
-  private onDefine = () => undefined;
+  protected onDefine = () => undefined;
   
   /**
    * On maintainer initialization, set executableManifest, and give it to the connector. 
@@ -32,7 +35,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
    *
    * @async
    */
-  private async onInit() {
+  protected async onInit() {
     try {
       let localExecutableFolder: GitFolder;
       if (
@@ -76,7 +79,6 @@ class CommunityContributionMaintainer extends BaseMaintainer {
           localExecutableFolder,
           this.job.hpc,
           this.job.userId,
-          this.connector
         )
       );
       
@@ -93,7 +95,6 @@ class CommunityContributionMaintainer extends BaseMaintainer {
           this.job.hpc,
           this.job.userId,
           this.job.id,
-          this.connector
         );
 
         this.connector.setRemoteDataFolderPath(uploader.hpcPath);
@@ -113,7 +114,6 @@ class CommunityContributionMaintainer extends BaseMaintainer {
         this.job.hpc,
         this.job.userId,
         this.job.id,
-        this.connector
       );
       this.connector.setRemoteResultFolderPath(uploader.hpcPath);
       this.job.remoteResultFolder = (await dataSource
@@ -158,7 +158,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
    *
    * @async
    */
-  private async onMaintain() {
+  protected async onMaintain() {
     try {
       // query HPC status via connector
       const status = await this.connector.getStatus();
@@ -226,21 +226,21 @@ class CommunityContributionMaintainer extends BaseMaintainer {
   /**
    * Pause the connector
    */
-  private async onPause() {
+  protected async onPause() {
     await this.connector.pause();
   }
 
   /**
    * Resume the connector
    */
-  private async onResume() {
+  protected async onResume() {
     await this.connector.resume();
   }
 
   /**
    * Cancel the connector
    */
-  private async onCancel() {
+  protected async onCancel() {
     await this.connector.cancel();
   }
 }

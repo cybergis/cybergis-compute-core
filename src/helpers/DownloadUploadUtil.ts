@@ -1,6 +1,6 @@
 
 
-import BaseConnector from "../connectors/BaseConnector";
+import { SSHConnector } from "../connectors";
 import { ConnectorError } from "../definitions";
 
 import * as Helper from "./Helper";

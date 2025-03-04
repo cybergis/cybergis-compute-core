@@ -5,6 +5,7 @@ import {
   hpcConfigMap,
   maintainerConfigMap,
 } from "../../configs/config";
+import { SlurmConnector, SingularityConnector } from "../connectors";
 import {
   maintainerConfig,
   event,
@@ -131,7 +132,6 @@ abstract class BaseMaintainer {
 
   /**
    * This function is called when the supervisor tries to cancel the current job/maintainer.
-   * TODO: make a corresponding supervisor-facing function to be nore inline with the other onX functions.
    * 
    * @async
    */
@@ -170,7 +170,7 @@ abstract class BaseMaintainer {
    *
    * @async
    */
-  protected async init() {
+  public async init() {
     // check if already trying to init -- if so, don't start another async instance
     if (this._lock) return;
     this._lock = true;
@@ -221,6 +221,10 @@ abstract class BaseMaintainer {
     this._lock = false;
   }
 
+  public async cancel() {
+    await this.onCancel();
+  }
+
   /**
    * Clear all logs in this.logs
    *
@@ -264,6 +268,41 @@ abstract class BaseMaintainer {
     const temp = await jobRepo.findOneBy({ id: this.id });
     Helper.nullGuard(temp);
     this.job = temp;
+  }
+
+  /**
+   * Return the slurm connector associated with this job and hpc.
+   *
+   * @public
+   * @returns {SlurmConnector} - The slurm connector associated with this job.
+   */
+  public getSlurmConnector(): SlurmConnector {
+    return new SlurmConnector(this);
+  }
+
+  /**
+   * Return the singularity connector associated with this job and hpc.
+   *
+   * @public
+   * @returns {SingularityConnector} - The singularity connector associated with this job.
+   */
+  public getSingularityConnector(): SingularityConnector {
+    return new SingularityConnector(
+      this, 
+    );
+  }
+
+  /**
+   * Return the Singularity connector associated with this job and hpc.
+   *
+   * @public
+   * @returns {SingularityConnector} - The singularity connector associated with this job with cvmfs turned on.
+   */
+  public getSingCVMFSConnector(): SingularityConnector {
+    return new SingularityConnector(
+      this,
+      true
+    );
   }
 }
 

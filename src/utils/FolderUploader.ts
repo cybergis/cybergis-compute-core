@@ -4,7 +4,7 @@ import * as fs from "fs";
 import * as path from "path";
 
 import { hpcConfigMap } from "../../configs/config";
-import { SSHConnector } from "../connectors/SSHConnector";
+import { SSHConnector } from "../connectors";
 import { NotImplementedError } from "../definitions";
 import {
   BaseFolder,
@@ -38,7 +38,7 @@ export abstract class BaseFolderUploader {
 
   protected connector: SSHConnector;
 
-  public constructor(hpcName: string, userId: string) {
+  public constructor(hpcName: string, userId: string, connector?: SSHConnector) {
     this.hpcName = hpcName;
     this.hpcConfig = hpcConfigMap[hpcName];
     if (!this.hpcConfig)
@@ -56,7 +56,7 @@ export abstract class BaseFolderUploader {
       : null
     );
 
-    this.connector = new SSHConnector(hpcName);
+    this.connector = connector ?? new SSHConnector(hpcName);
   }
 
   public abstract upload(): Promise<void>;

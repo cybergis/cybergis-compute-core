@@ -4,7 +4,7 @@ import { Log } from "../src/models";
 import dataSource from "../src/utils/DB";
 
 export default class TestHelper {
-  static async createJob(
+  public static async createJob(
     id: string,
     userId: string,
     secretToken: string,
@@ -20,7 +20,7 @@ export default class TestHelper {
     return await jobRepository.save(job);
   }
 
-  static async createEvent(
+  public static async createEvent(
     job: Job,
     type: string,
     message: string
@@ -34,7 +34,7 @@ export default class TestHelper {
     return await eventRepository.save(event);
   }
 
-  static async createLog(job: Job, message: string): Promise<Log> {
+  public static async createLog(job: Job, message: string): Promise<Log> {
     const logRepository = dataSource.getRepository(Log);
     const log = new Log();
     log.job = job;

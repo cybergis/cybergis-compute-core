@@ -191,7 +191,7 @@ export class JobQueue extends RedisStore {
    * 
    * @returns {number} length
    */
-  async length(): Promise<number> {
+  public async length(): Promise<number> {
     return this.client.LLEN(this.name);
   }
 
@@ -238,7 +238,7 @@ export class CredentialManager extends RedisStore {
    * @param {string} key
    * @param {credential} cred credential
    */
-  async add(key: string, cred: credential) {
+  public async add(key: string, cred: credential) {
     await this.client.SET(key, JSON.stringify(cred));
   }
 
@@ -248,7 +248,7 @@ export class CredentialManager extends RedisStore {
    * @param {string} key target key
    * @return {Promise<credential>} associated credential
    */
-  async get(key: string): Promise<credential | null> {
+  public async get(key: string): Promise<credential | null> {
     const out = await this.client.GET(key);
 
     if (out === null) {

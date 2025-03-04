@@ -1,8 +1,7 @@
 import * as events from "events";
 
 import { config, maintainerConfigMap, hpcConfigMap } from "../../configs/config";
-import { connectionPool } from "../connectors/ConnectionPool";
-import { SSH } from "../definitions";
+import { connectionReady } from "../connectors";
 import { registerEvents, registerLogs } from "../helpers/EmitterUtil";
 import * as Helper from "../helpers/Helper";
 import { maintainerMap } from "../maintainers/util";
@@ -128,17 +127,7 @@ class Supervisor {
     // keep looping while the job is not finished
     // eslint-disable-next-line no-constant-condition
     while (true) {
-      // get ssh connector from pool
-      let ssh: SSH | null;
-      if (job
-        .maintainerInstance?.connector?.isCommunityAccount()
-      ) {
-        ssh = await connectionPool.getHpcConnection(job.hpc);
-      } else {
-        ssh = await connectionPool.getJobConnection(job);
-      }
-
-      if (!ssh.isConnected()) {
+      if (!connectionReady(job.hpc, job)) {
         await registerEvents(
           job,
           "JOB_FAILED",
@@ -173,7 +162,7 @@ class Supervisor {
       }
 
       if (shouldCancel && job.maintainerInstance.jobOnHpc) {
-        await job.maintainerInstance.onCancel();
+        await job.maintainerInstance.cancel();
         const index = this.cancelJobs[job.hpc].indexOf(job, 0);
         if (index > -1) {
           this.cancelJobs[job.hpc].splice(index, 1);
