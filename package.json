@@ -53,7 +53,7 @@
       "@types/express-fileupload": "^1.4.4",
       "@types/jest": "^27.4.1",
       "@types/morgan": "^1.9.9",
-      "@types/node": "^16.11.10",
+      "@types/node": "^16.18.126",
       "@types/node-ssh": "^7.0.1",
       "@types/ssh2": "^0.5.46",
       "@types/swagger-jsdoc": "^6.0.4",
