@@ -1,6 +1,6 @@
 
 
-import { SSHConnector } from "../connectors";
+import { connectionReady, SSHConnector } from "../connectors";
 import { ConnectorError } from "../definitions";
 
 import * as Helper from "./Helper";
@@ -13,8 +13,12 @@ export async function download(from: string, to: string, hpc: string): Promise<v
 
   console.log("start download");
 
+  if (!connectionReady(hpc)) {
+    throw new ConnectorError("unable to connect to HPC");
+  }
+
   try {
-    const connector = new BaseConnector(hpc);
+    const connector = new SSHConnector(hpc);
 
     await connector.download(from, to);
   } catch (e) {
@@ -24,3 +28,4 @@ export async function download(from: string, to: string, hpc: string): Promise<v
   console.log("downloaded file from", from, "to", to);
 }
 
+// export async function upload()
