@@ -18,7 +18,7 @@ Dependencies: the settings files and some custom types
 Dependents: nearly everything
 
 Improvements: 
-- migrate the configs from json to yaml for a much greater ease of use
+- ~~migrate the configs from json to yaml for a much greater ease of use~~
 - ~~don't export objects -- think of a better way to approach configs~~ (it's fine)
 - actually figure out what field are required & not required for configs & update typings accordingly
 - ~~separate out the example configs from the real ones~~
@@ -63,12 +63,12 @@ Dependents:
 
 Improvements
 
-- ssh connections to each HPC are not initialized within any connectors/the connection pool -- it relies on the connection being estbalisehed and verified within Supervisor.ts first, which may be problematic
-- can move some instance variables to down from `BaseConnector` as they are not used in BaseConnector
-- can also remove some instance variables -- `db` (no database connection used)
-- no connectors are actually explicitly initialized -- they are only created through a maintainer function due to a weird two-way relationship between the two (a maintainer needs a connector, which needs a maintainer)
+- ~~ssh connections to each HPC are not initialized within any connectors/the connection pool -- it relies on the connection being estbalisehed and verified within Supervisor.ts first, which may be problematic~~
+- ~~can move some instance variables to down from `BaseConnector` as they are not used in BaseConnector~~
+- ~~can also remove some instance variables -- `db` (no database connection used)~~
+- ~~no connectors are actually explicitly initialized -- they are only created through a maintainer function due to a weird two-way relationship between the two (a maintainer needs a connector, which needs a maintainer)~~
 - many unused functions (particularly specialized shell commands like `ls` in BaseConnector)
-- modularize `connectionPool` into a class and make the ability to add in job-specific connections more transparent
+- ~~modularize `connectionPool` into a class and make the ability to add in job-specific connections more transparent~~
 - ~~switch to a more modern & error-friendly sdk for ssh execs~~
     - add more rigorous error checking for execs
 
@@ -149,7 +149,7 @@ General Improvements
 - ~~work out the `folderUtil` vs. `registerUtil` naming discrepancy ~~
 - ~~update the database to support the new manifest-specific GitUtil things and update everything accordingly~~ (no longer needed)
 - ~~port all the python globus scripts to the javascript globus SDK & delete `PythonUtil`~~
-- verify `XSEDEUtil` actually does things & is meaningful
+- ~~verify `XSEDEUtil` actually does things & is meaningful~~
 - ~~make a RedisUtil class to encapsulate all of the individual redis interfaces (which are essentially the same with a few naming differences)~~
     - ~~make the redis connections less weird~~
     - ~~make the redis connection actually persistent and not local~~
@@ -187,8 +187,8 @@ Dependents:
 Improvements:
 - decide concretely whether some of these instance variables should be undefined or not; remove unused instance variables
     - move instance variables down to specialized classes
-- rework/remove the getXConnector functions (maybe just give it the emitter for job logging it needs?)
-- standardize (and formalize via data hiding?) the OnX and supervisor-facing functions
+- ~~rework/remove the getXConnector functions (maybe just give it the emitter for job logging it needs?)~~
+- ~~standardize (and formalize via data hiding?) the OnX and supervisor-facing functions~~
 - find out why there are missing maintainers
 - create more maintainers?
 
@@ -300,7 +300,7 @@ Improvements:
 - better handle how instance variables are inherited to prevent them from appearing too early unnecessarily
     - rework some of the typings
 - potentially remove some unused classes
-- is there any point in having connectors be passed to it instead of just making a baseconnector
+- ~~is there any point in having connectors be passed to it instead of just making a baseconnector~~
 - ~~think if globus transfers of data should be cached~~ (no)
 - ~~remove the FolderUploaderHelper -- too generic for its own good~~
 - ~~make the Folders database be better integrated for cached uploads (just uploads under a cache user right now)~~
@@ -407,8 +407,8 @@ As alluded to earlier, this file creates an `express` server to expose various e
 
 Improvements:
 - finish/archive the non-implemented endpoints
-- declutter things
-    - possibly segment endpoints in to categories & create multiple files for endpoint specification
+- ~~declutter things~~
+    - ~~possibly segment endpoints in to categories & create multiple files for endpoint specification~~
 
 Overall Improvements and TODOs:
 
