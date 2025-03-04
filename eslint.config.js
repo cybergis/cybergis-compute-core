@@ -104,9 +104,9 @@ module.exports = tseslint.config(
         }
       ],
       // "@typescript-eslint/explicit-member-accessibility": "error",
+      "no-constant-condition": "off"
     },
   },
-
   {
     ignores: ["production/*", "node_modules/*"]
   }
