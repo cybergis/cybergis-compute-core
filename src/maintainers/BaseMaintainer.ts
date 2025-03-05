@@ -5,9 +5,7 @@ import {
   hpcConfigMap,
   maintainerConfigMap,
 } from "../../configs/config";
-import BaseConnector from "../connectors/BaseConnector";
-import SingularityConnector from "../connectors/SingularityConnector";
-import SlurmConnector from "../connectors/SlurmConnector";
+import { SlurmConnector, SingularityConnector } from "../connectors";
 import {
   maintainerConfig,
   event,
@@ -32,7 +30,8 @@ abstract class BaseMaintainer {
 
   /** config **/
   public job: Job;
-  public hpc: hpcConfig | undefined = undefined;
+  public hpc: string;
+  public hpcSettings: hpcConfig;
   public maintainerConfig: maintainerConfig | undefined = undefined;
   public id: string;
   public slurm: slurm | undefined = undefined;
@@ -64,7 +63,7 @@ abstract class BaseMaintainer {
   // public appParam: Record<string, string> = {};
 
   /** HPC connectors **/
-  public connector!: BaseConnector;
+  // public abstract connector: SlurmConnector;
 
   /** data **/
   protected logs: string[] = [];
@@ -72,7 +71,7 @@ abstract class BaseMaintainer {
 
 
   /** constructor **/
-  constructor(job: Job) {
+  public constructor(job: Job) {
     // try to validate the job's environment
     if (job.env !== undefined) {
       for (const i in this.envParamValidators) {
@@ -90,11 +89,9 @@ abstract class BaseMaintainer {
     this.slurm = job.slurm;
 
     // determine if the current hpc exists within the config
-    const hpc = job.hpc ? job.hpc : this.maintainerConfig.default_hpc;
-    this.hpc = hpcConfigMap[hpc];
-    if (!this.hpc) throw new Error("cannot find hpc with name [" + hpc + "]");
-
-    this.onDefine();  // can't instantiate this class, abstract
+    this.hpc = job.hpc ? job.hpc : this.maintainerConfig.default_hpc;
+    this.hpcSettings = hpcConfigMap[this.hpc];
+    if (!this.hpcSettings) throw new Error("cannot find hpc with name [" + this.hpc + "]");
   }
 
   /** abstract lifecycle interfaces **/
@@ -102,7 +99,7 @@ abstract class BaseMaintainer {
   /**
    * This function is called when the maintainer is created (during the constructor). Can leave empty. 
    */
-  abstract onDefine(): void;
+  protected abstract onDefine(): void;
 
   /**
    * This function is called when the maintainer is initialized--i.e., it begins work on maintaining the job. Called in the supervisor-facing
@@ -110,36 +107,35 @@ abstract class BaseMaintainer {
    * 
    * @async
    */
-  abstract onInit(): Promise<void>;
+  protected abstract onInit(): Promise<void>;
 
   /**
    * This function is called when the supervisor-facing maintain() function is called to maintain (monitor the status of) the job. 
    * 
    * @async
    */
-  abstract onMaintain(): Promise<void>;
+  protected abstract onMaintain(): Promise<void>;
 
   /**
    * This function is called when the supervisor tries to pause the current job/maintainer. Not used.
    * 
    * @async
    */
-  abstract onPause(): Promise<void>;
+  protected abstract onPause(): Promise<void>;
 
   /**
    * This function is called when the supervisor tries to resume the current job/maintainer after pause. Not used.
    * 
    * @async
    */
-  abstract onResume(): Promise<void>;
+  protected abstract onResume(): Promise<void>;
 
   /**
    * This function is called when the supervisor tries to cancel the current job/maintainer.
-   * TODO: make a corresponding supervisor-facing function to be nore inline with the other onX functions.
    * 
    * @async
    */
-  abstract onCancel(): Promise<void>;
+  protected abstract onCancel(): Promise<void>;
 
   /** emitters **/
   /**
@@ -148,7 +144,7 @@ abstract class BaseMaintainer {
    * @param {string} type - Type of event to be recorded
    * @param {string} message - Message associated with the event
    */
-  emitEvent(type: string, message: string) {
+  public emitEvent(type: string, message: string) {
     if (type === "JOB_INIT") this.isInit = true;
     if (type === "JOB_ENDED" || type === "JOB_FAILED") this.isEnd = true;
 
@@ -163,7 +159,7 @@ abstract class BaseMaintainer {
    *
    * @param {string} message - Message associated with the event
    */
-  emitLog(message: string) {
+  public emitLog(message: string) {
     this.logs.push(message);
   }
 
@@ -174,7 +170,7 @@ abstract class BaseMaintainer {
    *
    * @async
    */
-  async init() {
+  public async init() {
     // check if already trying to init -- if so, don't start another async instance
     if (this._lock) return;
     this._lock = true;
@@ -197,7 +193,7 @@ abstract class BaseMaintainer {
    *
    * @async
    */
-  async maintain() {
+  public async maintain() {
     // check if already trying to do this -- if so, don't start another async instance
     if (this._lock) return;
     this._lock = true;
@@ -225,13 +221,17 @@ abstract class BaseMaintainer {
     this._lock = false;
   }
 
+  public async cancel() {
+    await this.onCancel();
+  }
+
   /**
    * Clear all logs in this.logs
    *
    * @async
    * @return {string[]} - List of jobs that were just deleted.
    */
-  dumpLogs(): string[] {
+  public dumpLogs(): string[] {
     const logs = this.logs;
     this.logs = [];
     return logs;
@@ -243,7 +243,7 @@ abstract class BaseMaintainer {
    * @async
    * @return {event[]} - List of events that were just deleted.
    */
-  dumpEvents(): event[] {
+  public dumpEvents(): event[] {
     const events = this.events;
     this.events = [];
     return events;
@@ -277,7 +277,7 @@ abstract class BaseMaintainer {
    * @returns {SlurmConnector} - The slurm connector associated with this job.
    */
   public getSlurmConnector(): SlurmConnector {
-    return new SlurmConnector(this.job.hpc, this.job.id, this, this.job.env);
+    return new SlurmConnector(this);
   }
 
   /**
@@ -288,10 +288,7 @@ abstract class BaseMaintainer {
    */
   public getSingularityConnector(): SingularityConnector {
     return new SingularityConnector(
-      this.job.hpc,
-      this.job.id,
-      this,
-      this.job.env
+      this, 
     );
   }
 
@@ -303,22 +300,9 @@ abstract class BaseMaintainer {
    */
   public getSingCVMFSConnector(): SingularityConnector {
     return new SingularityConnector(
-      this.job.hpc,
-      this.job.id,
       this,
-      this.job.env,
       true
     );
-  }
-
-  /**
-   * Return the base connector associated with this job and hpc. Never used. 
-   *
-   * @public
-   * @returns {BaseConnector} - The base connector associated with this job.
-   */
-  public getBaseConnector(): BaseConnector {
-    return new BaseConnector(this.job.hpc, this.job.id, this, this.job.env);
   }
 }
 

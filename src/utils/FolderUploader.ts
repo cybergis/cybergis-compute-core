@@ -4,9 +4,7 @@ import * as fs from "fs";
 import * as path from "path";
 
 import { hpcConfigMap } from "../../configs/config";
-import BaseConnector from "../connectors/BaseConnector";
-import SingularityConnector from "../connectors/SingularityConnector";
-import SlurmConnector from "../connectors/SlurmConnector";
+import { SSHConnector } from "../connectors";
 import {
   BaseFolder,
   GitFolder,
@@ -23,11 +21,6 @@ import { Cache, Folder } from "../models";
 
 import dataSource from "./DB";
 
-type Connector =
-  | BaseConnector
-  | SlurmConnector
-  | SingularityConnector
-
 /**
  * Base class for encapsulating information about a folder upload.
  */
@@ -43,9 +36,9 @@ export abstract class BaseFolderUploader {
   public isComplete: boolean;
   public isFailed: boolean;
 
-  protected connector: Connector;
+  protected connector: SSHConnector;
 
-  constructor(hpcName: string, userId: string, connector?: Connector) {
+  constructor(hpcName: string, userId: string, connector: SSHConnector) {
     this.hpcName = hpcName;
     this.hpcConfig = hpcConfigMap[hpcName];
     if (!this.hpcConfig)
@@ -63,7 +56,7 @@ export abstract class BaseFolderUploader {
       : null
     ); 
 
-    this.connector = connector ?? new BaseConnector(hpcName);
+    this.connector = connector ?? new SSHConnector(hpcName);
   }
 
    
@@ -99,7 +92,7 @@ export class EmptyFolderUploader extends BaseFolderUploader {
     hpcName: string,
     userId: string,
     jobId: string,
-    connector?: Connector
+    connector: SSHConnector
   ) {
     super(hpcName, userId, connector);
   }
@@ -207,7 +200,7 @@ abstract class CachedFolderUploader extends BaseFolderUploader {
     cacheFile: string,
     hpcName: string,
     userId: string,
-    connector?: Connector,
+    connector: SSHConnector,
   ) {
     super(hpcName, userId, connector);
 
@@ -354,12 +347,13 @@ class GlobusFolderUploader extends CachedFolderUploader {
     from: GlobusFolder,
     hpcName: string,
     userId: string,
-    jobId: string
+    jobId: string,
+    connector: SSHConnector
   ) {
     // TODO: make this more robust to handle arbitrar globus paths
     // path/to/root/path/to/localfolder -> path-to-root-path-to-localfolder
     const cachePath = from.path.replace(/[/\\]/g, "-").replace("~", "base").replace(" ", "").replace(".", "dot");
-    super(cachePath, hpcName, userId);
+    super(cachePath, hpcName, userId, connector);
 
     if (!this.hpcConfig)
       throw new Error(`cannot find hpcConfig with name ${hpcName}`);
@@ -451,12 +445,11 @@ export class LocalFolderUploader extends CachedFolderUploader {
     from: LocalFolder,
     hpcName: string,
     userId: string,
-    connector: Connector | null = null
+    connector: SSHConnector
   ) {
     const parts = from.localPath.split("/");
-    super(parts[parts.length - 1], hpcName, userId);
+    super(parts[parts.length - 1], hpcName, userId, connector);
     this.localPath = from.localPath;
-    this.connector = connector ?? new BaseConnector(hpcName);
   }
 
   /**
@@ -519,7 +512,7 @@ export class GitFolderUploader extends LocalFolderUploader   {
     from: GitFolder,
     hpcName: string,
     userId: string,
-    connector: Connector | null = null
+    connector: SSHConnector
   ) {
     const localPath: string = GitUtil.getLocalPath(from.gitId);
     
@@ -560,7 +553,7 @@ export class FolderUploaderHelper {
    * @param {string} hpcName name of hpc to uplaod to
    * @param {string} userId current user
    * @param {string} [jobId=""] job associated with the folder upload (optional)
-   * @param {Connector} [connector=null] connector to connect to HPC with, if needed
+   * @param {SSHConnector} [connector=null] connector to connect to HPC with, if needed
    * @throws {Error} invalid file type/format
    * @return {Promise<BaseFolderUploader>} folder uploader object used to upload the folder, can check if upload was successful via {uploader}.isComplete
    */
@@ -568,8 +561,8 @@ export class FolderUploaderHelper {
     from: BaseFolder,
     hpcName: string,
     userId: string,
+    connector: SSHConnector,
     jobId = "",
-    connector: Connector | null = null
   ): Promise<BaseFolderUploader> {
 
     let uploader: BaseFolderUploader;
@@ -599,7 +592,8 @@ export class FolderUploaderHelper {
         from as GlobusFolder, 
         hpcName, 
         userId, 
-        jobId
+        jobId,
+        connector
         );
 
         await uploader.upload();
@@ -624,7 +618,7 @@ export class FolderUploaderHelper {
    * @param {NeedUploadFolder} from either a GlobusFolder, GitFolder, or LocalFolder
    * @param {string} hpcName name of hpc to uplaod to
    * @param {string} userId current user
-   * @param {Connector} [connector=null] connector to connect to HPC with, if needed
+   * @param {SSHConnector} [connector=null] connector to connect to HPC with, if needed
    * @throws {Error} invalid file type/format
    * @return {Promise<BaseFolderUploader>} folder uploader object used to upload the folder, can check if upload was successful via {uploader}.isComplete
    */
@@ -632,7 +626,7 @@ export class FolderUploaderHelper {
     from: GitFolder,
     hpcName: string,
     userId: string,
-    connector: Connector | null = null
+    connector: SSHConnector
   ): Promise<CachedFolderUploader> {
     // if type not specified, throw an error
     if (!from.type) throw new Error("invalid local file format");

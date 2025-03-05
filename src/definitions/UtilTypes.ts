@@ -28,10 +28,7 @@ export declare type SSHConfig = ConnectConfig & {
   ) => void;
 };
 
-export interface SSH {
-  connection: NodeSSH;
-  config: SSHConfig;
-}
+export type SSH = NodeSSH;
 
 export interface jobMaintainerUpdatable {
   param?: Record<string, string>;

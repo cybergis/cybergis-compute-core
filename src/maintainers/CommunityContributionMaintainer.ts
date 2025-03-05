@@ -1,9 +1,9 @@
-import SingularityConnector from "../connectors/SingularityConnector";
+import { SingularityConnector } from "../connectors";
 import { executableManifest, GitFolder } from "../definitions";
 import GitUtil from "../helpers/GitUtil";
 import * as Helper from "../helpers/Helper";
 import { jobLog } from "../helpers/XSEDEUtil";
-import { Folder, Git } from "../models";
+import { Folder, Git, Job } from "../models";
 import dataSource from "../utils/DB";
 import { BaseFolderUploader, FolderUploaderHelper } from "../utils/FolderUploader";
 import { ResultFolderContentManager } from "../utils/Redis";
@@ -14,25 +14,28 @@ import BaseMaintainer from "./BaseMaintainer";
  * Specialized maintainer for handling jobs submitted to community HPCs (no login). Inherits from BaseMaintainer.
  */
 class CommunityContributionMaintainer extends BaseMaintainer {
-
-  declare public connector: SingularityConnector;  // connector to communicate with HPC
+  public connector!: SingularityConnector;
 
   public resultFolderContentManager: ResultFolderContentManager =
     new ResultFolderContentManager();
-
   public executableManifest!: executableManifest;  // details about the job
 
-  onDefine() {
+  public constructor(job: Job
+  ) {
+    super(job);
+
     this.connector = this.getSingularityConnector();
   }
 
+  protected onDefine = () => undefined;
+  
   /**
    * On maintainer initialization, set executableManifest, and give it to the connector. 
    * Update the event log to reflect the job being initialized or encountering a system error.
    *
    * @async
    */
-  async onInit() {
+  protected async onInit() {
     try {
       let localExecutableFolder: GitFolder;
       if (
@@ -76,7 +79,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
           localExecutableFolder,
           this.job.hpc,
           this.job.userId,
-          this.connector
+          this.connector.getSSHConnection()
         )
       );
       
@@ -92,8 +95,8 @@ class CommunityContributionMaintainer extends BaseMaintainer {
           this.job.localDataFolder,
           this.job.hpc,
           this.job.userId,
+          this.connector.getSSHConnection(),
           this.job.id,
-          this.connector
         );
 
         this.connector.setRemoteDataFolderPath(uploader.hpcPath);
@@ -112,8 +115,8 @@ class CommunityContributionMaintainer extends BaseMaintainer {
         { type: "empty" },
         this.job.hpc,
         this.job.userId,
+        this.connector.getSSHConnection(),
         this.job.id,
-        this.connector
       );
       this.connector.setRemoteResultFolderPath(uploader.hpcPath);
       this.job.remoteResultFolder = (await dataSource
@@ -144,7 +147,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
 
       // log on xsede
       Helper.nullGuard(this.hpc);
-      await jobLog(this.connector.slurm_id, this.hpc, this.job);
+      await jobLog(this.connector.slurm_id, this.hpcSettings, this.job);
     } catch (e) {
       this.emitEvent(
         "JOB_RETRY",
@@ -158,7 +161,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
    *
    * @async
    */
-  async onMaintain() {
+  protected async onMaintain() {
     try {
       // query HPC status via connector
       const status = await this.connector.getStatus();
@@ -185,7 +188,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
 
         // submit again to XSEDE
         Helper.nullGuard(this.hpc);
-        await jobLog(this.connector.slurm_id, this.hpc, this.job); // for backup submit
+        await jobLog(this.connector.slurm_id, this.hpcSettings, this.job); // for backup submit
 
         // fetch result folder content
         // TODO: make this shorter
@@ -212,7 +215,6 @@ class CommunityContributionMaintainer extends BaseMaintainer {
         }
 
         // update redis with this job's contents
-        Helper.nullGuard(this.id);
         await this.resultFolderContentManager.put(this.id, contents);
       }
     } catch (e) {
@@ -227,21 +229,21 @@ class CommunityContributionMaintainer extends BaseMaintainer {
   /**
    * Pause the connector
    */
-  async onPause() {
+  protected async onPause() {
     await this.connector.pause();
   }
 
   /**
    * Resume the connector
    */
-  async onResume() {
+  protected async onResume() {
     await this.connector.resume();
   }
 
   /**
    * Cancel the connector
    */
-  async onCancel() {
+  protected async onCancel() {
     await this.connector.cancel();
   }
 }
