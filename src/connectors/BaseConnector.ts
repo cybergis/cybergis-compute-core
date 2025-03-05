@@ -5,11 +5,11 @@ import * as path from "path";
 import { config, hpcConfigMap } from "../../configs/config";
 import { options, hpcConfig, SSH, callableFunction } from "../definitions";
 import { ConnectorError } from "../definitions";
-import FileUtil from "../helpers/FolderUtil";  // shouldn't this be registerUtil?
 import * as Helper from "../helpers/Helper";
 import BaseMaintainer from "../maintainers/BaseMaintainer";
 
 import connectionPool from "./ConnectionPool";
+import { putFileFromZip } from "../helpers/FolderUtil";
 
 /**
  * Base class for connecting with the HPC environment, mainly via shell scripts.
@@ -193,7 +193,7 @@ class BaseConnector {
       await this.rm(fromZipFilePath);
 
       // decompress the transferred file into the toZipFilePath directory
-      await FileUtil.putFileFromZip(to, toZipFilePath);
+      await putFileFromZip(to, toZipFilePath);
     } catch (e) {
       const error = `unable to get file from ${from} to ${to}: ` + Helper.assertError(e).toString();
 

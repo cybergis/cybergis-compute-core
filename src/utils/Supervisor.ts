@@ -10,8 +10,8 @@ import BaseMaintainer from "../maintainers/BaseMaintainer";
 import { Job } from "../models";
 
 import dataSource from "./DB";
-import Emitter from "./Emitter";
 import { JobQueue } from "./Redis";
+import { registerEvents, registerLogs } from "../helpers/EmitterUtil";
 
 /**
  * Manages 
@@ -24,8 +24,6 @@ class Supervisor {
   private queues: Record<string, JobQueue> = {};  // queues of jobs
   private runningJobs: Record<string, Job[]> = {};  // running jobs
   private cancelJobs: Record<string, Job[]> = {};  // what jobs to cancel
-
-  private emitter = new Emitter();  // emitter reference
 
   private maintainerMasterThread: NodeJS.Timeout | null = null;  // main loop
 
@@ -87,7 +85,7 @@ class Supervisor {
             if (config.is_testing) console.log(`Added job to running jobs: ${job.id}`);
           } catch (e) {
             // log error and skip job
-            await this.emitter.registerEvents(
+            await registerEvents(
               job,
               "JOB_INIT_ERROR",
               `job [${job.id}] failed to initialized with error ${Helper.assertError(e).toString()}`
@@ -131,7 +129,7 @@ class Supervisor {
           }
 
           // emit event
-          await this.emitter.registerEvents(
+          await registerEvents(
             job,
             "JOB_REGISTERED",
             `job [${job.id}] is registered with the supervisor, waiting for initialization`
@@ -182,7 +180,7 @@ class Supervisor {
           }) as callableFunction, [ssh], null);
         } catch (e) {
           console.log(`job [${job.id}]: Caught ${Helper.assertError(e).toString()}`);
-          await this.emitter.registerEvents(
+          await registerEvents(
             job,
             "JOB_FAILED",
             `job [${job.id}] failed because the HPC could not connect within the allotted time`
@@ -202,8 +200,8 @@ class Supervisor {
 
       // TODO: no need to dump events or logs outside the maintainer
       for (const event of events)
-        await this.emitter.registerEvents(job, event.type, event.message);
-      for (const log of logs) await this.emitter.registerLogs(job, log);
+        await registerEvents(job, event.type, event.message);
+      for (const log of logs) await registerLogs(job, log);
 
       // check if job should be canceled
       let shouldCancel = false;
@@ -267,7 +265,7 @@ class Supervisor {
    */
   async pushJobToQueue(job: Job) {
     await this.queues[job.hpc].push(job);
-    await this.emitter.registerEvents(
+    await registerEvents(
       job,
       "JOB_QUEUED",
       "job [" + job.id + "] is queued, waiting for registration"

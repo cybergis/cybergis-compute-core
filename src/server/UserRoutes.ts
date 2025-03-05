@@ -8,11 +8,11 @@ import {
 } from "../../configs/config";
 import { GlobusClient } from "../helpers/GlobusTransferUtil";
 import * as Helper from "../helpers/Helper";
-import JobUtil from "../helpers/JobUtil";
 import { Job } from "../models";
 import dataSource from "../utils/DB";
 
 import { authMiddleWare } from "./ServerUtil";
+import { getUserSlurmUsage } from "../helpers/JobUtil";
 
 const userRouter = express.Router();
 
@@ -154,7 +154,7 @@ userRouter.get("/slurm-usage", authMiddleWare, async (req, res) => {
   
   // get all jobs associated with user, then aggregate, then return that
   res.json(
-    await JobUtil.getUserSlurmUsage(res.locals.username as string, true)
+    await getUserSlurmUsage(res.locals.username as string, true)
   );
 });
 

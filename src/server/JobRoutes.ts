@@ -9,11 +9,11 @@ import type {
   updateJobBody,
 } from "../definitions";
 import * as Helper from "../helpers/Helper";
-import JobUtil from "../helpers/JobUtil";
 import { Job } from "../models";
 import dataSource from "../utils/DB";
 
 import { authMiddleWare, requestErrors, validator, schemas, sshCredentialGuard, prepareDataForDB, supervisor, resultFolderContent } from "./ServerUtil";
+import { validateJob } from "../helpers/JobUtil";
 
 
 const jobRouter = express.Router();
@@ -245,7 +245,7 @@ jobRouter.post("/:jobId/submit", authMiddleWare, async function (req, res) {
   
   try {
     // validate job and push it to the job queue
-    JobUtil.validateJob(job);
+    validateJob(job);
     await supervisor.pushJobToQueue(job);
   
     // update status of the job

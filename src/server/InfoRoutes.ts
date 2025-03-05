@@ -8,7 +8,8 @@ import * as Helper from "../helpers/Helper";
 import { Job } from "../models";
 import dataSource from "../utils/DB";
 
-import { authMiddleWare, statistic } from "./ServerUtil";
+import { authMiddleWare } from "./ServerUtil";
+import { getRuntimeByJobId, getRuntimeTotal } from "../helpers/StatisticUtil";
 
 const infoRouter = express.Router();
 
@@ -23,7 +24,7 @@ const infoRouter = express.Router();
  *
  */
 infoRouter.get("/statistic", async (req, res) => {
-  res.json({ runtime_in_seconds: await statistic.getRuntimeTotal() });
+  res.json({ runtime_in_seconds: await getRuntimeTotal() });
 });
   
 /**
@@ -56,7 +57,7 @@ infoRouter.get("/statistic/job/:jobId", authMiddleWare, async (req, res) => {
       throw new Error("job not found.");
     }
   
-    res.json({ runtime_in_seconds: await statistic.getRuntimeByJobId(job.id) });
+    res.json({ runtime_in_seconds: await getRuntimeByJobId(job.id) });
   } catch (e) {
     res.status(401).json(
       { error: "invalid access", messages: [Helper.assertError(e).toString()] }

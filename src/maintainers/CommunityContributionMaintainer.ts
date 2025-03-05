@@ -2,7 +2,7 @@ import SingularityConnector from "../connectors/SingularityConnector";
 import { executableManifest, GitFolder } from "../definitions";
 import GitUtil from "../helpers/GitUtil";
 import * as Helper from "../helpers/Helper";
-import XSEDEUtil from "../helpers/XSEDEUtil";
+import { jobLog } from "../helpers/XSEDEUtil";
 import { Folder, Git } from "../models";
 import dataSource from "../utils/DB";
 import { BaseFolderUploader, FolderUploaderHelper } from "../utils/FolderUploader";
@@ -144,7 +144,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
 
       // log on xsede
       Helper.nullGuard(this.hpc);
-      await XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc, this.job);
+      await jobLog(this.connector.slurm_id, this.hpc, this.job);
     } catch (e) {
       this.emitEvent(
         "JOB_RETRY",
@@ -185,7 +185,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
 
         // submit again to XSEDE
         Helper.nullGuard(this.hpc);
-        await XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc, this.job); // for backup submit
+        await jobLog(this.connector.slurm_id, this.hpc, this.job); // for backup submit
 
         // fetch result folder content
         // TODO: make this shorter

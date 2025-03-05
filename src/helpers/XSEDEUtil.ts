@@ -7,11 +7,11 @@ import { Job } from "../models";
 /**
  * Class for accessing XSEDE commands. May be deprecated (https://www.xsede.org/)?
  */
-export default class XSEDEUtil {
-  static jobLogURL =
+
+const jobLogURL =
     "https://xsede-xdcdb-api.xsede.org/gateway/v2/job_attributes";
 
-  /**
+/**
    * @static
    * Register user job to XSEDE log
    *
@@ -19,50 +19,50 @@ export default class XSEDEUtil {
    * @param {hpcConfig} hpc - hpcConfiguration
    * @param {Job} job - job object
    */
-  static async jobLog(slurmId: string, hpc: hpcConfig, job: Job) {
-    if (!hpc.xsede_job_log_credential) return;
+export async function jobLog(slurmId: string, hpc: hpcConfig, job: Job) {
+  if (!hpc.xsede_job_log_credential) return;
 
-    try {
-      const params = {
-        xsederesourcename: hpc.xsede_job_log_credential.xsederesourcename,
-        jobid: slurmId,
-        gatewayuser: job.userId,
-        submittime: XSEDEUtil.formateDate(job.createdAt),
-        // usage: XSEDEUtil.diffInSeconds(job.finishedAt, job.createdAt),
-        apikey: hpc.xsede_job_log_credential.apikey,
-      };
+  try {
+    const params = {
+      xsederesourcename: hpc.xsede_job_log_credential.xsederesourcename,
+      jobid: slurmId,
+      gatewayuser: job.userId,
+      submittime: formatDate(job.createdAt),
+      // usage: diffInSeconds(job.finishedAt, job.createdAt),
+      apikey: hpc.xsede_job_log_credential.apikey,
+    };
 
-      await axios.post(`${XSEDEUtil.jobLogURL}`, {}, { params });
-      if (config.is_testing) console.log("XSEDE job logged: ", params);
-    } catch (_) {
-      // best effort
-    }
+    await axios.post(`${jobLogURL}`, {}, { params });
+    if (config.is_testing) console.log("XSEDE job logged: ", params);
+  } catch (e) {
+    // best effort
   }
+}
 
-  /**
+/**
    * @static
    * Convert date to string fomat
    *
    * @paramP{Date} date - date format
    * @return{string} - date in string format
    */
-  static formateDate(date: Date): string {
-    // trust accessToken for an hour
-    const y = date.getUTCFullYear();
-    const m = date.getUTCMonth() + 1;
-    const d = date.getUTCDate();
-    const h = date.getUTCHours();
-    const min = date.getUTCMinutes();
+function formatDate(date: Date): string {
+  // trust accessToken for an hour
+  const y = date.getUTCFullYear();
+  const m = date.getUTCMonth() + 1;
+  const d = date.getUTCDate();
+  const h = date.getUTCHours();
+  const min = date.getUTCMinutes();
 
-    const mStr = m < 10 ? "0" + m.toString() : m.toString();
-    const dStr = d < 10 ? "0" + d.toString() : d.toString();
-    const hStr = h < 10 ? "0" + h.toString() : h.toString();
-    const minStr = min < 10 ? "0" + min.toString() : min.toString();
+  const mStr = m < 10 ? "0" + m.toString() : m.toString();
+  const dStr = d < 10 ? "0" + d.toString() : d.toString();
+  const hStr = h < 10 ? "0" + h.toString() : h.toString();
+  const minStr = min < 10 ? "0" + min.toString() : min.toString();
 
-    return `${y}-${mStr}-${dStr} ${hStr}:${minStr} UTC`;
-  }
+  return `${y}-${mStr}-${dStr} ${hStr}:${minStr} UTC`;
+}
 
-  /**
+/**
    * @static
    * Time difference in seconds
    *
@@ -70,7 +70,6 @@ export default class XSEDEUtil {
    * @param{float} b - time input 2
    * @return{float} - time difference in seconds
    */
-  static diffInSeconds(a: number, b: number) {
-    return Math.abs(a - b) / 1000;
-  }
+function diffInSeconds(a: number, b: number) { //eslint-disable-line @typescript-eslint/no-unused-vars
+  return Math.abs(a - b) / 1000;
 }
