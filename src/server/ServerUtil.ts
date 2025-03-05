@@ -1,17 +1,17 @@
 import { Request, NextFunction, Response } from "express";
 import jsonschema from "jsonschema";
 
-import { Folder } from "../models/Folder";
+import type {
+  authReqBody,
+  updateFolderBody,
+} from "../definitions";
+import { Folder } from "../models";
 import dataSource from "../utils/DB";
 import JupyterHub from "../utils/JupyterHub";
 import { ResultFolderContentManager, GlobusTaskListManager } from "../utils/Redis";
 import { SSHCredentialGuard } from "../utils/SSHCredentialGuard";
 import Statistic from "../utils/Statistic";
 import Supervisor from "../utils/Supervisor";
-import type {
-  authReqBody,
-  updateFolderBody,
-} from "../utils/types";
 
 
 // global object instantiation

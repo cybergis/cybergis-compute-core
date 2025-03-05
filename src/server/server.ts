@@ -7,7 +7,7 @@ import swaggerUi from "swagger-ui-express";
 import {
   config,
 } from "../../configs/config";
-import { Git } from "../models/Git";
+import { Git } from "../models";
 import dataSource from "../utils/DB";
 
 import folderRouter from "./FolderRoutes";

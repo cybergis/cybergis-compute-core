@@ -6,15 +6,15 @@ import * as path from "path";
 import {
   hpcConfigMap,
 } from "../../configs/config";
-import { GlobusClient } from "../helpers/GlobusTransferUtil";
-import * as Helper from "../helpers/Helper";
-import { Folder } from "../models/Folder";
-import dataSource from "../utils/DB";
 import {
   updateFolderBody,
   initGlobusDownloadBody,
   GlobusFolder
-} from "../utils/types";
+} from "../definitions";
+import { GlobusClient } from "../helpers/GlobusTransferUtil";
+import * as Helper from "../helpers/Helper";
+import { Folder } from "../models";
+import dataSource from "../utils/DB";
 
 import { authMiddleWare, requestErrors, validator, schemas, prepareDataForDB, globusTaskList } from "./ServerUtil";
 

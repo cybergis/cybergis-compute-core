@@ -8,16 +8,16 @@ import {
 import BaseConnector from "../connectors/BaseConnector";
 import SingularityConnector from "../connectors/SingularityConnector";
 import SlurmConnector from "../connectors/SlurmConnector";
-import * as Helper from "../helpers/Helper";
-import { Job } from "../models/Job";
-import dataSource from "../utils/DB";
 import {
   maintainerConfig,
   event,
   slurm,
   jobMaintainerUpdatable,
   hpcConfig,
-} from "../utils/types";
+} from "../definitions";
+import * as Helper from "../helpers/Helper";
+import { Job } from "../models";
+import dataSource from "../utils/DB";
 // import Supervisor from "../Supervisor";
 
 /**
