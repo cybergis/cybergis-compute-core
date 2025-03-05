@@ -5,7 +5,7 @@ import {
   containerConfig,
   jupyterGlobusMapConfig,
   kernelConfig,
-} from "../src/definitions";
+} from "../src/utils/types";
 // eslint-disable-next-line import/order
 import rawConfig from "../config.json"; // base config
 import rawContainerConfig from "./container.json";  // docker container config

@@ -1,8 +1,8 @@
 import { config } from "../../configs/config";
-import { GlobusFolder, hpcConfig } from "../definitions";
 import { GlobusTransferRefreshToken } from 
   "../models/GlobusTransferRefreshToken";
 import dataSource from "../utils/DB";
+import { GlobusFolder, hpcConfig } from "../utils/types";
 
 import * as Helper from "./Helper";
 import PythonUtil from "./PythonUtil";

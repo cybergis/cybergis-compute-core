@@ -1,14 +1,14 @@
 import { hpcConfigMap } from "../../configs/config";
 // import path = require("path");
+import { Job } from "../models/Job";
+import dataSource from "../utils/DB";
 import {
   slurm_integer_storage_unit_config,
   slurm_integer_time_unit_config,
   slurmInputRules,
   slurm_integer_configs,
   slurm
-} from "../definitions";
-import { Job } from "../models/Job";
-import dataSource from "../utils/DB";
+} from "../utils/types";
 
 /**
  * Class providing various useful (static) functions for handling jobs. 

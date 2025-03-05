@@ -4,14 +4,14 @@ import {
   hpcConfigMap,
   maintainerConfigMap,
 } from "../../configs/config";
-import type {
-  createJobBody,
-  updateJobBody,
-} from "../definitions";
 import * as Helper from "../helpers/Helper";
 import JobUtil from "../helpers/JobUtil";
 import { Job } from "../models/Job";
 import dataSource from "../utils/DB";
+import type {
+  createJobBody,
+  updateJobBody,
+} from "../utils/types";
 
 import { authMiddleWare, requestErrors, validator, schemas, sshCredentialGuard, prepareDataForDB, supervisor, resultFolderContent } from "./ServerUtil";
 

@@ -1,8 +1,8 @@
 import { RedisClientType, createClient } from "redis";
 
 import { config } from "../../configs/config";
-import { credential } from "../definitions";
 import { Job } from "../models/Job";
+import { credential } from "../utils/types";
 
 import dataSource from "./DB";
 

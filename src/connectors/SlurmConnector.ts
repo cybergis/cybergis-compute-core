@@ -1,9 +1,9 @@
 import * as path from "path";
 
 import { config, hpcConfigMap } from "../../configs/config";
-import { slurm } from "../definitions";
 import * as Helper from "../helpers/Helper";
 import { ConnectorError } from "../utils/errors";
+import { slurm } from "../utils/types";
 
 import BaseConnector from "./BaseConnector";
 // import { FolderUploaderHelper } from "../FolderUploader";

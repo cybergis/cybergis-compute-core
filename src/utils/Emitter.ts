@@ -1,5 +1,7 @@
 import { config } from "../../configs/config";
-import { Event, Job, Log } from "../models";
+import { Event } from "../models/Event";
+import { Job } from "../models/Job";
+import { Log } from "../models/Log";
 
 import dataSource from "./DB";
 

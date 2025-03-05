@@ -1,9 +1,9 @@
 import axios, { AxiosResponse } from "axios";
 
 import { config } from "../../configs/config";
-import { GlobusFolder } from "../definitions";
 import { GlobusTransferRefreshToken } from "../models/GlobusTransferRefreshToken";
 import dataSource from "../utils/DB";
+import { GlobusFolder } from "../utils/types";
 
 
 const baseUrl = "https://transfer.api.globus.org/v0.10";

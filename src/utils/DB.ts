@@ -5,7 +5,13 @@ import {
 
 import { config } from "../../configs/config";
 import * as Helper from "../helpers/Helper"; 
-import { Cache, Event, Folder, Git, GlobusTransferRefreshToken, Job, Log } from "../models";
+import { Cache } from "../models/Cache";
+import { Event } from "../models/Event";
+import { Folder } from "../models/Folder";
+import { Git } from "../models/Git";
+import { GlobusTransferRefreshToken } from "../models/GlobusTransferRefreshToken";
+import { Job } from "../models/Job";
+import { Log } from "../models/Log";
 
 const entities = [Cache, Event, Folder, Git, GlobusTransferRefreshToken, Job, Log];
 
