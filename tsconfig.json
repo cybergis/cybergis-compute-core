@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
         "target": "ES2022",
-        "module": "CommonJS",
+        "module": "es2022",
         "declaration": false,
         "strict": true,
         "noImplicitAny": true,
@@ -17,8 +17,7 @@
         "sourceMap": true,
     },
     "include": [
-        "**/*",
-        ".eslintrc.js"
+        "**/*.ts",
     ],
     "exclude": [
         "node_modules",

@@ -1,7 +1,8 @@
-import express = require("express");
-import fileUpload = require("express-fileupload");
-import morgan = require("morgan");
-import swaggerUI = require("swagger-ui-express");
+import express from "express";
+import fileUpload from "express-fileupload";
+import morgan from "morgan";
+import swaggerUi from "swagger-ui-express";
+
 
 import {
   config,
@@ -42,17 +43,14 @@ async function initHelloWorldGit() {
 }
 
 // establish database connection
-dataSource
-  .initialize()
-  .then(() => {
-    console.log("Data Source has been initialized!");
-
-    initHelloWorldGit().catch(() => {false;});
-  })
-  .catch((err) => {
-    console.error("Error during Data Source initialization:", err);
-    throw err;
-  });
+try {
+  await dataSource.initialize();
+  await initHelloWorldGit();
+  console.log("Data Source has been initialized!");
+} catch (err) {
+  console.error("Error during Data Source initialization:", err);
+  throw err;
+}
 
 
 // handle parsing arguments
@@ -79,7 +77,7 @@ app.use(
 
 // create documentation routes
 app.use("/ts-docs", express.static("../../tsdoc"));
-app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swaggerDocument));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 /**
  * @openapi

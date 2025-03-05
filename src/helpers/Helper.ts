@@ -1,6 +1,6 @@
 import { config, hpcConfigMap, jupyterGlobusMap } from "../../configs/config";
+import { callableFunction } from "../definitions";
 import { Job } from "../models/Job";
-import { callableFunction } from "../utils/types";
 // import * as fs from "fs";
 
 
@@ -193,7 +193,7 @@ export async function runCommandWithBackoff(
   let wait = 0;
   let end = false;
 
-  while (true && !end) {
+  while (!end) {
     if (wait > 100) {
       throw new Error("The function was attempted too mant times unsuccessfully");
     }

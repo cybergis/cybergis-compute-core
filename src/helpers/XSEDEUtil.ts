@@ -1,8 +1,8 @@
 import axios from "axios";
 
 import { config } from "../../configs/config";
+import { hpcConfig } from "../definitions";
 import { Job } from "../models/Job";
-import { hpcConfig } from "../utils/types";
 
 /**
  * Class for accessing XSEDE commands. May be deprecated (https://www.xsede.org/)?
@@ -34,7 +34,7 @@ export default class XSEDEUtil {
 
       await axios.post(`${XSEDEUtil.jobLogURL}`, {}, { params });
       if (config.is_testing) console.log("XSEDE job logged: ", params);
-    } catch (e) {
+    } catch (_) {
       // best effort
     }
   }

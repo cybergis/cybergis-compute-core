@@ -1,4 +1,4 @@
-import express = require("express");
+import express from "express";
 
 
 import * as path from "path";
@@ -6,15 +6,15 @@ import * as path from "path";
 import {
   hpcConfigMap,
 } from "../../configs/config";
+import {
+  updateFolderBody,
+  initGlobusDownloadBody,
+  GlobusFolder
+} from "../definitions";
 import { GlobusClient } from "../helpers/GlobusTransferUtil";
 import * as Helper from "../helpers/Helper";
 import { Folder } from "../models/Folder";
 import dataSource from "../utils/DB";
-import type {
-  updateFolderBody,
-  initGlobusDownloadBody,
-  GlobusFolder
-} from "../utils/types";
 
 import { authMiddleWare, requestErrors, validator, schemas, prepareDataForDB, globusTaskList } from "./ServerUtil";
 

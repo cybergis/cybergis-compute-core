@@ -1,17 +1,17 @@
-import express = require("express");
+import express from "express";
 
 import {
   hpcConfigMap,
   maintainerConfigMap,
 } from "../../configs/config";
+import type {
+  createJobBody,
+  updateJobBody,
+} from "../definitions";
 import * as Helper from "../helpers/Helper";
 import JobUtil from "../helpers/JobUtil";
 import { Job } from "../models/Job";
 import dataSource from "../utils/DB";
-import type {
-  createJobBody,
-  updateJobBody,
-} from "../utils/types";
 
 import { authMiddleWare, requestErrors, validator, schemas, sshCredentialGuard, prepareDataForDB, supervisor, resultFolderContent } from "./ServerUtil";
 
@@ -49,7 +49,7 @@ jobRouter.post("/", authMiddleWare, async function (req, res) {
     return;
   }
   
-  const hpcName = body.hpc ? body.hpc : maintainer.default_hpc;
+  const hpcName = body.hpc ?? maintainer.default_hpc;
   const hpc = hpcConfigMap[hpcName];
   if (hpc === undefined) {
     res.status(401).json({ error: "unrecognized hpc", message: null });
@@ -398,7 +398,7 @@ jobRouter.get(
         .findOneByOrFail({ id: jobId, userId: res.locals.username as string });
       
       const out = await resultFolderContent.get(job.id);
-      res.json(out ? out : []);
+      res.json(out ?? []);
     } catch (e) {
       res.status(401).json({ 
         error: "invalid access", 

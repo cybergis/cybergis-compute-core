@@ -1,22 +1,20 @@
-/* eslint-disable */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 
-const eslint = require("@eslint/js");
-const tseslint = require("typescript-eslint");
-const importPlugin = require("eslint-plugin-import");
-const stylistic = require("@stylistic/eslint-plugin");
-const globals = require("globals");
+import eslint from "@eslint/js";
+import stylistic from "@stylistic/eslint-plugin";
+import importPlugin from "eslint-plugin-import";
+import globals from "globals";
+import * as tseslint from "typescript-eslint";
 
 
-module.exports = tseslint.config(
+export default tseslint.config(
   eslint.configs.recommended,
-
   ...tseslint.configs.recommendedTypeChecked,
   ...tseslint.configs.stylisticTypeChecked,
   {
     languageOptions: {
       parserOptions: {
-        project: true,
-        tsconfigRootDir: __dirname
+        project: ["**/tsconfig.eslint.json"],
       },
       globals: {
         ...globals.node
@@ -26,10 +24,10 @@ module.exports = tseslint.config(
   },
 
   {
-    files: ["**/*.ts", "**/*.tsx"],
+    files: ["**/*.ts", "**/*.tsx", "**/*.config.js"],
     plugins: {
       import: importPlugin,
-      stylistic,
+      "@stylistic": stylistic,
     },
     rules: {
       indent: [
@@ -50,14 +48,14 @@ module.exports = tseslint.config(
         "always"
       ],
       "no-unused-vars": "off",
-      "@typescript-eslint/no-unused-vars": [
-        "error", { argsIgnorePattern: "^_" }
-      ],
       "no-empty": [2, { allowEmptyCatch: true }],
-      "@typescript-eslint/no-misused-promises": [
-        "error",
-        {
-          checksVoidReturn: false
+      "@typescript-eslint/no-unused-vars": [
+        "error", 
+        { 
+          "argsIgnorePattern": "^_",
+          "varsIgnorePattern": "^_",
+          "destructuredArrayIgnorePattern": "^_",
+          "caughtErrorsIgnorePattern": "^_"
         }
       ],
       "import/order": [
@@ -84,7 +82,7 @@ module.exports = tseslint.config(
           pathGroupsExcludedImportTypes: ["builtin"],
         },
       ],
-      "stylistic/max-len": [
+      "@stylistic/max-len": [
         "error",
         {
           ignoreTemplateLiterals: true,
@@ -93,7 +91,7 @@ module.exports = tseslint.config(
           ignoreStrings: true
         }
       ],
-      "stylistic/object-curly-spacing": [
+      "@stylistic/object-curly-spacing": [
         "error",
         "always"
       ],
@@ -104,7 +102,13 @@ module.exports = tseslint.config(
         }
       ],
       // "@typescript-eslint/explicit-member-accessibility": "error",
-      "no-constant-condition": "off"
+      "no-constant-condition": "off",
+      "@typescript-eslint/no-misused-promises": [
+        "error",
+        {
+          "checksVoidReturn": false
+        }
+      ]
     },
   },
   {

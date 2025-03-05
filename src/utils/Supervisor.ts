@@ -1,9 +1,10 @@
-import NodeSSH = require("node-ssh");
+import NodeSSH from "node-ssh";
 
 import * as events from "events";
 
 import { config, maintainerConfigMap, hpcConfigMap } from "../../configs/config";
 import connectionPool from "../connectors/ConnectionPool";
+import { SSH, callableFunction } from "../definitions";
 import * as Helper from "../helpers/Helper";
 import BaseMaintainer from "../maintainers/BaseMaintainer";
 import { Job } from "../models/Job";
@@ -11,7 +12,6 @@ import { Job } from "../models/Job";
 import dataSource from "./DB";
 import Emitter from "./Emitter";
 import { JobQueue } from "./Redis";
-import { SSH, callableFunction } from "./types";
 
 /**
  * Manages 
@@ -169,10 +169,10 @@ class Supervisor {
         ssh = connectionPool[job.hpc].ssh;
       } else {
         ssh = connectionPool[job.id].ssh;
-      }
+      } 
 
       if (!ssh.connection.isConnected()) {
-        try {
+        try { 
           // wraps command with backoff -> takes lambda function and array of inputs to execute command
           await Helper.runCommandWithBackoff((async (ssh1: SSH) => {
             if (!ssh1.connection.isConnected()) {
