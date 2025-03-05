@@ -5,11 +5,11 @@ import * as fs from "fs";
 import { hpcConfigMap, maintainerConfigMap, containerConfigMap, jupyterGlobusMap } from "../../configs/config";
 import { hpcConfig, maintainerConfig, containerConfig, jupyterGlobusMapConfig, announcementsConfig } from "../definitions";
 import * as Helper from "../helpers/Helper";
+import { getRuntimeByJobId, getRuntimeTotal } from "../helpers/StatisticUtil";
 import { Job } from "../models";
 import dataSource from "../utils/DB";
 
 import { authMiddleWare } from "./ServerUtil";
-import { getRuntimeByJobId, getRuntimeTotal } from "../helpers/StatisticUtil";
 
 const infoRouter = express.Router();
 

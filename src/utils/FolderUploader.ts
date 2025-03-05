@@ -15,13 +15,13 @@ import {
   LocalFolder,
 } from "../definitions";
 import { NotImplementedError } from "../definitions";
+import { getZip, removeZip } from "../helpers/FolderUtil";
 import GitUtil from "../helpers/GitUtil";
 import { GlobusClient } from "../helpers/GlobusTransferUtil";
 import * as Helper from "../helpers/Helper";
 import { Cache, Folder } from "../models";
 
 import dataSource from "./DB";
-import { getZip, removeZip } from "../helpers/FolderUtil";
 
 type Connector =
   | BaseConnector

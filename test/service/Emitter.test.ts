@@ -1,8 +1,8 @@
 import "jest";
 import { config } from "../../configs/config";
+import { getEvents, getLogs, registerEvents, registerLogs } from "../../src/helpers/EmitterUtil";
 import { clearAll } from "../../src/utils/DB";
 import TestHelper from "../TestHelper";
-import { getEvents, getLogs, registerEvents, registerLogs } from "../../src/helpers/EmitterUtil";
 
 beforeAll(() => {
   config.is_jest = true;

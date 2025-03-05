@@ -5,12 +5,12 @@ import type {
   authReqBody,
   updateFolderBody,
 } from "../definitions";
+import { getHost, getUsername } from "../helpers/JupyterHubUtil";
 import { Folder } from "../models";
 import dataSource from "../utils/DB";
 import { ResultFolderContentManager, GlobusTaskListManager } from "../utils/Redis";
 import { SSHCredentialGuard } from "../utils/SSHCredentialGuard";
 import Supervisor from "../utils/Supervisor";
-import { getHost, getUsername } from "../helpers/JupyterHubUtil";
 
 
 // global object instantiation

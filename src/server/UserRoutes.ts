@@ -8,11 +8,11 @@ import {
 } from "../../configs/config";
 import { GlobusClient } from "../helpers/GlobusTransferUtil";
 import * as Helper from "../helpers/Helper";
+import { getUserSlurmUsage } from "../helpers/JobUtil";
 import { Job } from "../models";
 import dataSource from "../utils/DB";
 
 import { authMiddleWare } from "./ServerUtil";
-import { getUserSlurmUsage } from "../helpers/JobUtil";
 
 const userRouter = express.Router();
 

@@ -5,13 +5,13 @@ import * as events from "events";
 import { config, maintainerConfigMap, hpcConfigMap } from "../../configs/config";
 import connectionPool from "../connectors/ConnectionPool";
 import { SSH, callableFunction } from "../definitions";
+import { registerEvents, registerLogs } from "../helpers/EmitterUtil";
 import * as Helper from "../helpers/Helper";
 import BaseMaintainer from "../maintainers/BaseMaintainer";
 import { Job } from "../models";
 
 import dataSource from "./DB";
 import { JobQueue } from "./Redis";
-import { registerEvents, registerLogs } from "../helpers/EmitterUtil";
 
 /**
  * Manages 

@@ -9,11 +9,11 @@ import type {
   updateJobBody,
 } from "../definitions";
 import * as Helper from "../helpers/Helper";
+import { validateJob } from "../helpers/JobUtil";
 import { Job } from "../models";
 import dataSource from "../utils/DB";
 
 import { authMiddleWare, requestErrors, validator, schemas, sshCredentialGuard, prepareDataForDB, supervisor, resultFolderContent } from "./ServerUtil";
-import { validateJob } from "../helpers/JobUtil";
 
 
 const jobRouter = express.Router();
