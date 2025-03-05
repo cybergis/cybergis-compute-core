@@ -3,7 +3,7 @@ import * as path from "path";
 import { config, hpcConfigMap } from "../../configs/config";
 import { slurm } from "../definitions";
 import * as Helper from "../helpers/Helper";
-import { ConnectorError } from "../utils/errors";
+import { ConnectorError } from "../definitions";
 
 import BaseConnector from "./BaseConnector";
 // import { FolderUploaderHelper } from "../FolderUploader";

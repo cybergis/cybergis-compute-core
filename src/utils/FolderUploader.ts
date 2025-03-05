@@ -21,7 +21,7 @@ import * as Helper from "../helpers/Helper";
 import { Cache, Folder } from "../models";
 
 import dataSource from "./DB";
-import { NotImplementedError } from "./errors";
+import { NotImplementedError } from "../definitions";
 
 type Connector =
   | BaseConnector
