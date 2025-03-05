@@ -24,7 +24,7 @@ import dataSource from "../utils/DB";
 
 import { removeZip } from "./FolderUtil";
 
-const exec: Function = promisify(require("child_process").exec); // eslint-disable-line
+const exec: (s: string) => Promise<void> = promisify(require("child_process").exec); // eslint-disable-line
 
 /**
  * 

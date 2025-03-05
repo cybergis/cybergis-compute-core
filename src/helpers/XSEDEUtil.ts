@@ -34,7 +34,7 @@ export async function jobLog(slurmId: string, hpc: hpcConfig, job: Job) {
 
     await axios.post(`${jobLogURL}`, {}, { params });
     if (config.is_testing) console.log("XSEDE job logged: ", params);
-  } catch (e) {
+  } catch (_) {
     // best effort
   }
 }

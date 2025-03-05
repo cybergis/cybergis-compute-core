@@ -190,7 +190,7 @@ export async function runCommandWithBackoff(
   let wait = 0;
   let end = false;
 
-  while (true && !end) {
+  while (!end) {
     if (wait > 100) {
       throw new Error("The function was attempted too mant times unsuccessfully");
     }

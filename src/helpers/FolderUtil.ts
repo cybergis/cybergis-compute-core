@@ -51,7 +51,7 @@ export async function getZip(filePath: string): Promise<string> {
   return new Promise((resolve, reject) => {
     child.on("exit", () => resolve(`${filePath}.zip`));
     child.on("close", () => resolve(`${filePath}.zip`));
-    child.on("error", () => reject(`${filePath}.zip`));
+    child.on("error", () => reject(new Error(`${filePath}.zip`)));
   });
 }
 
@@ -122,7 +122,7 @@ export async function putFileFromZip(filePath: string, zipFilePath: string) {
   return new Promise((resolve, reject) => {
     child.on("exit", () => resolve(`${filePath}.zip`));
     child.on("close", () => resolve(`${filePath}.zip`));
-    child.on("error", () => reject(`${filePath}.zip`));
+    child.on("error", () => reject(new Error(`${filePath}.zip`)));
   });
 }
 
