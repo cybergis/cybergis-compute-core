@@ -14,6 +14,7 @@ import {
   hpcConfig,
   LocalFolder,
 } from "../definitions";
+import { NotImplementedError } from "../definitions";
 import FolderUtil from "../helpers/FolderUtil";
 import GitUtil from "../helpers/GitUtil";
 import { GlobusClient } from "../helpers/GlobusTransferUtil";
@@ -21,7 +22,6 @@ import * as Helper from "../helpers/Helper";
 import { Cache, Folder } from "../models";
 
 import dataSource from "./DB";
-import { NotImplementedError } from "../definitions";
 
 type Connector =
   | BaseConnector

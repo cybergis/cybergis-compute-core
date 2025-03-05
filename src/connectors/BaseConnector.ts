@@ -4,10 +4,10 @@ import * as path from "path";
 
 import { config, hpcConfigMap } from "../../configs/config";
 import { options, hpcConfig, SSH, callableFunction } from "../definitions";
+import { ConnectorError } from "../definitions";
 import FileUtil from "../helpers/FolderUtil";  // shouldn't this be registerUtil?
 import * as Helper from "../helpers/Helper";
 import BaseMaintainer from "../maintainers/BaseMaintainer";
-import { ConnectorError } from "../definitions";
 
 import connectionPool from "./ConnectionPool";
 
