@@ -7,18 +7,19 @@ import {
   hpcConfigMap,
 } from "../../configs/config";
 import {
-  updateFolderBody,
-  initGlobusDownloadBody,
-  GlobusFolder
+  UpdateFolderBodySchema,
+  GlobusFolder,
+  InitGlobusDownloadBodySchema
 } from "../definitions";
 import { GlobusClient } from "../helpers/GlobusTransferUtil";
 import * as Helper from "../helpers/Helper";
 import { Folder } from "../models";
 import dataSource from "../utils/DB";
 
-import { authMiddleWare, requestErrors, validator, schemas, prepareDataForDB, globusTaskList } from "./ServerUtil";
+import { authMiddleWare, prepareDataForDB, globusTaskList, validateZodSchema } from "./ServerUtil";
 
 const folderRouter = express.Router();
+
 
 /**
  * @openapi
@@ -36,14 +37,14 @@ folderRouter.get("/", authMiddleWare, async function (req, res) {
     res.status(402).json({ error: "invalid token" });
     return;
   }
-  
+
   // get all folders associated with the user from the database
   const folder = await dataSource
     .getRepository(Folder)
     .findBy({ userId: res.locals.username as string });
   res.json({ folder: folder });
 });
-  
+
 /**
    * @openapi
    * /folder/:folderId:
@@ -60,14 +61,14 @@ folderRouter.get("/:folderId", authMiddleWare, async function (req, res) {
     res.status(402).json({ error: "invalid token" });
     return;
   }
-  
+
   // get all folders associated with the user and with the given folder Id from the database
   const folder = await dataSource
     .getRepository(Folder)
     .findBy({ userId: res.locals.username as string, id: req.params.folderId });
   res.json(folder);
 });
-  
+
 /**
    * @openapi
    * /folder/:folderId:
@@ -88,7 +89,7 @@ folderRouter.delete("/:folderId", authMiddleWare, async function (req, res) {
     res.status(402).json({ error: "invalid token" });
     return;
   }
-  
+
   // try to find the folder with the given id/associated user; if not found, give a 404
   const folderId = req.params.folderId;
   const folder = await dataSource
@@ -98,7 +99,7 @@ folderRouter.delete("/:folderId", authMiddleWare, async function (req, res) {
     res.status(404).json({ error: "unknown folder with id " + folderId });
     return;
   }
-  
+
   try {
     await dataSource.getRepository(Folder).softDelete(folderId);  // not actually deleted, just marked as such
     res.status(200).json({ success: true });
@@ -106,11 +107,11 @@ folderRouter.delete("/:folderId", authMiddleWare, async function (req, res) {
     res.status(401).json(
       { error: "encountered error: " + Helper.assertError(err).toString() }
     );
-  
+
     return;
   }
 });
-  
+
 /**
    * @openapi
    * /folder/:folderId:
@@ -127,22 +128,20 @@ folderRouter.delete("/:folderId", authMiddleWare, async function (req, res) {
    *              description: Returns "unknown folder with id" when the specified folder is not found
    */
 folderRouter.put("/:folderId", authMiddleWare, async function (req, res) {
-  const errors = requestErrors(
-    validator.validate(req.body, schemas.updateFolder)
-  );
+  const validation = validateZodSchema(UpdateFolderBodySchema, req.body);
   
-  if (errors.length > 0) {
-    res.status(402).json({ error: "invalid input", messages: errors });
+  if (!validation.success) {
+    res.status(402).json({ error: "invalid input", messages: validation.errors });
     return;
   }
   
-  const body = req.body as updateFolderBody;
-  
+  const body = validation.data;
+
   if (!res.locals.username) {
     res.status(402).json({ error: "invalid token" });
     return;
   }
-  
+
   // try to find the folder specified in the body, if not found, give a 404
   const folderId = req.params.folderId;
   const folder = await dataSource
@@ -152,36 +151,36 @@ folderRouter.put("/:folderId", authMiddleWare, async function (req, res) {
     res.status(404).json({ error: "unknown folder with id " + folderId });
     return;
   }
-  
+
   // body parameters to pass as folder properties
   if (body.name) folder.name = body.name;
   if (body.isWritable) folder.isWritable = body.isWritable;
-  
+
   try {
     // update the folder entry and return it
     await dataSource
       .createQueryBuilder()
       .update(Folder)
       .where("id = :id", { id: folderId })
-      .set(await prepareDataForDB(body as unknown as Record<string, unknown>, ["name", "isWritable"]))
+      .set(await prepareDataForDB(body as Record<string, unknown>, ["name", "isWritable"]))
       .execute();
-  
+
     const updatedFolder = await dataSource
       .getRepository(Folder)
       .findOneBy({
         id: folderId
       });
-  
+
     res.status(200).json(updatedFolder);
   } catch (err) {
     res.status(401).json(
       { error: "encountered error: " + Helper.assertError(err).toString() }
     );
-  
+
     return;
   }
 });
-  
+
 /**
    * @openapi
    * /folder/:folderId/download/globus-init:
@@ -196,28 +195,21 @@ folderRouter.put("/:folderId", authMiddleWare, async function (req, res) {
    *              description: Returns error when the folder ID cannot be found, when the hpc config for globus cannot be found, when the globus download fails, or when a download is already running for the folder
    */
 folderRouter.post(
-  "/:folderId/download/globus-init", 
-  authMiddleWare, 
+  "/:folderId/download/globus-init",
+  authMiddleWare,
   async function (req, res) {
-    const errors = requestErrors(
-      validator.validate(req.body, schemas.initGlobusDownload)
-    );
-    
-    if (errors.length > 0) {
-      res.status(402).json({ error: "invalid input", messages: errors });
+    const validation = validateZodSchema(InitGlobusDownloadBodySchema, req.body);
+  
+    if (!validation.success) {
+      res.status(402).json({ error: "invalid input", messages: validation.errors });
       return;
     }
-    
-    const body = req.body as initGlobusDownloadBody;
-    
-    if (!res.locals.username) {
-      res.status(402).json({ error: "invalid token" });
-      return;
-    }
-    
+  
+    const body = validation.data;
+
     // get jobId from body
     const jobId = body.jobId;
-    
+
     // get folder; if not found, error out
     const folderId = req.params.folderId;
     const folder = await (dataSource
@@ -226,31 +218,31 @@ folderRouter.post(
         id: folderId
       })
     );
-        
+
     if (!folder) {
       res.status(403).json({ error: `cannot find folder with id ${folderId}` });
       return;
     }
-    
+
     // check if there is an existing globus job from the redis DB -- if so, error out
     const existingTransferJob: string | null = (
       await globusTaskList.get(folderId)
     );
-    
+
     if (existingTransferJob) {
       res.status(403).json({
-            error: `a globus job is currently running on folder with id ${folderId}`,  // eslint-disable-line
+        error: `a globus job is currently running on folder with id ${folderId}`,
       });
       return;
     }
-    
+
     // get jupyter globus config
     const hpcConfig = hpcConfigMap[folder.hpc];
     if (!hpcConfig) {
       res.status(403).json({ error: `cannot find hpc ${folder.hpc}` });
       return;
     }
-    
+
     // init transfer
     const fromPath: string = (body.fromPath !== undefined
       ? path.join(folder.globusPath, body.fromPath)
@@ -258,7 +250,7 @@ folderRouter.post(
     const from: GlobusFolder = { type: "globus", path: fromPath, endpoint: hpcConfig.globus.endpoint };
     const to: GlobusFolder = { path: body.toPath, endpoint: body.toEndpoint, type: "globus" };
     // console.log(from, to);
-    
+
     try {
       // start the transfer
       const globusTaskId = await GlobusClient.initTransfer(
@@ -273,14 +265,14 @@ folderRouter.post(
     } catch (err) {
       res
         .status(403)
-        .json({ 
+        .json({
           error: `failed to init globus with error: ${Helper.assertError(err).toString()}`
         });
       return;
     }
   }
 );
-  
+
 /**
    * @openapi
    * /folder/:folderId/download/globus-status:
@@ -295,14 +287,14 @@ folderRouter.post(
    *              description: Returns error when the folder ID cannot be found or when the globus query fails
    */
 folderRouter.get(
-  "/:folderId/download/globus-status", 
-  authMiddleWare, 
+  "/:folderId/download/globus-status",
+  authMiddleWare,
   async function (req, res) {
     if (!res.locals.username) {
       res.status(402).json({ error: "invalid token" });
       return;
     }
-  
+
     // get folder -- if doesn't exist, error out
     const folderId = req.params.folderId;
     const folder = await (dataSource
@@ -311,32 +303,32 @@ folderRouter.get(
         id: folderId
       })
     );
-  
+
     if (!folder) {
       res.status(403).json({ error: `cannot find folder with id ${folderId}` });
       return;
     }
-  
+
     // query status
     const globusTaskId = await globusTaskList.get(folderId);
     try {
       if (!globusTaskId) {
         throw new Error("No task id found.");
       }
-  
+
       const status = await GlobusClient.queryTransferStatus(
         globusTaskId,
       );
-  
+
       // remove the folder from the ongoing globus task list if the globus transfer finished
       if (["SUCCEEDED", "FAILED"].includes(status))
-        await globusTaskList.remove(folderId);  
-  
+        await globusTaskList.remove(folderId);
+
       res.json({ status: status });
     } catch (err) {
       res
         .status(403)
-        .json({ 
+        .json({
           error: `failed to query globus with error: ${Helper.assertError(err).toString()}`
         });
       return;

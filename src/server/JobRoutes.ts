@@ -4,16 +4,16 @@ import {
   hpcConfigMap,
   maintainerConfigMap,
 } from "../../configs/config";
-import type {
-  createJobBody,
-  updateJobBody,
+import {
+  CreateJobBodySchema,
+  UpdateJobBodySchema,
 } from "../definitions";
 import * as Helper from "../helpers/Helper";
 import { validateJob } from "../helpers/JobUtil";
 import { Job } from "../models";
 import dataSource from "../utils/DB";
 
-import { authMiddleWare, requestErrors, validator, schemas, sshCredentialGuard, prepareDataForDB, supervisor, resultFolderContent } from "./ServerUtil";
+import { authMiddleWare, sshCredentialGuard, prepareDataForDB, supervisor, resultFolderContent, validateZodSchema } from "./ServerUtil";
 
 
 const jobRouter = express.Router();
@@ -32,14 +32,14 @@ const jobRouter = express.Router();
  *              description: Returns "invalid input" and a list of errors with the format of the req body
  */
 jobRouter.post("/", authMiddleWare, async function (req, res) {
-  const errors = requestErrors(validator.validate(req.body, schemas.createJob));
+  const validation = validateZodSchema(CreateJobBodySchema, req.body);
   
-  if (errors.length > 0) {
-    res.status(402).json({ error: "invalid input", messages: errors });
+  if (!validation.success) {
+    res.status(402).json({ error: "invalid input", messages: validation.errors });
     return;
   }
   
-  const body = req.body as createJobBody;
+  const body = validation.data;
   
   // try to extract maintainer and hpc associated with the job
   const maintainerName: string = body.maintainer ?? "community_contribution";  // default to community contribution job maintainer
@@ -128,14 +128,14 @@ jobRouter.post("/", authMiddleWare, async function (req, res) {
    *              description: Returns internal error when there is an exception while updating the job details
    */
 jobRouter.put("/:jobId", authMiddleWare, async function (req, res) {
-  const errors = requestErrors(validator.validate(req.body, schemas.updateJob));
+  const validation = validateZodSchema(UpdateJobBodySchema, req.body);
   
-  if (errors.length > 0) {
-    res.status(402).json({ error: "invalid input", messages: errors });
+  if (!validation.success) {
+    res.status(402).json({ error: "invalid input", messages: validation.errors });
     return;
   }
   
-  const body = req.body as updateJobBody;
+  const body = validation.data;
   
   if (!res.locals.username) {
     res.status(402).json({ error: "invalid token" });

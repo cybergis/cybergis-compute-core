@@ -1,9 +1,9 @@
 import { Request, NextFunction, Response } from "express";
-import jsonschema from "jsonschema";
+import { z, ZodError, ZodIssue } from "zod";
 
-import type {
-  authReqBody,
-  updateFolderBody,
+import {
+  AuthReqBodySchema,
+  UpdateFolderBodySchema,
 } from "../definitions";
 import { getHost, getUsername } from "../helpers/JupyterHubUtil";
 import { Folder } from "../models";
@@ -15,90 +15,9 @@ import Supervisor from "../utils/Supervisor";
 
 // global object instantiation
 export const supervisor = new Supervisor();
-export const validator = new jsonschema.Validator();
 export const sshCredentialGuard = new SSHCredentialGuard();
 export const resultFolderContent = new ResultFolderContentManager();
 export const globusTaskList = new GlobusTaskListManager();
-
-// object for vadidating API calls
-export const schemas = {
-  user: {
-    type: "object",
-    properties: {
-      jupyterhubApiToken: { type: "string" },
-    },
-    required: ["jupyterhubApiToken"],
-  },
-  cancel: {
-    type: "object",
-    properties: {
-      jupyterhubApiToken: { type: "string" },
-      jobId: { type: "string" },
-    },
-    required: ["jupyterhubApiToken", "jobId"],
-  },
-  updateFolder: {
-    type: "object",
-    properties: {
-      jupyterhubApiToken: { type: "string" },
-      name: { type: "string" },
-      isWritable: { type: "boolean" },
-    },
-    required: ["jupyterhubApiToken"],
-  },
-  updateJob: {
-    type: "object",
-    properties: {
-      jupyterhubApiToken: { type: "string" },
-      param: { type: "object" },
-      env: { type: "object" },
-      slurm: { type: "object" },
-      localExecutableFolder: { type: "object" },
-      localDataFolder: { type: "object" },
-      remoteDataFolder: { type: "string" },
-      remoteExecutableFolder: { type: "string" },
-    },
-    required: ["jupyterhubApiToken"],
-  },
-  createJob: {
-    type: "object",
-    properties: {
-      jupyterhubApiToken: { type: "string" },
-      maintainer: { type: "string" },
-      hpc: { type: "string" },
-      user: { type: "string" },
-      password: { type: "string" },
-    },
-    required: ["jupyterhubApiToken"],
-  },
-  initGlobusDownload: {
-    type: "object",
-    properties: {
-      jobId: { type: "string" },
-      jupyterhubApiToken: { type: "string" },
-      toEndpoint: { type: "string" },
-      toPath: { type: "string" },
-      fromPath: { type: "string" },
-    },
-    required: ["jupyterhubApiToken", "toEndpoint", "toPath"],
-  },
-  refreshCache: {
-    type: "object",
-    properties: {
-      hpc: { type: "string" },
-    }
-  }
-};
-
-// handler for route errors
-export function requestErrors(v: jsonschema.ValidatorResult): string[] {
-  if (v.valid) return [];
-
-  const errors: string[] = [];
-  for (const error of v.errors) errors.push(error.message);
-
-  return errors;
-}
 
 // function to take data and get it into dictionary format for DB interfacing
 export async function prepareDataForDB(
@@ -124,7 +43,7 @@ export async function prepareDataForDB(
 
         out[property] = folder;
       } else {
-        out[property] = data[property as keyof updateFolderBody] as string;
+        out[property] = data[property as keyof typeof UpdateFolderBodySchema] as string;
       }
     }
   }
@@ -132,12 +51,35 @@ export async function prepareDataForDB(
   return out;
 }
 
+export function validateZodSchema<T>(
+  schema: z.ZodSchema<T>, 
+  data: unknown
+): { success: true; data: T } | { success: false; errors: ZodIssue[], data?: T } {
+  try {
+    const parsed = schema.parse(data);
+    return { success: true, data: parsed };
+  } catch (err) {
+    if (err instanceof ZodError) {
+      return { success: false, errors: err.issues };
+    }
+    return { success: false, errors: [] };
+  }
+}
+
+
 export const authMiddleWare = async (
   req: Request, 
   res: Response, 
   next: NextFunction
 ) => {
-  const body = req.body as authReqBody;
+  const validation = validateZodSchema(AuthReqBodySchema, req.body);
+  
+  if (!validation.success) {
+    res.status(402).json({ error: "invalid input", messages: validation.errors });
+    return;
+  }
+  
+  const body = validation.data;
   
   // if there is an api token in the body
   if (body.jupyterhubApiToken) {
