@@ -6,13 +6,13 @@ import {
   jupyterGlobusMapConfig,
   kernelConfig,
 } from "../src/utils/types";
-// eslint-disable-next-line import/order
-import rawConfig from "../config.json"; // base config
-import rawContainerConfig from "./container.json";  // docker container config
-import rawHpc from "./hpc.json";  // hpc configuration
-import rawJupyterGlobusMapConfig from "./jupyter-globus-map.json";  // globus configs
-import rawKernelConfig from "./kernel.json";  // python kernel configs
-import rawMaintainer from "./maintainer.json";  // maintainer config
+
+import rawConfig from "./config.json" assert { type: "json" };
+import rawContainerConfig from "./container.json" assert { type: "json" };;  // docker container config
+import rawHpc from "./hpc.json" assert { type: "json" };;  // hpc configuration
+import rawJupyterGlobusMapConfig from "./jupyter-globus-map.json" assert { type: "json" };;  // globus configs
+import rawKernelConfig from "./kernel.json" assert { type: "json" };;  // python kernel configs
+import rawMaintainer from "./maintainer.json" assert { type: "json" };;  // maintainer config
 
 const config: baseConfig = JSON.parse(JSON.stringify(rawConfig)) as baseConfig;
 
