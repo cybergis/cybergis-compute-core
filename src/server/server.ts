@@ -4,6 +4,8 @@ import morgan from "morgan";
 import swaggerUi from "swagger-ui-express";
 
 
+import { readFile } from "fs/promises";
+
 import {
   config,
 } from "../../configs/config";
@@ -15,8 +17,6 @@ import gitRouter from "./GitRoutes";
 import infoRouter from "./InfoRoutes";
 import jobRouter from "./JobRoutes";
 import userRouter from "./UserRoutes";
-
-const swaggerDocument: Record<string, unknown> = require("../../swagger.json");  // eslint-disable-line
 
 // create the express app
 const app = express();
@@ -77,7 +77,15 @@ app.use(
 
 // create documentation routes
 app.use("/ts-docs", express.static("../../tsdoc"));
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+try {
+  const file = await readFile("../../swagger.json", "utf8");
+  const swaggerDocument = JSON.parse(file) as Record<string, unknown>;
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+} catch (err) {
+  console.error("error setting up swagger docs: ", err);
+}
+
 
 /**
  * @openapi
@@ -100,7 +108,7 @@ app.get("/", (req, res) => {
    *  put:
    *      description: Not yet implemented
    */
-app.put("/clean", async function (_req, _res) { });  // eslint-disable-line
+app.put("/clean", async function (_req, _res) { }); // eslint-disable-line @typescript-eslint/no-empty-function
 
 app.use("/folder", folderRouter);
 app.use("/git", gitRouter);

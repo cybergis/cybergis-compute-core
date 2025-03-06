@@ -239,7 +239,7 @@ folderRouter.post(
     
     if (existingTransferJob) {
       res.status(403).json({
-            error: `a globus job is currently running on folder with id ${folderId}`,  // eslint-disable-line
+        error: `a globus job is currently running on folder with id ${folderId}`,
       });
       return;
     }
