@@ -1,9 +1,13 @@
 import { Command } from "commander";
 
+import { readFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { Git } from "./src/models";
 import dataSource from "./src/utils/DB";
 
-const pkg: {version: string} = require("../package.json");  // eslint-disable-line
+
 const cmd = new Command();
 
 interface CommandOptions {
@@ -11,6 +15,9 @@ interface CommandOptions {
   address?: string;
   sha?: string;
 }
+
+const file = await readFile(join(dirname(fileURLToPath(import.meta.url)), "package.json"), "utf8");
+const pkg = JSON.parse(file) as { version: string };
 
 cmd.version(pkg.version);
 

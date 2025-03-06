@@ -8,7 +8,7 @@ import {
   BeforeUpdate,
 } from "typeorm";
 
-import { Job } from "./Job";
+import type { Job } from "./Job";
 
 /** Class representing a job event. */
 @Entity({ name: "events" })
@@ -25,7 +25,7 @@ export class Event {
   @Column("text")
     message!: string;
 
-  @ManyToOne((_type) => Job, (job: Job) => job.events)
+  @ManyToOne("Job", (job: Job) => job.events)
     job!: Job;
 
   @Column({
