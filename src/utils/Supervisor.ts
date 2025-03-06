@@ -71,12 +71,11 @@ class Supervisor {
           const job = await this.queues[hpcName].pop();
           if (!job) continue;
 
-          // eslint-disable-next-line
-          const maintainer: new(job: Job) => BaseMaintainer = require(`../maintainers/${
+           
+          const maintainerModule = await import(`../maintainers/${
             maintainerConfigMap[job.maintainer].maintainer
-          }`).default;  // eslint-disable-line
-            // ^ typescript compilation hack 
-            // TODO: don't do this
+          }`)as { default: new (job: Job) => BaseMaintainer };; 
+          const maintainer = maintainerModule.default;
 
           try {
             // push the job

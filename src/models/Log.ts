@@ -8,7 +8,7 @@ import {
   BeforeUpdate,
 } from "typeorm";
 
-import { Job } from "./Job";
+import type { Job } from "./Job";
 
 /** Class representing a job log. */
 @Entity({ name: "logs" })
@@ -22,7 +22,7 @@ export class Log {
   @Column("text")
     message!: string;
 
-  @ManyToOne((_type) => Job, (job: Job) => job.logs)
+  @ManyToOne("Job", (job: Job) => job.logs)
     job!: Job;
 
   @Column({

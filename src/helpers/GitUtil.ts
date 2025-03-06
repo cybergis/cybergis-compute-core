@@ -2,6 +2,7 @@ import { clone, pull, fetch, checkout, log } from "isomorphic-git";
 import http from "isomorphic-git/http/node";
 import { rimraf } from "rimraf";
 
+import { exec as execCallback } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import { promisify } from "util";
@@ -24,7 +25,7 @@ import dataSource from "../utils/DB";
 
 import { removeZip } from "./FolderUtil";
 
-const exec: (s: string) => Promise<void> = promisify(require("child_process").exec); // eslint-disable-line
+const exec = promisify(execCallback);  
 
 /**
  * 
