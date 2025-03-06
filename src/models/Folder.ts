@@ -7,7 +7,6 @@ import {
   BeforeUpdate,
   // OneToMany,
 } from "typeorm";
-// import { Job } from "./Job";
 
 /** Class representing a job event. */
 @Entity({ name: "folders" })

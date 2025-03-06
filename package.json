@@ -15,7 +15,7 @@
       "postbuild": "npm run cpy && npm run doc-gen",
       "lint": "eslint .",
       "typeorm": "typeorm-ts-node-commonjs",
-      "start": "node ./production/src/server/server.js"
+      "start": "node --experimental-specifier-resolution=node ./production/src/server/server.js"
    },
    "repository": {
       "type": "git",

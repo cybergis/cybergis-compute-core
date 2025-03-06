@@ -35,7 +35,7 @@ export async function runInteractive(
 
     for (const o of parsedStdout) {
       for (const tag of returnTags) {
-          const regex = new RegExp(`${tag}=((?!\]).)*`, "g"); //eslint-disable-line
+          const regex = new RegExp(`${tag}=((?!]).)*`, "g");
         const m = o.match(regex);
         if (m) {
           m.forEach((v, _i) => {
@@ -103,7 +103,7 @@ export async function run(
 
     for (const o of parsedStdout) {
       for (const tag of returnTags) {
-          const regex = new RegExp(`${tag}=((?!\]).)*`, "g"); // eslint-disable-line
+          const regex = new RegExp(`${tag}=((?!]).)*`, "g");
         const m = o.match(regex);
         if (m) {
           m.forEach((v, _i) => {
