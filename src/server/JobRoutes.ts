@@ -270,7 +270,7 @@ jobRouter.post("/:jobId/submit", authMiddleWare, async function (req, res) {
    *  put:
    *      description: Not yet implemented
    */
-  jobRouter.put("/:jobId/pause", async function (_req, _res) { }); // eslint-disable-line
+jobRouter.put("/:jobId/pause", async function (_req, _res) { }); // eslint-disable-line @typescript-eslint/no-empty-function
   
 /**
    * @openapi
@@ -278,7 +278,7 @@ jobRouter.post("/:jobId/submit", authMiddleWare, async function (req, res) {
    *  put:
    *      description: Not yet implemented
    */
-  jobRouter.put("/:jobId/resume", async function (_req, _res) { }); // eslint-disable-line
+jobRouter.put("/:jobId/resume", async function (_req, _res) { }); // eslint-disable-line @typescript-eslint/no-empty-function
   
 /**
    * @openapi

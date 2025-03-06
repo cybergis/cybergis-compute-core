@@ -1,5 +1,4 @@
 import { hpcConfigMap } from "../../configs/config";
-// import path = require("path");
 import {
   slurm_integer_storage_unit_config,
   slurm_integer_time_unit_config,

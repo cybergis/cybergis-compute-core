@@ -1,3 +1,7 @@
+import { readFile } from "node:fs/promises";
+import path, { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
 import {
   baseConfig,
   hpcConfig,
@@ -6,70 +10,57 @@ import {
   jupyterGlobusMapConfig,
   kernelConfig,
 } from "../src/definitions";
-// eslint-disable-next-line import/order
-import rawConfig from "../config.json"; // base config
-import rawContainerConfig from "./container.json";  // docker container config
-import rawHpc from "./hpc.json";  // hpc configuration
-import rawJupyterGlobusMapConfig from "./jupyter-globus-map.json";  // globus configs
-import rawKernelConfig from "./kernel.json";  // python kernel configs
-import rawMaintainer from "./maintainer.json";  // maintainer config
 
-const config: baseConfig = JSON.parse(JSON.stringify(rawConfig)) as baseConfig;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+async function createConfigMap<T>(
+  configPath: string,
+  defaultValues: Partial<T> = {}
+): Promise<Record<string, T>> {
+  const file = await readFile(path.join(__dirname, configPath), "utf8");
+  const rawConfig = JSON.parse(file) as Record<string, unknown>;
+  
+  const configMap: Record<string, T> = {};
+  
+  for (const key in rawConfig) {
+    configMap[key] = Object.assign(
+      {},
+      defaultValues,
+      JSON.parse(JSON.stringify(rawConfig[key]))
+    ) as T;
+  }
+  
+  return configMap;
+}
+
+const file = await readFile(path.join(__dirname, "../config.json"), "utf8");
+const config = JSON.parse(file) as baseConfig;
+
 
 // create and populate configs
+const hpcDefaults: Partial<hpcConfig> = {
+  ip: undefined,
+  port: undefined,
+  is_community_account: undefined,
+  community_login: undefined,
+  root_path: undefined,
+  job_pool_capacity: undefined,
+  init_sbatch_script: [],
+  init_sbatch_options: [],
+  description: "none",
+  globus: undefined,
+  mount: {},
+  slurm_input_rules: {},
+  allocation: undefined,
+  partition: undefined
+};
 
-const hpcConfigMap: Record<string, hpcConfig> = {};
-for (const hpc in rawHpc) {
-  hpcConfigMap[hpc] = Object.assign(
-    {
-      ip: undefined,
-      port: undefined,
-      is_community_account: undefined,
-      community_login: undefined,
-      root_path: undefined,
-      job_pool_capacity: undefined,
-      init_sbatch_script: [],
-      init_sbatch_options: [],
-      description: "none",
-      globus: undefined,
-      mount: {},
-      slurm_input_rules: {},
-      allocation: undefined,
-      partition: undefined
-    },
-    JSON.parse(JSON.stringify((rawHpc as Record<string, unknown>)[hpc]))
-  ) as hpcConfig;
-}
-
-const jupyterGlobusMap: Record<string, jupyterGlobusMapConfig> = {};
-for (const globusMap in rawJupyterGlobusMapConfig) {
-  jupyterGlobusMap[globusMap] = JSON.parse(
-    JSON.stringify(
-      (rawJupyterGlobusMapConfig as Record<string, unknown>)[globusMap]
-    )
-  ) as jupyterGlobusMapConfig;
-}
-
-const maintainerConfigMap: Record<string, maintainerConfig> = {};
-for (const maintainer in rawMaintainer) {
-  maintainerConfigMap[maintainer] = JSON.parse(
-    JSON.stringify((rawMaintainer as Record<string, unknown>)[maintainer])
-  ) as maintainerConfig;
-}
-
-const containerConfigMap: Record<string, containerConfig> = {};
-for (const container in rawContainerConfig) {
-  containerConfigMap[container] = JSON.parse(
-    JSON.stringify((rawContainerConfig as Record<string, unknown>)[container])
-  ) as containerConfig;
-}
-
-const kernelConfigMap: Record<string, kernelConfig> = {};
-for (const i in rawKernelConfig) {
-  kernelConfigMap[i] = JSON.parse(
-    JSON.stringify((rawKernelConfig as Record<string, unknown>)[i])
-  ) as kernelConfig;
-}
+const hpcConfigMap= await createConfigMap("hpc.json", hpcDefaults);
+const jupyterGlobusMap: Record<string, jupyterGlobusMapConfig> = await createConfigMap("jupyter-globus-map.json");
+const maintainerConfigMap: Record<string, maintainerConfig> = await createConfigMap("maintainer.json");
+const containerConfigMap: Record<string, containerConfig> = await createConfigMap("container.json");
+const kernelConfigMap: Record<string, kernelConfig> = await createConfigMap("kernel.json");
 
 export {
   config,

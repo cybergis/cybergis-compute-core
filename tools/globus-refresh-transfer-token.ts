@@ -43,4 +43,4 @@ const main = async () => {
   await dataSource.destroy();
 };
 
-main(); // eslint-disable-line
+await main();

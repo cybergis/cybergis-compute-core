@@ -1,6 +1,8 @@
 import express from "express";
 
 import * as fs from "fs";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
 
 import { hpcConfigMap, maintainerConfigMap, containerConfigMap, jupyterGlobusMap } from "../../configs/config";
 import { hpcConfig, maintainerConfig, containerConfig, jupyterGlobusMapConfig, announcementsConfig } from "../definitions";
@@ -202,7 +204,7 @@ infoRouter.get("/allowlist", function (req, res) {
    */
 infoRouter.get("/announcement", function (req, res) {
   // read announcements from the announcements.json file
-  fs.readFile("./configs/announcement.json", "utf8", function (err, data) {
+  fs.readFile(join(dirname(fileURLToPath(import.meta.url)), "configs/announcement.json"), "utf8", function (err, data) {
     const parseHost = (dest: Record<string, announcementsConfig>) => {
       const out: Record<string, announcementsConfig> = {};
       for (const i in dest) {

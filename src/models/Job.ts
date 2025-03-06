@@ -21,9 +21,9 @@ import {
 } from "../definitions";
 import BaseMaintainer from "../maintainers/BaseMaintainer";
 
-import { Event } from "./Event";
-import { Folder } from "./Folder";
-import { Log } from "./Log";
+import type { Event } from "./Event";
+import type { Folder } from "./Folder";
+import type { Log } from "./Log";
 
 /** Class representing a job. */
 @Entity({ name: "jobs" })
@@ -43,13 +43,13 @@ export class Job {
   @Column()
     hpc!: string;
 
-  @ManyToOne((_type) => Folder, { onDelete: "CASCADE", nullable: true })
+  @ManyToOne("Folder", { onDelete: "CASCADE", nullable: true })
     remoteExecutableFolder?: Folder;
 
-  @ManyToOne((_type) => Folder, { onDelete: "CASCADE", nullable: true })
+  @ManyToOne("Folder", { onDelete: "CASCADE", nullable: true })
     remoteDataFolder?: Folder;
 
-  @ManyToOne((_type) => Folder, { onDelete: "CASCADE", nullable: true })
+  @ManyToOne("Folder", { onDelete: "CASCADE", nullable: true })
     remoteResultFolder?: Folder;
 
   @Column({
@@ -132,10 +132,10 @@ export class Job {
   @Column({ nullable: true })
     credentialId?: string;
 
-  @OneToMany((_type) => Event, (event: Event) => event.job)
+  @OneToMany("Event", (event: Event) => event.job)
     events!: Event[];
 
-  @OneToMany((_type) => Log, (log: Log) => log.job)
+  @OneToMany("Log", (log: Log) => log.job)
     logs!: Log[];
 
   @Column({
