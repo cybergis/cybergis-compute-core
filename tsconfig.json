@@ -10,7 +10,6 @@
         "skipLibCheck": true,
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
-        "resolveJsonModule": true,
         "strictNullChecks": true,
         "esModuleInterop": true,
         "moduleResolution": "node",
