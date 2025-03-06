@@ -7,7 +7,6 @@ import {
   BeforeUpdate,
   // OneToOne,
 } from "typeorm";
-// import { Folder } from "./Folder";
 
 @Entity({ name: "gits" })
 

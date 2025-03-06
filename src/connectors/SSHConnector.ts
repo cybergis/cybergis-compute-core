@@ -289,7 +289,7 @@ export class SSHConnector {
    * @param {boolean} unzip - set to True if you want it to unzip and remove on the remote machine; false just uploads
    * @throws {ConnectorError} - Thrown if maintainer emits 'SSH_SCP_DOWNLOAD_ERROR'
    */
-  async upload(from: string, to: string, muteEvent = false, unzip = true) { // eslint-disable-line
+  async upload(from: string, to: string, _muteEvent=false, unzip=true) {
     // get the to zip/not zipped paths
     const toZipFilePath = to.endsWith(".zip") ? to : `${to}.zip`;
     const toFilePath = to.endsWith(".zip") ? to.replace(".zip", "") : to;
@@ -570,7 +570,7 @@ export class SSHConnector {
   public async createFile(
     content: string | Record<string, unknown>,
     remotePath: string,
-    options: options = {},  // eslint-disable-line
+    _options: options = {},
     muteEvent = false
   ) {
     this.emitEvent("SSH_CREATE_FILE", `create file to ${remotePath}`, muteEvent);
