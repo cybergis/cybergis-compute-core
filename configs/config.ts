@@ -1,4 +1,6 @@
 import { readFile } from "node:fs/promises";
+import path, { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import {
   baseConfig,
@@ -9,11 +11,14 @@ import {
   kernelConfig,
 } from "../src/utils/types";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 async function createConfigMap<T>(
-  path: string,
+  configPath: string,
   defaultValues: Partial<T> = {}
 ): Promise<Record<string, T>> {
-  const file = await readFile(path, "utf8");
+  const file = await readFile(path.join(__dirname, configPath), "utf8");
   const rawConfig = JSON.parse(file) as Record<string, unknown>;
   
   const configMap: Record<string, T> = {};
@@ -29,7 +34,7 @@ async function createConfigMap<T>(
   return configMap;
 }
 
-const file = await readFile("../config.json", "utf8");
+const file = await readFile(path.join(__dirname, "../config.json"), "utf8");
 const config = JSON.parse(file) as baseConfig;
 
 
@@ -51,8 +56,7 @@ const hpcDefaults: Partial<hpcConfig> = {
   partition: undefined
 };
 
-const hpcConfigMap= await createConfigMap("./hpc.json", hpcDefaults);
-
+const hpcConfigMap= await createConfigMap("hpc.json", hpcDefaults);
 const jupyterGlobusMap: Record<string, jupyterGlobusMapConfig> = await createConfigMap("jupyter-globus-map.json");
 const maintainerConfigMap: Record<string, maintainerConfig> = await createConfigMap("maintainer.json");
 const containerConfigMap: Record<string, containerConfig> = await createConfigMap("container.json");
