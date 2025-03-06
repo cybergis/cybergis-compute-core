@@ -1,8 +1,10 @@
 import { Command } from "commander";
 
-import pkg from "./package.json" assert { type: "json" };;
+import { readFile } from "node:fs/promises";
+
 import { Git } from "./src/models/Git";
 import dataSource from "./src/utils/DB";
+
 
 const cmd = new Command();
 
@@ -11,6 +13,9 @@ interface CommandOptions {
   address?: string;
   sha?: string;
 }
+
+const file = await readFile("./package.json", "utf8");
+const pkg = JSON.parse(file) as { version: string };
 
 cmd.version(pkg.version);
 
