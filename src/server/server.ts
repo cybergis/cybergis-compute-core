@@ -5,7 +5,7 @@ import swaggerUi from "swagger-ui-express";
 
 
 import { readFile } from "fs/promises";
-import { dirname } from "path";
+import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 
 import {
@@ -81,7 +81,7 @@ app.use(
 app.use("/ts-docs", express.static("../../tsdoc"));
 
 try {
-  const file = await readFile(`${dirname(fileURLToPath(import.meta.url))}../../swagger.json`, "utf8");
+  const file = await readFile(join(dirname(fileURLToPath(import.meta.url)), "../../swagger.json"), "utf8");
   const swaggerDocument = JSON.parse(file) as Record<string, unknown>;
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 } catch (err) {
