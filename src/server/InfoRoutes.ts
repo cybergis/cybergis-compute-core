@@ -205,7 +205,7 @@ infoRouter.get("/allowlist", function (req, res) {
    */
 infoRouter.get("/announcement", function (req, res) {
   // read announcements from the announcements.json file
-  fs.readFile(join(dirname(fileURLToPath(import.meta.url)), "configs/announcement.json"), "utf8", function (err, data) {
+  fs.readFile(join(dirname(fileURLToPath(import.meta.url)), "../../configs/announcement.json"), "utf8", function (err, data) {
     const parseHost = (dest: Record<string, announcementsConfig>) => {
       const out: Record<string, announcementsConfig> = {};
       for (const i in dest) {
