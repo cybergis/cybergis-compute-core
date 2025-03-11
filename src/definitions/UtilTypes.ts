@@ -1,6 +1,4 @@
-import NodeSSH from "node-ssh";
-import { ConnectConfig } from "ssh2";
-import { Prompt } from "ssh2-streams";
+import { NodeSSH, Config } from "node-ssh";
 
 import { Folder } from "../models";
 
@@ -15,18 +13,7 @@ export interface options {
   encoding?: BufferEncoding;
 }
 
-export declare type SSHConfig = ConnectConfig & {
-  password?: string;
-  privateKey?: string;
-  tryKeyboard?: boolean;
-  onKeyboardInteractive?: (
-    name: string,
-    instructions: string,
-    lang: string,
-    prompts: Prompt[],
-    finish: (responses: string[]) => void
-  ) => void;
-};
+export type SSHConfig = Config;
 
 export type SSH = NodeSSH;
 
