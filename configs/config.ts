@@ -1,3 +1,5 @@
+import rootPath from "get-root-path";
+
 import { readFile } from "node:fs/promises";
 import path, { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -18,7 +20,7 @@ async function createConfigMap<T>(
   configPath: string,
   defaultValues: Partial<T> = {}
 ): Promise<Record<string, T>> {
-  const file = await readFile(path.join(__dirname, configPath), "utf8");
+  const file = await readFile(path.join(rootPath, configPath), "utf8");
   const rawConfig = JSON.parse(file) as Record<string, unknown>;
   
   const configMap: Record<string, T> = {};
@@ -34,7 +36,7 @@ async function createConfigMap<T>(
   return configMap;
 }
 
-const file = await readFile(path.join(__dirname, "../config.json"), "utf8");
+const file = await readFile(path.join(rootPath, "config.json"), "utf8");
 const config = JSON.parse(file) as baseConfig;
 
 
