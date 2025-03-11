@@ -78,7 +78,7 @@ app.use(
 );
 
 // create documentation routes
-app.use("/ts-docs", express.static("../../tsdoc"));
+app.use("/ts-docs", express.static(join(rootPath, "production/tsdoc")));
 
 try {
   const file = await readFile(join(rootPath, "production/swagger.json"), "utf8");
