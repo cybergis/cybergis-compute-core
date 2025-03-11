@@ -29,7 +29,7 @@ async function createConfigMap<T>(
     configMap[key] = Object.assign(
       {},
       defaultValues,
-      JSON.parse(JSON.stringify(rawConfig[key]))
+      rawConfig[key]
     ) as T;
   }
   
