@@ -1,5 +1,5 @@
 import express from "express";
-import rootPath from "get-root-path";
+import { rootPath } from "get-root-path";
 
 import * as fs from "fs";
 import { join } from "path";

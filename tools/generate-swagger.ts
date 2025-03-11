@@ -1,4 +1,4 @@
-import rootPath from "get-root-path";
+import { rootPath } from "get-root-path";
 import swaggerJSDoc from "swagger-jsdoc";
 
 import * as fs from "fs";

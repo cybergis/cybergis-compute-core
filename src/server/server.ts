@@ -1,6 +1,6 @@
 import express from "express";
 import fileUpload from "express-fileupload";
-import rootPath from "get-root-path";
+import { rootPath } from "get-root-path";
 import morgan from "morgan";
 import swaggerUi from "swagger-ui-express";
 

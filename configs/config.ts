@@ -1,4 +1,4 @@
-import rootPath from "get-root-path";
+import { rootPath } from "get-root-path";
 
 import { readFile } from "node:fs/promises";
 import path, { dirname } from "node:path";

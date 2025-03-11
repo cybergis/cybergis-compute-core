@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import rootPath from "get-root-path";
+import { rootPath } from "get-root-path";
 
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
