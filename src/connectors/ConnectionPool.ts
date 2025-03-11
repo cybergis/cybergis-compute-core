@@ -1,4 +1,4 @@
-import NodeSSH from "node-ssh";
+import { NodeSSH } from "node-ssh";
 
 import { config, hpcConfigMap } from "../../configs/config";
 import { SSH, SSHConfig } from "../definitions";
@@ -32,13 +32,13 @@ class ConnectionPool {
       };
 
       if (hpcConfig.community_login.use_local_key) {
-        sshConfig.privateKey = config.local_key.private_key_path;
+        sshConfig.privateKeyPath = config.local_key.private_key_path;
         if (config.local_key.passphrase) {
           sshConfig.passphrase = config.local_key.passphrase as string;
         }
       } else {
-        sshConfig.privateKey =
-          hpcConfig.community_login.external_key.private_key_path;
+        sshConfig.privateKeyPath =
+      hpcConfig.community_login.external_key.private_key_path;
         if (hpcConfig.community_login.external_key.passphrase) {
           sshConfig.passphrase = hpcConfig.community_login.external_key.passphrase;
         }
