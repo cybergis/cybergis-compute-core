@@ -1,4 +1,4 @@
-import NodeSSH from "node-ssh";
+import { NodeSSH } from "node-ssh";
 
 import * as events from "events";
 

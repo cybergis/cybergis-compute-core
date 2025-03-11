@@ -1,8 +1,8 @@
 import { Command } from "commander";
+import { rootPath } from "get-root-path";
 
 import { readFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 
 import { Git } from "./src/models";
 import dataSource from "./src/utils/DB";
@@ -16,7 +16,7 @@ interface CommandOptions {
   sha?: string;
 }
 
-const file = await readFile(join(dirname(fileURLToPath(import.meta.url)), "package.json"), "utf8");
+const file = await readFile(join(rootPath, "package.json"), "utf8");
 const pkg = JSON.parse(file) as { version: string };
 
 cmd.version(pkg.version);
