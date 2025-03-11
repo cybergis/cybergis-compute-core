@@ -1,6 +1,9 @@
+import { rootPath } from "get-root-path";
 import swaggerJSDoc from "swagger-jsdoc";
 
 import * as fs from "fs";
+import { join } from "path";
+
 
 const options = {
   definition: {
@@ -15,7 +18,7 @@ const options = {
 
 const output: object = swaggerJSDoc(options);
 fs.writeFile(
-  "./production/swagger.json",
+  join(rootPath, "production/swagger.json"),
   JSON.stringify(output),
   function (err) {
     if (err) {
