@@ -67,25 +67,23 @@ jobRouter.post("/", authMiddleWare, async function (req, res) {
     res.status(401).json({ error: "Not authorized for HPC", message: null });
     return;
   }
-  
-  try {
-    // need to validate if hpc is not a community account
-    if (!hpc.is_community_account) {
-      await sshCredentialGuard.validatePrivateAccount(
-        hpcName,
-        body.user,
-        body.password
-      );
+  // need to validate if hpc is not a community account
+  if (!hpc.is_community_account) {
+    const valid = await sshCredentialGuard.validatePrivateAccount(
+      hpcName,
+      body.user,
+      body.password
+    );
+
+    if (!valid) {
+      res
+        .status(401)
+        .json({ 
+          error: "invalid SSH credentials", 
+        });
+      return;
     }
-  } catch (e) {
-    res
-      .status(401)
-      .json({ 
-        error: "invalid SSH credentials", 
-        messages: [Helper.assertError(e).toString()] 
-      });
-    return;
-  }
+  } 
   
   // start job db connection & create the job object to upload
   const jobRepo = dataSource.getRepository(Job);

@@ -30,20 +30,33 @@ export class SlurmConnector {
   /** config **/
   protected sshConnector: SSHConnector;
 
-  public constructor(
+  protected constructor(
     maintainer: BaseMaintainer,
+    connector: SSHConnector,
     is_cvmfs = false
   ) {
     this.maintainer = maintainer;
     this.is_cvmfs = is_cvmfs;
+    this.sshConnector = connector;
+  }
 
-    this.sshConnector = new SSHConnector(
+  public static async build(
+    maintainer: BaseMaintainer, 
+    is_cvmfs = false
+  ): Promise<SlurmConnector | undefined> { 
+    const connector = await SSHConnector.build(
       maintainer.hpc, 
       maintainer.job, 
       (...args) => maintainer.emitLog(...args),
       (...args) => maintainer.emitEvent(...args),
       maintainer.job.env
     );
+
+    if (connector === undefined) {
+      return undefined;
+    }
+
+    return new SlurmConnector(maintainer, connector, is_cvmfs);
   }
 
   /**
@@ -505,7 +518,7 @@ ${cmd}`;
       if (seffResult.stderr) return seffOutput;
 
       if (!seffResult.stdout) {
-        throw new Error();
+        return seffOutput;
       }
 
       const tmp = seffResult.stdout.split("\n");

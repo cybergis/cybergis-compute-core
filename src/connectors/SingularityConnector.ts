@@ -3,8 +3,10 @@ import * as path from "path";
 import { containerConfigMap, hpcConfigMap, kernelConfigMap } from "../../configs/config";
 import { slurm, executableManifest } from "../definitions";
 import * as Helper from "../helpers/Helper";
+import BaseMaintainer from "../maintainers/BaseMaintainer";
 
 import { SlurmConnector } from "./SlurmConnector";
+import { SSHConnector } from "./SSHConnector";
 // import { kernelConfig } from "../types";
 
 /**
@@ -17,6 +19,25 @@ export class SingularityConnector extends SlurmConnector {
 
   private volumeBinds: Record<string, string> = {};
   public isContainer = true;  // this is a container -- causes some changes in how job JSONs are generated
+
+  public static async build(
+    maintainer: BaseMaintainer, 
+    is_cvmfs = false
+  ): Promise<SingularityConnector | undefined> { 
+    const connector = await SSHConnector.build(
+      maintainer.hpc, 
+      maintainer.job, 
+      (...args) => maintainer.emitLog(...args),
+      (...args) => maintainer.emitEvent(...args),
+      maintainer.job.env
+    );
+
+    if (connector === undefined) {
+      return undefined;
+    }
+
+    return new SingularityConnector(maintainer, connector, is_cvmfs);
+  }
 
   /**
    * Executes specified command within specified image

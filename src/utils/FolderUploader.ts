@@ -36,7 +36,7 @@ export abstract class BaseFolderUploader {
   public isComplete: boolean;
   public isFailed: boolean;
 
-  protected connector: SSHConnector;
+  public connector: SSHConnector;
 
   constructor(hpcName: string, userId: string, connector: SSHConnector) {
     this.hpcName = hpcName;
@@ -59,9 +59,6 @@ export abstract class BaseFolderUploader {
     this.connector = connector;
   }
 
-   
-  abstract upload(): Promise<void>;
-
   /**
    * Registers the current folder into the Folder database.
    *
@@ -82,105 +79,6 @@ export abstract class BaseFolderUploader {
     }
   }
 }
-
-/**
- * Specialization of BaseFolderUploader for uploading an empty folder.
- */
-export class EmptyFolderUploader extends BaseFolderUploader {
-
-  constructor(
-    hpcName: string,
-    userId: string,
-    jobId: string,
-    connector: SSHConnector
-  ) {
-    super(hpcName, userId, connector);
-  }
-
-  /**
-   * Creates ("uploads") an empty folder onto the HPC at the given path. 
-   * Updates the database accordingly.
-   *
-   */
-  public async upload() {
-    await this.connector.mkdir(this.hpcPath, {}, true);  // mkdir {name}
-    this.isComplete = true;
-    await this.register();  // register folder in the database
-  }
-}
-
-// /**
-//  * Specialization of BaseFolderUploader for supporting globus transfers. Not cached. 
-//  *
-//  * @export
-//  * @extends {BaseFolderUploader}
-//  */
-// export class GlobusFolderUploader extends BaseFolderUploader {
-//   private from: GlobusFolder;
-//   private to: GlobusFolder;
-
-//   private taskId: string;
-//   private jobId: string;
-
-//   public globusPath: string;  // not nullable here
-
-//   constructor(
-//     from: GlobusFolder,
-//     hpcName: string,
-//     userId: string,
-//     jobId: string
-//   ) {
-//     super(hpcName, userId);
-
-//     if (!this.hpcConfig)
-//       throw new Error(`cannot find hpcConfig with name ${hpcName}`);
-//     if (!this.hpcConfig.globus)
-//       throw new Error(`cannot find hpcConfig.globus with name ${hpcName}`);
-
-//     this.from = from;
-//     this.to = {
-//       endpoint: this.hpcConfig.globus.endpoint,
-//       path: this.globusPath,
-//     };
-
-//     this.jobId = jobId;
-//   }
-
-//   /**
-//    * Uploads the specified folder to the HPC via globus.
-//    *
-//    */
-//   async upload() {
-//     // start the transfer
-//     this.taskId = await GlobusUtil.initTransfer(
-//       this.from,
-//       this.to,
-//       this.hpcConfig,
-//       "job-id-" + this.jobId + "-upload-folder-" + this.id
-//     );
-
-//     // get status of transfer
-//     const status = await GlobusUtil.monitorTransfer(
-//       this.taskId,
-//       this.hpcConfig
-//     );
-
-//     if (status.includes("FAILED")) {
-//       this.isComplete = true;
-//       this.isFailed = true;
-//     }
-
-//     if (status.includes("SUCCEEDED")) {
-//       this.isComplete = true;
-//     }
-
-//     if (this.isComplete) {
-//       if (!this.isFailed) {
-//         await this.register();
-//       }
-//     }
-//   }
-// }
 
 /**
  * This folder uploader adds the capability to cache results on the HPC to avoid having to rezip, rescp-globus, and unzip things
@@ -253,17 +151,6 @@ abstract class CachedFolderUploader extends BaseFolderUploader {
     await this.connector.unzip(this.cachePath, this.hpcPath);
   }
 
-  /**
-   * Abstract function implemented by more concrete folder uploaders. Encompasses the general functionality
-   * of uploading the files associated with a given job (as encapsulated by a general folder uploader) to
-   * the internally stored cache path.
-   *
-   * @protected
-   * @abstract
-   * @param {boolean} _force whether or not to force upload (used for force refresh)
-   */
-  protected abstract uploadToCache(): Promise<void>;
-
 
   /**
    * Abstract function implemented by more concrete folder uploaders. Encompasses the general requirement to
@@ -276,24 +163,23 @@ abstract class CachedFolderUploader extends BaseFolderUploader {
    */
   protected abstract getCanonicalUpdateTime(): Promise<number>;
 
-  public async cachedUpload() {
+  public async cachedUpload(actualUpdateTime: number) {
     const recordedUpdate = await this.getRecordedUpdateTime(); 
-    const canonicalUpdate = await this.getCanonicalUpdateTime();
 
-    if (recordedUpdate >= 0 && canonicalUpdate >= 0 
-      && (recordedUpdate / canonicalUpdate > 100 || canonicalUpdate / recordedUpdate > 100)) {
-      console.error("Comparing seconds and milliseconds for cache refresh check", recordedUpdate, canonicalUpdate);
+    if (recordedUpdate >= 0 && actualUpdateTime >= 0 
+      && (recordedUpdate / actualUpdateTime > 100 || actualUpdateTime / recordedUpdate > 100)) {
+      console.error("Comparing seconds and milliseconds for cache refresh check", recordedUpdate, actualUpdateTime);
     }
     
     // upload if it doesn't exist or the cache is stale
     if (!(await this.cacheExists()) 
-      || recordedUpdate < canonicalUpdate
+      || recordedUpdate < actualUpdateTime
     ) {
-      await this.uploadToCache();
-      await this.registerCache();
+      return true;
     }
 
     await this.pullFromCache();
+    return false;
   }
 
   protected async getRecordedUpdateTime(): Promise<number> {
@@ -309,7 +195,7 @@ abstract class CachedFolderUploader extends BaseFolderUploader {
     }
   }
 
-  protected async registerCache() {
+  public async register() {
     if (this.isComplete && !this.isFailed) {
       const exists = await dataSource.getRepository(Cache).findOneBy({
         hpc: this.hpcName,
@@ -326,7 +212,42 @@ abstract class CachedFolderUploader extends BaseFolderUploader {
         exists.update();
       }
     }
+  }
+}
+
+async function emptyFolderUploader(base: BaseFolderUploader) {
+  try {
+    await base.connector.mkdir(base.hpcPath, {}, true);
+  } catch (_) {
     
+  }
+  
+
+}
+
+/**
+ * Specialization of BaseFolderUploader for uploading an empty folder.
+ */
+export class EmptyFolderUploader extends BaseFolderUploader {
+
+  constructor(
+    hpcName: string,
+    userId: string,
+    jobId: string,
+    connector: SSHConnector
+  ) {
+    super(hpcName, userId, connector);
+  }
+
+  /**
+   * Creates ("uploads") an empty folder onto the HPC at the given path. 
+   * Updates the database accordingly.
+   *
+   */
+  public async upload() {
+    await this.connector.mkdir(this.hpcPath, {}, true);  // mkdir {name}
+    this.isComplete = true;
+    await this.register();  // register folder in the database
   }
 }
 

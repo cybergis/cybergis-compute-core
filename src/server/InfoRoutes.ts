@@ -48,23 +48,21 @@ infoRouter.get("/statistic/job/:jobId", authMiddleWare, async (req, res) => {
     res.status(402).json({ error: "invalid token" });
     return;
   }
+
+  // query the job matching the params
+  const job = await dataSource
+    .getRepository(Job)
+    .findOneBy({ id: req.params.jobId, userId: res.locals.username as string });
   
-  try {
-    // query the job matching the params
-    const job = await dataSource
-      .getRepository(Job)
-      .findOneBy({ id: req.params.jobId, userId: res.locals.username as string });
-  
-    if (job === null) {
-      throw new Error("job not found.");
-    }
-  
-    res.json({ runtime_in_seconds: await getRuntimeByJobId(job.id) });
-  } catch (e) {
+  if (job === null) {
     res.status(401).json(
-      { error: "invalid access", messages: [Helper.assertError(e).toString()] }
+      { error: "invalid access", messages: ["job not found"] }
     );
+
+    return;
   }
+  
+  res.json({ runtime_in_seconds: await getRuntimeByJobId(job.id) });
 });
   
 /**

@@ -276,8 +276,8 @@ abstract class BaseMaintainer {
    * @public
    * @returns {SlurmConnector} - The slurm connector associated with this job.
    */
-  public getSlurmConnector(): SlurmConnector {
-    return new SlurmConnector(this);
+  public async getSlurmConnector(): Promise<SlurmConnector | undefined> {
+    return await SlurmConnector.build(this);
   }
 
   /**
@@ -286,8 +286,8 @@ abstract class BaseMaintainer {
    * @public
    * @returns {SingularityConnector} - The singularity connector associated with this job.
    */
-  public getSingularityConnector(): SingularityConnector {
-    return new SingularityConnector(
+  public async getSingularityConnector(): Promise<SingularityConnector | undefined> {
+    return await SingularityConnector.build(
       this, 
     );
   }
@@ -298,8 +298,8 @@ abstract class BaseMaintainer {
    * @public
    * @returns {SingularityConnector} - The singularity connector associated with this job with cvmfs turned on.
    */
-  public getSingCVMFSConnector(): SingularityConnector {
-    return new SingularityConnector(
+  public async getSingCVMFSConnector(): Promise<SingularityConnector | undefined> {
+    return await SingularityConnector.build(
       this,
       true
     );

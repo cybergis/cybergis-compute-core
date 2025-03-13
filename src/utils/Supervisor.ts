@@ -127,7 +127,7 @@ class Supervisor {
     // keep looping while the job is not finished
      
     while (true) {
-      const connector = await SSHConnector.getConnector(job.hpc, job);
+      const connector = await SSHConnector.build(job.hpc, job);
 
       if (!connector) {
         await registerEvents(

@@ -60,6 +60,7 @@ export class GlobusTransferUtil {
 
     } catch (err) {
       console.error("error getting submission id for transfer submission: ", err);
+      throw err;
     }
 
     throw new Error("Something went wrong getting the submission id");
@@ -84,21 +85,21 @@ export class GlobusTransferUtil {
   ): Promise<string> {
     await this.init();
 
-    const data = {
-      DATA_TYPE: "transfer",
-      submission_id: await this.getSubmissionId(),
-      label: (label !== "" ? `${label}_${Math.floor(Math.random() * 1000)}` : undefined),
-      source_endpoint: from.endpoint,
-      destination_endpoint: to.endpoint,
-      DATA: [{
-        DATA_TYPE: "transfer_item",
-        source_path: from.path,
-        destination_path: to.path,
-        recursive: true
-      }]
-    };
-
     try {
+      const data = {
+        DATA_TYPE: "transfer",
+        submission_id: await this.getSubmissionId(),
+        label: (label !== "" ? `${label}_${Math.floor(Math.random() * 1000)}` : undefined),
+        source_endpoint: from.endpoint,
+        destination_endpoint: to.endpoint,
+        DATA: [{
+          DATA_TYPE: "transfer_item",
+          source_path: from.path,
+          destination_path: to.path,
+          recursive: true
+        }]
+      };
+
       const response: AxiosResponse<{ task_id: string }> = await axios.post(`${baseUrl}/transfer`, data, {
         headers: {
           "Content-Type": "application/json",
@@ -125,7 +126,6 @@ export class GlobusTransferUtil {
     let tryAgain = true;
 
     try {
-       
       while (true) {
         const response: AxiosResponse<{ status: string }> = await axios.get(`${baseUrl}/task/${taskId}`, {
           headers: {

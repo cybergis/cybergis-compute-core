@@ -63,16 +63,9 @@ export class SSHConnector {
 
     this.emitLogFn = emitLogFn;
     this.emitEventFn = emitEventFn;
-
-    this.getSSH().then((x) => {
-      if (!x.isConnected()) {
-        throw new ConnectorError("unable to establish ssh connection");
-      }
-    }).catch((e) => {throw e;})
-      .finally(() => this.releaseSSH());
   }
 
-  public static async getConnector(
+  public static async build(
     hpcName: string,
     job?: Job,
     emitLogFn?: emitLogFnType,

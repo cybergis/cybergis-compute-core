@@ -22,7 +22,7 @@ class SSHCredentialGuard {
     hpcName: string,
     user?: string,
     password?: string
-  ) {
+  ): Promise<boolean> {
     const hpc = hpcConfigMap[hpcName];
 
     try {
@@ -33,8 +33,10 @@ class SSHCredentialGuard {
         password: password,
       });
       this.ssh.dispose();
+
+      return true;
     } catch (_) {
-      throw new Error(`unable to check credentials with ${hpcName}`);
+      return false;
     }
   }
 
