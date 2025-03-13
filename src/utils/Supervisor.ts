@@ -190,7 +190,7 @@ class Supervisor {
         return;
       }
 
-      await sleep(500);
+      await sleep(250);
     }
   }
 
