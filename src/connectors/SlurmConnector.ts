@@ -19,12 +19,23 @@ class SlurmConnector extends BaseConnector {
   public isContainer = false;
 
   /**
-   * Registers all of the specified modules
+   * Registers all of the specified modules.
    *
    * @param {Array<string>} modules - Array of strings
    */
   registerModules(modules: string[]) {
     this.modules = this.modules.concat(modules);
+  }
+
+  /**
+   * Creates a string to import the this.modules modules.
+   */
+  getModuleLoadString() {
+    let modules = "\n";
+    for (const module of this.modules) {
+      modules += `module load ${module}\n`;
+    }
+    return modules;
   }
 
   /**
@@ -54,11 +65,11 @@ class SlurmConnector extends BaseConnector {
       config.partition = hpc.partition;
     }
 
-    let modules = "";
     if (config.modules) {
-      for (const module of config.modules)
-        modules += `module load ${module}\n`;
+      // TODO: make this split more robust
+      this.registerModules(config.modules.split(/\s/));
     }
+
 
     Helper.nullGuard(this.remote_result_folder_path);
     Helper.nullGuard(config.mail_type);
@@ -107,7 +118,7 @@ ${
     ? this.connectorConfig.init_sbatch_script.join("\n")
     : ""
 }
-${modules}
+${this.getModuleLoadString()}
 ${cmd}`;
   }
 
