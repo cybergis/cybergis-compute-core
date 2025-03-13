@@ -10,7 +10,7 @@ import {
   containerConfig,
   jupyterGlobusMapConfig,
   kernelConfig,
-} from "../src/utils/types";
+} from "../src/definitions";
 
 async function createConfigMap<T>(
   configPath: string,

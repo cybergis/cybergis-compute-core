@@ -5,10 +5,10 @@ import * as fs from "fs";
 import { join } from "path";
 
 import { hpcConfigMap, maintainerConfigMap, containerConfigMap, jupyterGlobusMap } from "../../configs/config";
+import { hpcConfig, maintainerConfig, containerConfig, jupyterGlobusMapConfig, announcementsConfig } from "../definitions";
 import * as Helper from "../helpers/Helper";
-import { Job } from "../models/Job";
+import { Job } from "../models";
 import dataSource from "../utils/DB";
-import { hpcConfig, maintainerConfig, containerConfig, jupyterGlobusMapConfig, announcementsConfig } from "../utils/types";
 
 import { authMiddleWare, statistic } from "./ServerUtil";
 

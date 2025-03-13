@@ -4,7 +4,7 @@ import { rootPath } from "get-root-path";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import { Git } from "./src/models/Git";
+import { Git } from "./src/models";
 import dataSource from "./src/utils/DB";
 
 
