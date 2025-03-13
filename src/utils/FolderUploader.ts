@@ -15,7 +15,7 @@ import {
   LocalFolder,
 } from "../definitions";
 import { NotImplementedError } from "../definitions";
-import FolderUtil from "../helpers/FolderUtil";
+import { getZip, removeZip } from "../helpers/FolderUtil";
 import GitUtil from "../helpers/GitUtil";
 import { GlobusClient } from "../helpers/GlobusTransferUtil";
 import * as Helper from "../helpers/Helper";
@@ -472,12 +472,12 @@ export class LocalFolderUploader extends CachedFolderUploader {
     }
 
     // zip the folder
-    const from = await FolderUtil.getZip(this.localPath);
+    const from = await getZip(this.localPath);
 
     // upload via connector and SCP/slurm
     await this.connector.upload(from, path, false, false);
     // remove the zipped file on the local machine
-    await FolderUtil.removeZip(from);
+    await removeZip(from);
 
     // register upload in database & mark complete
     this.isComplete = true;

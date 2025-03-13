@@ -1,5 +1,5 @@
 import { config, hpcConfigMap } from "../configs/config";
-import PythonUtil from "../src/helpers/PythonUtil";
+import { runInteractive } from "../src/helpers/PythonUtil";
 import { GlobusTransferRefreshToken } from "../src/models";
 import dataSource from "../src/utils/DB";
 
@@ -21,7 +21,7 @@ const main = async () => {
       );
     console.log(`refreshing transfer refresh token for ${identity}...`);
 
-    const out = await PythonUtil.runInteractive(
+    const out = await runInteractive(
       "globus_refresh_transfer_token.py",
       [config.globus_client_id],
       ["transfer_refresh_token"]

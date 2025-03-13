@@ -5,12 +5,11 @@ import type {
   authReqBody,
   updateFolderBody,
 } from "../definitions";
+import { getHost, getUsername } from "../helpers/JupyterHubUtil";
 import { Folder } from "../models";
 import dataSource from "../utils/DB";
-import JupyterHub from "../utils/JupyterHub";
 import { ResultFolderContentManager, GlobusTaskListManager } from "../utils/Redis";
 import { SSHCredentialGuard } from "../utils/SSHCredentialGuard";
-import Statistic from "../utils/Statistic";
 import Supervisor from "../utils/Supervisor";
 
 
@@ -19,8 +18,6 @@ export const supervisor = new Supervisor();
 export const validator = new jsonschema.Validator();
 export const sshCredentialGuard = new SSHCredentialGuard();
 export const resultFolderContent = new ResultFolderContentManager();
-export const jupyterHub = new JupyterHub();
-export const statistic = new Statistic();
 export const globusTaskList = new GlobusTaskListManager();
 
 // object for vadidating API calls
@@ -146,10 +143,10 @@ export const authMiddleWare = async (
   if (body.jupyterhubApiToken) {
     try {
       // try to extract username/host and store into local variables
-      res.locals.username = await jupyterHub.getUsername(
+      res.locals.username = await getUsername(
         body.jupyterhubApiToken
       );
-      res.locals.host = jupyterHub.getHost(body.jupyterhubApiToken);
+      res.locals.host = getHost(body.jupyterhubApiToken);
     } catch {}
 
     // continue onto the actual route

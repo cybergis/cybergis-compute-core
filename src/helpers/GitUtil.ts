@@ -23,7 +23,7 @@ import {
 import { Git } from "../models";
 import dataSource from "../utils/DB";
 
-import FolderUtil from "./FolderUtil";
+import { removeZip } from "./FolderUtil";
 
 const exec = promisify(execCallback);  
 
@@ -32,7 +32,7 @@ const exec = promisify(execCallback);
  */
 export default class GitUtil {
 
-  static cache: Record<string, executableManifest> = {};
+  private static cache: Record<string, executableManifest> = {};
 
   /**
    * Gets the local path of a given git repository. 
@@ -41,7 +41,7 @@ export default class GitUtil {
    * @param {string} gitId
    * @return {string} resulting path 
    */
-  static getLocalPath(gitId: string): string {
+  public static getLocalPath(gitId: string): string {
     return path.join(config.local_file_system.root_path, gitId);
   }
 
@@ -58,7 +58,7 @@ export default class GitUtil {
 
     await fs.promises.mkdir(localPath);
     await clone({
-      fs: fs.promises, 
+      fs: fs.promises,
       http,
       dir: localPath,
       url: git.address
@@ -95,7 +95,7 @@ export default class GitUtil {
 
   public static async getLastCommitTime(git: Git): Promise<number> {
     await this.refreshGit(git);
-    
+
     const localPath = this.getLocalPath(git.id);
 
     const local = await log({
@@ -106,7 +106,7 @@ export default class GitUtil {
 
     return local[0].commit.committer.timestamp;
   }
-  
+
   protected static async outOfDate(git: Git): Promise<boolean> {
 
     const localPath = this.getLocalPath(git.id);
@@ -136,9 +136,9 @@ export default class GitUtil {
 
     const localSha = local[0].oid;
 
-    return (git.sha && localSha == git.sha) || remoteSha !== localSha;
+    return (git.sha && localSha === git.sha) || remoteSha !== localSha;
   }
-  
+
   /**
    * Repulls a git repository if it is out of date and records it in git database.
    *
@@ -147,8 +147,8 @@ export default class GitUtil {
    */
   protected static async refreshGit(git: Git): Promise<boolean> {
     const localPath = this.getLocalPath(git.id);
-    await FolderUtil.removeZip(localPath);
-    
+    await removeZip(localPath);
+
     // clone if git repo not exits locally
     if (!fs.existsSync(localPath)) {
       await this.deleteAndPull(git);
@@ -168,7 +168,7 @@ export default class GitUtil {
           });
         } else {
           await pull({
-            fs: fs.promises, 
+            fs: fs.promises,
             http,
             dir: localPath
           });
@@ -185,7 +185,7 @@ export default class GitUtil {
         .createQueryBuilder()
         .update(Git)
         .where("id = :id", { id: git.id })
-        .set({ "updatedAt" : now })
+        .set({ "updatedAt": now })
         .execute();
 
       return true;
@@ -211,7 +211,7 @@ export default class GitUtil {
 
     if (!refreshed && git.id in GitUtil.cache) {
       return GitUtil.cache[git.id];
-    } 
+    }
 
     let rawExecutableManifest: string;
     try {
@@ -244,7 +244,7 @@ export default class GitUtil {
   protected static processExecutableManifest(
     rawExecutableManifest: string,
     address: string
-  ) : executableManifest {
+  ): executableManifest {
     const executableManifest = Object.assign(
       {
         name: undefined,
@@ -270,7 +270,7 @@ export default class GitUtil {
     }
 
     for (const rule_name in executableManifest.slurm_input_rules) {
-      
+
       // remove invalid configs
       if (!slurm_configs.includes(rule_name)) {
         delete executableManifest.slurm_input_rules[
@@ -404,7 +404,7 @@ export default class GitUtil {
   public static async findGit(gitId: string): Promise<Git | null> {
     const gitRepo = dataSource.getRepository(Git);
 
-    const foundGit = await gitRepo.findOneBy({ id :gitId });
+    const foundGit = await gitRepo.findOneBy({ id: gitId });
 
     return foundGit;
   }
@@ -413,7 +413,7 @@ export default class GitUtil {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 class ManifestUtil extends GitUtil {
-  
+
   /**
    * Deletes a specified manifest of a git repository and pulls it again.
    *
@@ -422,16 +422,15 @@ class ManifestUtil extends GitUtil {
    */
   protected static async deleteAndPullManifest(git: Git) {
     const localPath = this.getLocalManifestPath(git.id);
-     
     rimraf.sync(localPath);  // deletes everything
 
     const getManifestUrl = (
-      (commit: string) => 
+      (commit: string) =>
         `${git.address.replace(".git", "").replace("github.com", "raw.githubusercontent.com")}/${commit}/manifest.json`
     );
 
     await fs.promises.mkdir(localPath, { recursive: true });
-    
+
     if (git.sha) {
       // if a sha is specified, checkout that commit
       await exec(`cd ${localPath} && wget -O manifest.json ${getManifestUrl(git.sha)}`);
@@ -440,7 +439,7 @@ class ManifestUtil extends GitUtil {
     }
   }
 
-  
+
   /**
    * Gets the local manifest path of a given git repository. 
    *
@@ -452,7 +451,7 @@ class ManifestUtil extends GitUtil {
     return path.join(config.local_file_system.root_path, "manifests", gitId);
   }
 
-  
+
   /**
    * Repulls only the repository of a git repo if it is out of date and records it in git database.
    *
@@ -462,10 +461,10 @@ class ManifestUtil extends GitUtil {
   protected static async refreshGitManifest(git: Git) {
     const localPath = this.getLocalManifestPath(git.id);
     const getManifestUrl = (
-      (commit: string) => 
+      (commit: string) =>
         `${git.address.replace(".git", "").replace("github.com", "raw.githubusercontent.com")}/${commit}/manifest.json`
     );
-    
+
     // get the manifest if it does not exist locally
     if (!fs.existsSync(localPath)) {
       await fs.promises.mkdir(localPath, { recursive: true });
@@ -482,7 +481,7 @@ class ManifestUtil extends GitUtil {
       secsSinceUpdate = (
         now.getTime() - (git.updatedAt !== undefined ? git.updatedAt.getTime() : -999999)
       ) / 1000.0;
-    } catch {}
+    } catch { }
 
     if (secsSinceUpdate > 120) {
       console.log(`${git.id} is stale, let's update...`);
@@ -500,12 +499,12 @@ class ManifestUtil extends GitUtil {
       }
       // call to update the updatedAt timestamp
       now = new Date();
-      
+
       await dataSource
         .createQueryBuilder()
         .update(Git)
         .where("id = :id", { id: git.id })
-        .set({ "updatedAt" : now })
+        .set({ "updatedAt": now })
         .execute();
     }
     else {
@@ -521,7 +520,7 @@ class ManifestUtil extends GitUtil {
    * @param {Git} git git object to get the manifest 
    * @return {executableManifest} the cleaned manifest 
    */
-  static async getExecutableManifest(
+  public static async getExecutableManifest(
     git: Git
   ): Promise<executableManifest> {
     await this.refreshGitManifest(git);

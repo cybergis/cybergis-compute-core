@@ -1,7 +1,7 @@
 import "jest";
 import { config } from "../../configs/config";
+import { getEvents, getLogs, registerEvents, registerLogs } from "../../src/helpers/EmitterUtil";
 import { clearAll } from "../../src/utils/DB";
-import Emitter from "../../src/utils/Emitter";
 import TestHelper from "../TestHelper";
 
 beforeAll(() => {
@@ -25,8 +25,6 @@ const logType = "test-event";
 const logMessage = "I am testing this log";
 
 describe("test Emitter.getEvents", () => {
-  const emitter = new Emitter();
-
   test("simple get event", async () => {
     const job = await TestHelper.createJob(
       jobId,
@@ -40,7 +38,7 @@ describe("test Emitter.getEvents", () => {
       eventType,
       eventMessage
     );
-    const queriedEvents = await emitter.getEvents(job.id);
+    const queriedEvents = await getEvents(job.id);
     //
     expect(queriedEvents.length).toEqual(1);
     expect(queriedEvents[0].jobId).toEqual(job.id);
@@ -63,7 +61,7 @@ describe("test Emitter.getEvents", () => {
         `${eventType}_${i}`,
         `${eventMessage}_${i}`
       );
-    const queriedEvents = await emitter.getEvents(job.id);
+    const queriedEvents = await getEvents(job.id);
     //
     expect(queriedEvents.length === eventsCount);
     for (let i = 0; i < eventsCount; i++) {
@@ -74,8 +72,6 @@ describe("test Emitter.getEvents", () => {
 });
 
 describe("test Emitter.getLogs", () => {
-  const emitter = new Emitter();
-
   test("simple get log", async () => {
     const job = await TestHelper.createJob(
       jobId,
@@ -85,7 +81,7 @@ describe("test Emitter.getLogs", () => {
       hpc
     );
     const createdLog = await TestHelper.createLog(job, logMessage);
-    const queriedLogs = await emitter.getLogs(job.id);
+    const queriedLogs = await getLogs(job.id);
     //
     expect(queriedLogs.length).toEqual(1);
     expect(queriedLogs[0].jobId).toEqual(job.id);
@@ -104,7 +100,7 @@ describe("test Emitter.getLogs", () => {
     );
     for (let i = 0; i < logsCount; i++)
       await TestHelper.createLog(job, `${logMessage}_${i}`);
-    const queriedLogs = await emitter.getLogs(job.id);
+    const queriedLogs = await getLogs(job.id);
     //
     expect(queriedLogs.length === logsCount);
     for (let i = 0; i < logsCount; i++) {
@@ -115,8 +111,6 @@ describe("test Emitter.getLogs", () => {
 });
 
 describe("test Emitter.registerLogs", () => {
-  const emitter = new Emitter();
-
   test("simple register log", async () => {
     const job = await TestHelper.createJob(
       jobId,
@@ -125,9 +119,9 @@ describe("test Emitter.registerLogs", () => {
       maintainer,
       hpc
     );
-    await emitter.registerLogs(job, `${logMessage}_register_${0}`);
-    await emitter.registerLogs(job, `${logMessage}_register_${1}`);
-    const queriedLogs = await emitter.getLogs(job.id);
+    await registerLogs(job, `${logMessage}_register_${0}`);
+    await registerLogs(job, `${logMessage}_register_${1}`);
+    const queriedLogs = await getLogs(job.id);
     expect(queriedLogs.length).toEqual(2);
     expect(queriedLogs[0].jobId).toEqual(job.id);
     expect(queriedLogs[1].jobId).toEqual(job.id);
@@ -137,8 +131,6 @@ describe("test Emitter.registerLogs", () => {
 });
 
 describe("test Emitter.registerEvents", () => {
-  const emitter = new Emitter();
-
   test("simple register events", async () => {
     const job = await TestHelper.createJob(
       jobId,
@@ -147,17 +139,17 @@ describe("test Emitter.registerEvents", () => {
       maintainer,
       hpc
     );
-    await emitter.registerEvents(
+    await registerEvents(
       job,
       `${logType}_register_${0}`,
       `${logMessage}_register_${0}`
     );
-    await emitter.registerEvents(
+    await registerEvents(
       job,
       `${logType}_register_${1}`,
       `${logMessage}_register_${1}`
     );
-    const queriedEvents = await emitter.getEvents(job.id);
+    const queriedEvents = await getEvents(job.id);
     expect(queriedEvents.length).toEqual(2);
     expect(queriedEvents[0].jobId).toEqual(job.id);
     expect(queriedEvents[1].jobId).toEqual(job.id);

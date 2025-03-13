@@ -1,20 +1,11 @@
 import axios, { AxiosResponse } from "axios";
 
 import { config } from "../../configs/config";
-import { GlobusFolder } from "../definitions";
+import { GlobusFolder, GlobusAuthResponse } from "../definitions";
 import { GlobusTransferRefreshToken } from "../models";
 import dataSource from "../utils/DB";
 
-
 const baseUrl = "https://transfer.api.globus.org/v0.10";
-
-interface GlobusAuthResponse {
-  access_token: string;
-  expires_in: number;
-  token_type: string;
-  refresh_token: string;
-  scope: string;
-}
 
 export class GlobusTransferUtil {
   private accessToken!: string;
@@ -89,7 +80,7 @@ export class GlobusTransferUtil {
   public async initTransfer(
     from: GlobusFolder,
     to: GlobusFolder,
-    label=""
+    label = ""
   ): Promise<string> {
     await this.init();
 
@@ -134,13 +125,14 @@ export class GlobusTransferUtil {
     let tryAgain = true;
 
     try {
-      while (true) {   
+       
+      while (true) {
         const response: AxiosResponse<{ status: string }> = await axios.get(`${baseUrl}/task/${taskId}`, {
           headers: {
             "Authorization": `Bearer ${this.accessToken}`
           }
         });
-  
+
         if (response.status === 200) {
           if (response.data.status === "SUCCEEDED" || response.data.status === "FAILED") {
             return response.data.status;
@@ -155,7 +147,7 @@ export class GlobusTransferUtil {
           break;
         }
       }
-      
+
 
     } catch (err) {
       console.error("Error getting transfer task status: ", err);
@@ -173,7 +165,7 @@ export class GlobusTransferUtil {
           "Authorization": `Bearer ${this.accessToken}`
         }
       });
-  
+
       if (response.status === 200) {
         return response.data.status;
       } else {
@@ -187,7 +179,7 @@ export class GlobusTransferUtil {
     throw new Error("Something went wrong querying transfer status");
   }
 
-  private escape(username: string, escapeChar="_", safe=new Set("abcdefghijklmnopqrstuvwxyz0123456789")) {
+  private escape(username: string, escapeChar = "_", safe = new Set("abcdefghijklmnopqrstuvwxyz0123456789")) {
     const escapedUsername: string[] = [];
 
     for (const char of username) {
