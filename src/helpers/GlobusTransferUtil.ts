@@ -134,7 +134,7 @@ export class GlobusTransferUtil {
     let tryAgain = true;
 
     try {
-      while (true) {  // eslint-disable-line no-constant-condition
+      while (true) {   
         const response: AxiosResponse<{ status: string }> = await axios.get(`${baseUrl}/task/${taskId}`, {
           headers: {
             "Authorization": `Bearer ${this.accessToken}`

@@ -34,7 +34,7 @@ export default class XSEDEUtil {
 
       await axios.post(`${XSEDEUtil.jobLogURL}`, {}, { params });
       if (config.is_testing) console.log("XSEDE job logged: ", params);
-    } catch (e) {
+    } catch (_) {
       // best effort
     }
   }

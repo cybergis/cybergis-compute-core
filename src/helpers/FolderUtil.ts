@@ -52,7 +52,7 @@ export default class registerUtil {
     return new Promise((resolve, reject) => {
       child.on("exit", () => resolve(`${filePath}.zip`));
       child.on("close", () => resolve(`${filePath}.zip`));
-      child.on("error", () => reject(`${filePath}.zip`));
+      child.on("error", () => reject(new Error(`${filePath}.zip`)));
     });
   }
 
@@ -123,7 +123,7 @@ export default class registerUtil {
     return new Promise((resolve, reject) => {
       child.on("exit", () => resolve(`${filePath}.zip`));
       child.on("close", () => resolve(`${filePath}.zip`));
-      child.on("error", () => reject(`${filePath}.zip`));
+      child.on("error", () => reject(new Error(`${filePath}.zip`)));
     });
   }
 }

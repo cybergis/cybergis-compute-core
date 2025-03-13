@@ -1,5 +1,4 @@
 import { hpcConfigMap } from "../../configs/config";
-// import path = require("path");
 import { Job } from "../models/Job";
 import dataSource from "../utils/DB";
 import {

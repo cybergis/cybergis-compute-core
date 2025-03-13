@@ -1,4 +1,4 @@
-import express = require("express");
+import express from "express";
 
 
 import * as path from "path";
@@ -10,7 +10,7 @@ import { GlobusClient } from "../helpers/GlobusTransferUtil";
 import * as Helper from "../helpers/Helper";
 import { Folder } from "../models/Folder";
 import dataSource from "../utils/DB";
-import type {
+import {
   updateFolderBody,
   initGlobusDownloadBody,
   GlobusFolder
@@ -239,7 +239,7 @@ folderRouter.post(
     
     if (existingTransferJob) {
       res.status(403).json({
-            error: `a globus job is currently running on folder with id ${folderId}`,  // eslint-disable-line
+        error: `a globus job is currently running on folder with id ${folderId}`,
       });
       return;
     }

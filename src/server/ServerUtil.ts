@@ -1,5 +1,5 @@
 import { Request, NextFunction, Response } from "express";
-import jsonschema = require("jsonschema");
+import jsonschema from "jsonschema";
 
 import { Folder } from "../models/Folder";
 import dataSource from "../utils/DB";

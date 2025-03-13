@@ -1,4 +1,4 @@
-import express = require("express");
+import express from "express";
 
 import GitUtil from "../helpers/GitUtil";
 import * as Helper from "../helpers/Helper";

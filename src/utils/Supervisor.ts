@@ -1,4 +1,4 @@
-import NodeSSH = require("node-ssh");
+import { NodeSSH } from "node-ssh";
 
 import * as events from "events";
 
@@ -7,11 +7,11 @@ import connectionPool from "../connectors/ConnectionPool";
 import * as Helper from "../helpers/Helper";
 import BaseMaintainer from "../maintainers/BaseMaintainer";
 import { Job } from "../models/Job";
+import { SSH, callableFunction } from "../utils/types";
 
 import dataSource from "./DB";
 import Emitter from "./Emitter";
 import { JobQueue } from "./Redis";
-import { SSH, callableFunction } from "./types";
 
 /**
  * Manages 
@@ -73,12 +73,11 @@ class Supervisor {
           const job = await this.queues[hpcName].pop();
           if (!job) continue;
 
-          // eslint-disable-next-line
-          const maintainer: new(job: Job) => BaseMaintainer = require(`../maintainers/${
+           
+          const maintainerModule = await import(`../maintainers/${
             maintainerConfigMap[job.maintainer].maintainer
-          }`).default;  // eslint-disable-line
-            // ^ typescript compilation hack 
-            // TODO: don't do this
+          }`)as { default: new (job: Job) => BaseMaintainer };; 
+          const maintainer = maintainerModule.default;
 
           try {
             // push the job
@@ -157,9 +156,9 @@ class Supervisor {
    */
   async createMaintainerWorker(job: Job) {
     Helper.nullGuard(job.maintainerInstance);  // should have been initialized on job creation
-    // const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+    const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
     // keep looping while the job is not finished
-    while (true) {  // eslint-disable-line no-constant-condition
+    while (true) {   
       // get ssh connector from pool
       let ssh: SSH;
       if (job
@@ -169,10 +168,10 @@ class Supervisor {
         ssh = connectionPool[job.hpc].ssh;
       } else {
         ssh = connectionPool[job.id].ssh;
-      }
+      } 
 
       if (!ssh.connection.isConnected()) {
-        try {
+        try { 
           // wraps command with backoff -> takes lambda function and array of inputs to execute command
           await Helper.runCommandWithBackoff((async (ssh1: SSH) => {
             if (!ssh1.connection.isConnected()) {
@@ -256,6 +255,8 @@ class Supervisor {
         // exit loop
         return;
       }
+
+      await sleep(250);
     }
   }
 

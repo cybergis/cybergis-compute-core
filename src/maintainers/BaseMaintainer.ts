@@ -11,7 +11,6 @@ import SlurmConnector from "../connectors/SlurmConnector";
 import * as Helper from "../helpers/Helper";
 import { Job } from "../models/Job";
 import dataSource from "../utils/DB";
-// import Supervisor from "../Supervisor";
 import {
   maintainerConfig,
   event,
@@ -19,6 +18,7 @@ import {
   jobMaintainerUpdatable,
   hpcConfig,
 } from "../utils/types";
+// import Supervisor from "../Supervisor";
 
 /**
  * This is an abstract class for compute core job maintainers, which are responsible for submitting jobs and monitoring them.

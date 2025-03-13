@@ -1,4 +1,4 @@
-import express = require("express");
+import express from "express";
 
 import {
   hpcConfigMap,
@@ -49,7 +49,7 @@ jobRouter.post("/", authMiddleWare, async function (req, res) {
     return;
   }
   
-  const hpcName = body.hpc ? body.hpc : maintainer.default_hpc;
+  const hpcName = body.hpc ?? maintainer.default_hpc;
   const hpc = hpcConfigMap[hpcName];
   if (hpc === undefined) {
     res.status(401).json({ error: "unrecognized hpc", message: null });
@@ -270,7 +270,7 @@ jobRouter.post("/:jobId/submit", authMiddleWare, async function (req, res) {
    *  put:
    *      description: Not yet implemented
    */
-  jobRouter.put("/:jobId/pause", async function (_req, _res) { }); // eslint-disable-line
+jobRouter.put("/:jobId/pause", async function (_req, _res) { }); // eslint-disable-line @typescript-eslint/no-empty-function
   
 /**
    * @openapi
@@ -278,7 +278,7 @@ jobRouter.post("/:jobId/submit", authMiddleWare, async function (req, res) {
    *  put:
    *      description: Not yet implemented
    */
-  jobRouter.put("/:jobId/resume", async function (_req, _res) { }); // eslint-disable-line
+jobRouter.put("/:jobId/resume", async function (_req, _res) { }); // eslint-disable-line @typescript-eslint/no-empty-function
   
 /**
    * @openapi
@@ -398,7 +398,7 @@ jobRouter.get(
         .findOneByOrFail({ id: jobId, userId: res.locals.username as string });
       
       const out = await resultFolderContent.get(job.id);
-      res.json(out ? out : []);
+      res.json(out ?? []);
     } catch (e) {
       res.status(401).json({ 
         error: "invalid access", 

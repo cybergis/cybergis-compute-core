@@ -1,4 +1,4 @@
-import NodeSSH = require("node-ssh");
+import { NodeSSH } from "node-ssh";
 
 import { hpcConfigMap } from "../../configs/config";
 import * as Helper from "../helpers/Helper";
@@ -33,7 +33,7 @@ class SSHCredentialGuard {
         password: password,
       });
       this.ssh.dispose();
-    } catch (e) {
+    } catch (_) {
       throw new Error(`unable to check credentials with ${hpcName}`);
     }
   }

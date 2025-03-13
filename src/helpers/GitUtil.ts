@@ -2,6 +2,7 @@ import { clone, pull, fetch, checkout, log } from "isomorphic-git";
 import http from "isomorphic-git/http/node";
 import { rimraf } from "rimraf";
 
+import { exec as execCallback } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import { promisify } from "util";
@@ -24,7 +25,7 @@ import {
 
 import FolderUtil from "./FolderUtil";
 
-const exec: Function = promisify(require("child_process").exec); // eslint-disable-line
+const exec = promisify(execCallback);  
 
 /**
  * 
@@ -410,7 +411,7 @@ export default class GitUtil {
 
 }
 
-// eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 class ManifestUtil extends GitUtil {
   
   /**
@@ -421,7 +422,7 @@ class ManifestUtil extends GitUtil {
    */
   protected static async deleteAndPullManifest(git: Git) {
     const localPath = this.getLocalManifestPath(git.id);
-    // eslint-disable-next-line
+     
     rimraf.sync(localPath);  // deletes everything
 
     const getManifestUrl = (
