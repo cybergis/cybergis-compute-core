@@ -33,7 +33,7 @@ export async function isZipped(filePath: string): Promise<boolean> {
  * @return {Promise<string>} the file path of the resulting zip file
  */
 export async function getZip(filePath: string): Promise<string> {
-  if (!filePath) throw new Error("getZip operation is not supported");
+  if (!(await exists(filePath))) throw new FileNotExistError("target file does not exist");
   if (await isZipped(filePath)) return filePath + ".zip";
 
   const child = spawn(

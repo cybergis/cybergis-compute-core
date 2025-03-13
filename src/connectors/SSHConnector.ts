@@ -35,7 +35,7 @@ export class SSHConnector {
 
   public isCommunityAccount: boolean;
 
-  public constructor(
+  protected constructor(
     hpcName: string,
     job?: Job,
     emitLogFn?: emitLogFnType,
@@ -70,6 +70,23 @@ export class SSHConnector {
       }
     }).catch((e) => {throw e;})
       .finally(() => this.releaseSSH());
+  }
+
+  public static async getConnector(
+    hpcName: string,
+    job?: Job,
+    emitLogFn?: emitLogFnType,
+    emitEventFn?: emitEventFnType,
+    env: Record<string, unknown> = {}) {
+    const connector = new SSHConnector(hpcName, job, emitLogFn, emitEventFn, env);
+
+    const ssh = await connector.getSSH();
+
+    if (!ssh.isConnected()) {
+      return undefined;
+    }
+
+    return connector;
   }
 
   private getSSH(): Promise<SSH> {
@@ -204,12 +221,8 @@ export class SSHConnector {
    * @param {string} from - input file string (input folder to download)
    * @param {string} to - output folder
    * @param {boolean} muteEvent - set to True if you want to mute maintainer emitted Event
-   * @throws {ConnectorError} - Thrown if maintainer emits 'SSH_SCP_DOWNLOAD_ERROR' or if input file not given
    */
   public async download(from: string, to: string, muteEvent = false) {
-    if (to === undefined)
-      throw new ConnectorError("please init input file first");
-
     // create from/to zip paths from raw files and zip the from file
     const fromZipFilePath = from.endsWith(".zip") ? from : `${from}.zip`;
     const toZipFilePath = `${to}.zip`;
@@ -266,10 +279,7 @@ export class SSHConnector {
       await Helper.runCommandWithBackoff.call(this, (async (from1: string, to1: string) => {
         await ssh.putFile(from1, to1);
       }), [from, to], "Trying again to transfer file");
-
-      this.releaseSSH();
     } catch (e) {
-      this.releaseSSH();
       const error =
         `unable to put file from ${from} to ${to}: ` + Helper.assertError(e).toString();
       this.emitEvent("SSH_SCP_UPLOAD_ERROR", error, muteEvent);
@@ -608,19 +618,6 @@ export class SSHConnector {
       }
     });
   }
-}
-
-export function connectionReady(hpcName: string,
-  job?: Job,
-  emitLogFn?: emitLogFnType,
-  emitEventFn?: emitEventFnType,
-  env: Record<string, unknown> = {}): boolean {
-  try {
-    new SSHConnector(hpcName, job, emitLogFn, emitEventFn, env);
-    return true;
-  } catch (_) {
-    return false;
-  } 
 }
 
 

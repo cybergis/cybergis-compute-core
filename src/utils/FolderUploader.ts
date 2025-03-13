@@ -56,7 +56,7 @@ export abstract class BaseFolderUploader {
       : null
     ); 
 
-    this.connector = connector ?? new SSHConnector(hpcName);
+    this.connector = connector;
   }
 
    

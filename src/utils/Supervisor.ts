@@ -1,7 +1,7 @@
 import * as events from "events";
 
 import { config, maintainerConfigMap, hpcConfigMap } from "../../configs/config";
-import { connectionReady } from "../connectors";
+import { SSHConnector } from "../connectors";
 import { registerEvents, registerLogs } from "../helpers/EmitterUtil";
 import * as Helper from "../helpers/Helper";
 import { maintainerMap } from "../maintainers/util";
@@ -127,7 +127,9 @@ class Supervisor {
     // keep looping while the job is not finished
      
     while (true) {
-      if (!connectionReady(job.hpc, job)) {
+      const connector = await SSHConnector.getConnector(job.hpc, job);
+
+      if (!connector) {
         await registerEvents(
           job,
           "JOB_FAILED",

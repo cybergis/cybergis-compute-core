@@ -142,56 +142,53 @@ jobRouter.put("/:jobId", authMiddleWare, async function (req, res) {
     return;
   }
   
+  // test if job exists
+  const jobId = req.params.jobId;
+  await dataSource
+    .getRepository(Job)
+    .findOneByOrFail({ id: jobId, userId: res.locals.username as string });
+  
+  // update the job with the given id
   try {
-    // test if job exists
-    const jobId = req.params.jobId;
     await dataSource
-      .getRepository(Job)
-      .findOneByOrFail({ id: jobId, userId: res.locals.username as string });
-  
-    // update the job with the given id
-    try {
-      await dataSource
-        .createQueryBuilder()
-        .update(Job)
-        .where("id = :id", { id: jobId })
-        .set(
-          await prepareDataForDB(body as unknown as Record<string, unknown>, [
-            "param",
-            "env",
-            "slurm",
-            "localExecutableFolder",
-            "localDataFolder",
-            "remoteDataFolder",
-            "remoteExecutableFolder",
-          ])
-        )
-        .execute();
-    } catch (err) {
-      res
-        .status(403)
-        .json({ 
-          error: "internal error", 
-          messages: Helper.assertError(err).toString() 
-        });
-      return;
-    }
-  
-    // return updated job as a dictionary
-    const job = await dataSource.getRepository(Job).findOneBy({
-      id: jobId
-    });
-  
-    if (job === null) {
-      throw new Error("Updated job not found in the database.");
-    }
-  
-    res.json(Helper.job2object(job));
-  } catch (e) {
-    res.json({ error: Helper.assertError(e).toString() });
-    res.status(402);
+      .createQueryBuilder()
+      .update(Job)
+      .where("id = :id", { id: jobId })
+      .set(
+        await prepareDataForDB(body as unknown as Record<string, unknown>, [
+          "param",
+          "env",
+          "slurm",
+          "localExecutableFolder",
+          "localDataFolder",
+          "remoteDataFolder",
+          "remoteExecutableFolder",
+        ])
+      )
+      .execute();
+  } catch (err) {
+    res
+      .status(403)
+      .json({ 
+        error: "internal error", 
+        messages: Helper.assertError(err).toString() 
+      });
+    return;
   }
-});
+  
+  // return updated job as a dictionary
+  const job = await dataSource.getRepository(Job).findOneBy({
+    id: jobId
+  });
+  
+  if (job === null) {
+    res.json({ error: "Updated job not found in the database." });
+    res.status(402);
+  } else {
+    res.json(Helper.job2object(job));
+  }
+}
+);
   
 /**
    * @openapi

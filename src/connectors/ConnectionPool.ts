@@ -51,6 +51,7 @@ class ConnectionPool {
     setInterval(() => {this.cleanupJobs();}, TIMEOUT);
   }
 
+  // gets the ssh connection for a given HPC; does not throw an error (returns bad connection if error)
   public async getHpcConnection(hpcName: string): Promise<SSH> {
     if (!(hpcName in this.hpcConnectionPool)) {
       return new NodeSSH();
@@ -99,6 +100,7 @@ class ConnectionPool {
     }
   }
 
+  // gets the ssh connection for a specific job; does not throw an error (returns bad connection if error)
   public async getJobConnection(job: Job): Promise<NodeSSH> {
     if (!(job.id in this.jobConnectionPool)) {
       this.jobConnectionPool[job.id] = {
