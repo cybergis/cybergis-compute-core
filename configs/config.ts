@@ -1,8 +1,7 @@
 import { rootPath } from "get-root-path";
 
 import { readFile } from "node:fs/promises";
-import path, { dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import path from "node:path";
 
 import {
   baseConfig,
@@ -13,14 +12,11 @@ import {
   kernelConfig,
 } from "../src/definitions";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
 async function createConfigMap<T>(
   configPath: string,
   defaultValues: Partial<T> = {}
 ): Promise<Record<string, T>> {
-  const file = await readFile(path.join(rootPath, configPath), "utf8");
+  const file = await readFile(path.join(rootPath, "configs", configPath), "utf8");
   const rawConfig = JSON.parse(file) as Record<string, unknown>;
   
   const configMap: Record<string, T> = {};
@@ -29,7 +25,7 @@ async function createConfigMap<T>(
     configMap[key] = Object.assign(
       {},
       defaultValues,
-      JSON.parse(JSON.stringify(rawConfig[key]))
+      rawConfig[key]
     ) as T;
   }
   
