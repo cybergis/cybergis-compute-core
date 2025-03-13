@@ -1,3 +1,4 @@
+import cors from "cors";
 import express from "express";
 import fileUpload from "express-fileupload";
 import { rootPath } from "get-root-path";
@@ -60,6 +61,7 @@ try {
 app.use(express.json());
 app.use(morgan("combined"));
 app.use(express.urlencoded({ extended: true }));
+app.use(cors());
 // app.use(bodyParser.urlencoded({ extended: true }));
 
 // uploading files
