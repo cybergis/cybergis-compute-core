@@ -11,15 +11,18 @@ import { SSHConnector } from "./SSHConnector";
 
 /**
  * Specialization of SlurmConnector that, in addition to supporting ssh/slurm jobs, connects a given singularity container to the HPC environment.
- *
- * @class SingularityConnector
- * @extends {SlurmConnector}
  */
 export class SingularityConnector extends SlurmConnector {
 
   private volumeBinds: Record<string, string> = {};
   public isContainer = true;  // this is a container -- causes some changes in how job JSONs are generated
 
+  /**
+   * Public interface for constructing a singularity connector
+   * @param maintainer maintainer this cnonector is for
+   * @param is_cvmfs whether or not this is cvmfs
+   * @returns the connector, or undefined if construction was unsuccessful
+   */
   public static async build(
     maintainer: BaseMaintainer, 
     is_cvmfs = false
@@ -41,10 +44,9 @@ export class SingularityConnector extends SlurmConnector {
 
   /**
    * Executes specified command within specified image
-   *
-   * @param {string} image - docker image
-   * @param {string} cmd - command to be executed
-   * @param {slurm} config - slurm configuration
+   * @param image - docker image
+   * @param cmd - command to be executed
+   * @param config - slurm configuration
    */
   public execCommandWithinImage(image: string, cmd: string, config: slurm) {
     if (this.is_cvmfs){
@@ -59,10 +61,9 @@ export class SingularityConnector extends SlurmConnector {
 
   /**
    * Executes specified manifest within image
-   *
-   * @param {executableManifest} manifest - manifest that needs toe be executed
-   * @param {slurm} config - slurm configuration
-   * @throw {Error} - thrown when container is not supported
+   * @param manifest - manifest that needs toe be executed
+   * @param config - slurm configuration
+   * @throws {Error} - thrown when container cannot be resolved
    */
   public async execExecutableManifestWithinImage(
     manifest: executableManifest,
@@ -159,9 +160,8 @@ export class SingularityConnector extends SlurmConnector {
 
   /**
    * Runs singularity image
-   *
-   * @param {string} image - singularity image
-   * @param {slurm} config - slurm configuration
+   * @param image - singularity image
+   * @param config - slurm configuration
    */
   public runImage(image: string, config: slurm) {
     const jobENV = this._getJobENV();
@@ -182,8 +182,7 @@ export class SingularityConnector extends SlurmConnector {
 
   /**
    * Registers volumeBinds
-   *
-   * @param {{[keys: string]: string}} volumeBinds - volumeBinds that need to be registered
+   * @param volumeBinds - volumeBinds that need to be registered
    */
   public registerContainerVolumeBinds(volumeBinds: Record<string, string>) {
     for (const from in volumeBinds) {
@@ -193,11 +192,10 @@ export class SingularityConnector extends SlurmConnector {
   }
 
   /**
-   * @private
-   * Returns volumeBinds
    *
-   * @param {executableManifest} manifest - manifest containing volumeBinds
-   * @return {string | {[keys: string]: string}} volumeBinds
+   * Returns volumeBinds
+   * @param manifest - manifest containing volumeBinds
+   * @returns volumeBinds
    */
   private _getVolumeBindCMD(
     manifest: executableManifest | null = null
@@ -247,8 +245,7 @@ export class SingularityConnector extends SlurmConnector {
 
   /**
    * Returns job environment
-   *
-   * @return {string[]} jobENV - jobenvironment variables
+   * @returns jobENV - jobenvironment variables
    */
   private _getJobENV(): string[] {
     Helper.nullGuard(this.maintainer);
@@ -290,7 +287,7 @@ export class SingularityConnector extends SlurmConnector {
 
   /**
    * Creates a bash script using kernelConfig
-   * @param{executableManifest} manifest - manifest that needs toe be executed
+   * @param manifest manifest to create a kenrl for
    */
   public async createKernelInit(manifest: executableManifest){
     let kernelBash = "#!/bin/bash\n";

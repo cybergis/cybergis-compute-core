@@ -118,8 +118,7 @@ class Supervisor {
 
   /**
    * Creates an object that keeps track of a job throughout its lifecycle on the HPC, recording changes in internal variables. 
-   *
-   * @param {Job} job
+   * @param job job to create a maintainer for
    */
   private async createMaintainerWorker(job: Job) {
     Helper.nullGuard(job.maintainerInstance);  // should have been initialized on job creation
@@ -199,8 +198,7 @@ class Supervisor {
 
   /**
    * Adds a job to the job queue. 
-   *
-   * @param {Job} job job to add
+   * @param job job to add
    */
   public async pushJobToQueue(job: Job) {
     await this.queues[job.hpc].push(job);
@@ -221,9 +219,8 @@ class Supervisor {
 
   /**
    * Cancels the job associated with the given job id. 
-   *
-   * @param {string} jobId
-   * @return {Job | null} the job that was cancelled
+   * @param jobId id of the job to cancel
+   * @returns the job that was cancelled, if there was one
    */
   public cancelJob(jobId: string): Job | null {
     if (config.is_testing) console.log(`cancelJob(${jobId}) looking for job`);

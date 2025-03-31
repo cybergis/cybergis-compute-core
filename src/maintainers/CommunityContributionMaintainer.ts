@@ -20,6 +20,10 @@ class CommunityContributionMaintainer extends BaseMaintainer {
     new ResultFolderContentManager();
   public executableManifest!: executableManifest;  // details about the job
 
+  /**
+   *
+   * @param job job to maintain
+   */
   public constructor(job: Job
   ) {
     super(job);
@@ -30,8 +34,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
   /**
    * On maintainer initialization, set executableManifest, and give it to the connector. 
    * Update the event log to reflect the job being initialized or encountering a system error.
-   *
-   * @async
+   * 
    */
   protected async onInit() {
     try {
@@ -168,8 +171,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
 
   /**
    * If the job is complete, download the results to the remote result file path, and if it encounters an error, update the event log to reflect this.
-   *
-   * @async
+   * 
    */
   protected async onMaintain() {
     try {

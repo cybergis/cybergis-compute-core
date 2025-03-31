@@ -14,14 +14,12 @@ import dataSource from "../utils/DB";
  */
 
 /**
-   * Ensure the job has all the necessary input parameters
-   *
-   * @static
-   * @param {Job} job - This job
-   * @param { [keys: string]: unknown } paramRules - Parameter rules for this job
-   * @throws Job must have a complete parameter list
-   */
-export function validateParam(job: Job, paramRules: Record<string, unknown>) {
+ * Ensure the job has all the necessary input parameters
+ * @param job - This job
+ * @param paramRules - Parameter rules for this job
+ * @throws Job must have a complete parameter list
+ */
+function validateParam(job: Job, paramRules: Record<string, unknown>) {
   if (job.param === undefined) {
     throw new Error("job missing input params");
   }
@@ -34,14 +32,11 @@ export function validateParam(job: Job, paramRules: Record<string, unknown>) {
 }
 
 /**
-   * Get the total slurm usage of the indicated user
-   *
-   * @static
-   * @async
-   * @param {string} userID - User to collect slurm usage from
-   * @param {boolean} format - Whether or not the cputume, memory, memoryusage, and walltime are already formatted
-   * @returns {Record<string, number | string>} - Total slurm usage of the indicated user
-   */
+ * Get the total slurm usage of the indicated user
+ * @param userId User to collect slurm usage from
+ * @param format - Whether or not the cputume, memory, memoryusage, and walltime are already formatted
+ * @returns - Total slurm usage of the indicated user
+ */
 export async function getUserSlurmUsage(
   userId: string, 
   format = false
@@ -88,14 +83,10 @@ export async function getUserSlurmUsage(
 }
   
 /**
-   * Ensure this job has valid input data and slurm config rules
-   *
-   * @static
-   * @param {Job} job - This job
-   * @param {string} jupyterHost - Jupyter host for this job
-   * @param {string} username - Username of the user who submitted this job
-   * @throws - DataFolder must have a valid path, the job must have upload data, and there must be an executable folder in the maintainerConfig
-   */
+ * Ensure this job has valid input data and slurm config rules
+ * @param job - This job
+ * @throws - DataFolder must have a valid path, the job must have upload data, and there must be an executable folder in the maintainerConfig
+ */
 export function validateJob(job: Job) {
   // create slurm config rules
   const providedSlurmInputRules: slurmInputRules = {};
@@ -109,19 +100,18 @@ export function validateJob(job: Job) {
     throw new Error("job missing executable file");
   }
 
+  // these throw errors if violated
   validateSlurmConfig(job, providedSlurmInputRules);
   validateParam(job, providedParamRules);
 }
 
 /**
-   * Set the slurm rules for this job, and ensure that those rules don't exceed the default slurm ceiling
-   *
-   * @static
-   * @param {Job} job - This job
-   * @param {slurmInputRules} slurmInputRules - Slurm input rules associated with this job
-   * @throws - Slurm input rules associated with this job must not exceed the default slurm ceiling
-   */
-export function validateSlurmConfig(job: Job, slurmInputRules: slurmInputRules) {
+ * Set the slurm rules for this job, and ensure that those rules don't exceed the default slurm ceiling
+ * @param job - This job
+ * @param slurmInputRules - Slurm input rules associated with this job
+ * @throws - Slurm input rules associated with this job must not exceed the default slurm ceiling
+ */
+function validateSlurmConfig(job: Job, slurmInputRules: slurmInputRules) {
   const slurmCeiling: Record<string, unknown> = {};
   let globalInputCap = hpcConfigMap[job.hpc].slurm_global_cap;
   if (!globalInputCap) globalInputCap = {};
@@ -203,14 +193,12 @@ export function validateSlurmConfig(job: Job, slurmInputRules: slurmInputRules) 
 }
 
 /**
-   * Return true if the slurm config exceeds the threshold of the slurm ceiling.
-   *
-   * @static
-   * @param {string} i - Slurm field that a and b are associated with
-   * @param {string} a - Storage or projected time for this job from the slurm ceiling
-   * @param {string} b - Storage or projected time for this job for this job
-   * @return {boolean} - If the slurm config exceeds the threshold of the slurm ceiling
-   */
+ * Return true if the slurm config exceeds the threshold of the slurm ceiling.
+ * @param i - Slurm field that a and b are associated with
+ * @param a - Storage or projected time for this job from the slurm ceiling
+ * @param b - Storage or projected time for this job for this job
+ * @returns - If the slurm config exceeds the threshold of the slurm ceiling
+ */
 export function compareSlurmConfig(i: string, a: string, b: string): boolean {
   if (slurm_integer_storage_unit_config.includes(i)) {
     return storageUnitToKB(a) < storageUnitToKB(b);
@@ -222,12 +210,10 @@ export function compareSlurmConfig(i: string, a: string, b: string): boolean {
 }
 
 /**
-   * Turns the passed amount of storage into kb
-   *
-   * @static
-   * @param {string} i - Amount of storage in original unit
-   * @return {number} - Storage in kb
-   */
+ * Turns the passed amount of storage into kb
+ * @param i - Amount of storage in original unit
+ * @returns - Storage in kb
+ */
 export function storageUnitToKB(i: string): number {
   i = i.toLowerCase().replace(/b/gi, "");
 
@@ -256,12 +242,10 @@ export function storageUnitToKB(i: string): number {
 }
 
 /**
-   * Turns the passed amount of storage into the most convenient unit.
-   *
-   * @static
-   * @param {number} i - Amount of storage in kb
-   * @return {string} - Storage in most convenient unit (kb, mb, gb, tb, pb, eb)
-   */
+ * Turns the passed amount of storage into the most convenient unit.
+ * @param i - Amount of storage in kb
+ * @returns - Storage in most convenient unit (kb, mb, gb, tb, pb, eb)
+ */
 export function kbToStorageUnit(i: number) {
   const units = ["kb", "mb", "gb", "tb", "pb", "eb"].reverse();
   while (units.length > 0) {
@@ -272,12 +256,10 @@ export function kbToStorageUnit(i: number) {
   return `${i}pb`;
 }
 /**
-   * Turns the passed time into a string specifying each unit
-   *
-   * @static
-   * @param {number} seconds_in - Time in seconds
-   * @return {string} - Passed time converted into dayds, hours, minutes, seconds format
-   */
+ * Turns the passed time into a string specifying each unit
+ * @param seconds_in - Time in seconds
+ * @returns - Passed time converted into dayds, hours, minutes, seconds format
+ */
 export function secondsToTimeDelta(seconds_in: number) {
   const days = Math.floor(seconds_in / (60 * 60 * 24));
   const hours = Math.floor(seconds_in / (60 * 60) - days * 24);
@@ -296,13 +278,11 @@ export function secondsToTimeDelta(seconds_in: number) {
   )} minutes, ${format(seconds)} seconds`;
 }
 /**
-   * Turns the passed time into seconds
-   *
-   * @static
-   * @param {number} time - Time in specified unit
-   * @param {string} unit - Unit the passed time is in
-   * @return {int} - Passed time converted into seconds
-   */
+ * Turns the passed time into seconds
+ * @param time - Time in specified unit
+ * @param unit - Unit the passed time is in
+ * @returns - Passed time converted into seconds
+ */
 export function unitTimeToSeconds(time: number, unit: string) {
   if (unit === "Minutes") return time * 60;
   if (unit === "Hours") return time * 60 * 60;
@@ -310,12 +290,10 @@ export function unitTimeToSeconds(time: number, unit: string) {
   return 0;
 }
 /**
-   * Turns passed seconds time into days-hours:minutes:seconds format
-   *
-   * @static
-   * @param {number} seconds - Time in seconds
-   * @return {int} time - Passed seconds time converted to days-hours:minutes:seconds format.
-   */
+ * Turns passed seconds time into days-hours:minutes:seconds format
+ * @param seconds - Time in seconds
+ * @returns time - Passed seconds time converted to days-hours:minutes:seconds format.
+ */
 export function secondsToTime(seconds: number) {
   const days = Math.floor(seconds / (60 * 60 * 24));
   const hours = Math.floor(seconds / (60 * 60) - days * 24);
@@ -337,12 +315,10 @@ export function secondsToTime(seconds: number) {
 }
 
 /**
-   * Turns passed days-hours:minutes:seconds time into seconds format
-   *
-   * @static
-   * @param {string} raw - Time in days-hours:minutes:seconds format.
-   * @return {int} - Passed days-hours:minutes:seconds time converted to seconds.
-   */
+ * Turns passed days-hours:minutes:seconds time into seconds format
+ * @param raw - Time in days-hours:minutes:seconds format.
+ * @returns - Passed days-hours:minutes:seconds time converted to seconds.
+ */
 export function timeToSeconds(raw: string) {
   const i = raw.split(":");
   if (i.length === 1) {

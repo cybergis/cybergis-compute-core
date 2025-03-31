@@ -7,11 +7,17 @@ import dataSource from "../utils/DB";
 
 const baseUrl = "https://transfer.api.globus.org/v0.10";
 
+/**
+ *
+ */
 export class GlobusTransferUtil {
   private accessToken!: string;
   private time = -1;
   private delay = -1;
 
+  /**
+   *
+   */
   private async init() {
     if (this.accessToken !== undefined && (new Date().getTime() - this.time) <= this.delay) {
       return;
@@ -44,6 +50,9 @@ export class GlobusTransferUtil {
     this.accessToken = response.data.access_token;
   }
 
+  /**
+   * @returns the submission ID of the globus job
+   */
   private async getSubmissionId(): Promise<string> {
     await this.init();
 
@@ -68,14 +77,10 @@ export class GlobusTransferUtil {
 
   /**
    * Initializes globus job
-   *
-   * @static
-   * @async
-   * @param {GlobusFolder} from - from transfer folder
-   * @param {GlobusFolder} to - to transfer folder
-   * @param {hpcConfig} hpcConfig - hpcConfiguration
-   * @param {string} [label=""] - task label
-   * @return {Promise<string>} - taskId
+   * @param from - from transfer folder
+   * @param to - to transfer folder
+   * @param label - task label
+   * @returns - taskId
    * @throws {Error} - thrown if globus query status fails
    */
   public async initTransfer(
@@ -120,6 +125,11 @@ export class GlobusTransferUtil {
     throw new Error("Something went wrong initializing globus transfer");
   }
 
+  /**
+   * Repeatedly polls for the status of the given task. 
+   * @param taskId identifier for the task to monitor
+   * @returns the status code of the task
+   */
   public async monitorTransfer(taskId: string): Promise<string> {
     await this.init();
 
@@ -156,6 +166,11 @@ export class GlobusTransferUtil {
     throw new Error("Something went wrong monitoring transfer");
   }
 
+  /**
+   * Retrieves the status code of the task (no polling)
+   * @param taskId task to get the status code for
+   * @returns status of the task
+   */
   public async queryTransferStatus(taskId: string): Promise<string> {
     await this.init();
 
@@ -179,6 +194,13 @@ export class GlobusTransferUtil {
     throw new Error("Something went wrong querying transfer status");
   }
 
+  /**
+   * Gets rid of non-safe characters in a username to prevent downstream errors.
+   * @param username username to escape
+   * @param escapeChar character to use in escape characters
+   * @param safe set of safe characters to use in a username
+   * @returns the escaped versino of the username
+   */
   private escape(username: string, escapeChar = "_", safe = new Set("abcdefghijklmnopqrstuvwxyz0123456789")) {
     const escapedUsername: string[] = [];
 
@@ -195,6 +217,12 @@ export class GlobusTransferUtil {
     return escapedUsername.join("");
   }
 
+  /**
+   * Does logic in mapping a username to its expected form. 
+   * @param initial_username initial username
+   * @param mapping_func how to map the username, if at all
+   * @returns the mapped version of the username
+   */
   public mapUsername(initial_username: string, mapping_func: string | null) {
     if (mapping_func === "iguide-mapping") {
       return `iguide-claim-${this.escape(initial_username, "-").toLowerCase()}`;

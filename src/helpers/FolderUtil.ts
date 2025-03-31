@@ -10,10 +10,8 @@ import { FileNotExistError } from "../definitions";
 
 /**
  * Determines if a file/path is a zip file. 
- *
- * @static
- * @param {string} filePath file/directory path
- * @return {Promise<boolean>} true if the file is zipped; false otherwise
+ * @param filePath file/directory path
+ * @returns true if the file is zipped; false otherwise
  */
 export async function isZipped(filePath: string): Promise<boolean> {
   try {
@@ -26,11 +24,9 @@ export async function isZipped(filePath: string): Promise<boolean> {
 
 /**
  * Zips a file/directory.
- *
- * @static
- * @param {string} filePath - file/directory path
+ * @param filePath - file/directory path
  * @throws {Error} thrown if zipping fails
- * @return {Promise<string>} the file path of the resulting zip file
+ * @returns the file path of the resulting zip file
  */
 export async function getZip(filePath: string): Promise<string> {
   if (!(await exists(filePath))) throw new FileNotExistError("target file does not exist");
@@ -58,9 +54,7 @@ export async function getZip(filePath: string): Promise<string> {
 
 /**
  * Removes a zip file. 
- *
- * @static
- * @param {string} filePath file path excluding the .* at the end
+ * @param filePath file path excluding the .* at the end
  */
 export async function removeZip(filePath: string) {
   if (await isZipped(filePath)) {
@@ -70,8 +64,7 @@ export async function removeZip(filePath: string) {
 
 /**
  * Deletes an (empty) folder.
- * 
- * @param {string} filePath path to the directory
+ * @param filePath path to the directory
  */
 export async function removeFolder(filePath: string) {
   if (await exists(filePath)) {
@@ -81,9 +74,8 @@ export async function removeFolder(filePath: string) {
 
 /**
  * Tests if a file path exists (and if the user is able to access it). 
- * 
- * @param {string} filePath 
- * @returns {Promise<boolean>} true if accessible; false otherwise
+ * @param filePath file path to check existence for
+ * @returns true if accessible; false otherwise
  */
 export async function exists(filePath: string): Promise<boolean> {
   try {
@@ -97,13 +89,9 @@ export async function exists(filePath: string): Promise<boolean> {
 
 /**
  * Unzips a zip file. 
- *
- * @static
- * @param {string} filePath
- * @param {string} zipFilePath
- * @throws {FileNotExistError} file needs to exist
- * @throws {Error} thrown if unzipping fails 
- * @return {*} 
+ * @param filePath file path to zip
+ * @param zipFilePath path of the zipped file
+ * @returns promise for whether the zip was successful
  */
 export async function putFileFromZip(filePath: string, zipFilePath: string) {
   if (!(await exists(filePath))) {

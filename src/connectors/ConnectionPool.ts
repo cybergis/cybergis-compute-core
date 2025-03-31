@@ -13,12 +13,18 @@ interface Connection {
 
 const TIMEOUT = 3 * 60 * 1000;
 
+/**
+ * Class that abstracts away a connection pool of various ssh connections. Handles automatic closing and caching of connections to prevent unnecessary overhead.
+ */
 class ConnectionPool {
   private jobConnectionPool: Record<string, Connection> = {};
 
   private hpcConnectionPool: Record<string, Connection> = {};
   private hpcConnectionSettings: Record<string, SSHConfig> = {};
 
+  /**
+   * 
+   */
   public constructor() {
     for (const hpcName in hpcConfigMap) {
       const hpcConfig = hpcConfigMap[hpcName];
@@ -51,7 +57,11 @@ class ConnectionPool {
     setInterval(() => {this.cleanupJobs();}, TIMEOUT);
   }
 
-  // gets the ssh connection for a given HPC; does not throw an error (returns bad connection if error)
+  /**
+   * gets the ssh connection for a given HPC
+   * @param hpcName name of the hpc to get the conneciton to 
+   * @returns ssh connection (bad connection if connection impossible)
+   */
   public async getHpcConnection(hpcName: string): Promise<SSH> {
     if (!(hpcName in this.hpcConnectionPool)) {
       return new NodeSSH();
@@ -76,6 +86,10 @@ class ConnectionPool {
     return connection.ssh;
   }
 
+  /**
+   *
+   * @param job job whose ssh connection to release
+   */
   public releaseJobConnection(job: Job) {
     if (!(job.id in this.hpcConnectionPool)) {
       return;
@@ -88,6 +102,10 @@ class ConnectionPool {
     }
   }
 
+  /**
+   *
+   * @param hpcName hpc whose ssh connection should be released
+   */
   public releaseHpcConnection(hpcName: string) {
     if (!(hpcName in this.hpcConnectionPool)) {
       return;
@@ -100,7 +118,11 @@ class ConnectionPool {
     }
   }
 
-  // gets the ssh connection for a specific job; does not throw an error (returns bad connection if error)
+  /**
+   * gets the ssh connection for a specific job; does not throw an error
+   * @param job which job to get the ssh connection for 
+   * @returns ssh connection (invalid if connection wasn't possible)
+   */
   public async getJobConnection(job: Job): Promise<NodeSSH> {
     if (!(job.id in this.jobConnectionPool)) {
       this.jobConnectionPool[job.id] = {
@@ -140,6 +162,9 @@ class ConnectionPool {
     return connection.ssh;
   }
 
+  /**
+   *
+   */
   private cleanupJobs() {
     const time = Date.now();
     for (const hpc in this.hpcConnectionPool) {

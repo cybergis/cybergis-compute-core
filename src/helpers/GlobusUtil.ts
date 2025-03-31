@@ -8,21 +8,18 @@ import * as Helper from "./Helper";
 import * as PythonUtil from "./PythonUtil";
 
 /**
-   * Class for accessing Globus commands
-   */
+ * Class for accessing Globus commands
+ */
 
 /**
-   * Initializes globus job
-   *
-   * @static
-   * @async
-   * @param {GlobusFolder} from - from transfer folder
-   * @param {GlobusFolder} to - to transfer folder
-   * @param {hpcConfig} hpcConfig - hpcConfiguration
-   * @param {string} [label=""] - task label
-   * @return {Promise<string>} - taskId
-   * @throws {Error} - thrown if globus query status fails
-   */
+ * Initializes globus job
+ * @param from - from transfer folder
+ * @param to - to transfer folder
+ * @param hpcConfig - hpcConfiguration
+ * @param [label] - task label
+ * @returns - taskId
+ * @throws {Error} - thrown if globus query status fails
+ */
 export async function initTransfer(
   from: GlobusFolder,
   to: GlobusFolder,
@@ -64,13 +61,12 @@ export async function initTransfer(
 }
 
 /**
-   * @static
-   * @async
-   * Returns output of querying 'globus_monitor.py'
-   * @param {string} taskId - taskId of transfer
-   * @param {hpcConfig} hpcConfig - hpcConfiguration
-   * @return {Promise<string>} - queryStatus string
-   */
+ * 
+ * Returns output of querying 'globus_monitor.py'
+ * @param taskId - taskId of transfer
+ * @param hpcConfig - hpcConfiguration
+ * @returns - queryStatus string
+ */
 export async function monitorTransfer(
   taskId: string,
   hpcConfig: hpcConfig
@@ -79,13 +75,12 @@ export async function monitorTransfer(
 }
 
 /**
-   * @static
-   * @async
-   * Returns output of querying 'globus_query_status.py'
-   * @param {string} taskId - taskId of transfer
-   * @param {hpcConfig} hpcConfig - hpcConfiguration
-   * @return {Promise<string>} - queryStatus string
-   */
+ * 
+ * Returns output of querying 'globus_query_status.py'
+ * @param taskId - taskId of transfer
+ * @param hpcConfig - hpcConfiguration
+ * @returns - queryStatus string
+ */
 export async function queryTransferStatus(
   taskId: string,
   hpcConfig: hpcConfig
@@ -94,12 +89,11 @@ export async function queryTransferStatus(
 }
 
 /**
-   * Maps username according to a specified function. Only nontrivial for the mapping_func `iguide-mapping`.
-   * 
-   * @param initial_username pre-mapping username
-   * @param mapping_func function to use for mapping
-   * @returns mapped string
-   */
+ * Maps username according to a specified function. Only nontrivial for the mapping_func `iguide-mapping`.
+ * @param initial_username pre-mapping username
+ * @param mapping_func function to use for mapping
+ * @returns mapped string
+ */
 export async function mapUsername(
   initial_username: string,
   mapping_func: string | null
@@ -119,15 +113,14 @@ export async function mapUsername(
 }
 
 /**
-   * @static
-   * @async
-   * Implements the specified globus query
-   * @param {string} taskId - taskId of transfer
-   * @param {hpcConfig} hpcConfig - hpcConfiguration
-   * @param {string} script - query string
-   * @throws {Error} - thrown when Globus query status fails
-   * @return {Promise<string>} - queryStatus string
-   */
+ * 
+ * Implements the specified globus query
+ * @param taskId - taskId of transfer
+ * @param hpcConfig - hpcConfiguration
+ * @param script - query string
+ * @throws {Error} - thrown when Globus query status fails
+ * @returns - queryStatus string
+ */
 async function _queryStatus(
   taskId: string,
   hpcConfig: hpcConfig,

@@ -35,6 +35,14 @@ export class SSHConnector {
 
   public isCommunityAccount: boolean;
 
+  /**
+   *
+   * @param hpcName hpc this connector will connect to
+   * @param job job this connector is for
+   * @param emitLogFn callback for emitting logs
+   * @param emitEventFn callback for emitting events
+   * @param env environment to use when running commands
+   */
   protected constructor(
     hpcName: string,
     job?: Job,
@@ -65,6 +73,15 @@ export class SSHConnector {
     this.emitEventFn = emitEventFn;
   }
 
+  /**
+   * Public interface for constructing an sshconnector, has built-in validation that the ssh connection works. 
+   * @param hpcName hpc this connector will connect to
+   * @param job job this connector is for
+   * @param emitLogFn callback for emitting logs
+   * @param emitEventFn callback for emitting events
+   * @param env environment to use when running commands
+   * @returns the connector, or undefined if construction was unsuccessful
+   */
   public static async build(
     hpcName: string,
     job?: Job,
@@ -82,6 +99,9 @@ export class SSHConnector {
     return connector;
   }
 
+  /**
+   * @returns the ssh connection
+   */
   private getSSH(): Promise<SSH> {
     if (this.hpcConfig.is_community_account) {
       return connectionPool.getHpcConnection(this.hpcName);
@@ -90,6 +110,9 @@ export class SSHConnector {
     }
   }
 
+  /**
+   *
+   */
   public releaseSSH() {
     if (this.hpcConfig.is_community_account) {
       connectionPool.releaseHpcConnection(this.hpcName);
@@ -98,12 +121,23 @@ export class SSHConnector {
     }
   }
 
+  /**
+   *
+   * @param s log
+   * @param muteLog whether or not to suppress the log
+   */
   private emitLog(s: string, muteLog = false) {
     if (this.emitLogFn && !muteLog) {
       this.emitLogFn(s);
     }
   }
 
+  /**
+   *
+   * @param type type of event
+   * @param message event message
+   * @param muteEvent whether or not to suppress the event
+   */
   private emitEvent(type: string, message: string, muteEvent = false) {
     if (this.emitEventFn && !muteEvent) {
       this.emitEventFn(type, message);
@@ -111,16 +145,15 @@ export class SSHConnector {
   }
 
   /**
-   * @async
+   *
    * Executes the command on the maintainer and returns the outpt
-   *
-   * @param {string} commands - command/commands that need to be executed
-   * @param {string} options - execution options
-   * @param {boolean} muteEvent - set to True if you want to mute maintauner emitted Event
-   * @param {boolean} muteLog - set to True if you want to mute maintainer emitted Log
-   * @param {boolean} continueOnError - set to True if you want the command/commands to continue despite errors
-   * @return {Record<string, string>} out - maintainer output
-   *
+   * @param commands - command/commands that need to be executed
+   * @param options - execution options
+   * @param muteEvent - set to True if you want to mute maintauner emitted Event
+   * @param muteLog - set to True if you want to mute maintainer emitted Log
+   * @param continueOnError - set to True if you want the command/commands to continue despite errors
+   * @throws {Error} when the ssh command runs into an error
+   * @returns out - maintainer output
    */
   public async exec(
     commands: string | string[],
@@ -205,15 +238,14 @@ export class SSHConnector {
     return out;
   }
 
-  /** file operators **/
+  /** file operators */
 
   /**
-   * @async
-   * Uncompresses the specified zip file to the Local folder (downloads a folder from the HPC to the local machine)
    *
-   * @param {string} from - input file string (input folder to download)
-   * @param {string} to - output folder
-   * @param {boolean} muteEvent - set to True if you want to mute maintainer emitted Event
+   * Uncompresses the specified zip file to the Local folder (downloads a folder from the HPC to the local machine)
+   * @param from - input file string (input folder to download)
+   * @param to - output folder
+   * @param muteEvent - set to True if you want to mute maintainer emitted Event
    */
   public async download(from: string, to: string, muteEvent = false) {
     // create from/to zip paths from raw files and zip the from file
@@ -249,12 +281,11 @@ export class SSHConnector {
     }
   }
   /**
-   * @async
-   * Transfers a file from the local machine to remote machine
    *
-   * @param {string} from - input file string
-   * @param {string} to - output folder
-   * @param {boolean} muteEvent - set to True if you want to mute maintauner emitted Event
+   * Transfers a file from the local machine to remote machine
+   * @param from - input file string
+   * @param to - output folder
+   * @param muteEvent - set to True if you want to mute maintauner emitted Event
    * @throws {ConnectorError} - Thrown if maintainer emits 'SSH_SCP_DOWNLOAD_ERROR'
    */
   public async transferFile(from: string, to: string, muteEvent = false) {
@@ -282,14 +313,13 @@ export class SSHConnector {
     }
   }
   /**
-   * @async
+   *
    * Uploads a (zipped) folder from the local machine to the target machine. After upload, decompresses the
    * uploaded zip file and then deletes the zip file.
-   *
-   * @param {string} from - input file string
-   * @param {string} to - output folder
-   * @param {boolean} muteEvent - set to True if you want to mute maintauner emitted Event (unused)
-   * @param {boolean} unzip - set to True if you want it to unzip and remove on the remote machine; false just uploads
+   * @param from - input file string
+   * @param to - output folder
+   * @param _muteEvent - set to True if you want to mute maintauner emitted Event (unused)
+   * @param unzip - set to True if you want it to unzip and remove on the remote machine; false just uploads
    * @throws {ConnectorError} - Thrown if maintainer emits 'SSH_SCP_DOWNLOAD_ERROR'
    */
   async upload(from: string, to: string, _muteEvent=false, unzip=true) {
@@ -308,13 +338,12 @@ export class SSHConnector {
     }
   }
 
-  /** helpers **/
+  /** helpers */
 
   /**
    * Returns the homeDirectory path of the HPC
-   *
-   * @param {options} [options={}] dictionary with string options
-   * @return {Promise<string>} returns command execution output
+   * @param [options] dictionary with string options
+   * @returns returns command execution output
    */
   public async homeDirectory(options: options = {}): Promise<string | null> {
     const out = await this.exec("cd ~;pwd;", options);
@@ -322,11 +351,10 @@ export class SSHConnector {
   }
 
   /**
-   * @async
-   * Returns the username
    *
-   * @param {options} [options={}] dictionary with string options
-   * @return {Promise<string | null>} returns command execution output
+   * Returns the username
+   * @param [options] dictionary with string options
+   * @returns returns command execution output
    */
   public async whoami(options: options = {}): Promise<string | null> {
     const out = await this.exec("whoami;", options);
@@ -334,12 +362,11 @@ export class SSHConnector {
   }
 
   /**
-   * @async
-   * Returns the specified path
    *
-   * @param {string} execution path
-   * @param {options} [options={}] dictionary with string options
-   * @return {Promise<string>} returns command execution output
+   * Returns the specified path
+   * @param path path to cd to before getting working directory
+   * @param options dictionary with string options
+   * @returns returns command execution output
    */
   public async pwd(
     path?: string,
@@ -352,12 +379,11 @@ export class SSHConnector {
   }
 
   /**
-   * @async
-   * Returns all of the files/directories in specified path
    *
-   * @param {string} specified path
-   * @param {options} [options={}] dictionary with string options
-   * @return {Promise<string | null>} returns command execution output
+   * Returns all of the files/directories in specified path
+   * @param path path to cd to before calling ls
+   * @param options dictionary with string options
+   * @returns returns command execution output
    */
   public async ls(
     path?: string,
@@ -370,12 +396,11 @@ export class SSHConnector {
   }
 
   /**
-   * @async
-   * creates an empty file at specified path
    *
-   * @param {string} path specified path with filename
-   * @param {options} [options={}] dictionary with string options
-   * @return {Promise<string | null>} command execution output
+   * creates an empty file at specified path
+   * @param path specified path with filename
+   * @param [options] dictionary with string options
+   * @returns command execution output
    */
   public async cat(path: string, options: options = {}): Promise<string | null> {
     const cmd = "cat " + path;
@@ -387,12 +412,11 @@ export class SSHConnector {
 
 
   /**
-   * @async
+   *
    * Determines whether a passed in (absolute) path exists on the HPC. 
-   * 
    * @param path path to test for
    * @param options options for doing an exec
-   * @returns {Promise<boolean>} true if path exists; false if not
+   * @returns true if path exists; false if not
    */
   public async remoteFsExists(path: string, options?: options): Promise<boolean> {
     const out = await this.exec(`test -d ${path} && echo a`, options ?? {});
@@ -400,13 +424,12 @@ export class SSHConnector {
   }
 
   /**
-   * @async
-   * removes the file/folder at specified path
    *
-   * @param {string} path specified path with filename
-   * @param {options} [options={}] set to True if you want to mute maintauner emitted Event
-   * @param {boolean} [muteEvent=false] command execution output
-   * @return {Promise<string | null>} 
+   * removes the file/folder at specified path
+   * @param path specified path with filename
+   * @param options set to True if you want to mute maintauner emitted Event
+   * @param muteEvent command execution output
+   * @returns stdout from rm command
    */
   public async rm(
     path: string,
@@ -420,13 +443,12 @@ export class SSHConnector {
   }
 
   /**
-   * @async
-   * creates directory at specified path
    *
-   * @param {string} path specified path with filename
-   * @param {options} [options={}] dictionary with string options
-   * @param {boolean} [muteEvent=false] set to True if you want to mute maintauner emitted Event
-   * @return {Promise<string | null>}  command execution output
+   * creates directory at specified path
+   * @param path specified path with filename
+   * @param [options] dictionary with string options
+   * @param [muteEvent] set to True if you want to mute maintauner emitted Event
+   * @returns  command execution output
    */
   public async mkdir(
     path: string,
@@ -440,14 +462,13 @@ export class SSHConnector {
   }
 
   /**
-   * @async
-   * zips the file/directory at specified path
    *
-   * @param {string} from input file/directory path
-   * @param {string} to compress file path with file name
-   * @param {options} [options={}] dictionary with string options
-   * @param {boolean} [muteEvent=false] set to True if you want to mute maintauner emitted Event
-   * @return {Promise<string | null>} command execution output
+   * zips the file/directory at specified path
+   * @param from input file/directory path
+   * @param to compress file path with file name
+   * @param options dictionary with string options
+   * @param muteEvent set to True if you want to mute maintauner emitted Event
+   * @returns command execution output
    */
   public async zip(
     from: string,
@@ -471,14 +492,13 @@ export class SSHConnector {
   }
 
   /**
-   * @async
-   * unzips the file/folder at specified path
    *
-   * @param {string} from input file/directory path
-   * @param {string} to compress file path with file name
-   * @param {options} [options={}] dictionary with string options
-   * @param {boolean} [muteEvent=false] set to True if you want to mute maintauner emitted Event
-   * @return {Promise<string | null>} command execution output
+   * unzips the file/folder at specified path
+   * @param from input file/directory path
+   * @param to compress file path with file name
+   * @param [options] dictionary with string options
+   * @param [muteEvent] set to True if you want to mute maintauner emitted Event
+   * @returns command execution output
    */
   public async unzip(
     from: string,
@@ -494,26 +514,14 @@ export class SSHConnector {
   }
 
   /**
-   *
-   *
-   * @param(string) from - 
-   * @param(string) to - 
-   * @param(Object) options - 
-   * @param {boolean} muteEvent - 
-   * @return(Object) returns - 
-   */
-
-  /**
-   * @async
    * tars the file/directory at specified path
-   *
-   * @param {string} from input file/directory path
-   * @param {string} to compress file path with file name
-   * @param {options} [options={}] dictionary with string options
-   * @param {boolean} [muteEvent=false] set to True if you want to mute maintauner emitted Event
-   * @return {Promise<string | null>}  command execution output
+   * @param from input file/directory path
+   * @param to compress file path with file name
+   * @param options [{}] dictionary with string options
+   * @param muteEvent [false] set to True if you want to mute maintauner emitted Event
+   * @returns command execution output
    */
-  public  async tar(
+  public async tar(
     from: string,
     to: string,
     options: options = {},
@@ -538,14 +546,13 @@ export class SSHConnector {
   }
 
   /**
-   * @async
-   * untars the file/directory at specified path
    *
-   * @param {string} from input file/directory path
-   * @param {string} to compress file path with file name
-   * @param {options} [options={}] dictionary with string options
-   * @param {boolean} [muteEvent=false] set to True if you want to mute maintauner emitted Event
-   * @return {Promise<string | null>} command execution output
+   * untars the file/directory at specified path
+   * @param from input file/directory path
+   * @param to compress file path with file name
+   * @param [options] dictionary with string options
+   * @param [muteEvent] set to True if you want to mute maintauner emitted Event
+   * @returns command execution output
    */
   public async untar(
     from: string,
@@ -562,13 +569,12 @@ export class SSHConnector {
   }
 
   /**
-   * @async
-   * creates file with specified content
    *
-   * @param {string | Record<string, unknown>} content file content (either string or dictionary)
-   * @param {string} remotePath specified path with filename
-   * @param {options} options dictionary with string options (not used)
-   * @param {boolean} [muteEvent=false] set to True if you want to mute maintauner emitted Event
+   * creates file with specified content
+   * @param content file content (either string or dictionary)
+   * @param remotePath specified path with filename
+   * @param _options dictionary with string options (not used)
+   * @param muteEvent set to True if you want to mute maintauner emitted Event
    */
   public async createFile(
     content: string | Record<string, unknown>,

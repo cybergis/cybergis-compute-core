@@ -5,6 +5,9 @@ import * as Helper from "../helpers/Helper";
 
 import { CredentialManager } from "./Redis";
 
+/**
+ * Class for storing ssh credentials; does validation in addition to interfacing with a redis database.
+ */
 class SSHCredentialGuard {
   private credentialManager = new CredentialManager();
 
@@ -12,11 +15,11 @@ class SSHCredentialGuard {
   
   /**
    * Tries to establish an SSH connection with the hpc.
-   *
-   * @param {string} hpcName name of the hpc to check with
-   * @param {string} user username (not used)
-   * @param {string} password
+   * @param hpcName name of the hpc to check with
+   * @param user username of the ssh connection
+   * @param password password of the ssh connection
    * @throws {Error} may be unable to cross check crecdentials with a given hpc
+   * @returns whether or not the private account was valid
    */
   async validatePrivateAccount(
     hpcName: string,
@@ -42,10 +45,9 @@ class SSHCredentialGuard {
 
   /**
    * Registers a credential onto the redis store with a generated Id as the key. 
-   *
-   * @param {string} user username
-   * @param {string} password
-   * @return {Promise<string>} the assigned redis key/id
+   * @param user username of the ssh connection
+   * @param password password of the ssh connection
+   * @returns the assigned redis key/id
    */
   async registerCredential(
     user?: string,

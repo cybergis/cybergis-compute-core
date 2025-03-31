@@ -38,6 +38,12 @@ export abstract class BaseFolderUploader {
 
   public connector: SSHConnector;
 
+  /**
+   *
+   * @param hpcName
+   * @param userId
+   * @param connector
+   */
   constructor(hpcName: string, userId: string, connector: SSHConnector) {
     this.hpcName = hpcName;
     this.hpcConfig = hpcConfigMap[hpcName];
@@ -61,8 +67,6 @@ export abstract class BaseFolderUploader {
 
   /**
    * Registers the current folder into the Folder database.
-   *
-   * @protected
    */
   protected async register() {
     if (this.isComplete && !this.isFailed) {
@@ -86,14 +90,17 @@ export abstract class BaseFolderUploader {
  * upon any folder upload If the cache contains the desired file, just unzip it from there and skip any folder uploading logic.
  *
  * TODO: if the paths stay the same, it will still used the cache version (which might be okay, just have refresh path)
- * 
- * @abstract
- * @class CachedFolderUploader
- * @extends {BaseFolderUploader}
  */
 abstract class CachedFolderUploader extends BaseFolderUploader {
   protected cachePath: string;
 
+  /**
+   *
+   * @param cacheFile
+   * @param hpcName
+   * @param userId
+   * @param connector
+   */
   constructor(
     cacheFile: string,
     hpcName: string,
@@ -120,9 +127,7 @@ abstract class CachedFolderUploader extends BaseFolderUploader {
 
   /**
    * Determines whether a cached directory actually exists on a remote HPC.
-   *
-   * @private
-   * @return {Promise<boolean>} true if the directory exists, false otherwise
+   * @returns true if the directory exists, false otherwise
    */
   private async cacheExists(): Promise<boolean> {
     return this.connector.remoteFsExists(this.cachePath);
@@ -130,8 +135,6 @@ abstract class CachedFolderUploader extends BaseFolderUploader {
 
   /**
    * Explicitly removes a remote cached directory, if it exists.
-   *
-   * @private
    */
   private async clearCache() {
     if (!(await this.cacheExists())) {
@@ -143,8 +146,6 @@ abstract class CachedFolderUploader extends BaseFolderUploader {
 
   /**
    * Unzips a cached zip file to the hpc path, where it will be used in jobs.
-   *
-   * @private
    */
   private async pullFromCache() {
     // assert cached file exists
@@ -156,13 +157,14 @@ abstract class CachedFolderUploader extends BaseFolderUploader {
    * Abstract function implemented by more concrete folder uploaders. Encompasses the general requirement to
    * determine when job files were last truly updated externally, to be compared with the stored update times in
    * the database to decide whether to refrehs.
-   *
-   * @protected
-   * @abstract
-   * @return {Promise<number>} Last update time in UNIX time (milliseconds)
+   * @returns {Promise<number>} Last update time in UNIX time (milliseconds)
    */
   protected abstract getCanonicalUpdateTime(): Promise<number>;
 
+  /**
+   *
+   * @param actualUpdateTime
+   */
   public async cachedUpload(actualUpdateTime: number) {
     const recordedUpdate = await this.getRecordedUpdateTime(); 
 
@@ -182,6 +184,9 @@ abstract class CachedFolderUploader extends BaseFolderUploader {
     return false;
   }
 
+  /**
+   *
+   */
   protected async getRecordedUpdateTime(): Promise<number> {
     const exists = await dataSource.getRepository(Cache).findOneBy({
       hpc: this.hpcName,
@@ -195,6 +200,9 @@ abstract class CachedFolderUploader extends BaseFolderUploader {
     }
   }
 
+  /**
+   *
+   */
   public async register() {
     if (this.isComplete && !this.isFailed) {
       const exists = await dataSource.getRepository(Cache).findOneBy({
@@ -215,6 +223,10 @@ abstract class CachedFolderUploader extends BaseFolderUploader {
   }
 }
 
+/**
+ *
+ * @param base
+ */
 async function emptyFolderUploader(base: BaseFolderUploader) {
   try {
     await base.connector.mkdir(base.hpcPath, {}, true);
@@ -230,6 +242,13 @@ async function emptyFolderUploader(base: BaseFolderUploader) {
  */
 export class EmptyFolderUploader extends BaseFolderUploader {
 
+  /**
+   *
+   * @param hpcName
+   * @param userId
+   * @param jobId
+   * @param connector
+   */
   constructor(
     hpcName: string,
     userId: string,
@@ -264,6 +283,14 @@ class GlobusFolderUploader extends CachedFolderUploader {
   private taskId!: string;
   private jobId: string;
 
+  /**
+   *
+   * @param from
+   * @param hpcName
+   * @param userId
+   * @param jobId
+   * @param connector
+   */
   constructor(
     from: GlobusFolder,
     hpcName: string,
@@ -292,8 +319,7 @@ class GlobusFolderUploader extends CachedFolderUploader {
   /**
    * Helper wrapper function for performing a globus transfer to a given folder. Used in both the 
    * cached and non-cached versions of functions.
-   *
-   * @param {GlobusFolder} folder
+   * @param folder
    */
   protected async uploadToFolder(folder: GlobusFolder) {
     const taskId = await GlobusClient.initTransfer(
@@ -350,7 +376,10 @@ class GlobusFolderUploader extends CachedFolderUploader {
     // await this.connector.rm(uploadPath);
   }
 
-  // eslint-disable-next-line @typescript-eslint/require-await
+   
+  /**
+   *
+   */
   protected async getCanonicalUpdateTime(): Promise<number> {
     throw new NotImplementedError("Not implemented");
   }
@@ -362,6 +391,13 @@ class GlobusFolderUploader extends CachedFolderUploader {
 export class LocalFolderUploader extends CachedFolderUploader {
   protected localPath: string; 
 
+  /**
+   *
+   * @param from
+   * @param hpcName
+   * @param userId
+   * @param connector
+   */
   constructor(
     from: LocalFolder,
     hpcName: string,
@@ -376,8 +412,7 @@ export class LocalFolderUploader extends CachedFolderUploader {
   /**
    * Helper function for uploading a folder to a specified path. Used for both the normal and cached
    * versions of the upload comman.d
-   *
-   * @param {string} path
+   * @param path
    */
   protected async uploadToPath(path: string) {
     // if path does not exist, throw an error
@@ -399,7 +434,6 @@ export class LocalFolderUploader extends CachedFolderUploader {
 
   /**
    * Uploads the specified local path to the HPC via SCP.
-   *
    * @throws {Error} path needs to be valid
    */
   public async upload() {
@@ -408,13 +442,19 @@ export class LocalFolderUploader extends CachedFolderUploader {
     await this.register();
   }
 
-  // eslint-disable-next-line @typescript-eslint/require-await
+   
+  /**
+   *
+   */
   protected async uploadToCache(): Promise<void> {
     // need some way to detect cache invalidation
     throw new NotImplementedError("Not implemented");
   }
 
-  // eslint-disable-next-line @typescript-eslint/require-await
+   
+  /**
+   *
+   */
   protected async getCanonicalUpdateTime(): Promise<number> {
     throw new NotImplementedError("Not implemented");
   }
@@ -429,6 +469,13 @@ export class LocalFolderUploader extends CachedFolderUploader {
 export class GitFolderUploader extends LocalFolderUploader   {
   private gitId: string;
 
+  /**
+   *
+   * @param from
+   * @param hpcName
+   * @param userId
+   * @param connector
+   */
   constructor(
     from: GitFolder,
     hpcName: string,
@@ -441,6 +488,9 @@ export class GitFolderUploader extends LocalFolderUploader   {
     this.gitId = from.gitId;
   }
 
+  /**
+   *
+   */
   protected async getCanonicalUpdateTime(): Promise<number> {
     const git = await GitUtil.findGit(this.gitId);
 
@@ -451,6 +501,9 @@ export class GitFolderUploader extends LocalFolderUploader   {
     return (await GitUtil.getLastCommitTime(git)) * 1000;
   }
 
+  /**
+   *
+   */
   protected async uploadToCache() {
     await this.uploadToPath(this.cachePath);
 
@@ -461,22 +514,18 @@ export class GitFolderUploader extends LocalFolderUploader   {
 /**
  * Helper class/method for uploading a generic file, 
  * returning the proper folder uploader as required.
- *
- * @export
  */
 export class FolderUploaderHelper {
 
   /**
    * Uploads a generic folder and returns the helper used to do so.
-   *
-   * @static
-   * @param {NeedUploadFolder} from either a GlobusFolder, GitFolder, or LocalFolder
-   * @param {string} hpcName name of hpc to uplaod to
-   * @param {string} userId current user
-   * @param {string} [jobId=""] job associated with the folder upload (optional)
-   * @param {SSHConnector} [connector=null] connector to connect to HPC with, if needed
+   * @param from either a GlobusFolder, GitFolder, or LocalFolder
+   * @param hpcName name of hpc to uplaod to
+   * @param userId current user
+   * @param jobId job associated with the folder upload (optional)
+   * @param [connector] connector to connect to HPC with, if needed
    * @throws {Error} invalid file type/format
-   * @return {Promise<BaseFolderUploader>} folder uploader object used to upload the folder, can check if upload was successful via {uploader}.isComplete
+   * @returns folder uploader object used to upload the folder, can check if upload was successful via {uploader}.isComplete
    */
   static async upload(
     from: BaseFolder,
@@ -534,14 +583,12 @@ export class FolderUploaderHelper {
   /**
    * Uploads a generic folder and returns the helper used to do so. Uses the cached versions of everything.
    * Only supported for git folders currently.
-   *
-   * @static
-   * @param {NeedUploadFolder} from either a GlobusFolder, GitFolder, or LocalFolder
-   * @param {string} hpcName name of hpc to uplaod to
-   * @param {string} userId current user
-   * @param {SSHConnector} [connector=null] connector to connect to HPC with, if needed
+   * @param from either a GlobusFolder, GitFolder, or LocalFolder
+   * @param hpcName name of hpc to uplaod to
+   * @param userId current user
+   * @param [connector] connector to connect to HPC with, if needed
    * @throws {Error} invalid file type/format
-   * @return {Promise<BaseFolderUploader>} folder uploader object used to upload the folder, can check if upload was successful via {uploader}.isComplete
+   * @returns folder uploader object used to upload the folder, can check if upload was successful via {uploader}.isComplete
    */
   static async cachedUploadGit(
     from: GitFolder,
