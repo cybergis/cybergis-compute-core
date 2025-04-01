@@ -1,5 +1,4 @@
 import express from "express";
-import { UploadedFile } from "express-fileupload";
 import { rootPath } from "get-root-path";
 
 import * as path from "path";
@@ -13,6 +12,7 @@ import {
   GlobusFolder,
   InitGlobusDownloadBodySchema,
   InitBrowserDownloadBodySchema,
+  InitBrowserUploadBodySchema,
   ConnectorError,
 } from "../definitions";
 import { GlobusClient } from "../helpers/GlobusTransferUtil";
@@ -463,11 +463,26 @@ folderRouter.post(
 
     const uploadedFile = req.files.file;
 
-    if (uploadedFile instanceof UploadedFile) {
-
+    if (Array.isArray(uploadedFile)) {
+      return res.status(400).json({ error: "only accept uploads of single zip files" });
     }
 
+    if (
+      (uploadedFile.mimetype !== "application/zip" && uploadedFile.mimetype !== "application/x-zip-compressed")
+      || !uploadedFile.name.toLowerCase().endsWith(".zip")
+      || (uploadedFile.data.toString("hex", 0, 4) !== "504b0304")
+    ) {
+      return res.status(400).json({ error: "only accept zip files" });
+    }
 
+    try {
+      await uploadedFile.mv(path.join(localFileFolder, `${body.fileName}.zip`));
+    } catch (_) {
+      return res.status(500).json({ error: "server error during file upload" });
+    }
+    
+
+    return res.status(200);
   }
 );
 
