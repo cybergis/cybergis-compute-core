@@ -60,9 +60,10 @@ export async function prepareDataForDB(
 }
 
 /**
- *
- * @param schema
- * @param data
+ * 
+ * @param schema schema that the data is expected to follow
+ * @param data the data to validate
+ * @returns interface with the validation results
  */
 export function validateZodSchema<T>(
   schema: z.ZodSchema<T>, 
