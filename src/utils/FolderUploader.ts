@@ -39,12 +39,13 @@ export class BaseFolderUploader {
    * @param userId user uploading the files
    * @param connector connector to interface with the hpc via ssh
    * @param jobId job this upload is for
+   * @throws {ReferneceError} if unable to resolve config for the hpc
    */
   constructor(hpcName: string, userId: string, connector: SSHConnector, jobId: string) {
     this.hpcName = hpcName;
     this.hpcConfig = hpcConfigMap[hpcName];
     if (!this.hpcConfig)
-      throw new Error(`cannot find hpcConfig with name ${hpcName}`);
+      throw new ReferenceError(`cannot find hpcConfig with name ${hpcName}`);
 
     this.id = Helper.generateId();
     this.userId = userId;
@@ -181,6 +182,7 @@ async function emptyFolderUpload(base: BaseFolderUploader) {
  *
  * @param base  given parameters for the uploaded folder
  * @param from source folder to upload
+ * @throws {Error} if globus file transfer failed
  */
 async function globusFolderUpload(base: BaseFolderUploader, from: GlobusFolder) {
   const taskId = await GlobusClient.initTransfer(
@@ -208,6 +210,7 @@ async function globusFolderUpload(base: BaseFolderUploader, from: GlobusFolder) 
  *
  * @param base  given parameters for the uploaded folder
  * @param from source folder to upload
+ * @throws {Error} if file to transfer does not exist on file system
  */
 async function localFolderUpload(base: BaseFolderUploader, from: LocalFolder) {
   if (!fs.existsSync(from.localPath)) {
@@ -225,6 +228,7 @@ async function localFolderUpload(base: BaseFolderUploader, from: LocalFolder) {
  *
  * @param base  given parameters for the uploaded folder
  * @param from source folder to upload
+ * @throws {Error} if git repository does not exist locally
  */
 async function gitFolderUpload(base: BaseFolderUploader, from: GitFolder) {
   const localPath = GitUtil.getLocalPath(from.gitId);
@@ -235,6 +239,7 @@ async function gitFolderUpload(base: BaseFolderUploader, from: GitFolder) {
  *
  * @param base  given parameters for the uploaded folder
  * @param from source folder to upload
+ * @throws {Error} if the git repository to upload is not registered in the database
  */
 async function gitFolderUploadCached(base: CachedFolderUploader, from: GitFolder) {
   const localPath = GitUtil.getLocalPath(from.gitId);
@@ -282,7 +287,7 @@ export class FolderUploaderHelper {
    * @param userId current user
    * @param connector connector to connect to HPC with, if needed
    * @param jobId job associated with the folder upload (optional)
-   * @throws {Error} invalid file type/format
+   * @throws {Error} invalid file type/format or upload fails
    * @returns folder uploader object used to upload the folder, can check if upload was successful via {uploader}.isComplete
    */
   static async upload(
@@ -322,7 +327,7 @@ export class FolderUploaderHelper {
    * @param userId current user
    * @param connector connector to connect to HPC with, if needed
    * @param jobId id of the job
-   * @throws {RangeError} invalid file type/format
+   * @throws {Error} invalid file type/format or upload failed
    * @returns folder uploader object used to upload the folder, can check if upload was successful via {uploader}.isComplete
    */
   static async cachedUploadGit(

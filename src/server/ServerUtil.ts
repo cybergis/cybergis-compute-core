@@ -110,6 +110,7 @@ export function requestErrors(v: jsonschema.ValidatorResult): string[] {
  *
  * @param data data to insert into DB
  * @param properties properties to add to the data
+ * @throws {ReferenceError} if unable to find the folder corresponding to the remote folder passed in the database
  * @returns row encoded as a dictionary that can be added to the database
  */
 export async function prepareDataForDB(
@@ -124,14 +125,14 @@ export async function prepareDataForDB(
         property === "remoteExecutableFolder" ||
         property === "remoteDataFolder"
       ) {
-        const folder: Folder | null = await (dataSource.
+        const folder = await (dataSource.
           getRepository(Folder).
           findOneBy({
             id: data[property] as string
           })
         );
 
-        if (!folder) throw new Error("could not find " + property);
+        if (!folder) throw new ReferenceError("could not find " + property);
 
         out[property] = folder;
       } else {

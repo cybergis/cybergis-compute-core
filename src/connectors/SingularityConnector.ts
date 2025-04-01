@@ -63,7 +63,7 @@ export class SingularityConnector extends SlurmConnector {
    * Executes specified manifest within image
    * @param manifest - manifest that needs toe be executed
    * @param config - slurm configuration
-   * @throws {Error} - thrown when container cannot be resolved
+   * @throws {ReferenceError} - thrown when container cannot be resolved
    */
   public async execExecutableManifestWithinImage(
     manifest: executableManifest,
@@ -72,11 +72,11 @@ export class SingularityConnector extends SlurmConnector {
     let containerPath!: string;
     if(!this.is_cvmfs){
       const container = containerConfigMap[manifest.container];
-      if (!container) throw new Error(`unknown container ${manifest.container}`);
+      if (!container) throw new ReferenceError(`unknown container ${manifest.container}`);
 
       containerPath = container.hpc_path[this.maintainer.hpc];
       if (!containerPath)
-        throw new Error(
+        throw new ReferenceError(
           `container ${manifest.container} is not supported on HPC ${this.maintainer.hpc}`
         );
       // remove buffer: https://dashboard.hpc.unimelb.edu.au/job_submission/
@@ -288,6 +288,7 @@ export class SingularityConnector extends SlurmConnector {
   /**
    * Creates a bash script using kernelConfig
    * @param manifest manifest to create a kenrl for
+   * @throws {Error} if unable to create file by ssh
    */
   public async createKernelInit(manifest: executableManifest){
     let kernelBash = "#!/bin/bash\n";

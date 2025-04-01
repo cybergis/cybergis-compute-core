@@ -16,7 +16,7 @@ export class GlobusTransferUtil {
   private delay = -1;
 
   /**
-   *
+   * @throws {Error} if unable to resolve the globus refresh token
    */
   private async init() {
     if (this.accessToken !== undefined && (new Date().getTime() - this.time) <= this.delay) {
@@ -51,6 +51,7 @@ export class GlobusTransferUtil {
   }
 
   /**
+   * @throws {Error} if the request to get the submission id failed
    * @returns the submission ID of the globus job
    */
   private async getSubmissionId(): Promise<string> {
@@ -80,8 +81,8 @@ export class GlobusTransferUtil {
    * @param from - from transfer folder
    * @param to - to transfer folder
    * @param label - task label
-   * @returns - taskId
    * @throws {Error} - thrown if globus query status fails
+   * @returns - taskId
    */
   public async initTransfer(
     from: GlobusFolder,
@@ -128,6 +129,7 @@ export class GlobusTransferUtil {
   /**
    * Repeatedly polls for the status of the given task. 
    * @param taskId identifier for the task to monitor
+   * @throws {Error} if unable to query the transfer status
    * @returns the status code of the task
    */
   public async monitorTransfer(taskId: string): Promise<string> {
@@ -169,6 +171,7 @@ export class GlobusTransferUtil {
   /**
    * Retrieves the status code of the task (no polling)
    * @param taskId task to get the status code for
+   * @throws {Error} if unable to query the transfer status
    * @returns status of the task
    */
   public async queryTransferStatus(taskId: string): Promise<string> {

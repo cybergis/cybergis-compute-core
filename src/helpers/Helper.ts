@@ -154,7 +154,7 @@ export const consoleEnd = "\x1b[0m";
 export const consoleGreen = "\x1b[32m";
 
 /**
- * Checks if an object is nullish, throwing an error if it is
+ * Checks if an object is nullish; if it is, it gives a soft warning
  * @param x object to check
  */
 export function nullGuard<T>(x: null | T | undefined): asserts x is T {
@@ -182,6 +182,7 @@ export function nullGuard<T>(x: null | T | undefined): asserts x is T {
  * @param funcCall - The function that is run with backoff
  * @param parameters - What the function is input as parameters (in the form of one array)
  * @param printOnError - Printed with error when catch block reached
+ * @throws {Error} if unable to run the function within the specified backoff limit
  */
 export async function runCommandWithBackoff(
   funcCall: callableFunction,

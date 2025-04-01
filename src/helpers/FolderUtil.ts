@@ -25,7 +25,7 @@ export async function isZipped(filePath: string): Promise<boolean> {
 /**
  * Zips a file/directory.
  * @param filePath - file/directory path
- * @throws {Error} thrown if zipping fails
+ * @throws {FileNotExistError} thrown if zipping fails/if the zip path doesn't exist
  * @returns the file path of the resulting zip file
  */
 export async function getZip(filePath: string): Promise<string> {
@@ -91,6 +91,7 @@ export async function exists(filePath: string): Promise<boolean> {
  * Unzips a zip file. 
  * @param filePath file path to zip
  * @param zipFilePath path of the zipped file
+ * @throws {FileNotExistError} if zip file to unzip does not exist on file system
  * @returns promise for whether the zip was successful
  */
 export async function putFileFromZip(filePath: string, zipFilePath: string) {

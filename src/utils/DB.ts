@@ -46,7 +46,7 @@ if (config.is_jest) {
 const dataSource = new DataSource(dbConfig);
 
 /**
- *
+ * @throws {Error} if clearing the repository failed
  */
 export async function clearAll() {
   try {

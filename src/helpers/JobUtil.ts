@@ -17,16 +17,16 @@ import dataSource from "../utils/DB";
  * Ensure the job has all the necessary input parameters
  * @param job - This job
  * @param paramRules - Parameter rules for this job
- * @throws Job must have a complete parameter list
+ * @throws {ReferenceError} Job must have a complete parameter list
  */
 function validateParam(job: Job, paramRules: Record<string, unknown>) {
   if (job.param === undefined) {
-    throw new Error("job missing input params");
+    throw new ReferenceError("job missing input params");
   }
     
   for (const i in paramRules) {
     if (!job.param[i]) {
-      throw new Error(`job missing input param ${i}`);
+      throw new ReferenceError(`job missing input param ${i}`);
     }
   }
 }
@@ -85,7 +85,7 @@ export async function getUserSlurmUsage(
 /**
  * Ensure this job has valid input data and slurm config rules
  * @param job - This job
- * @throws - DataFolder must have a valid path, the job must have upload data, and there must be an executable folder in the maintainerConfig
+ * @throws {Error} - DataFolder must have a valid path, the job must have upload data, and there must be an executable folder in the maintainerConfig
  */
 export function validateJob(job: Job) {
   // create slurm config rules
@@ -109,7 +109,7 @@ export function validateJob(job: Job) {
  * Set the slurm rules for this job, and ensure that those rules don't exceed the default slurm ceiling
  * @param job - This job
  * @param slurmInputRules - Slurm input rules associated with this job
- * @throws - Slurm input rules associated with this job must not exceed the default slurm ceiling
+ * @throws {RangeError} Slurm input rules associated with this job must not exceed the default slurm ceiling
  */
 function validateSlurmConfig(job: Job, slurmInputRules: slurmInputRules) {
   const slurmCeiling: Record<string, unknown> = {};
@@ -185,7 +185,7 @@ function validateSlurmConfig(job: Job, slurmInputRules: slurmInputRules) {
         slurmCeiling[field as keyof slurm] as string, 
         val)
     ) {
-      throw new Error(
+      throw new RangeError(
         `slurm config ${field} exceeds the threshold of ${slurmCeiling[field as keyof slurm] as string} (current value ${val})`
       );
     }

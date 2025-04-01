@@ -152,7 +152,7 @@ export class SSHConnector {
    * @param muteEvent - set to True if you want to mute maintauner emitted Event
    * @param muteLog - set to True if you want to mute maintainer emitted Log
    * @param continueOnError - set to True if you want the command/commands to continue despite errors
-   * @throws {Error} when the ssh command runs into an error
+   * @throws {Error} when the ssh command runs into an error; generally doesn't occur
    * @returns out - maintainer output
    */
   public async exec(
@@ -246,6 +246,7 @@ export class SSHConnector {
    * @param from - input file string (input folder to download)
    * @param to - output folder
    * @param muteEvent - set to True if you want to mute maintainer emitted Event
+   * @throws {ConnectorError} if exponentially backed off file transfer fails
    */
   public async download(from: string, to: string, muteEvent = false) {
     // create from/to zip paths from raw files and zip the from file
@@ -575,6 +576,7 @@ export class SSHConnector {
    * @param remotePath specified path with filename
    * @param _options dictionary with string options (not used)
    * @param muteEvent set to True if you want to mute maintauner emitted Event
+   * @throws {ConnectorError} if file transfer of content to remote fails
    */
   public async createFile(
     content: string | Record<string, unknown>,

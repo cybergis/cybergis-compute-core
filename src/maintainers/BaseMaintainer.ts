@@ -73,6 +73,7 @@ abstract class BaseMaintainer {
   /**
    * constructor
    * @param job job that this maintainer will maintain
+   * @throws {ReferenceError} if specified hpc has no corresponding settings
    */
   public constructor(job: Job) {
     // try to validate the job's environment
@@ -94,7 +95,7 @@ abstract class BaseMaintainer {
     // determine if the current hpc exists within the config
     this.hpc = job.hpc ? job.hpc : this.maintainerConfig.default_hpc;
     this.hpcSettings = hpcConfigMap[this.hpc];
-    if (!this.hpcSettings) throw new Error("cannot find hpc with name [" + this.hpc + "]");
+    if (!this.hpcSettings) throw new ReferenceError("cannot find hpc with name [" + this.hpc + "]");
   }
 
   /** abstract lifecycle interfaces */

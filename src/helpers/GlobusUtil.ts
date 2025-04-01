@@ -92,6 +92,7 @@ export async function queryTransferStatus(
  * Maps username according to a specified function. Only nontrivial for the mapping_func `iguide-mapping`.
  * @param initial_username pre-mapping username
  * @param mapping_func function to use for mapping
+ * @throws {Error} if python script mapping username failed
  * @returns mapped string
  */
 export async function mapUsername(

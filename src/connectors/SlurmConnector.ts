@@ -150,7 +150,7 @@ ${cmd}`;
   /**
    * 
    * Submit the slurm job.
-   * @throws {Error} when job cannot be submitted
+   * @throws {ConnectorError} when job cannot be submitted or ssh commands fail
    */
   public async submit() {
     // create job.sbatch on HPC
