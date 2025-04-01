@@ -50,7 +50,7 @@ class Supervisor {
 
 
   /**
-   * Creates the main maintainer for all job execution. Runs in an infinite spaced loop. Ends on destruction. 
+   * Creates the main loop for all job execution. Runs in an infinite spaced loop. Ends on destruction. 
    */
   private createMaintainerMaster() {
     // queue consumer
