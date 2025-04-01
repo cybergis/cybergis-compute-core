@@ -48,16 +48,16 @@ folderRouter.get("/", authMiddleWare, async function (req, res) {
 });
 
 /**
-   * @openapi
-   * /folder/:folderId:
-   *  get:
-   *      description: Returns a specific folder stored as a dictionary object (Authentication REQUIRED)
-   *      responses:
-   *          200:
-   *              description: Returns a folder as a dictionary object with metadata
-   *          402:
-   *              description: Returns "invalid input" and a list of errors with the format of the req body or "invalid token" if a valid jupyter token authentication is not provided
-   */
+ * @openapi
+ * /folder/:folderId:
+ *  get:
+ *      description: Returns a specific folder stored as a dictionary object (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns a folder as a dictionary object with metadata
+ *          402:
+ *              description: Returns "invalid input" and a list of errors with the format of the req body or "invalid token" if a valid jupyter token authentication is not provided
+ */
 folderRouter.get("/:folderId", authMiddleWare, async function (req, res) {
   if (!res.locals.username) {
     res.status(402).json({ error: "invalid token" });
@@ -72,20 +72,20 @@ folderRouter.get("/:folderId", authMiddleWare, async function (req, res) {
 });
 
 /**
-   * @openapi
-   * /folder/:folderId:
-   *  delete:
-   *      description: Deletes an ID specified folder (Authentication REQUIRED)
-   *      responses:
-   *          200:
-   *              description: Deletes the folder specified by the ID
-   *          401:
-   *              description: Returns "encountered error" when the folder deletion throws an exception
-   *          402:
-   *              description: Returns "invalid input" and a list of errors with the format of the req body or "invalid token" if a valid jupyter token authentication is not provided
-   *          404:
-   *              description: Returns "unknown folder with id" when the specified folder is not found
-   */
+ * @openapi
+ * /folder/:folderId:
+ *  delete:
+ *      description: Deletes an ID specified folder (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Deletes the folder specified by the ID
+ *          401:
+ *              description: Returns "encountered error" when the folder deletion throws an exception
+ *          402:
+ *              description: Returns "invalid input" and a list of errors with the format of the req body or "invalid token" if a valid jupyter token authentication is not provided
+ *          404:
+ *              description: Returns "unknown folder with id" when the specified folder is not found
+ */
 folderRouter.delete("/:folderId", authMiddleWare, async function (req, res) {
   if (!res.locals.username) {
     res.status(402).json({ error: "invalid token" });
@@ -115,20 +115,20 @@ folderRouter.delete("/:folderId", authMiddleWare, async function (req, res) {
 });
 
 /**
-   * @openapi
-   * /folder/:folderId:
-   *  put:
-   *      description: Updates a folder with the given ID (Authentication REQUIRED)
-   *      responses:
-   *          200:
-   *              description: Updates the folder specified by the ID and returns folder
-   *          401:
-   *              description: Returns "encountered error" when updating the folder throws an exception
-   *          402:
-   *              description: Returns "invalid input" and a list of errors with the format of the req body or "invalid token" if a valid jupyter token authentication is not provided
-   *          404:
-   *              description: Returns "unknown folder with id" when the specified folder is not found
-   */
+ * @openapi
+ * /folder/:folderId:
+ *  put:
+ *      description: Updates a folder with the given ID (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Updates the folder specified by the ID and returns folder
+ *          401:
+ *              description: Returns "encountered error" when updating the folder throws an exception
+ *          402:
+ *              description: Returns "invalid input" and a list of errors with the format of the req body or "invalid token" if a valid jupyter token authentication is not provided
+ *          404:
+ *              description: Returns "unknown folder with id" when the specified folder is not found
+ */
 folderRouter.put("/:folderId", authMiddleWare, async function (req, res) {
   const validation = validateZodSchema(UpdateFolderBodySchema, req.body);
   
@@ -184,18 +184,18 @@ folderRouter.put("/:folderId", authMiddleWare, async function (req, res) {
 });
 
 /**
-   * @openapi
-   * /folder/:folderId/download/globus-init:
-   *  post:
-   *      description: Posts a request to initiate a globus download of the specified folder (Authentication REQUIRED)
-   *      responses:
-   *          200:
-   *              description: Globus download of the specific folder is successful
-   *          402:
-   *              description: Returns "invalid input" and a list of errors with the format of the req body or "invalid token" if a valid jupyter token authentication is not provided
-   *          403:
-   *              description: Returns error when the folder ID cannot be found, when the hpc config for globus cannot be found, when the globus download fails, or when a download is already running for the folder
-   */
+ * @openapi
+ * /folder/:folderId/download/globus-init:
+ *  post:
+ *      description: Posts a request to initiate a globus download of the specified folder (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Globus download of the specific folder is successful
+ *          402:
+ *              description: Returns "invalid input" and a list of errors with the format of the req body or "invalid token" if a valid jupyter token authentication is not provided
+ *          403:
+ *              description: Returns error when the folder ID cannot be found, when the hpc config for globus cannot be found, when the globus download fails, or when a download is already running for the folder
+ */
 folderRouter.post(
   "/:folderId/download/globus-init",
   authMiddleWare,
@@ -276,18 +276,18 @@ folderRouter.post(
 );
 
 /**
-   * @openapi
-   * /folder/:folderId/download/globus-status:
-   *  get:
-   *      description: Gets the status of a globus download job currenty happening on the given folder ID (Authentication REQUIRED)
-   *      responses:
-   *          200:
-   *              description: Returns status of current globus download (if no download is occuring {} is returned)
-   *          402:
-   *              description: Returns "invalid input" and a list of errors with the format of the req body or "invalid token" if a valid jupyter token authentication is not provided
-   *          403:
-   *              description: Returns error when the folder ID cannot be found or when the globus query fails
-   */
+ * @openapi
+ * /folder/:folderId/download/globus-status:
+ *  get:
+ *      description: Gets the status of a globus download job currenty happening on the given folder ID (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns status of current globus download (if no download is occuring {} is returned)
+ *          402:
+ *              description: Returns "invalid input" and a list of errors with the format of the req body or "invalid token" if a valid jupyter token authentication is not provided
+ *          403:
+ *              description: Returns error when the folder ID cannot be found or when the globus query fails
+ */
 folderRouter.get(
   "/:folderId/download/globus-status",
   authMiddleWare,

@@ -223,8 +223,6 @@ export class Job {
 
   /**
    * Set the createdAt time to the current time.
-   *
-   * @return {Date} date - Date this job was created.
    */
   @BeforeInsert()
   setCreatedAt() {
@@ -233,8 +231,7 @@ export class Job {
 
   /**
    * Set the updatedAt time to the current time.
-   *
-   * @return {Date} date - Date this job was last updated.
+   * @returns date - Date this job was last updated.
    */
   @BeforeUpdate()
   setUpdatedAt() {
@@ -264,8 +261,6 @@ export class Job {
 
   /**
    * Sorts the logs in the order that they were created
-   *
-   * @return {None} None - Updates this.logs
    */
   @AfterLoad()
   sortLogs() {
@@ -282,8 +277,6 @@ export class Job {
 
   /**
    * Sorts the events in the order that they were created
-   *
-   * @return {None} None - Updates this.events
    */
   @AfterLoad()
   sortEvents() {

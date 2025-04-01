@@ -22,13 +22,13 @@ import dataSource from "../utils/DB";
  * This is an abstract class for compute core job maintainers, which are responsible for submitting jobs and monitoring them.
  */
 abstract class BaseMaintainer {
-  /** parent pointer **/
+  /** parent pointer */
   // public supervisor: Supervisor;
 
-  /** packages **/
+  /** packages */
   public validator = validator; // https://github.com/validatorjs/validator.js
 
-  /** config **/
+  /** config */
   public job: Job;
   public hpc: string;
   public hpcSettings: hpcConfig;
@@ -36,10 +36,10 @@ abstract class BaseMaintainer {
   public id: string;
   public slurm: slurm | undefined = undefined;
 
-  /** mutex **/
+  /** mutex */
   private _lock = false;
 
-  /** states **/
+  /** states */
   public isInit = false;
   public isEnd = false;
   public isPaused = false;
@@ -50,7 +50,7 @@ abstract class BaseMaintainer {
     createdAt: null as null | number,
   };
 
-  /** parameters **/
+  /** parameters */
   public initRetry = 3;  // how many times to retry initialization
   public maintainThresholdInHours = 100000; // something super large
 
@@ -62,15 +62,19 @@ abstract class BaseMaintainer {
   // public appParamValidators = undefined;
   // public appParam: Record<string, string> = {};
 
-  /** HPC connectors **/
+  /** HPC connectors */
   // public abstract connector: SlurmConnector;
 
-  /** data **/
+  /** data */
   protected logs: string[] = [];
   protected events: event[] = [];
 
 
-  /** constructor **/
+  /**
+   * constructor
+   * @param job job that this maintainer will maintain
+   * @throws {ReferenceError} if specified hpc has no corresponding settings
+   */
   public constructor(job: Job) {
     // try to validate the job's environment
     if (job.env !== undefined) {
@@ -91,10 +95,10 @@ abstract class BaseMaintainer {
     // determine if the current hpc exists within the config
     this.hpc = job.hpc ? job.hpc : this.maintainerConfig.default_hpc;
     this.hpcSettings = hpcConfigMap[this.hpc];
-    if (!this.hpcSettings) throw new Error("cannot find hpc with name [" + this.hpc + "]");
+    if (!this.hpcSettings) throw new ReferenceError("cannot find hpc with name [" + this.hpc + "]");
   }
 
-  /** abstract lifecycle interfaces **/
+  /** abstract lifecycle interfaces */
 
   /**
    * This function is called when the maintainer is created (during the constructor). Can leave empty. 
@@ -105,44 +109,38 @@ abstract class BaseMaintainer {
    * This function is called when the maintainer is initialized--i.e., it begins work on maintaining the job. Called in the supervisor-facing
    * init() function. 
    * 
-   * @async
    */
   protected abstract onInit(): Promise<void>;
 
   /**
    * This function is called when the supervisor-facing maintain() function is called to maintain (monitor the status of) the job. 
    * 
-   * @async
    */
   protected abstract onMaintain(): Promise<void>;
 
   /**
    * This function is called when the supervisor tries to pause the current job/maintainer. Not used.
    * 
-   * @async
    */
   protected abstract onPause(): Promise<void>;
 
   /**
    * This function is called when the supervisor tries to resume the current job/maintainer after pause. Not used.
    * 
-   * @async
    */
   protected abstract onResume(): Promise<void>;
 
   /**
    * This function is called when the supervisor tries to cancel the current job/maintainer.
    * 
-   * @async
    */
   protected abstract onCancel(): Promise<void>;
 
-  /** emitters **/
+  /** emitters */
   /**
    * Update this.events with the new event, and this.isInit or this.isEnd as appropriate
-   *
-   * @param {string} type - Type of event to be recorded
-   * @param {string} message - Message associated with the event
+   * @param type - Type of event to be recorded
+   * @param message - Message associated with the event
    */
   public emitEvent(type: string, message: string) {
     if (type === "JOB_INIT") this.isInit = true;
@@ -156,19 +154,17 @@ abstract class BaseMaintainer {
 
   /**
    * Update this.events with the new event
-   *
-   * @param {string} message - Message associated with the event
+   * @param message - Message associated with the event
    */
   public emitLog(message: string) {
     this.logs.push(message);
   }
 
-  /** supervisor interfaces **/
+  /** supervisor interfaces */
 
   /**
    * Initialize job in the maintainer. If the job has been retried too many times, terminate and update events.
-   *
-   * @async
+   * 
    */
   public async init() {
     // check if already trying to init -- if so, don't start another async instance
@@ -190,8 +186,7 @@ abstract class BaseMaintainer {
 
   /**
    * Ensure that the job is still running, and if the runtime has exceeded the maintain threshold, terminate and update events.
-   *
-   * @async
+   * 
    */
   public async maintain() {
     // check if already trying to do this -- if so, don't start another async instance
@@ -221,15 +216,16 @@ abstract class BaseMaintainer {
     this._lock = false;
   }
 
+  /**
+   *
+   */
   public async cancel() {
     await this.onCancel();
   }
 
   /**
    * Clear all logs in this.logs
-   *
-   * @async
-   * @return {string[]} - List of jobs that were just deleted.
+   * @returns - List of jobs that were just deleted.
    */
   public dumpLogs(): string[] {
     const logs = this.logs;
@@ -239,9 +235,7 @@ abstract class BaseMaintainer {
 
   /**
    * Clear all events in this.events
-   *
-   * @async
-   * @return {event[]} - List of events that were just deleted.
+   * @returns - List of events that were just deleted.
    */
   public dumpEvents(): event[] {
     const events = this.events;
@@ -251,10 +245,7 @@ abstract class BaseMaintainer {
 
   /**
    * Update this job to reflect the information in the passed job.
-   *
-   * @async
-   * @public
-   * @param {jobMaintainerUpdatable} job - New information to update this job with.
+   * @param job - New information to update this job with.
    */
   public async updateJob(job: jobMaintainerUpdatable) {
     await dataSource
@@ -272,34 +263,28 @@ abstract class BaseMaintainer {
 
   /**
    * Return the slurm connector associated with this job and hpc.
-   *
-   * @public
-   * @returns {SlurmConnector} - The slurm connector associated with this job.
+   * @returns - The slurm connector associated with this job.
    */
-  public getSlurmConnector(): SlurmConnector {
-    return new SlurmConnector(this);
+  public async getSlurmConnector(): Promise<SlurmConnector | undefined> {
+    return await SlurmConnector.build(this);
   }
 
   /**
    * Return the singularity connector associated with this job and hpc.
-   *
-   * @public
-   * @returns {SingularityConnector} - The singularity connector associated with this job.
+   * @returns - The singularity connector associated with this job.
    */
-  public getSingularityConnector(): SingularityConnector {
-    return new SingularityConnector(
+  public async getSingularityConnector(): Promise<SingularityConnector | undefined> {
+    return await SingularityConnector.build(
       this, 
     );
   }
 
   /**
    * Return the Singularity connector associated with this job and hpc.
-   *
-   * @public
-   * @returns {SingularityConnector} - The singularity connector associated with this job with cvmfs turned on.
+   * @returns - The singularity connector associated with this job with cvmfs turned on.
    */
-  public getSingCVMFSConnector(): SingularityConnector {
-    return new SingularityConnector(
+  public async getSingCVMFSConnector(): Promise<SingularityConnector | undefined> {
+    return await SingularityConnector.build(
       this,
       true
     );

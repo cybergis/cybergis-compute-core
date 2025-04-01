@@ -13,10 +13,10 @@ import { SSHConnector } from "./SSHConnector";
  */
 export class SlurmConnector {
 
-  /** parent pointer **/
+  /** parent pointer */
   protected maintainer: BaseMaintainer;
 
-  /** properties **/
+  /** properties */
   protected is_cvmfs: boolean;
   protected remoteExecutableFolderPath!: string;
   protected remoteDataFolderPath!: string;
@@ -27,29 +27,53 @@ export class SlurmConnector {
   protected template!: string;
   protected isContainer = false;
 
-  /** config **/
+  /** config */
   protected sshConnector: SSHConnector;
 
-  public constructor(
+  /**
+   *
+   * @param maintainer maintainer that this connector was created for
+   * @param connector sshconnector this connector should use
+   * @param is_cvmfs whether this connector is cvmfs
+   */
+  protected constructor(
     maintainer: BaseMaintainer,
+    connector: SSHConnector,
     is_cvmfs = false
   ) {
     this.maintainer = maintainer;
     this.is_cvmfs = is_cvmfs;
+    this.sshConnector = connector;
+  }
 
-    this.sshConnector = new SSHConnector(
+  /**
+   * Creates a SlurmConnector, ensuring that the connector is functional while doing so
+   * @param maintainer maintainer to create a slurmconnector for
+   * @param is_cvmfs whether this connector should be cvmfs
+   * @returns the desired connector, or undefined if the construction was unsuccessful
+   */
+  public static async build(
+    maintainer: BaseMaintainer, 
+    is_cvmfs = false
+  ): Promise<SlurmConnector | undefined> { 
+    const connector = await SSHConnector.build(
       maintainer.hpc, 
       maintainer.job, 
       (...args) => maintainer.emitLog(...args),
       (...args) => maintainer.emitEvent(...args),
       maintainer.job.env
     );
+
+    if (connector === undefined) {
+      return undefined;
+    }
+
+    return new SlurmConnector(maintainer, connector, is_cvmfs);
   }
 
   /**
    * Registers all of the specified modules
-   *
-   * @param {Array<string>} modules - Array of strings
+   * @param modules - Array of strings
    */
   public registerModules(modules: string[]) {
     this.modules = this.modules.concat(modules);
@@ -57,9 +81,8 @@ export class SlurmConnector {
 
   /**
    * Creates slurm string with specified configuation. Saves it to this.template.
-   *
-   * @param {string} cmd - command that needs to be executed
-   * @param {slurm} config - slurm configuration
+   * @param cmd - command that needs to be executed
+   * @param config - slurm configuration
    */
   protected prepare(cmd: string, config: slurm) {
     // prepare sbatch script
@@ -125,8 +148,9 @@ ${cmd}`;
   }
 
   /**
-   * @async
+   * 
    * Submit the slurm job.
+   * @throws {ConnectorError} when job cannot be submitted or ssh commands fail
    */
   public async submit() {
     // create job.sbatch on HPC
@@ -138,7 +162,6 @@ ${cmd}`;
       true
     );
 
-    Helper.nullGuard(this.maintainer);
     // create job.json on HPC
     const jobJSON = {
       job_id: this.maintainer.job.id,
@@ -227,10 +250,9 @@ ${cmd}`;
   // ['3142135', 'node', 'singular', 'cigi-gis', 'R', '0:11', '1', 'keeling-b08']
 
   /**
-   * @async
+   *
    * checks job status
-   * 
-   * @returns {Promise<string>} job status (RETRY, UNKNOWN, or a slurm job status)
+   * @returns job status (RETRY, UNKNOWN, or a slurm job status)
    */
   public async getStatus(): Promise<string> {
     try {
@@ -273,7 +295,7 @@ ${cmd}`;
   }
 
   /**
-   * @async
+   * 
    * cancels the job
    */
   public async cancel() {
@@ -281,7 +303,7 @@ ${cmd}`;
   }
 
   /**
-   * @async
+   * 
    * pauses the job
    */
   public async pause() {
@@ -289,7 +311,7 @@ ${cmd}`;
   }
 
   /**
-   * @async
+   * 
    * resumes the job
    */
   public async resume() {
@@ -297,7 +319,7 @@ ${cmd}`;
   }
 
   /**
-   * @async
+   * 
    * gets SlurmStdOut and emit it as a log in the maintainer
    */
   public async getSlurmStdout() {
@@ -310,7 +332,7 @@ ${cmd}`;
   }
 
   /**
-   * @async
+   * 
    * gets SlurmStderr and emit it as a log in the maintainer
    */
   public async getSlurmStderr() {
@@ -324,11 +346,9 @@ ${cmd}`;
 
   /**
    * Get sbatch tags
-   *
-   * @private
-   * @param {string} tag sbatch tags
-   * @param {string[]} vals values of sbatch tags
-   * @return {string} sbatch string
+   * @param tag sbatch tags
+   * @param vals values of sbatch tags
+   * @returns sbatch string
    */
   private getSBatchTagsFromArray(tag: string, vals: string[]): string {
     if (!vals) return "";
@@ -341,9 +361,8 @@ ${cmd}`;
 
   /**
    * gets remote executable folder path
-   *
-   * @param {string} [providedPath=null] specified path
-   * @return {string} command execution output
+   * @param [providedPath] specified path
+   * @returns command execution output
    */
   public getRemoteExecutableFolderPath(providedPath: string | null = null): string {
     if (providedPath)
@@ -354,9 +373,8 @@ ${cmd}`;
 
   /**
    * gets remote data folder path
-   *
-   * @param {string} [providedPath=null] specified path
-   * @return {string | null} command execution output
+   * @param [providedPath] specified path
+   * @returns command execution output
    */
   public getRemoteDataFolderPath(providedPath: string | null = null): string | null {
     if (providedPath)
@@ -367,9 +385,8 @@ ${cmd}`;
 
   /**
    * gets remote result folder path
-   *
-   * @param {string} [providedPath=null] specified path
-   * @return {string} command execution output
+   * @param [providedPath] specified path
+   * @returns command execution output
    */
   public getRemoteResultFolderPath(providedPath: string | null = null): string {
     if (providedPath)
@@ -380,9 +397,8 @@ ${cmd}`;
 
   /**
    * Get Container executable folder path
-   *
-   * @param {string} [providedPath=null] specified path
-   * @return {string}  executable path
+   * @param [providedPath] specified path
+   * @returns  executable path
    */
   public getContainerExecutableFolderPath(providedPath: string | null = null): string {
     if (providedPath) return path.join("/job/executable", providedPath);
@@ -391,9 +407,8 @@ ${cmd}`;
 
   /**
    * Get Container CVMFS folder path
-   *
-   * @param {string} [providedPath=null] specified path
-   * @return {string} executable path
+   * @param [providedPath] specified path
+   * @returns executable path
    */
   public getContainerCVMFSFolderPath(providedPath: string | null = null): string {
     if (providedPath) return path.join("/tmp/cvmfs", providedPath);
@@ -402,9 +417,8 @@ ${cmd}`;
 
   /**
    * Get Container data folder path
-   *
-   * @param {string} [providedPath=null] specified path
-   * @return {string} executable path
+   * @param [providedPath] specified path
+   * @returns executable path
    */
   public getContainerDataFolderPath(providedPath: string | null = null): string {
     if (providedPath) return path.join("/job/data", providedPath);
@@ -413,9 +427,8 @@ ${cmd}`;
 
   /**
    * Get Container result folder path
-   *
-   * @param {string} [providedPath=null] specified path
-   * @return {string} executable path
+   * @param [providedPath] specified path
+   * @returns executable path
    */
   public getContainerResultFolderPath(providedPath: string | null = null): string {
     if (providedPath) return path.join("/job/result", providedPath);
@@ -423,10 +436,9 @@ ${cmd}`;
   }
 
   /**
-   * @async
-   *  Get remote results folder content
    *
-   * @return {Promise<string[]>} file content
+   * Get remote results folder content
+   * @returns file content
    */
   public async getRemoteResultFolderContent(): Promise<string[]> {
     const findResult = await this.sshConnector.exec(
@@ -486,8 +498,7 @@ ${cmd}`;
 
   /**
    * Get job usage
-   *
-   * @return {Promise<Record<string, number | null>>} - usage dictionary
+   * @returns - usage dictionary
    */
   public async getUsage(): Promise<Record<string, number | null>> {
     const seffOutput: Record<string, number | null> = {
@@ -505,7 +516,7 @@ ${cmd}`;
       if (seffResult.stderr) return seffOutput;
 
       if (!seffResult.stdout) {
-        throw new Error();
+        return seffOutput;
       }
 
       const tmp = seffResult.stdout.split("\n");
@@ -600,22 +611,40 @@ ${cmd}`;
     return seffOutput;
   }
 
+  /**
+   * @returns whether or not this connection is via a community account
+   */
   public isCommunityAccount(): boolean {
     return this.sshConnector.isCommunityAccount;
   }
 
+  /**
+   *
+   * @param path remote executable folder path
+   */
   public setRemoteExecutableFolderPath(path: string) {
     this.remoteExecutableFolderPath = path;
   }
 
+  /**
+   *
+   * @param path remote data folder path
+   */
   public setRemoteDataFolderPath(path: string) {
     this.remoteDataFolderPath = path;
   }
 
+  /**
+   *
+   * @param path remote result folder path
+   */
   public setRemoteResultFolderPath(path: string) {
     this.remoteResultFolderPath = path;
   }
 
+  /**
+   * @returns the ssh connection this connector uses
+   */
   public getSSHConnection(): SSHConnector {
     return this.sshConnector;
   }

@@ -20,11 +20,13 @@ class CommunityContributionMaintainer extends BaseMaintainer {
     new ResultFolderContentManager();
   public executableManifest!: executableManifest;  // details about the job
 
+  /**
+   *
+   * @param job job to maintain
+   */
   public constructor(job: Job
   ) {
     super(job);
-
-    this.connector = this.getSingularityConnector();
   }
 
   protected onDefine = () => undefined;
@@ -32,11 +34,16 @@ class CommunityContributionMaintainer extends BaseMaintainer {
   /**
    * On maintainer initialization, set executableManifest, and give it to the connector. 
    * Update the event log to reflect the job being initialized or encountering a system error.
-   *
-   * @async
+   * 
    */
   protected async onInit() {
     try {
+      let connector = await this.getSingularityConnector();
+
+      if (!connector) {
+        throw new Error("unable to create connector");
+      }
+      
       let localExecutableFolder: GitFolder;
       if (
         typeof this.job.localExecutableFolder === "object" &&
@@ -64,8 +71,14 @@ class CommunityContributionMaintainer extends BaseMaintainer {
       
       // overwrite default singularity connector if cvmfs needs to be turned on
       if (this.executableManifest.connector === "SingCVMFSConnector"){
-        this.connector = this.getSingCVMFSConnector();
+        connector = (await this.getSingCVMFSConnector())!;
       }
+
+      if (!connector) {
+        throw new Error("unable to create connector for maintainer");
+      }
+
+      this.connector = connector;
 
       // upload executable folder
       if (!this.job.localExecutableFolder)
@@ -79,7 +92,8 @@ class CommunityContributionMaintainer extends BaseMaintainer {
           localExecutableFolder,
           this.job.hpc,
           this.job.userId,
-          this.connector.getSSHConnection()
+          this.connector.getSSHConnection(),
+          this.job.id
         )
       );
       
@@ -158,8 +172,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
 
   /**
    * If the job is complete, download the results to the remote result file path, and if it encounters an error, update the event log to reflect this.
-   *
-   * @async
+   * 
    */
   protected async onMaintain() {
     try {
@@ -169,7 +182,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
       // failing condition
       if (status === "ERROR" || status === "F" || status === "NF") {
         this.emitEvent(
-          "JOB_FAILED",
+          "J`OB_FAILED",
           "job [" + this.id + "] failed with status " + status
         );
         return;
