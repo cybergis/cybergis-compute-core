@@ -12,6 +12,21 @@ import { validator, requestErrors, schemas, jupyterHub } from "./ServerUtil";
 
 const authRouter = express.Router();
 
+/**
+ * @openapi
+ * /auth/request/addUser:
+ *  post:
+ *      description: Adds a request for a user to be added to a specific HPC, specified in the body. 
+ *      responses:
+ *          200:
+ *              description: Request was successfully made. 
+ *          400: 
+ *              description: Approval rqeuest already made and pending
+ *          401:
+ *              description: Requested user needs to authorize using access credentials before request can be made
+ *          402:
+ *              description: Invalid HPC requested/malformed request body
+ */
 authRouter.post("/request/addUser", async function (req, res) {
   const errors = requestErrors(
     validator.validate(req.body, schemas.modifyUser)
@@ -35,7 +50,7 @@ authRouter.post("/request/addUser", async function (req, res) {
   });
 
   if (info === null) {
-    res.status(400).json({ error: "user is not recorded in the user info database yet, need to authorize using access credentials" });
+    res.status(401).json({ error: "user is not recorded in the user info database yet, need to authorize using access credentials" });
     return;
   }
 
@@ -68,6 +83,19 @@ authRouter.post("/request/addUser", async function (req, res) {
   });
 });
 
+/**
+ * @openapi
+ * /auth/request/denyUser:
+ *  post:
+ *      description: Adds a request for a user to be denied from a specific HPC, specified in the body. 
+ *      responses:
+ *          200:
+ *              description: Request was successfully made. 
+ *          400: 
+ *              description: Denial rqeuest already made and pending
+ *          402:
+ *              description: Invalid HPC requested/malformed request body
+ */
 authRouter.post("/request/denyUser", async function (req, res) {
   const errors = requestErrors(
     validator.validate(req.body, schemas.modifyUser)
@@ -114,6 +142,19 @@ authRouter.post("/request/denyUser", async function (req, res) {
   });
 });
 
+/**
+ * @openapi
+ * /auth/approve:
+ *  get:
+ *      description: Approve a allow/deny request for a particular user, using the request id. 
+ *      responses:
+ *          200:
+ *              description: Request is approved. 
+ *          400: 
+ *              description: No request id provided in params
+ *          401:
+ *              description: No matching request
+ */
 authRouter.get("/approve", async (req, res) => {
   const hash = req.query.approvalId;
 
@@ -131,7 +172,7 @@ authRouter.get("/approve", async (req, res) => {
   });
 
   if (existing === null || existing.approvedAt != null) {
-    res.status(400).json({ error: "non-existent or invalid approval id parameter" });
+    res.status(401).json({ error: "non-existent or invalid approval id parameter" });
     return;
   }
 
@@ -176,6 +217,19 @@ authRouter.get("/approve", async (req, res) => {
   });
 });
 
+/**
+ * @openapi
+ * /auth/cilogon/callback:
+ *  get:
+ *      description: Callback for cilogon oauth pipeline that a user is sent to after authentication. Used to populate the information for a user in the backend database.
+ *      responses:
+ *          200:
+ *              description: Successfully authenticated a user in cilogon. 
+ *          400: 
+ *              description: Something went wrong in the cilogon request---tokens were wrong, not an ACCESS account, unable to get username. 
+ *          401:
+ *              description: User already registered. 
+ */
 authRouter.get("/cilogon/callback", async (req, res) => {
   const code = req.query.code;
   const state = req.query.state;
@@ -204,7 +258,7 @@ authRouter.get("/cilogon/callback", async (req, res) => {
   });
 
   if (existing !== null) {
-    res.status(400).json({ error: "user already registered" });
+    res.status(401).json({ error: "user already registered" });
     return;
   }
 
@@ -273,7 +327,6 @@ authRouter.get("/cilogon/callback", async (req, res) => {
     
     return;
   }
-  
 
   if (userInfo.idp_name === undefined 
     || userInfo.idp_name !== "ACCESS" 
