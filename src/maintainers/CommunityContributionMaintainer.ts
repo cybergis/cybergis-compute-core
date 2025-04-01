@@ -92,7 +92,8 @@ class CommunityContributionMaintainer extends BaseMaintainer {
           localExecutableFolder,
           this.job.hpc,
           this.job.userId,
-          this.connector.getSSHConnection()
+          this.connector.getSSHConnection(),
+          this.job.id
         )
       );
       
