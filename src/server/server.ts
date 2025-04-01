@@ -5,8 +5,9 @@ import morgan from "morgan";
 import swaggerUi from "swagger-ui-express";
 
 
+import { existsSync, mkdirSync } from "fs";
 import { readFile } from "fs/promises";
-import { join } from "path";
+import path, { join } from "path";
 
 import {
   config,
@@ -47,22 +48,13 @@ async function initHelloWorldGit() {
   }
 }
 
-// establish database connection
-try {
-  await dataSource.initialize();
-  await initHelloWorldGit();
-  console.log("Data Source has been initialized!");
-} catch (err) {
-  console.error("Error during Data Source initialization:", err);
-  throw err;
-}
-
 
 // handle parsing arguments
 // app.use(bodyParser.json());  // possibly unneeded now with newer versions of express
 app.use(express.json());
 app.use(morgan("combined"));
 app.use(express.urlencoded({ extended: true }));
+app.use(fileUpload());
 // app.use(bodyParser.urlencoded({ extended: true }));
 
 // uploading files
@@ -87,8 +79,16 @@ try {
   const file = await readFile(join(rootPath, "production/swagger.json"), "utf8");
   const swaggerDocument = JSON.parse(file) as Record<string, unknown>;
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+  await dataSource.initialize();
+  await initHelloWorldGit();
+  console.log("Data Source has been initialized!");
+
+  if (!existsSync(path.join(rootPath, "uploads"))) {
+    mkdirSync(path.join(rootPath, "uploads"));
+  }
 } catch (err) {
-  console.error("error setting up swagger docs: ", err);
+  console.error("error setting up initializing server: ", err);
 }
 
 

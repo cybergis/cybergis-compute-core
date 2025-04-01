@@ -1,18 +1,20 @@
 import express from "express";
+import { UploadedFile } from "express-fileupload";
+import { rootPath } from "get-root-path";
 
-import * as fs from "fs";
 import * as path from "path";
 
 import {
   hpcConfigMap,
 } from "../../configs/config";
+import { SSHConnector } from "../connectors";
 import {
   UpdateFolderBodySchema,
   GlobusFolder,
   InitGlobusDownloadBodySchema,
-  InitBrowserDownloadBodySchema
+  InitBrowserDownloadBodySchema,
+  ConnectorError,
 } from "../definitions";
-import { download } from "../helpers/DownloadUploadUtil";
 import { GlobusClient } from "../helpers/GlobusTransferUtil";
 import * as Helper from "../helpers/Helper";
 import { Folder, Job } from "../models";
@@ -21,6 +23,8 @@ import dataSource from "../utils/DB";
 import { authMiddleWare, prepareDataForDB, globusTaskList, validateZodSchema } from "./ServerUtil";
 
 const folderRouter = express.Router();
+
+const localFileFolder = path.join(rootPath, "uplaods");
 
 
 /**
@@ -227,7 +231,7 @@ folderRouter.post(
     }
 
     // check if there is an existing globus job from the redis DB -- if so, error out
-    const existingTransferJob: string | null = (
+    const existingTransferJob = (
       await globusTaskList.get(folderId)
     );
 
@@ -339,30 +343,30 @@ folderRouter.get(
 );
 
 /**
-   * @openapi
-   * /folder/:folderId/download/browser:
-   *  post:
-   *      description: Get sends a request to initiate a download of the specified folder (Authentication REQUIRED)
-   *      responses:
-   *          200:
-   *              description: Download of the specific folder is successful and file returned
-   *          402:
-   *              description: Returns "invalid input" and a list of errors with the format of the req body or "invalid token" if a valid jupyter token authentication is not provided
-   *          403:
-   *              description: Returns error when the folder ID cannot be found, when the hpc config for globus cannot be found, when the globus download fails, or when a download is already running for the folder
-   */
+ * @openapi
+ * /folder/:folderId/download/browser:
+ *  post:
+ *      description: Get sends a request to initiate a download of the specified folder (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Download of the specific folder is successful and file returned
+ *          402:
+ *              description: Returns "invalid input" and a list of errors with the format of the req body or "invalid token" if a valid jupyter token authentication is not provided
+ *          403:
+ *              description: Returns error when the folder ID cannot be found, when the hpc config for globus cannot be found, when the globus download fails, or when a download is already running for the folder
+ */
 folderRouter.get(
   "/:folderId/download/browser",
   authMiddleWare,
   async function (req, res) {
-    const validation = validateZodSchema(InitBrowserDownloadBodySchema, req.body);
+    const validation = validateZodSchema(InitBrowserDownloadBodySchema, req.params);
   
     if (!validation.success) {
       res.status(402).json({ error: "invalid input", messages: validation.errors });
       return;
     }
   
-    const body = validation.data;
+    const params = validation.data;
 
     if (!res.locals.username) {
       res.status(402).json({ error: "invalid token" });
@@ -370,13 +374,13 @@ folderRouter.get(
     }
 
     // get jobId from body
-    const jobId = body.jobId;
+    const jobId = params.jobId;
 
     // get folder; if not found, error out
-    const folderId = req.params.folderId;
+    const folderId = params.folderId;
     const folder = await (dataSource
       .getRepository(Folder)
-      .findOneByOrFail({
+      .findOneBy({
         id: folderId
       })
     );
@@ -384,11 +388,6 @@ folderRouter.get(
     if (!folder) {
       res.status(403).json({ error: `cannot find folder with id ${folderId}` });
       return;
-    }
-
-    let downloadPath = path.join(__dirname, "uploads");
-    if (!fs.existsSync(downloadPath)) {
-      fs.mkdirSync(downloadPath);
     }
 
     const job = await dataSource.getRepository(Job).findOne({
@@ -408,39 +407,33 @@ folderRouter.get(
       return;
     }
 
-    let hpcPath = null;
-    let hpc = null;
+    let hpcPath, hpc;
 
     try {
-      if (job.remoteExecutableFolder!.id === folderId) {
-        hpcPath = job.remoteExecutableFolder!.hpcPath;
-        hpc = job.remoteExecutableFolder!.hpc;
+      if (job.remoteExecutableFolder?.id === folderId) {
+        hpcPath = job.remoteExecutableFolder.hpcPath;
+        hpc = job.remoteExecutableFolder.hpc;
+      } else if (job.remoteResultFolder?.id === folderId) {
+        hpcPath = job.remoteResultFolder.hpcPath;
+        hpc = job.remoteResultFolder.hpc;
       } else {
-        hpcPath = job.remoteResultFolder!.hpcPath;
-        hpc = job.remoteResultFolder!.hpc;
+        throw Error("folder id does not correspond with either the result of executable folder of the job");
       }
     } catch (err) {
-      res.status(403).json({ error: `failed to get hpc path or hpc with error: ${Helper.assertError(err).toString()}` });
-      return;
-    }
-
-    if (hpcPath == null) {
-      res.status(403).json({ error: `cannot find hpc path with folderId ${folderId}` });
-      return;
-    }
-
-    if (hpc == null) {
-      res.status(403).json({ error: `cannot find hpc with folderId ${folderId}` });
-      return;
+      return res.status(403).json({ error: `failed to get hpc path or hpc with error: ${Helper.assertError(err).toString()}` });
     }
 
     try {
       // res.download(path.join(__dirname, 'FolderRoutes.js'));
-      downloadPath = path.join(downloadPath, folderId + ".zip");
-      await download(hpcPath, downloadPath, hpc);
-      const file = downloadPath;
-      res.download(file);
-
+      const downloadPath = path.join(localFileFolder, folderId + ".zip");
+      const connector = await SSHConnector.build(hpc);
+      
+      if (!connector) {
+        throw new ConnectorError("unable to connect to HPC");
+      }
+      
+      await connector.download(hpcPath, downloadPath, true, false);
+      res.download(downloadPath);
     } catch (err) {
       res
         .status(403)
@@ -449,6 +442,32 @@ folderRouter.get(
         });
       return;
     }
+  }
+);
+
+folderRouter.post(
+  "/:folderId/upload/browser",
+  authMiddleWare,
+  async function (req, res) {
+    const validation = validateZodSchema(InitBrowserUploadBodySchema, req.body);
+  
+    if (!validation.success) {
+      res.status(402).json({ error: "invalid input", messages: validation.errors });
+      return;
+    }
+  
+    const body = validation.data;
+    if (!req.files || Object.keys(req.files).length === 0) {
+      return res.status(400).json({ error: "no files were uploaded" }); 
+    }
+
+    const uploadedFile = req.files.file;
+
+    if (uploadedFile instanceof UploadedFile) {
+
+    }
+
+
   }
 );
 
