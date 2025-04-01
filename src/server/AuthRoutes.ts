@@ -23,7 +23,7 @@ const authRouter = express.Router();
  *          400: 
  *              description: Approval rqeuest already made and pending
  *          401:
- *              description: Requested user needs to authorize using access credentials before request can be made
+ *              description: Requested user needs to link their ACCESS account before request can be made
  *          402:
  *              description: Invalid HPC requested/malformed request body
  */
@@ -221,10 +221,10 @@ authRouter.get("/approve", async (req, res) => {
  * @openapi
  * /auth/cilogon/callback:
  *  get:
- *      description: Callback for cilogon oauth pipeline that a user is sent to after authentication. Used to populate the information for a user in the backend database.
+ *      description: Callback for cilogon oauth pipeline that a user is sent to after signing into their ACCESS account. Used to populate the information for a user in the backend database.
  *      responses:
  *          200:
- *              description: Successfully authenticated a user in cilogon. 
+ *              description: Successfully linkedin a user's identity. 
  *          400: 
  *              description: Something went wrong in the cilogon request---tokens were wrong, not an ACCESS account, unable to get username. 
  *          401:
@@ -347,7 +347,7 @@ authRouter.get("/cilogon/callback", async (req, res) => {
     nbf: userInfo.nbf
   });
 
-  res.status(200).json({ message: "successfully authenticated, you can return to cybergisx" });
+  res.status(200).json({ message: "successfully linked your identity, you can return to cybergisx" });
 });
 
 export default authRouter;
