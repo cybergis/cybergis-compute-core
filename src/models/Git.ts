@@ -8,9 +8,10 @@ import {
   // OneToOne,
 } from "typeorm";
 
+/**
+ * Calss represnting a git repository. 
+ */
 @Entity({ name: "gits" })
-
-/** Class representing a git action. */
 export class Git {
   @PrimaryColumn()
     id!: string;
@@ -67,9 +68,6 @@ export class Git {
 
   /**
    * Set the createdAt time to the current time.
-   *
-   * @async
-   * @return {Date} date - Date this job was created.
    */
   @BeforeInsert()
   setCreatedAt() {
@@ -78,9 +76,7 @@ export class Git {
 
   /**
    * Set the updatedAt time to the current time.
-   *
-   * @async
-   * @return {Date} date - Date this job was last updated.
+   * @returns date - Date this job was last updated.
    */
   @BeforeUpdate()
   setUpdatedAt() {

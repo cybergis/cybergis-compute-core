@@ -18,12 +18,11 @@ interface decodedToken {
 const basePath = "/hub/api";
 
 /**
-   * Returns the username for a given jupyterHub authorization token.
-   *
-   * @param {string} token the token for authorization to the jupterHub host
-   * @throws {Error} jupyterhubHost must be in whitelist
-   * @return {Promise<string | null>} username
-   */
+ * Returns the username for a given jupyterHub authorization token.
+ * @param token the token for authorization to the jupterHub host
+ * @throws {Error} jupyterhubHost must be in whitelist
+ * @returns username
+ */
 export async function getUsername(token: string): Promise<string | null> {
   const t = decodeToken(token);
   const protocols = ["https", "http"];
@@ -66,30 +65,28 @@ export async function getUsername(token: string): Promise<string | null> {
 }
 
 /**
-   * Gets the host associated with a token. Unused. 
-   *
-   * @param {string} token
-   * @return {string} 
-   */
+ * Gets the host associated with a token. Unused. 
+ * @param token token to get the host for
+ * @throws {RangeError} error if the token is unable to be decoded
+ * @returns the token
+ */
 export function getHost(token: string): string {
   const t = decodeToken(token);
   return t.host;
 }
 
 /**
-   * Decodes an authorization token.
-   *
-   * @private
-   * @param {string} target authorization token
-   * @throws {Error} thrown if jupyterHub token incorrectly formatted -- unable to parse correctly
-   * @return {decodedToken} info relating to the host associated with the token
-   */
+ * Decodes an authorization token.
+ * @param target authorization token
+ * @throws {RangeError} thrown if jupyterHub token incorrectly formatted -- unable to parse correctly
+ * @returns info relating to the host associated with the token
+ */
 function decodeToken(target: string): decodedToken {
   const t = Helper.btoa(target); // base 64 to binary
   const i = t.split("@");
 
   if (i.length !== 2) {
-    throw new Error("JupyterHub Token is incorrectly formatted ");
+    throw new RangeError("JupyterHub Token is incorrectly formatted ");
   }
     
   return {
