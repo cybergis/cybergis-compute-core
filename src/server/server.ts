@@ -24,9 +24,6 @@ import userRouter from "./UserRoutes";
 const app = express();
 
 // initializes a hello world repository in the DB
-/**
- *
- */
 async function initHelloWorldGit() {
   const helloWorldGit = await dataSource
     .getRepository(Git)
@@ -100,6 +97,7 @@ try {
  *      responses:
  *          200:
  *              descrption: Successfuly returns "hello world"
+ *
  */
 app.get("/", (req, res) => {
   res.json({ message: "hello world" });
@@ -107,11 +105,11 @@ app.get("/", (req, res) => {
 
 
 /**
- * @openapi
- * /clean:
- *  put:
- *      description: Not yet implemented
- */
+   * @openapi
+   * /clean:
+   *  put:
+   *      description: Not yet implemented
+   */
 app.put("/clean", async function (_req, _res) { }); // eslint-disable-line @typescript-eslint/no-empty-function
 
 app.use("/folder", folderRouter);

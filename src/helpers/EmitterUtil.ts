@@ -8,9 +8,10 @@ import dataSource from "../utils/DB";
 
 /**
  * This function processes a event of a given type for a given job. A message is also associated with the event.
- * @param job the job the event pertains to
- * @param type the type of the event -- JOB_INIT | JOB_ENDED | JOB_FAILED
- * @param message message associated with the event
+ *
+ * @param {Job} job the job the event pertains to
+ * @param {string} type the type of the event -- JOB_INIT | JOB_ENDED | JOB_FAILED
+ * @param {string} message message associated with the event
  */
 export async function registerEvents(job: Job, type: string, message: string) {
   if (config.is_testing) console.log(`${job.id}: [event]`, type, message);
@@ -48,6 +49,7 @@ export async function registerEvents(job: Job, type: string, message: string) {
 
 /**
  * Handles any logs that are made during execution. 
+ * 
  * @param job job the log pertains to
  * @param message content of the log
  */
@@ -69,9 +71,10 @@ export async function registerLogs(job: Job, message: string) {
 
 /**
  * Gets all events associated with a given job ordered in reverse chronological order of creation. 
- * @param jobId id of job to request
- * @returns list of events
- */
+ * 
+ * @param {string} jobId id of job to request
+ * @returns {Promise{Event[]}} list of events
+  */
 export async function getEvents(jobId: string): Promise<Event[]> {
   return dataSource
     .createQueryBuilder(Event, "event")
@@ -82,8 +85,9 @@ export async function getEvents(jobId: string): Promise<Event[]> {
 
 /**
  * Gets all logs associated with a given job in reverse chronological order of creation. 
- * @param jobId id of job to request
- * @returns list of logs
+ *
+ * @param {string} jobId id of job to request
+ * @return {Promise<Log[]>} list of logs
  */
 export async function getLogs(jobId: string): Promise<Log[]> {
   return dataSource

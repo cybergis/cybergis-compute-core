@@ -7,8 +7,9 @@ import dataSource from "../utils/DB";
 
 /**
  * Returns the runtime of a job given its jobId.
- * @param jobId id of the job
- * @returns runtime of job (initialization time - finish time)
+ *
+ * @param {string} jobId id of the job
+ * @return {*} runtime of job (initialization time - finish time)
  */
 export async function  getRuntimeByJobId(jobId: string): Promise<number | undefined> {
   const statistic: number | undefined = await dataSource
@@ -28,7 +29,8 @@ export async function  getRuntimeByJobId(jobId: string): Promise<number | undefi
 
 /**
  * Requests and calculates statistics relating to total runtime--both absolute and by HPC.
- * @returns dictionary of results, including total and statistics by HPC
+ *
+ * @return {{ [key: string]: number } | null} dictionary of results, including total and statistics by HPC
  */
 export async function  getRuntimeTotal(): Promise<Record<string, number> | null> {
     type totalStatistics = null | { STATISTIC: string } | undefined 

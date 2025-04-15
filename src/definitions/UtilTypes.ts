@@ -15,7 +15,10 @@ export interface options {
 
 export type SSHConfig = Config;
 
-export type SSH = NodeSSH;
+export interface SSH {
+  connection: NodeSSH;
+  config: SSHConfig;
+}
 
 export interface jobMaintainerUpdatable {
   param?: Record<string, string>;
