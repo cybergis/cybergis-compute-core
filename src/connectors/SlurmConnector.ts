@@ -168,7 +168,7 @@ ${cmd}`;
     await this.sshConnector.mkdir(path.join(this.remoteResultFolderPath, "slurm_log"));
     await this.sshConnector.createFile(
       this.template,
-      path.join(this.remoteResultFolderPath, "job.sbatch"),
+      path.join(this.remoteExecutableFolderPath, "job.sbatch"),
       {},
       true
     );
