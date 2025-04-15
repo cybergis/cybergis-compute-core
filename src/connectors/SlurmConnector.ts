@@ -80,6 +80,18 @@ export class SlurmConnector {
   }
 
   /**
+   * Creates a string to import the this.modules modules.
+   * @returns the module load string
+   */
+  private getModuleLoadString() {
+    let modules = "\n";
+    for (const module of this.modules) {
+      modules += `module load ${module}\n`;
+    }
+    return modules;
+  }
+
+  /**
    * Creates slurm string with specified configuation. Saves it to this.template.
    * @param cmd - command that needs to be executed
    * @param config - slurm configuration
@@ -104,10 +116,9 @@ export class SlurmConnector {
       config.partition = hpc.partition;
     }
 
-    let modules = "";
     if (config.modules) {
-      for (const module of config.modules)
-        modules += `module load ${module}\n`;
+      // TODO: make this split more robust
+      this.registerModules(config.modules.split(/\s/));
     }
 
     Helper.nullGuard(this.remoteResultFolderPath);
@@ -143,7 +154,7 @@ module purge
 ${this.maintainer.hpcSettings.init_sbatch_script
         ? this.maintainer.hpcSettings.init_sbatch_script.join("\n")
         : ""}
-${modules}
+${this.getModuleLoadString()}
 ${cmd}`;
   }
 
@@ -157,7 +168,7 @@ ${cmd}`;
     await this.sshConnector.mkdir(path.join(this.remoteResultFolderPath, "slurm_log"));
     await this.sshConnector.createFile(
       this.template,
-      path.join(this.remoteResultFolderPath, "job.sbatch"),
+      path.join(this.remoteExecutableFolderPath, "job.sbatch"),
       {},
       true
     );

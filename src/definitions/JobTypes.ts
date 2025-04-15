@@ -13,6 +13,7 @@ export const slurm_configs = [
   "gpus_per_socket",
   "gpus_per_task",
   "partition",
+  "modules"
 ];
 export const slurm_integer_configs = [
   "num_of_node",
@@ -42,7 +43,7 @@ export const slurm_integer_none_unit_config = [
   "gpus_per_socket",
   "gpus_per_task",
 ];
-export const slurm_string_option_configs = ["partition"];
+export const slurm_string_option_configs = ["modules", "partition"];
 
 export interface integerRule {
   type?: "integer";
@@ -77,6 +78,7 @@ export interface slurmInputRules {
   gpus_per_socket?: integerRule;
   gpus_per_task?: integerRule;
   partition?: stringOptionRule;
+  modules?: stringOptionRule;
 }
 
 export interface rawAccessToken {
@@ -111,7 +113,7 @@ export interface slurm {
   allocation?: string;
   mail_type?: string[];
   mail_user?: string[];
-  modules?: string[];
+  modules?: string;
 }
 
 export interface executableManifest {
