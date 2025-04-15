@@ -446,7 +446,7 @@ folderRouter.get(
 );
 
 folderRouter.post(
-  "//upload/browser",
+  "/upload/browser",
   authMiddleWare,
   async function (req, res) {
     if (!req.files || Object.keys(req.files).length === 0) {
@@ -458,6 +458,8 @@ folderRouter.post(
     if (Array.isArray(uploadedFile)) {
       return res.status(400).json({ error: "only accept uploads of single zip files" });
     }
+
+    console.log("asdf");
 
     const validation = validateZodSchema(InitBrowserUploadBodySchema, req.body);
   
@@ -476,8 +478,12 @@ folderRouter.post(
       return res.status(400).json({ error: "only accept zip files" });
     }
 
+    console.log("asdf2");
+
     try {
       await uploadedFile.mv(path.join(localFileFolder, `${body.fileName}.zip`));
+
+      console.log("asdf3");
     } catch (_) {
       return res.status(500).json({ error: "server error during file upload" });
     }
