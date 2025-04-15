@@ -137,6 +137,10 @@ class CommunityContributionMaintainer extends BaseMaintainer {
         .getRepository(Folder)
         .findOneBy({ id: uploader.id }))!;
 
+      console.log(
+        this.job.remoteDataFolder, this.job.remoteExecutableFolder, this.job.remoteResultFolder
+      );
+
       // update job
       await this.updateJob({
         remoteDataFolder: this.job.remoteDataFolder,
