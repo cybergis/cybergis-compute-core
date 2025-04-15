@@ -31,15 +31,63 @@ export const InitBrowserDownloadBodySchema = z.object({
   jobId: z.string()
 });
 
+export const SlurmSchema = z.object({
+  time: z.string().optional(),
+  num_of_node: z.number().optional(),
+  num_of_task: z.number().optional(),
+  cpu_per_task: z.number().optional(),
+  memory: z.string().optional(),
+  memory_per_cpu: z.string().optional(),
+  memory_per_gpu: z.string().optional(),
+  gpus: z.number().optional(),
+  gpus_per_node: z.union([z.number(), z.string()]).optional(),
+  gpus_per_socket: z.union([z.number(), z.string()]).optional(),
+  gpus_per_task: z.union([z.number(), z.string()]).optional(),
+  partition: z.string().optional(),
+  allocation: z.string().optional(),
+  mail_type: z.array(z.string()).optional(),
+  mail_user: z.array(z.string()).optional(),
+  modules: z.string().optional()
+});
+
+const BaseFolderSchema = z.object({
+});
+
+// GlobusFolder
+const GlobusFolderSchema = BaseFolderSchema.extend({
+  type: z.literal("globus"),
+  endpoint: z.string(),
+  path: z.string()
+});
+
+// GitFolder
+const GitFolderSchema = BaseFolderSchema.extend({
+  type: z.literal("git"),
+  gitId: z.string()
+});
+
+// LocalFolder
+const LocalFolderSchema = BaseFolderSchema.extend({
+  type: z.literal("local"),
+  localPath: z.string()
+});
+
+// Union: NeedUploadFolder
+export const NeedUploadFolderSchema = z.discriminatedUnion("type", [
+  GlobusFolderSchema,
+  GitFolderSchema,
+  LocalFolderSchema
+]);
+
 export const UpdateJobBodySchema = z.object({
   jupyterhubApiToken: z.string(),
-  param: z.object({}).optional(),
-  env: z.object({}).optional(),
-  slurm: z.object({}).optional(),
-  localExecutableFolder: z.object({}).optional(),
-  localDataFolder: z.object({}).optional(),
-  remoteDataFolder: z.object({}).optional(),
-  remoteExecutableFolder: z.object({}).optional()
+  param: z.record(z.string()).optional(),
+  env: z.record(z.string()).optional(),
+  slurm: SlurmSchema.optional(),
+  localExecutableFolder: NeedUploadFolderSchema.optional(),
+  localDataFolder: NeedUploadFolderSchema.optional(),
+  remoteDataFolder: z.string().optional(),
+  remoteExecutableFolder: z.string().optional()
 });
 
 export interface authReqBody {
