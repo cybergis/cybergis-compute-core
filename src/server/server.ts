@@ -51,9 +51,9 @@ async function initHelloWorldGit() {
 
 // handle parsing arguments
 // app.use(bodyParser.json());  // possibly unneeded now with newer versions of express
-app.use(express.json());
-app.use(morgan("combined"));
-app.use(express.urlencoded({ extended: true }));
+// app.use(express.json());
+// app.use(morgan("combined"));
+// app.use(express.urlencoded({ extended: true }));
 // app.use(bodyParser.urlencoded({ extended: true }));
 
 // uploading files
