@@ -1,6 +1,5 @@
 import express from "express";
 import { rootPath } from "get-root-path";
-import { IncomingForm } from "formidable";
 
 import * as path from "path";
 
@@ -447,9 +446,19 @@ folderRouter.get(
 );
 
 folderRouter.post(
-  "/upload/browser",
+  "//upload/browser",
   authMiddleWare,
   async function (req, res) {
+    if (!req.files || Object.keys(req.files).length === 0) {
+      return res.status(400).json({ error: "no files were uploaded" }); 
+    }
+
+    const uploadedFile = req.files.file;
+
+    if (Array.isArray(uploadedFile)) {
+      return res.status(400).json({ error: "only accept uploads of single zip files" });
+    }
+
     const validation = validateZodSchema(InitBrowserUploadBodySchema, req.body);
   
     if (!validation.success) {
@@ -459,18 +468,22 @@ folderRouter.post(
   
     const body = validation.data;
 
-    const form = new IncomingForm({
-      uploadDir: localFileFolder,
-      keepExtensions: true
-    });
+    if (
+      (uploadedFile.mimetype !== "application/zip" && uploadedFile.mimetype !== "application/x-zip-compressed")
+      || !uploadedFile.name.toLowerCase().endsWith(".zip")
+      || (uploadedFile.data.toString("hex", 0, 4) !== "504b0304")
+    ) {
+      return res.status(400).json({ error: "only accept zip files" });
+    }
 
-    form.parse(req, (err, fields, files) => {
-      if (err) {
-        return res.status(500).json({error: "file upload failed"})
-      }
+    try {
+      await uploadedFile.mv(path.join(localFileFolder, `${body.fileName}.zip`));
+    } catch (_) {
+      return res.status(500).json({ error: "server error during file upload" });
+    }
+    
 
-      return res.status(200);
-    })    
+    return res.status(200);
   }
 );
 
