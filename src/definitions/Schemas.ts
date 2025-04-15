@@ -81,7 +81,7 @@ export const NeedUploadFolderSchema = z.discriminatedUnion("type", [
 
 export const UpdateJobBodySchema = z.object({
   jupyterhubApiToken: z.string(),
-  param: z.record(z.string()).optional(),
+  param: z.record(z.unknown()).optional(),
   env: z.record(z.string()).optional(),
   slurm: SlurmSchema.optional(),
   localExecutableFolder: NeedUploadFolderSchema.optional(),

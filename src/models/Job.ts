@@ -97,7 +97,7 @@ export class Job {
         typeof i === "string" ? JSON.parse(i) as Record<string, string> : {},
     },
   })
-    param?: Record<string, string>;
+    param?: Record<string, unknown>;
 
   @Column({
     type: "text",
