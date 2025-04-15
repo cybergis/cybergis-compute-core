@@ -12,13 +12,11 @@ const jobLogURL =
     "https://xsede-xdcdb-api.xsede.org/gateway/v2/job_attributes";
 
 /**
-   * @static
-   * Register user job to XSEDE log
-   *
-   * @param {string} slurmId - slurm workload manager id
-   * @param {hpcConfig} hpc - hpcConfiguration
-   * @param {Job} job - job object
-   */
+ * Register user job to XSEDE log
+ * @param slurmId - slurm workload manager id
+ * @param hpc - hpcConfiguration
+ * @param job - job object
+ */
 export async function jobLog(slurmId: string, hpc: hpcConfig, job: Job) {
   if (!hpc.xsede_job_log_credential) return;
 
@@ -40,12 +38,10 @@ export async function jobLog(slurmId: string, hpc: hpcConfig, job: Job) {
 }
 
 /**
-   * @static
-   * Convert date to string fomat
-   *
-   * @paramP{Date} date - date format
-   * @return{string} - date in string format
-   */
+ * Convert date to string fomat
+ * @param date date to format
+ * @returns date in string format
+ */
 function formatDate(date: Date): string {
   // trust accessToken for an hour
   const y = date.getUTCFullYear();
@@ -62,14 +58,14 @@ function formatDate(date: Date): string {
   return `${y}-${mStr}-${dStr} ${hStr}:${minStr} UTC`;
 }
 
-/**
-   * @static
-   * Time difference in seconds
-   *
-   * @param{float} a - time input 1
-   * @param{float} b - time input 2
-   * @return{float} - time difference in seconds
-   */
-function diffInSeconds(a: number, b: number) { //eslint-disable-line @typescript-eslint/no-unused-vars
-  return Math.abs(a - b) / 1000;
-}
+// /**
+//  * Time difference in seconds
+//  * @param a
+//  * @param b
+//  * @param{float} a - time input 1
+//  * @param{float} b - time input 2
+//  * @return{float} - time difference in seconds
+//  */
+// function diffInSeconds(a: number, b: number) { //eslint-disable-line @typescript-eslint/no-unused-vars
+//   return Math.abs(a - b) / 1000;
+// }
