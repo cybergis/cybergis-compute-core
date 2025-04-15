@@ -61,7 +61,7 @@ export class BaseFolderUploader {
    */
   async register() {
     const folder = new Folder();
-    folder.id = Helper.generateId();
+    folder.id = this.id;
     folder.hpcPath = this.hpcPath;
     if (this.hpcConfig.globus) {
       folder.globusPath = path.join(this.hpcConfig.globus.root_path, this.id) ;
