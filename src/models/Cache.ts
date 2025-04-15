@@ -53,6 +53,8 @@ export class Cache {
   
     /**
      * Set the createdAt time to the current time.
+     *
+     * @return {Date} date - Date this job was created.
      */
     @BeforeInsert()
     setCreatedUpdated() {
@@ -60,9 +62,6 @@ export class Cache {
       this.updatedAt = new Date();
     }
 
-    /**
-     *
-     */
     update() {
       this.createdAt = new Date();
     }

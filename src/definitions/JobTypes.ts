@@ -13,7 +13,7 @@ export const slurm_configs = [
   "gpus_per_socket",
   "gpus_per_task",
   "partition",
-  "modules"
+  "modules",
 ];
 export const slurm_integer_configs = [
   "num_of_node",

@@ -5,8 +5,9 @@ import { Job } from "../models";
 
 /**
  * Converts base64 string to binary form.
- * @param target b64 string to be encoded
- * @returns equivalent binary string
+ *
+ * @param {string} target b64 string to be encoded
+ * @return {string} equivalent binary string
  */
 export function btoa(target: string): string {
   return Buffer.from(target, "base64").toString("binary");
@@ -14,8 +15,9 @@ export function btoa(target: string): string {
 
 /**
  * Converts binary string to base64.
- * @param target binary string to be encoded
- * @returns b64 encoding of target
+ * 
+ * @param {string} target binary string to be encoded
+ * @returns {string} b64 encoding of target
  */
 export function atob(target: string): string {
   return Buffer.from(target).toString("base64");
@@ -23,7 +25,8 @@ export function atob(target: string): string {
 
 /**
  * Generates a random id composed of a number based on time and a random string of length 5. 
- * @returns random 15 digit ID (number of unix digits + random string)
+ * 
+ * @returns {string} random 15 digit ID (number of unix digits + random string)
  */
 export function generateId(): string {
   return Math.round(new Date().getTime() / 1000) + randomStr(5);
@@ -31,9 +34,10 @@ export function generateId(): string {
 
 /**
  * Converts a job to a dictionary object, with logic for excluding certain fields. 
- * @param job attributes of a job (can be recursively called)
- * @param [exclude] list of attributes to exclude
- * @returns job object including all attributes in the job list and excluding fields specified in exclude
+ *
+ * @param {(Job | Job[])} job attributes of a job (can be recursively called)
+ * @param {Array} [exclude=[]] list of attributes to exclude
+ * @return {(object | object[])} job object including all attributes in the job list and excluding fields specified in exclude
  */
 export function job2object(
   job: Job | Job[],
@@ -67,9 +71,10 @@ export function job2object(
 
 /**
  *Generates a string of random length.
- * @param length desired length of the return string
- * @returns random string of size length
- */
+  *
+  * @param {number} length desired length of the return string
+  * @return {string} random string of size length
+  */
 export function randomStr(length: number): string {
   let result = "";
   const characters =
@@ -83,8 +88,9 @@ export function randomStr(length: number): string {
 
 /**
  * Checks if an object is empty. Not used.
- * @param {object} obj object to check
- * @returns {boolean} whether or not that object is empty
+ *
+ * @param {Object} obj object to check
+ * @return {boolean} whether or not that object is empty
  */
 // isObjectEmpty(obj: object): boolean {
 //   return Object.keys(obj).length === 0;
@@ -92,8 +98,9 @@ export function randomStr(length: number): string {
 
 /**
  * Checks if jupyter host is in the config.
- * @param host the exact JupyterHub host
- * @returns whether or not the Jupyter can submit
+ *
+ * @param {string} host the exact JupyterHub host
+ * @return {boolean} whether or not the Jupyter can submit
  */
 export function isAllowlisted(host: string): boolean {
   const jupyterGlobus = jupyterGlobusMap[host];
@@ -107,10 +114,11 @@ export function isAllowlisted(host: string): boolean {
 
 /**
  *Checks if a user is authenticated for an HPC. 
- * @param user the user to check for
- * @param hpc the HPC to check for
- * @returns whether the user is authenticated
- */
+  *
+  * @param {string} user the user to check for
+  * @param {string} hpc the HPC to check for
+  * @return {boolean} whether the user is authenticated
+  */
 export function canAccessHPC(user: string, hpc: string): boolean {
   const allowList = hpcConfigMap[hpc].allowlist;
   const denyList = hpcConfigMap[hpc].denylist;
@@ -135,15 +143,9 @@ export function canAccessHPC(user: string, hpc: string): boolean {
 
 }
 
-/**
- * Asserts that an object is an error. 
- * @param err error to assert
- * @throws {TypeError} if the object is not an error
- * @returns resulting error
- */
 export function assertError(err: unknown): Error {
   if (!(err instanceof Error)) {
-    throw new TypeError("object expected to be an error is not an error");
+    throw err;
   }
 
   return err;
@@ -153,10 +155,6 @@ export const consoleEnd = "\x1b[0m";
 
 export const consoleGreen = "\x1b[32m";
 
-/**
- * Checks if an object is nullish; if it is, it gives a soft warning
- * @param x object to check
- */
 export function nullGuard<T>(x: null | T | undefined): asserts x is T {
   const e = new Error();
   const frame = e.stack?.split("\n");
@@ -178,12 +176,11 @@ export function nullGuard<T>(x: null | T | undefined): asserts x is T {
 }
 
 /**
- *
- * @param funcCall - The function that is run with backoff
- * @param parameters - What the function is input as parameters (in the form of one array)
- * @param printOnError - Printed with error when catch block reached
- * @throws {Error} if unable to run the function within the specified backoff limit
- */
+   *
+   * @param funcCall - The function that is run with backoff
+   * @param parameters - What the function is input as parameters (in the form of one array)
+   * @param printOnError - Printed with error when catch block reached
+   */
 export async function runCommandWithBackoff(
   funcCall: callableFunction,
   parameters: unknown[],

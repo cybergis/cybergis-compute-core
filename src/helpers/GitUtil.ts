@@ -36,8 +36,10 @@ export default class GitUtil {
 
   /**
    * Gets the local path of a given git repository. 
-   * @param gitId the gitid of the repo
-   * @returns resulting path 
+   *
+   * @static
+   * @param {string} gitId
+   * @return {string} resulting path 
    */
   public static getLocalPath(gitId: string): string {
     return path.join(config.local_file_system.root_path, gitId);
@@ -45,7 +47,9 @@ export default class GitUtil {
 
   /**
    * Deletes a specified git repository and pulls it again.
-   * @param git git object
+   *
+   * @static
+   * @param {Git} git
    */
   protected static async deleteAndPull(git: Git) {
     const localPath = this.getLocalPath(git.id);
@@ -70,11 +74,6 @@ export default class GitUtil {
     }
   }
 
-  /**
-   *
-   * @param git git repository to get the default branch for
-   * @returns the default branch
-   */
   protected static async getDefaultBranch(git: Git): Promise<string> {
     const remote = await fetch({
       fs,
@@ -94,11 +93,6 @@ export default class GitUtil {
     return branch_sections[branch_sections.length - 1];
   }
 
-  /**
-   *
-   * @param git git repository to query for
-   * @returns the last commit time of the repo
-   */
   public static async getLastCommitTime(git: Git): Promise<number> {
     await this.refreshGit(git);
 
@@ -113,11 +107,6 @@ export default class GitUtil {
     return local[0].commit.committer.timestamp;
   }
 
-  /**
-   *
-   * @param git git repo to query for
-   * @returns whether or not the local copy of the git repo is out of date
-   */
   protected static async outOfDate(git: Git): Promise<boolean> {
 
     const localPath = this.getLocalPath(git.id);
@@ -152,8 +141,9 @@ export default class GitUtil {
 
   /**
    * Repulls a git repository if it is out of date and records it in git database.
-   * @param git git object
-   * @returns true if the repo was refreshed; false if it is not stale
+   *
+   * @static
+   * @param {Git} git git object
    */
   protected static async refreshGit(git: Git): Promise<boolean> {
     const localPath = this.getLocalPath(git.id);
@@ -208,8 +198,10 @@ export default class GitUtil {
   /**
    * Does some logic on and returns the manifest json of the executable of a git object. 
    * Uses the normal git path (with git pulls and checkouts).
-   * @param git git object to get the manifest 
-   * @returns the cleaned manifest 
+   *
+   * @static
+   * @param {Git} git git object to get the manifest 
+   * @return {executableManifest} the cleaned manifest 
    */
   public static async getExecutableManifest(git: Git): Promise<executableManifest> {
     const localPath = this.getLocalPath(git.id);
@@ -243,9 +235,11 @@ export default class GitUtil {
 
   /**
    * Processes a raw string manifest and returns it as a cleaned executableManifest.
-   * @param rawExecutableManifest string form of manifest
-   * @param address git address
-   * @returns cleaned manifest
+   *
+   * @static
+   * @param {string} rawExecutableManifest string form of manifest
+   * @param {string} address git address
+   * @return {executableManifest} cleaned manifest
    */
   protected static processExecutableManifest(
     rawExecutableManifest: string,
@@ -407,11 +401,6 @@ export default class GitUtil {
     return executableManifest;
   }
 
-  /**
-   * 
-   * @param gitId git repository to find in the database
-   * @returns the git object from the database, or null if not found
-   */
   public static async findGit(gitId: string): Promise<Git | null> {
     const gitRepo = dataSource.getRepository(Git);
 
@@ -422,15 +411,14 @@ export default class GitUtil {
 
 }
 
- 
-/**
- *
- */
-class _ManifestUtil extends GitUtil {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+class ManifestUtil extends GitUtil {
 
   /**
    * Deletes a specified manifest of a git repository and pulls it again.
-   * @param git git object to delete and pull
+   *
+   * @static
+   * @param {Git} git
    */
   protected static async deleteAndPullManifest(git: Git) {
     const localPath = this.getLocalManifestPath(git.id);
@@ -454,8 +442,10 @@ class _ManifestUtil extends GitUtil {
 
   /**
    * Gets the local manifest path of a given git repository. 
-   * @param gitId gitid of the repo
-   * @returns resulting path 
+   *
+   * @static
+   * @param {string} gitId
+   * @return {string} resulting path 
    */
   protected static getLocalManifestPath(gitId: string): string {
     return path.join(config.local_file_system.root_path, "manifests", gitId);
@@ -464,7 +454,9 @@ class _ManifestUtil extends GitUtil {
 
   /**
    * Repulls only the repository of a git repo if it is out of date and records it in git database.
-   * @param git git object to refresh
+   *
+   * @static
+   * @param {Git} git
    */
   protected static async refreshGitManifest(git: Git) {
     const localPath = this.getLocalManifestPath(git.id);
@@ -523,8 +515,10 @@ class _ManifestUtil extends GitUtil {
   /**
    * Does some logic on and returns the manifest json of the executable of a git object. 
    * Uses the manifests/ path to do so. 
-   * @param git git object to get the manifest 
-   * @returns the cleaned manifest 
+   *
+   * @static
+   * @param {Git} git git object to get the manifest 
+   * @return {executableManifest} the cleaned manifest 
    */
   public static async getExecutableManifest(
     git: Git

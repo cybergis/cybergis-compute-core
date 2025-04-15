@@ -12,12 +12,6 @@ import {
   kernelConfig,
 } from "../src/definitions";
 
-/**
- *
- * @param configPath path of the config file to read in
- * @param defaultValues default values for the config
- * @returns resulting config map
- */
 async function createConfigMap<T>(
   configPath: string,
   defaultValues: Partial<T> = {}

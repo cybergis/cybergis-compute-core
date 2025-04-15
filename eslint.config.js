@@ -3,7 +3,6 @@
 import eslint from "@eslint/js";
 import stylistic from "@stylistic/eslint-plugin";
 import importPlugin from "eslint-plugin-import";
-import jsdoc from "eslint-plugin-jsdoc";
 import globals from "globals";
 import * as tseslint from "typescript-eslint";
 
@@ -12,7 +11,6 @@ export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   ...tseslint.configs.stylisticTypeChecked,
-  jsdoc.configs["flat/recommended-typescript"],
   {
     languageOptions: {
       parserOptions: {
@@ -24,6 +22,7 @@ export default tseslint.config(
     },
 
   },
+
   {
     files: ["**/*.ts", "**/*.tsx", "**/*.config.js"],
     plugins: {
@@ -109,25 +108,8 @@ export default tseslint.config(
         {
           "checksVoidReturn": false
         }
-      ],
-      "jsdoc/check-tag-names": [
-        "warn",
-        {
-          definedTags: ["openapi"],
-        }
-      ],
-      "jsdoc/require-jsdoc": ["warn", {
-        "require": {
-          "FunctionDeclaration": true,
-          "MethodDefinition": true,
-          "ClassDeclaration": false,
-          "ArrowFunctionExpression": false,
-          "FunctionExpression": false
-        }
-      }],
-      "jsdoc/require-throws": "warn"
+      ]
     },
-    
   },
   {
     ignores: ["production/*", "node_modules/*"]

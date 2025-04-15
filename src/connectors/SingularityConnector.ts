@@ -3,52 +3,29 @@ import * as path from "path";
 import { containerConfigMap, hpcConfigMap, kernelConfigMap } from "../../configs/config";
 import { slurm, executableManifest } from "../definitions";
 import * as Helper from "../helpers/Helper";
-import BaseMaintainer from "../maintainers/BaseMaintainer";
 
-import { SlurmConnector } from "./SlurmConnector";
-import { SSHConnector } from "./SSHConnector";
-// import { kernelConfig } from "../types";
+import SlurmConnector from "./SlurmConnector";
+// import { kernelConfig } from ".../definitions";
 
 /**
  * Specialization of SlurmConnector that, in addition to supporting ssh/slurm jobs, connects a given singularity container to the HPC environment.
+ *
+ * @class SingularityConnector
+ * @extends {SlurmConnector}
  */
-export class SingularityConnector extends SlurmConnector {
+class SingularityConnector extends SlurmConnector {
 
   private volumeBinds: Record<string, string> = {};
   public isContainer = true;  // this is a container -- causes some changes in how job JSONs are generated
 
   /**
-   * Public interface for constructing a singularity connector
-   * @param maintainer maintainer this cnonector is for
-   * @param is_cvmfs whether or not this is cvmfs
-   * @returns the connector, or undefined if construction was unsuccessful
-   */
-  public static async build(
-    maintainer: BaseMaintainer, 
-    is_cvmfs = false
-  ): Promise<SingularityConnector | undefined> { 
-    const connector = await SSHConnector.build(
-      maintainer.hpc, 
-      maintainer.job, 
-      (...args) => maintainer.emitLog(...args),
-      (...args) => maintainer.emitEvent(...args),
-      maintainer.job.env
-    );
-
-    if (connector === undefined) {
-      return undefined;
-    }
-
-    return new SingularityConnector(maintainer, connector, is_cvmfs);
-  }
-
-  /**
    * Executes specified command within specified image
-   * @param image - docker image
-   * @param cmd - command to be executed
-   * @param config - slurm configuration
+   *
+   * @param {string} image - docker image
+   * @param {string} cmd - command to be executed
+   * @param {slurm} config - slurm configuration
    */
-  public execCommandWithinImage(image: string, cmd: string, config: slurm) {
+  execCommandWithinImage(image: string, cmd: string, config: slurm) {
     if (this.is_cvmfs){
       cmd = `srun --mpi=pmi2 singcvmfs -s exec ${this._getVolumeBindCMD()} -cip docker://cybergisx/compute-cvmfs:0.1.0 ${cmd}`;
     }
@@ -61,23 +38,24 @@ export class SingularityConnector extends SlurmConnector {
 
   /**
    * Executes specified manifest within image
-   * @param manifest - manifest that needs toe be executed
-   * @param config - slurm configuration
-   * @throws {ReferenceError} - thrown when container cannot be resolved
+   *
+   * @param {executableManifest} manifest - manifest that needs toe be executed
+   * @param {slurm} config - slurm configuration
+   * @throw {Error} - thrown when container is not supported
    */
-  public async execExecutableManifestWithinImage(
+  async execExecutableManifestWithinImage(
     manifest: executableManifest,
     config: slurm
   ) {
     let containerPath!: string;
     if(!this.is_cvmfs){
       const container = containerConfigMap[manifest.container];
-      if (!container) throw new ReferenceError(`unknown container ${manifest.container}`);
+      if (!container) throw new Error(`unknown container ${manifest.container}`);
 
-      containerPath = container.hpc_path[this.maintainer.hpc];
+      containerPath = container.hpc_path[this.hpcName];
       if (!containerPath)
-        throw new ReferenceError(
-          `container ${manifest.container} is not supported on HPC ${this.maintainer.hpc}`
+        throw new Error(
+          `container ${manifest.container} is not supported on HPC ${this.hpcName}`
         );
       // remove buffer: https://dashboard.hpc.unimelb.edu.au/job_submission/
     }
@@ -160,10 +138,11 @@ export class SingularityConnector extends SlurmConnector {
 
   /**
    * Runs singularity image
-   * @param image - singularity image
-   * @param config - slurm configuration
+   *
+   * @param {string} image - singularity image
+   * @param {slurm} config - slurm configuration
    */
-  public runImage(image: string, config: slurm) {
+  runImage(image: string, config: slurm) {
     const jobENV = this._getJobENV();
 
     let cmd: string;
@@ -182,9 +161,10 @@ export class SingularityConnector extends SlurmConnector {
 
   /**
    * Registers volumeBinds
-   * @param volumeBinds - volumeBinds that need to be registered
+   *
+   * @param {{[keys: string]: string}} volumeBinds - volumeBinds that need to be registered
    */
-  public registerContainerVolumeBinds(volumeBinds: Record<string, string>) {
+  registerContainerVolumeBinds(volumeBinds: Record<string, string>) {
     for (const from in volumeBinds) {
       const to = volumeBinds[from];
       this.volumeBinds[from] = to;
@@ -192,10 +172,11 @@ export class SingularityConnector extends SlurmConnector {
   }
 
   /**
-   *
+   * @private
    * Returns volumeBinds
-   * @param manifest - manifest containing volumeBinds
-   * @returns volumeBinds
+   *
+   * @param {executableManifest} manifest - manifest containing volumeBinds
+   * @return {string | {[keys: string]: string}} volumeBinds
    */
   private _getVolumeBindCMD(
     manifest: executableManifest | null = null
@@ -215,7 +196,7 @@ export class SingularityConnector extends SlurmConnector {
     }
 
     if (manifest && !this.is_cvmfs) {
-      const hpc = hpcConfigMap[this.maintainer.hpc];
+      const hpc = hpcConfigMap[this.hpcName];
       if (hpc?.mount) {
         for (const i in hpc.mount){
           this.volumeBinds[i] = hpc.mount[i];
@@ -223,9 +204,9 @@ export class SingularityConnector extends SlurmConnector {
       }
 
       const container = containerConfigMap[manifest.container];
-      if (container?.mount?.[this.maintainer.hpc]) {
-        for (const i in container.mount[this.maintainer.hpc]) {
-          this.volumeBinds[i] = container.mount[this.maintainer.hpc][i];
+      if (container?.mount?.[this.hpcName]) {
+        for (const i in container.mount[this.hpcName]) {
+          this.volumeBinds[i] = container.mount[this.hpcName][i];
         }
       }
     }
@@ -245,7 +226,8 @@ export class SingularityConnector extends SlurmConnector {
 
   /**
    * Returns job environment
-   * @returns jobENV - jobenvironment variables
+   *
+   * @return {string[]} jobENV - jobenvironment variables
    */
   private _getJobENV(): string[] {
     Helper.nullGuard(this.maintainer);
@@ -287,16 +269,17 @@ export class SingularityConnector extends SlurmConnector {
 
   /**
    * Creates a bash script using kernelConfig
-   * @param manifest manifest to create a kenrl for
-   * @throws {Error} if unable to create file by ssh
+   * @param{executableManifest} manifest - manifest that needs toe be executed
    */
-  public async createKernelInit(manifest: executableManifest){
+  async createKernelInit(manifest: executableManifest){
     let kernelBash = "#!/bin/bash\n";
     kernelBash+= `${kernelConfigMap[manifest.container].env.join("\n")}`;
     
-    await this.sshConnector.createFile(
+    await this.createFile(
       kernelBash,
       path.join(this.getRemoteExecutableFolderPath(), "kernel_init.sh")
     );
   }
 }
+
+export default SingularityConnector;

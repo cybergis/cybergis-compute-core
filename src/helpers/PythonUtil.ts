@@ -11,12 +11,15 @@ import { config } from "../../configs/config";
  */
 
 /**
- * Runs the specified python file. The person running this file can provide user input.
- * @param file - Path of the file to run
- * @param args - Arguments to be passed when running the file.
- * @param returnTags - Items to be returned
- * @returns - Values returned by the function that correspond the the ones passed in returnTags
- */
+   * Runs the specified python file. The person running this file can provide user input.
+   *
+   * @static
+   * @async
+   * @param {string} file - Path of the file to run
+   * @param {string[]} args - Arguments to be passed when running the file.
+   * @param {string[]} returnTags - Items to be returned
+   * @returns {Promise<Record<string, unknown>>} - Values returned by the function that correspond the the ones passed in returnTags
+   */
 export async function runInteractive(
   file: string,
   args: string[] = [],
@@ -66,12 +69,15 @@ export async function runInteractive(
 }
 
 /**
- * Runs the specified python file.
- * @param file - Path of the file to run
- * @param args - Arguments to be passed when running the file.
- * @param returnTags - Items to be returned
- * @returns - Values returned by the function that correspond the the ones passed in returnTags
- */
+   * Runs the specified python file.
+   *
+   * @static
+   * @async
+   * @param {string} file - Path of the file to run
+   * @param {string[]} args - Arguments to be passed when running the file.
+   * @param {string[]} returnTags - Items to be returned
+   * @returns {Promise<Record<string, string | null>>} - Values returned by the function that correspond the the ones passed in returnTags
+   */
 export async function run(
   file: string,
   args: string[] = [],
