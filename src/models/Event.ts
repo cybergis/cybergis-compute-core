@@ -8,7 +8,7 @@ import {
   BeforeUpdate,
 } from "typeorm";
 
-import { Job } from "./Job";
+import type { Job } from "./Job";
 
 /** Class representing a job event. */
 @Entity({ name: "events" })
@@ -25,7 +25,7 @@ export class Event {
   @Column("text")
     message!: string;
 
-  @ManyToOne((_type) => Job, (job: Job) => job.events)
+  @ManyToOne("Job", (job: Job) => job.events)
     job!: Job;
 
   @Column({
@@ -71,8 +71,6 @@ export class Event {
 
   /**
    * Set the createdAt time to the current time.
-   *
-   * @return {Date} date - Date this job was created.
    */
   @BeforeInsert()
   setCreatedAt() {
@@ -81,8 +79,7 @@ export class Event {
 
   /**
    * Set the updatedAt time to the current time.
-   *
-   * @return {Date} date - Date this job was last updated.
+   * @returns date - Date this job was last updated.
    */
   @BeforeUpdate()
   setUpdatedAt() {

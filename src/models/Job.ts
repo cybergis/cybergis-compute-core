@@ -11,7 +11,6 @@ import {
   // JoinColumn,
 } from "typeorm";
 
-import BaseMaintainer from "../maintainers/BaseMaintainer";
 import {
   credential,
   GitFolder,
@@ -19,11 +18,12 @@ import {
   LocalFolder,
   NeedUploadFolder,
   slurm,
-} from "../utils/types";
+} from "../definitions";
+import BaseMaintainer from "../maintainers/BaseMaintainer";
 
-import { Event } from "./Event";
-import { Folder } from "./Folder";
-import { Log } from "./Log";
+import type { Event } from "./Event";
+import type { Folder } from "./Folder";
+import type { Log } from "./Log";
 
 /** Class representing a job. */
 @Entity({ name: "jobs" })
@@ -43,13 +43,13 @@ export class Job {
   @Column()
     hpc!: string;
 
-  @ManyToOne((_type) => Folder, { onDelete: "CASCADE", nullable: true })
+  @ManyToOne("Folder", { onDelete: "CASCADE", nullable: true })
     remoteExecutableFolder?: Folder;
 
-  @ManyToOne((_type) => Folder, { onDelete: "CASCADE", nullable: true })
+  @ManyToOne("Folder", { onDelete: "CASCADE", nullable: true })
     remoteDataFolder?: Folder;
 
-  @ManyToOne((_type) => Folder, { onDelete: "CASCADE", nullable: true })
+  @ManyToOne("Folder", { onDelete: "CASCADE", nullable: true })
     remoteResultFolder?: Folder;
 
   @Column({
@@ -97,7 +97,7 @@ export class Job {
         typeof i === "string" ? JSON.parse(i) as Record<string, string> : {},
     },
   })
-    param?: Record<string, string>;
+    param?: Record<string, unknown>;
 
   @Column({
     type: "text",
@@ -132,10 +132,10 @@ export class Job {
   @Column({ nullable: true })
     credentialId?: string;
 
-  @OneToMany((_type) => Event, (event: Event) => event.job)
+  @OneToMany("Event", (event: Event) => event.job)
     events!: Event[];
 
-  @OneToMany((_type) => Log, (log: Log) => log.job)
+  @OneToMany("Log", (log: Log) => log.job)
     logs!: Log[];
 
   @Column({
@@ -223,8 +223,6 @@ export class Job {
 
   /**
    * Set the createdAt time to the current time.
-   *
-   * @return {Date} date - Date this job was created.
    */
   @BeforeInsert()
   setCreatedAt() {
@@ -233,8 +231,7 @@ export class Job {
 
   /**
    * Set the updatedAt time to the current time.
-   *
-   * @return {Date} date - Date this job was last updated.
+   * @returns date - Date this job was last updated.
    */
   @BeforeUpdate()
   setUpdatedAt() {
@@ -264,8 +261,6 @@ export class Job {
 
   /**
    * Sorts the logs in the order that they were created
-   *
-   * @return {None} None - Updates this.logs
    */
   @AfterLoad()
   sortLogs() {
@@ -282,8 +277,6 @@ export class Job {
 
   /**
    * Sorts the events in the order that they were created
-   *
-   * @return {None} None - Updates this.events
    */
   @AfterLoad()
   sortEvents() {

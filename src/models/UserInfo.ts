@@ -29,10 +29,9 @@ export class UserInfo {
   @Column({ type: "datetime", default: () => "CURRENT_TIMESTAMP" })
     createdAt!: Date;
     
+
   /**
-   * Set the createdAt time to the current time.
    *
-   * @return {Date} date - Date this job was created.
    */
   @BeforeInsert()
   setCreatedUpdated() {

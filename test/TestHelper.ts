@@ -1,9 +1,16 @@
-import { Event } from "../src/models/Event";
-import { Job } from "../src/models/Job";
-import { Log } from "../src/models/Log";
+import { Event, Job, Log } from "../src/models";
 import dataSource from "../src/utils/DB";
 
 export default class TestHelper {
+  /**
+   * 
+   * @param id id of the job to create
+   * @param userId user that created the job
+   * @param secretToken  unused
+   * @param maintainer maintainer for the job
+   * @param hpc hpc that the job is running on
+   * @returns the resulting job object
+   */
   static async createJob(
     id: string,
     userId: string,
@@ -20,6 +27,13 @@ export default class TestHelper {
     return await jobRepository.save(job);
   }
 
+  /**
+   *
+   * @param job job this event relates to
+   * @param type type of event
+   * @param message message of the event
+   * @returns the created event
+   */
   static async createEvent(
     job: Job,
     type: string,
@@ -34,6 +48,12 @@ export default class TestHelper {
     return await eventRepository.save(event);
   }
 
+  /**
+   *
+   * @param job job this log relates to
+   * @param message message of teh log
+   * @returns the created log
+   */
   static async createLog(job: Job, message: string): Promise<Log> {
     const logRepository = dataSource.getRepository(Log);
     const log = new Log();

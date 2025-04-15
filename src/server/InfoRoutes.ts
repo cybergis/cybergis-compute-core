@@ -1,14 +1,16 @@
-import express = require("express");
+import express from "express";
+import { rootPath } from "get-root-path";
 
 import * as fs from "fs";
+import { join } from "path";
 
 import { hpcConfigMap, maintainerConfigMap, containerConfigMap, jupyterGlobusMap } from "../../configs/config";
-import * as Helper from "../helpers/Helper";
+import { hpcConfig, maintainerConfig, containerConfig, jupyterGlobusMapConfig, announcementsConfig } from "../definitions";
+import { getRuntimeByJobId, getRuntimeTotal } from "../helpers/StatisticUtil";
 import { Job } from "../models";
 import dataSource from "../utils/DB";
-import { hpcConfig, maintainerConfig, containerConfig, jupyterGlobusMapConfig, announcementsConfig } from "../utils/types";
 
-import { authMiddleWare, statistic } from "./ServerUtil";
+import { authMiddleWare } from "./ServerUtil";
 
 const infoRouter = express.Router();
 
@@ -20,59 +22,55 @@ const infoRouter = express.Router();
  *      responses:
  *          200:
  *              descrption: Returns JSON containing runtime in seconds total and per cluster (null here becauise no job referenced)
- *
  */
 infoRouter.get("/statistic", async (req, res) => {
-  res.json({ runtime_in_seconds: await statistic.getRuntimeTotal() });
+  res.json({ runtime_in_seconds: await getRuntimeTotal() });
 });
   
 /**
-   * @openapi
-   * /statistic/job/:jobId:
-   *  get:
-   *      description: Get the runtime for a specific job across available HPC clusters (Authentication REQUIRED)
-   *      responses:
-   *          200:
-   *              descrption: Returns JSON containing runtime in seconds total and per cluster
-   *          401:
-   *              description: Returns a list of errors rasied when validating the job access token.
-   *          402:
-   *              description: Returns "invalid input" and a list of errors with the format of the req body or "invalid token" if a valid jupyter token is not provided
-   *
-   */
+ * @openapi
+ * /statistic/job/:jobId:
+ *  get:
+ *      description: Get the runtime for a specific job across available HPC clusters (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              descrption: Returns JSON containing runtime in seconds total and per cluster
+ *          401:
+ *              description: Returns a list of errors rasied when validating the job access token.
+ *          402:
+ *              description: Returns "invalid input" and a list of errors with the format of the req body or "invalid token" if a valid jupyter token is not provided
+ */
 infoRouter.get("/statistic/job/:jobId", authMiddleWare, async (req, res) => {
   if (!res.locals.username) {
     res.status(402).json({ error: "invalid token" });
     return;
   }
+
+  // query the job matching the params
+  const job = await dataSource
+    .getRepository(Job)
+    .findOneBy({ id: req.params.jobId, userId: res.locals.username as string });
   
-  try {
-    // query the job matching the params
-    const job = await dataSource
-      .getRepository(Job)
-      .findOneBy({ id: req.params.jobId, userId: res.locals.username as string });
-  
-    if (job === null) {
-      throw new Error("job not found.");
-    }
-  
-    res.json({ runtime_in_seconds: await statistic.getRuntimeByJobId(job.id) });
-  } catch (e) {
+  if (job === null) {
     res.status(401).json(
-      { error: "invalid access", messages: [Helper.assertError(e).toString()] }
+      { error: "invalid access", messages: ["job not found"] }
     );
+
+    return;
   }
+  
+  res.json({ runtime_in_seconds: await getRuntimeByJobId(job.id) });
 });
   
 /**
-   * @openapi
-   * /hpc:
-   *  get:
-   *      description: Returns current hpc configurations for existing linked hpc clusters as a dictionary (Authentication NOT REQUIRED)
-   *      responses:
-   *          200:
-   *              description: Returns current hpc configurations for existing linked hpc clusters as a dictionaruy
-   */
+ * @openapi
+ * /hpc:
+ *  get:
+ *      description: Returns current hpc configurations for existing linked hpc clusters as a dictionary (Authentication NOT REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns current hpc configurations for existing linked hpc clusters as a dictionaruy
+ */
 infoRouter.get("/hpc", function (req, res) {
   const parseHPC = (dest: Record<string, hpcConfig>) => {
     // create truncated version of all hpc configs
@@ -95,14 +93,14 @@ infoRouter.get("/hpc", function (req, res) {
 });
   
 /**
-   * @openapi
-   * /maintainer:
-   *  get:
-   *      description: Returns current maintainer configurations as a dictionary object (Authentication NOT REQUIRED)
-   *      responses:
-   *          200:
-   *              description: Returns current maintainer configurations as a dictionary object
-   */
+ * @openapi
+ * /maintainer:
+ *  get:
+ *      description: Returns current maintainer configurations as a dictionary object (Authentication NOT REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns current maintainer configurations as a dictionary object
+ */
 infoRouter.get("/maintainer", function (req, res) {
   const parseMaintainer = (dest: Record<string, maintainerConfig>) => {
     const out: Record<string, maintainerConfig> = {};
@@ -120,14 +118,14 @@ infoRouter.get("/maintainer", function (req, res) {
 });
   
 /**
-   * @openapi
-   * /container:
-   *  get:
-   *      description: Returns current container configurations as a dictionary object (Authentication NOT REQUIRED)
-   *      responses:
-   *          200:
-   *              description: Returns current container configurations as a dictionary object
-   */
+ * @openapi
+ * /container:
+ *  get:
+ *      description: Returns current container configurations as a dictionary object (Authentication NOT REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns current container configurations as a dictionary object
+ */
 infoRouter.get("/container", function (req, res) {
   const parseContainer = (dest: Record<string, containerConfig>) => {
     const out: Record<string, containerConfig> = {};
@@ -145,14 +143,14 @@ infoRouter.get("/container", function (req, res) {
 });
   
 /**
-   * @openapi
-   * /whitelist:
-   *  get:
-   *      description: (Use /allowlist instead. /whitelist is being phased out.) Returns current allowlist (Authentication NOT REQUIRED)
-   *      responses:
-   *          200:
-   *              description: Returns current allowlist
-   */
+ * @openapi
+ * /whitelist:
+ *  get:
+ *      description: (Use /allowlist instead. /whitelist is being phased out.) Returns current allowlist (Authentication NOT REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns current allowlist
+ */
 infoRouter.get("/whitelist", function (req, res) {
   const parseHost = (dest: Record<string, jupyterGlobusMapConfig>) => {
     const out: Record<string, string> = {};
@@ -167,14 +165,14 @@ infoRouter.get("/whitelist", function (req, res) {
 });
   
 /**
-   * @openapi
-   * /allowlist:
-   *  get:
-   *      description: Returns current allowlist (Authentication NOT REQUIRED)
-   *      responses:
-   *          200:
-   *              description: Returns current allowlist
-   */
+ * @openapi
+ * /allowlist:
+ *  get:
+ *      description: Returns current allowlist (Authentication NOT REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns current allowlist
+ */
 infoRouter.get("/allowlist", function (req, res) {
   const parseHost = (dest: Record<string, jupyterGlobusMapConfig>) => {
     const out: Record<string, string> = {};
@@ -192,17 +190,17 @@ infoRouter.get("/allowlist", function (req, res) {
 });
   
 /**
-   * @openapi
-   * /announcement:
-   *  get:
-   *      description: Returns list of current announcements (Authentication NOT REQUIRED)
-   *      responses:
-   *          200:
-   *              description: Returns array of current announcements
-   */
+ * @openapi
+ * /announcement:
+ *  get:
+ *      description: Returns list of current announcements (Authentication NOT REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns array of current announcements
+ */
 infoRouter.get("/announcement", function (req, res) {
   // read announcements from the announcements.json file
-  fs.readFile("./configs/announcement.json", "utf8", function (err, data) {
+  fs.readFile(join(rootPath, "configs/announcement.json"), "utf8", function (err, data) {
     const parseHost = (dest: Record<string, announcementsConfig>) => {
       const out: Record<string, announcementsConfig> = {};
       for (const i in dest) {

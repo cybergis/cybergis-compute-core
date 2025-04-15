@@ -25,15 +25,16 @@ export class AllowList {
     deletedAt?: Date;
 
   /**
-   * Set the createdAt time to the current time.
    *
-   * @return {Date} date - Date this job was created.
    */
   @BeforeInsert()
   setCreatedUpdated() {
     this.createdAt = new Date();
   }
 
+  /**
+   *
+   */
   delete() {
     this.deletedAt = new Date();
   }

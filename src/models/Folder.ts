@@ -7,7 +7,6 @@ import {
   BeforeUpdate,
   // OneToMany,
 } from "typeorm";
-// import { Job } from "./Job";
 
 /** Class representing a job event. */
 @Entity({ name: "folders" })
@@ -76,8 +75,6 @@ export class Folder {
 
   /**
    * Set the createdAt time to the current time.
-   *
-   * @return {Date} date - Date this job was created.
    */
   @BeforeInsert()
   setCreatedAt() {
@@ -86,8 +83,7 @@ export class Folder {
 
   /**
    * Set the updatedAt time to the current time.
-   *
-   * @return {Date} date - Date this job was last updated.
+   * @returns date - Date this job was last updated.
    */
   @BeforeUpdate()
   setUpdatedAt() {

@@ -1,19 +1,19 @@
-import express = require("express");
+import express from "express";
 
 import {
   hpcConfigMap,
   maintainerConfigMap,
 } from "../../configs/config";
+import {
+  CreateJobBodySchema,
+  UpdateJobBodySchema,
+} from "../definitions";
 import * as Helper from "../helpers/Helper";
-import JobUtil from "../helpers/JobUtil";
+import { validateJob } from "../helpers/JobUtil";
 import { Job } from "../models";
 import dataSource from "../utils/DB";
-import type {
-  createJobBody,
-  updateJobBody,
-} from "../utils/types";
 
-import { authMiddleWare, requestErrors, validator, schemas, sshCredentialGuard, prepareDataForDB, supervisor, resultFolderContent } from "./ServerUtil";
+import { authMiddleWare, sshCredentialGuard, prepareDataForDB, supervisor, resultFolderContent, validateZodSchema } from "./ServerUtil";
 
 
 const jobRouter = express.Router();
@@ -32,14 +32,14 @@ const jobRouter = express.Router();
  *              description: Returns "invalid input" and a list of errors with the format of the req body
  */
 jobRouter.post("/", authMiddleWare, async function (req, res) {
-  const errors = requestErrors(validator.validate(req.body, schemas.createJob));
+  const validation = validateZodSchema(CreateJobBodySchema, req.body);
   
-  if (errors.length > 0) {
-    res.status(402).json({ error: "invalid input", messages: errors });
+  if (!validation.success) {
+    res.status(402).json({ error: "invalid input", messages: validation.errors });
     return;
   }
   
-  const body = req.body as createJobBody;
+  const body = validation.data;
   
   // try to extract maintainer and hpc associated with the job
   const maintainerName: string = body.maintainer ?? "community_contribution";  // default to community contribution job maintainer
@@ -49,7 +49,7 @@ jobRouter.post("/", authMiddleWare, async function (req, res) {
     return;
   }
   
-  const hpcName = body.hpc ? body.hpc : maintainer.default_hpc;
+  const hpcName = body.hpc ?? maintainer.default_hpc;
   const hpc = hpcConfigMap[hpcName];
   if (hpc === undefined) {
     res.status(401).json({ error: "unrecognized hpc", message: null });
@@ -67,25 +67,23 @@ jobRouter.post("/", authMiddleWare, async function (req, res) {
     res.status(401).json({ error: "Not authorized for HPC", message: null });
     return;
   }
-  
-  try {
-    // need to validate if hpc is not a community account
-    if (!hpc.is_community_account) {
-      await sshCredentialGuard.validatePrivateAccount(
-        hpcName,
-        body.user,
-        body.password
-      );
+  // need to validate if hpc is not a community account
+  if (!hpc.is_community_account) {
+    const valid = await sshCredentialGuard.validatePrivateAccount(
+      hpcName,
+      body.user,
+      body.password
+    );
+
+    if (!valid) {
+      res
+        .status(401)
+        .json({ 
+          error: "invalid SSH credentials", 
+        });
+      return;
     }
-  } catch (e) {
-    res
-      .status(401)
-      .json({ 
-        error: "invalid SSH credentials", 
-        messages: [Helper.assertError(e).toString()] 
-      });
-    return;
-  }
+  } 
   
   // start job db connection & create the job object to upload
   const jobRepo = dataSource.getRepository(Job);
@@ -115,97 +113,94 @@ jobRouter.post("/", authMiddleWare, async function (req, res) {
 });
   
 /**
-   * @openapi
-   * /job/:jobId:
-   *  put:
-   *      description: Updates a job with the given job ID (Authentication REQUIRED)
-   *      responses:
-   *          200:
-   *              description: Returns updated job when it is successfully updated
-   *          402:
-   *              description: Returns "invalid input" and a list of errors with the format of the req body, "invalid token" if a valid jupyter token authentication is not provided, or an error if the job does not exist
-   *          403:
-   *              description: Returns internal error when there is an exception while updating the job details
-   */
+ * @openapi
+ * /job/:jobId:
+ *  put:
+ *      description: Updates a job with the given job ID (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns updated job when it is successfully updated
+ *          402:
+ *              description: Returns "invalid input" and a list of errors with the format of the req body, "invalid token" if a valid jupyter token authentication is not provided, or an error if the job does not exist
+ *          403:
+ *              description: Returns internal error when there is an exception while updating the job details
+ */
 jobRouter.put("/:jobId", authMiddleWare, async function (req, res) {
-  const errors = requestErrors(validator.validate(req.body, schemas.updateJob));
+  const validation = validateZodSchema(UpdateJobBodySchema, req.body);
   
-  if (errors.length > 0) {
-    res.status(402).json({ error: "invalid input", messages: errors });
+  if (!validation.success) {
+    res.status(402).json({ error: "invalid input", messages: validation.errors });
     return;
   }
   
-  const body = req.body as updateJobBody;
+  const body = validation.data;
   
   if (!res.locals.username) {
     res.status(402).json({ error: "invalid token" });
     return;
   }
   
+  // test if job exists
+  const jobId = req.params.jobId;
+  await dataSource
+    .getRepository(Job)
+    .findOneByOrFail({ id: jobId, userId: res.locals.username as string });
+  
+  // update the job with the given id
   try {
-    // test if job exists
-    const jobId = req.params.jobId;
     await dataSource
-      .getRepository(Job)
-      .findOneByOrFail({ id: jobId, userId: res.locals.username as string });
-  
-    // update the job with the given id
-    try {
-      await dataSource
-        .createQueryBuilder()
-        .update(Job)
-        .where("id = :id", { id: jobId })
-        .set(
-          await prepareDataForDB(body as unknown as Record<string, unknown>, [
-            "param",
-            "env",
-            "slurm",
-            "localExecutableFolder",
-            "localDataFolder",
-            "remoteDataFolder",
-            "remoteExecutableFolder",
-          ])
-        )
-        .execute();
-    } catch (err) {
-      res
-        .status(403)
-        .json({ 
-          error: "internal error", 
-          messages: Helper.assertError(err).toString() 
-        });
-      return;
-    }
-  
-    // return updated job as a dictionary
-    const job = await dataSource.getRepository(Job).findOneBy({
-      id: jobId
-    });
-  
-    if (job === null) {
-      throw new Error("Updated job not found in the database.");
-    }
-  
-    res.json(Helper.job2object(job));
-  } catch (e) {
-    res.json({ error: Helper.assertError(e).toString() });
-    res.status(402);
+      .createQueryBuilder()
+      .update(Job)
+      .where("id = :id", { id: jobId })
+      .set(
+        await prepareDataForDB(body as unknown as Record<string, unknown>, [
+          "param",
+          "env",
+          "slurm",
+          "localExecutableFolder",
+          "localDataFolder",
+          "remoteDataFolder",
+          "remoteExecutableFolder",
+        ])
+      )
+      .execute();
+  } catch (err) {
+    res
+      .status(403)
+      .json({ 
+        error: "internal error", 
+        messages: Helper.assertError(err).toString() 
+      });
+    return;
   }
-});
+  
+  // return updated job as a dictionary
+  const job = await dataSource.getRepository(Job).findOneBy({
+    id: jobId
+  });
+  
+  if (job === null) {
+    res.json({ error: "Updated job not found in the database." });
+    res.status(402);
+  } else {
+    res.json(Helper.job2object(job));
+  }
+}
+);
   
 /**
-   * @openapi
-   * /job/:jobId/submit:
-   *  post:
-   *      description: Submits a job with the given job ID to the HPC (Authentication REQUIRED)
-   *      responses:
-   *          200:
-   *              description: Returns when job is successfully submitted
-   *          401:
-   *              description: Returns "submit without login is not allowed" if the user is not logged in, "invalid access" if job folders are not accessible, or "job already submitted or in queue" if the job is already suibmitted
-   *          402:
-   *              description: Returns "invalid input" and a list of errors with the format of the req body or a list of errors if the job does not successfully submit
-   */
+ * @openapi
+ * /job/:jobId/submit:
+ *  post:
+ *      description: Submits a job with the given job ID to the HPC (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns when job is successfully submitted
+ *          401:
+ *              description: Returns "submit without login is not allowed" if the user is not logged in, "invalid access" if job folders are not accessible, or "job already submitted or in queue" if the job is already suibmitted
+ *          402:
+ *              description: Returns "invalid input" and a list of errors with the format of the req body or a list of errors if the job does not successfully submit
+ */
 jobRouter.post("/:jobId/submit", authMiddleWare, async function (req, res) {
   if (!res.locals.username) {
     res
@@ -245,7 +240,7 @@ jobRouter.post("/:jobId/submit", authMiddleWare, async function (req, res) {
   
   try {
     // validate job and push it to the job queue
-    JobUtil.validateJob(job);
+    validateJob(job);
     await supervisor.pushJobToQueue(job);
   
     // update status of the job
@@ -265,34 +260,34 @@ jobRouter.post("/:jobId/submit", authMiddleWare, async function (req, res) {
 });
   
 /**
-   * @openapi
-   * /job/:jobId/pause:
-   *  put:
-   *      description: Not yet implemented
-   */
-  jobRouter.put("/:jobId/pause", async function (_req, _res) { }); // eslint-disable-line
+ * @openapi
+ * /job/:jobId/pause:
+ *  put:
+ *      description: Not yet implemented
+ */
+jobRouter.put("/:jobId/pause", async function (_req, _res) { }); // eslint-disable-line @typescript-eslint/no-empty-function
   
 /**
-   * @openapi
-   * /job/:jobId/resume:
-   *  put:
-   *      description: Not yet implemented
-   */
-  jobRouter.put("/:jobId/resume", async function (_req, _res) { }); // eslint-disable-line
+ * @openapi
+ * /job/:jobId/resume:
+ *  put:
+ *      description: Not yet implemented
+ */
+jobRouter.put("/:jobId/resume", async function (_req, _res) { }); // eslint-disable-line @typescript-eslint/no-empty-function
   
 /**
-   * @openapi
-   * /job/:jobId/cancel:
-   *  put:
-   *      description: Cancels a job that is currently in the queue
-   *      responses:
-   *          200:
-   *              description: Job was found successfully added to the queue to be canceled
-   *          401:
-   *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access token" if the events cannot be accessed
-   *          402:
-   *              description: Returns "invalid input" and a list of errors with the format of the req body - jobId may be invalid or job may not be in queue
-   */
+ * @openapi
+ * /job/:jobId/cancel:
+ *  put:
+ *      description: Cancels a job that is currently in the queue
+ *      responses:
+ *          200:
+ *              description: Job was found successfully added to the queue to be canceled
+ *          401:
+ *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access token" if the events cannot be accessed
+ *          402:
+ *              description: Returns "invalid input" and a list of errors with the format of the req body - jobId may be invalid or job may not be in queue
+ */
 jobRouter.put("/:jobId/cancel", function (req, res) {
   // console.log("made it to cancel");
   if (!res.locals.username) {
@@ -325,18 +320,18 @@ jobRouter.put("/:jobId/cancel", function (req, res) {
 });
   
 /**
-   * @openapi
-   * /job/:jobId/events:
-   *  get:
-   *      description: Gets an array of the job events for a given job ID (Authentication REQUIRED)
-   *      responses:
-   *          200:
-   *              description: Returns array of dictionary objects containing details of each event in the process of ssubmitting and fufilling a a job
-   *          401:
-   *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access token" if the events cannot be accessed
-   *          402:
-   *              description: Returns "invalid input" and a list of errors with the format of the req body
-   */
+ * @openapi
+ * /job/:jobId/events:
+ *  get:
+ *      description: Gets an array of the job events for a given job ID (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns array of dictionary objects containing details of each event in the process of ssubmitting and fufilling a a job
+ *          401:
+ *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access token" if the events cannot be accessed
+ *          402:
+ *              description: Returns "invalid input" and a list of errors with the format of the req body
+ */
 jobRouter.get("/:jobId/events", authMiddleWare, async function (req, res) {
   if (!res.locals.username) {
     res
@@ -367,18 +362,18 @@ jobRouter.get("/:jobId/events", authMiddleWare, async function (req, res) {
 });
   
 /**
-   * @openapi
-   * /job/:jobId/result-folder-content:
-   *  get:
-   *      description: Gets an array of the directories in the result folder for a given job ID (Authentication REQUIRED)
-   *      responses:
-   *          200:
-   *              description: Returns array of dirrectories in the given job"s result folder
-   *          401:
-   *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access" if the folder cannot be accessed
-   *          402:
-   *              description: Returns "invalid input" and a list of errors with the format of the req body
-   */
+ * @openapi
+ * /job/:jobId/result-folder-content:
+ *  get:
+ *      description: Gets an array of the directories in the result folder for a given job ID (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns array of dirrectories in the given job"s result folder
+ *          401:
+ *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access" if the folder cannot be accessed
+ *          402:
+ *              description: Returns "invalid input" and a list of errors with the format of the req body
+ */
 jobRouter.get(
   "/:jobId/result-folder-content", 
   authMiddleWare, 
@@ -398,7 +393,7 @@ jobRouter.get(
         .findOneByOrFail({ id: jobId, userId: res.locals.username as string });
       
       const out = await resultFolderContent.get(job.id);
-      res.json(out ? out : []);
+      res.json(out ?? []);
     } catch (e) {
       res.status(401).json({ 
         error: "invalid access", 
@@ -410,18 +405,18 @@ jobRouter.get(
 );
   
 /**
-   * @openapi
-   * /job/:jobId/logs:
-   *  get:
-   *      description: Gets an array of dictionary objects that represent logs for the given job ID (Authentication REQUIRED)
-   *      responses:
-   *          200:
-   *              description: Returns array of dictionary objects that represent logs for the given job ID
-   *          401:
-   *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access" if the logs cannot be accessed
-   *          402:
-   *              description: Returns "invalid input" and a list of errors with the format of the req body
-   */
+ * @openapi
+ * /job/:jobId/logs:
+ *  get:
+ *      description: Gets an array of dictionary objects that represent logs for the given job ID (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns array of dictionary objects that represent logs for the given job ID
+ *          401:
+ *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access" if the logs cannot be accessed
+ *          402:
+ *              description: Returns "invalid input" and a list of errors with the format of the req body
+ */
 jobRouter.get("/:jobId/logs", authMiddleWare, async function (req, res) {
   if (!res.locals.username) {
     res.status(401).json({ 
@@ -452,18 +447,18 @@ jobRouter.get("/:jobId/logs", authMiddleWare, async function (req, res) {
 });
   
 /**
-   * @openapi
-   * /job/:jobId:
-   *  get:
-   *      description: Gets a dictionary object representing the given job ID that includes information on the job as well as events, logs, and folder information (Authentication REQUIRED)
-   *      responses:
-   *          200:
-   *              description: Returns a dictionary object representing the given job ID
-   *          401:
-   *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access" if the job and job information cannot be accessed
-   *          402:
-   *              description: Returns "invalid input" and a list of errors with the format of the req body
-   */
+ * @openapi
+ * /job/:jobId:
+ *  get:
+ *      description: Gets a dictionary object representing the given job ID that includes information on the job as well as events, logs, and folder information (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns a dictionary object representing the given job ID
+ *          401:
+ *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access" if the job and job information cannot be accessed
+ *          402:
+ *              description: Returns "invalid input" and a list of errors with the format of the req body
+ */
 jobRouter.get("/:jobId", authMiddleWare, async function (req, res) {
   if (!res.locals.username) {
     res

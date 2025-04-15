@@ -1,10 +1,10 @@
-import express = require("express");
+import express from "express";
 
+import { executableManifest } from "../definitions";
 import GitUtil from "../helpers/GitUtil";
 import * as Helper from "../helpers/Helper";
 import { Git } from "../models";
 import dataSource from "../utils/DB";
-import { executableManifest } from "../utils/types";
 
 const gitRouter = express.Router();
 
@@ -25,14 +25,14 @@ const parseGit = async (dest: Git[]) => {
 
   
 /**
-   * @openapi
-   * /git:
-   *  get:
-   *      description: Returns collection of acceptable git jobs (Authentication NOT REQUIRED)
-   *      responses:
-   *          200:
-   *              description: Returns JSON dictionary of git jobs including specs for each job
-   */
+ * @openapi
+ * /git:
+ *  get:
+ *      description: Returns collection of acceptable git jobs (Authentication NOT REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns JSON dictionary of git jobs including specs for each job
+ */
 gitRouter.get("/", async function (req, res) {
   const gits = await dataSource
     .getRepository(Git)

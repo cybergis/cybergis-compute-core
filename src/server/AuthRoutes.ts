@@ -2,13 +2,14 @@ import axios, { AxiosResponse } from "axios";
 import express from "express";
 
 import { config, hpcConfigMap } from "../../configs/config";
+import { modifyUserBodySchema, ApprovalType, CILogonTokenBody, CILogonUserInfo } from "../definitions";
 import * as Helper from "../helpers/Helper";
+import { getUsername } from "../helpers/JupyterHubUtil";
 import { AllowList, Approvals, DenyList, UserInfo } from "../models";
 import dataSource from "../utils/DB";
 import { sendRequest } from "../utils/Email";
-import { modifyUserBody, ApprovalType, CILogonTokenBody, CILogonUserInfo } from "../utils/types";
 
-import { validator, requestErrors, schemas, jupyterHub } from "./ServerUtil";
+import { validateZodSchema } from "./ServerUtil";
 
 const authRouter = express.Router();
 
@@ -28,16 +29,14 @@ const authRouter = express.Router();
  *              description: Invalid HPC requested/malformed request body
  */
 authRouter.post("/request/addUser", async function (req, res) {
-  const errors = requestErrors(
-    validator.validate(req.body, schemas.modifyUser)
-  );
+  const validation = validateZodSchema(modifyUserBodySchema, req.body);
 
-  if (errors.length > 0) {
-    res.status(402).json({ error: "invalid input", messages: errors });
+  if (!validation.success) {
+    res.status(402).json({ error: "invalid input", messages: validation.errors });
     return;
   }
 
-  const body = req.body as modifyUserBody; 
+  const body = validation.data;
 
   if (!(body.hpc in hpcConfigMap)) {
     res.status(402).json({ error: "invalid hpc passed in" });
@@ -97,16 +96,14 @@ authRouter.post("/request/addUser", async function (req, res) {
  *              description: Invalid HPC requested/malformed request body
  */
 authRouter.post("/request/denyUser", async function (req, res) {
-  const errors = requestErrors(
-    validator.validate(req.body, schemas.modifyUser)
-  );
+  const validation = validateZodSchema(modifyUserBodySchema, req.body);
 
-  if (errors.length > 0) {
-    res.status(402).json({ error: "invalid input", messages: errors });
+  if (!validation.success) {
+    res.status(402).json({ error: "invalid input", messages: validation.errors });
     return;
   }
 
-  const body = req.body as modifyUserBody;
+  const body = validation.data;
 
   if (!(body.hpc in hpcConfigMap)) {
     res.status(402).json({ error: "invalid hpc passed in" });
@@ -244,7 +241,7 @@ authRouter.get("/cilogon/callback", async (req, res) => {
     return;
   }
 
-  const user = await jupyterHub.getUsername(state);
+  const user = await getUsername(state);
 
   if (user === null) {
     res.status(400).json({ error: "could not get the username of the jupyterhub token" });

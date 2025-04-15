@@ -4,6 +4,14 @@ import { MailOptions } from "nodemailer/lib/json-transport";
 import { config, hpcConfigMap } from "../../configs/config";
 import { UserInfo } from "../models";
 
+/**
+ * Sends a request for a user accessing an hpc to admins of the hpc.
+ * @param link approval link
+ * @param user user making the request
+ * @param approval whether or not this is an approval (vs. a denial) request
+ * @param hpc hpc the request is for
+ * @param userInfo info of the user
+ */
 export async function sendRequest(
   link: string, 
   user: string, 

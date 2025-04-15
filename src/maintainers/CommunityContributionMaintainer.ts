@@ -1,12 +1,12 @@
-import SingularityConnector from "../connectors/SingularityConnector";
+import { SingularityConnector } from "../connectors";
+import { executableManifest, GitFolder } from "../definitions";
 import GitUtil from "../helpers/GitUtil";
 import * as Helper from "../helpers/Helper";
-import XSEDEUtil from "../helpers/XSEDEUtil";
-import { Folder, Git } from "../models";
+import { jobLog } from "../helpers/XSEDEUtil";
+import { Folder, Git, Job } from "../models";
 import dataSource from "../utils/DB";
 import { BaseFolderUploader, FolderUploaderHelper } from "../utils/FolderUploader";
 import { ResultFolderContentManager } from "../utils/Redis";
-import { executableManifest, GitFolder } from "../utils/types";
 
 import BaseMaintainer from "./BaseMaintainer";
 
@@ -14,26 +14,36 @@ import BaseMaintainer from "./BaseMaintainer";
  * Specialized maintainer for handling jobs submitted to community HPCs (no login). Inherits from BaseMaintainer.
  */
 class CommunityContributionMaintainer extends BaseMaintainer {
-
-  declare public connector: SingularityConnector;  // connector to communicate with HPC
+  public connector!: SingularityConnector;
 
   public resultFolderContentManager: ResultFolderContentManager =
     new ResultFolderContentManager();
-
   public executableManifest!: executableManifest;  // details about the job
 
-  onDefine() {
-    this.connector = this.getSingularityConnector();
+  /**
+   *
+   * @param job job to maintain
+   */
+  public constructor(job: Job
+  ) {
+    super(job);
   }
 
+  protected onDefine = () => undefined;
+  
   /**
    * On maintainer initialization, set executableManifest, and give it to the connector. 
    * Update the event log to reflect the job being initialized or encountering a system error.
-   *
-   * @async
+   * 
    */
-  async onInit() {
+  protected async onInit() {
     try {
+      let connector = await this.getSingularityConnector();
+
+      if (!connector) {
+        throw new Error("unable to create connector");
+      }
+      
       let localExecutableFolder: GitFolder;
       if (
         typeof this.job.localExecutableFolder === "object" &&
@@ -61,8 +71,14 @@ class CommunityContributionMaintainer extends BaseMaintainer {
       
       // overwrite default singularity connector if cvmfs needs to be turned on
       if (this.executableManifest.connector === "SingCVMFSConnector"){
-        this.connector = this.getSingCVMFSConnector();
+        connector = (await this.getSingCVMFSConnector())!;
       }
+
+      if (!connector) {
+        throw new Error("unable to create connector for maintainer");
+      }
+
+      this.connector = connector;
 
       // upload executable folder
       if (!this.job.localExecutableFolder)
@@ -76,7 +92,8 @@ class CommunityContributionMaintainer extends BaseMaintainer {
           localExecutableFolder,
           this.job.hpc,
           this.job.userId,
-          this.connector
+          this.connector.getSSHConnection(),
+          this.job.id
         )
       );
       
@@ -92,8 +109,8 @@ class CommunityContributionMaintainer extends BaseMaintainer {
           this.job.localDataFolder,
           this.job.hpc,
           this.job.userId,
+          this.connector.getSSHConnection(),
           this.job.id,
-          this.connector
         );
 
         this.connector.setRemoteDataFolderPath(uploader.hpcPath);
@@ -112,8 +129,8 @@ class CommunityContributionMaintainer extends BaseMaintainer {
         { type: "empty" },
         this.job.hpc,
         this.job.userId,
+        this.connector.getSSHConnection(),
         this.job.id,
-        this.connector
       );
       this.connector.setRemoteResultFolderPath(uploader.hpcPath);
       this.job.remoteResultFolder = (await dataSource
@@ -144,7 +161,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
 
       // log on xsede
       Helper.nullGuard(this.hpc);
-      await XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc, this.job);
+      await jobLog(this.connector.slurm_id, this.hpcSettings, this.job);
     } catch (e) {
       this.emitEvent(
         "JOB_RETRY",
@@ -155,10 +172,9 @@ class CommunityContributionMaintainer extends BaseMaintainer {
 
   /**
    * If the job is complete, download the results to the remote result file path, and if it encounters an error, update the event log to reflect this.
-   *
-   * @async
+   * 
    */
-  async onMaintain() {
+  protected async onMaintain() {
     try {
       // query HPC status via connector
       const status = await this.connector.getStatus();
@@ -185,7 +201,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
 
         // submit again to XSEDE
         Helper.nullGuard(this.hpc);
-        await XSEDEUtil.jobLog(this.connector.slurm_id, this.hpc, this.job); // for backup submit
+        await jobLog(this.connector.slurm_id, this.hpcSettings, this.job); // for backup submit
 
         // fetch result folder content
         // TODO: make this shorter
@@ -212,7 +228,6 @@ class CommunityContributionMaintainer extends BaseMaintainer {
         }
 
         // update redis with this job's contents
-        Helper.nullGuard(this.id);
         await this.resultFolderContentManager.put(this.id, contents);
       }
     } catch (e) {
@@ -227,21 +242,21 @@ class CommunityContributionMaintainer extends BaseMaintainer {
   /**
    * Pause the connector
    */
-  async onPause() {
+  protected async onPause() {
     await this.connector.pause();
   }
 
   /**
    * Resume the connector
    */
-  async onResume() {
+  protected async onResume() {
     await this.connector.resume();
   }
 
   /**
    * Cancel the connector
    */
-  async onCancel() {
+  protected async onCancel() {
     await this.connector.cancel();
   }
 }

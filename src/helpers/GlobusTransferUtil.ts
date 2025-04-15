@@ -1,26 +1,23 @@
 import axios, { AxiosResponse } from "axios";
 
 import { config } from "../../configs/config";
+import { GlobusFolder, GlobusAuthResponse } from "../definitions";
 import { GlobusTransferRefreshToken } from "../models";
 import dataSource from "../utils/DB";
-import { GlobusFolder } from "../utils/types";
-
 
 const baseUrl = "https://transfer.api.globus.org/v0.10";
 
-interface GlobusAuthResponse {
-  access_token: string;
-  expires_in: number;
-  token_type: string;
-  refresh_token: string;
-  scope: string;
-}
-
+/**
+ *
+ */
 export class GlobusTransferUtil {
   private accessToken!: string;
   private time = -1;
   private delay = -1;
 
+  /**
+   * @throws {Error} if unable to resolve the globus refresh token
+   */
   private async init() {
     if (this.accessToken !== undefined && (new Date().getTime() - this.time) <= this.delay) {
       return;
@@ -53,6 +50,10 @@ export class GlobusTransferUtil {
     this.accessToken = response.data.access_token;
   }
 
+  /**
+   * @throws {Error} if the request to get the submission id failed
+   * @returns the submission ID of the globus job
+   */
   private async getSubmissionId(): Promise<string> {
     await this.init();
 
@@ -69,6 +70,7 @@ export class GlobusTransferUtil {
 
     } catch (err) {
       console.error("error getting submission id for transfer submission: ", err);
+      throw err;
     }
 
     throw new Error("Something went wrong getting the submission id");
@@ -76,38 +78,34 @@ export class GlobusTransferUtil {
 
   /**
    * Initializes globus job
-   *
-   * @static
-   * @async
-   * @param {GlobusFolder} from - from transfer folder
-   * @param {GlobusFolder} to - to transfer folder
-   * @param {hpcConfig} hpcConfig - hpcConfiguration
-   * @param {string} [label=""] - task label
-   * @return {Promise<string>} - taskId
+   * @param from - from transfer folder
+   * @param to - to transfer folder
+   * @param label - task label
    * @throws {Error} - thrown if globus query status fails
+   * @returns - taskId
    */
   public async initTransfer(
     from: GlobusFolder,
     to: GlobusFolder,
-    label=""
+    label = ""
   ): Promise<string> {
     await this.init();
 
-    const data = {
-      DATA_TYPE: "transfer",
-      submission_id: await this.getSubmissionId(),
-      label: (label !== "" ? `${label}_${Math.floor(Math.random() * 1000)}` : undefined),
-      source_endpoint: from.endpoint,
-      destination_endpoint: to.endpoint,
-      DATA: [{
-        DATA_TYPE: "transfer_item",
-        source_path: from.path,
-        destination_path: to.path,
-        recursive: true
-      }]
-    };
-
     try {
+      const data = {
+        DATA_TYPE: "transfer",
+        submission_id: await this.getSubmissionId(),
+        label: (label !== "" ? `${label}_${Math.floor(Math.random() * 1000)}` : undefined),
+        source_endpoint: from.endpoint,
+        destination_endpoint: to.endpoint,
+        DATA: [{
+          DATA_TYPE: "transfer_item",
+          source_path: from.path,
+          destination_path: to.path,
+          recursive: true
+        }]
+      };
+
       const response: AxiosResponse<{ task_id: string }> = await axios.post(`${baseUrl}/transfer`, data, {
         headers: {
           "Content-Type": "application/json",
@@ -128,19 +126,25 @@ export class GlobusTransferUtil {
     throw new Error("Something went wrong initializing globus transfer");
   }
 
+  /**
+   * Repeatedly polls for the status of the given task. 
+   * @param taskId identifier for the task to monitor
+   * @throws {Error} if unable to query the transfer status
+   * @returns the status code of the task
+   */
   public async monitorTransfer(taskId: string): Promise<string> {
     await this.init();
 
     let tryAgain = true;
 
     try {
-      while (true) {  // eslint-disable-line no-constant-condition
+      while (true) {
         const response: AxiosResponse<{ status: string }> = await axios.get(`${baseUrl}/task/${taskId}`, {
           headers: {
             "Authorization": `Bearer ${this.accessToken}`
           }
         });
-  
+
         if (response.status === 200) {
           if (response.data.status === "SUCCEEDED" || response.data.status === "FAILED") {
             return response.data.status;
@@ -155,7 +159,7 @@ export class GlobusTransferUtil {
           break;
         }
       }
-      
+
 
     } catch (err) {
       console.error("Error getting transfer task status: ", err);
@@ -164,6 +168,12 @@ export class GlobusTransferUtil {
     throw new Error("Something went wrong monitoring transfer");
   }
 
+  /**
+   * Retrieves the status code of the task (no polling)
+   * @param taskId task to get the status code for
+   * @throws {Error} if unable to query the transfer status
+   * @returns status of the task
+   */
   public async queryTransferStatus(taskId: string): Promise<string> {
     await this.init();
 
@@ -173,7 +183,7 @@ export class GlobusTransferUtil {
           "Authorization": `Bearer ${this.accessToken}`
         }
       });
-  
+
       if (response.status === 200) {
         return response.data.status;
       } else {
@@ -187,7 +197,14 @@ export class GlobusTransferUtil {
     throw new Error("Something went wrong querying transfer status");
   }
 
-  private escape(username: string, escapeChar="_", safe=new Set("abcdefghijklmnopqrstuvwxyz0123456789")) {
+  /**
+   * Gets rid of non-safe characters in a username to prevent downstream errors.
+   * @param username username to escape
+   * @param escapeChar character to use in escape characters
+   * @param safe set of safe characters to use in a username
+   * @returns the escaped versino of the username
+   */
+  private escape(username: string, escapeChar = "_", safe = new Set("abcdefghijklmnopqrstuvwxyz0123456789")) {
     const escapedUsername: string[] = [];
 
     for (const char of username) {
@@ -203,6 +220,12 @@ export class GlobusTransferUtil {
     return escapedUsername.join("");
   }
 
+  /**
+   * Does logic in mapping a username to its expected form. 
+   * @param initial_username initial username
+   * @param mapping_func how to map the username, if at all
+   * @returns the mapped version of the username
+   */
   public mapUsername(initial_username: string, mapping_func: string | null) {
     if (mapping_func === "iguide-mapping") {
       return `iguide-claim-${this.escape(initial_username, "-").toLowerCase()}`;

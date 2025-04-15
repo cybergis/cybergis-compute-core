@@ -1,7 +1,13 @@
-import express = require("express");
-import fileUpload = require("express-fileupload");
-import morgan = require("morgan");
-import swaggerUI = require("swagger-ui-express");
+import cors from "cors";
+import express from "express";
+import fileUpload from "express-fileupload";
+import { rootPath } from "get-root-path";
+import morgan from "morgan";
+import swaggerUi from "swagger-ui-express";
+
+
+import { readFile } from "fs/promises";
+import { join } from "path";
 
 import {
   config,
@@ -16,12 +22,13 @@ import infoRouter from "./InfoRoutes";
 import jobRouter from "./JobRoutes";
 import userRouter from "./UserRoutes";
 
-const swaggerDocument: Record<string, unknown> = require("../../swagger.json");  // eslint-disable-line
-
 // create the express app
 const app = express();
 
 // initializes a hello world repository in the DB
+/**
+ *
+ */
 async function initHelloWorldGit() {
   const helloWorldGit = await dataSource
     .getRepository(Git)
@@ -43,17 +50,14 @@ async function initHelloWorldGit() {
 }
 
 // establish database connection
-dataSource
-  .initialize()
-  .then(() => {
-    console.log("Data Source has been initialized!");
-
-    initHelloWorldGit().catch(() => {false;});
-  })
-  .catch((err) => {
-    console.error("Error during Data Source initialization:", err);
-    throw err;
-  });
+try {
+  await dataSource.initialize();
+  await initHelloWorldGit();
+  console.log("Data Source has been initialized!");
+} catch (err) {
+  console.error("Error during Data Source initialization:", err);
+  throw err;
+}
 
 
 // handle parsing arguments
@@ -61,6 +65,7 @@ dataSource
 app.use(express.json());
 app.use(morgan("combined"));
 app.use(express.urlencoded({ extended: true }));
+app.use(cors());
 // app.use(bodyParser.urlencoded({ extended: true }));
 
 // uploading files
@@ -79,8 +84,16 @@ app.use(
 );
 
 // create documentation routes
-app.use("/ts-docs", express.static("../../tsdoc"));
-app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swaggerDocument));
+app.use("/ts-docs", express.static(join(rootPath, "production/tsdoc")));
+
+try {
+  const file = await readFile(join(rootPath, "production/swagger.json"), "utf8");
+  const swaggerDocument = JSON.parse(file) as Record<string, unknown>;
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+} catch (err) {
+  console.error("error setting up swagger docs: ", err);
+}
+
 
 /**
  * @openapi
@@ -90,7 +103,6 @@ app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swaggerDocument));
  *      responses:
  *          200:
  *              descrption: Successfuly returns "hello world"
- *
  */
 app.get("/", (req, res) => {
   res.json({ message: "hello world" });
@@ -98,12 +110,12 @@ app.get("/", (req, res) => {
 
 
 /**
-   * @openapi
-   * /clean:
-   *  put:
-   *      description: Not yet implemented
-   */
-app.put("/clean", async function (_req, _res) { });  // eslint-disable-line
+ * @openapi
+ * /clean:
+ *  put:
+ *      description: Not yet implemented
+ */
+app.put("/clean", async function (_req, _res) { }); // eslint-disable-line @typescript-eslint/no-empty-function
 
 app.use("/folder", folderRouter);
 app.use("/git", gitRouter);

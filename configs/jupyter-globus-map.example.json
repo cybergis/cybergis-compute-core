@@ -20,14 +20,14 @@
     "jupyter.iguide.illinois.edu": {
         "comment":"IGUIDE on js2 k8s",
         "endpoint": "888b0be2-cffd-11ed-8ea8-fdf94a47aaa3",
-        "root_path": "/~/mnt/jupyter-data",
+        "root_path": "/mnt/jupyter-data",
         "container_home_path": "/home/jovyan/",
         "user_mapping": "iguide-mapping"
     },
     "www.iguide.geoedf.org": {
         "comment":"IGUIDE on js2 k8s",
         "endpoint": "888b0be2-cffd-11ed-8ea8-fdf94a47aaa3",
-        "root_path": "/~/mnt/jupyter-data/",
+        "root_path": "/mnt/jupyter-data/",
         "container_home_path": "/home/jovyan/",
         "user_mapping": "iguide-mapping"
     },
@@ -36,5 +36,12 @@
         "endpoint": "52bc63ec-cfeb-11ed-96f7-e54704575ba0",
         "root_path": "/~/mnt/nfs_folder/notebook_home_data/",
         "container_home_path": "/home/jovyan/work/"
+    },
+    "jupyter.i-guide.io": {
+        "comment":"IGUIDE on js2 k8s",
+        "endpoint": "888b0be2-cffd-11ed-8ea8-fdf94a47aaa3",
+        "root_path": "/mnt/jupyter-data",
+        "container_home_path": "/home/jovyan/",
+        "user_mapping": "iguide-mapping"
     }
 }

@@ -19,7 +19,7 @@
       "job_pool_capacity": 10,
       "globus": {
         "identity": "apadmana@illinois.edu",
-        "endpoint": "894f743e-3aee-4dee-83c6-54865cea7b33",
+        "endpoint": "2454254f-0b4e-451d-9002-ecfc6eeba774",
         "root_path": "/"
       },
       "mount": {
@@ -92,11 +92,13 @@
         "endpoint": "8e5f3a0a-542d-11eb-a45a-0e095b4c2e55",
         "root_path": "/jet/home/cybergis/data"
       },
-      "init_sbatch_options": ["#SBATCH --partition=GPU-shared"],
+      "init_sbatch_options": [],
       "allowlist": [],
       "denylist": [],
       "admins": [],
-      "whitelist_enabled": false
+      "whitelist_enabled": false,
+      "allocation": null,
+      "partition": "GPU-shared"
     },
     "anvil_community": {
       "ip": "anvil.rcac.purdue.edu",

@@ -1,19 +1,20 @@
 import getRandomValues from "get-random-values";
 
 import { config, hpcConfigMap, jupyterGlobusMap } from "../../configs/config";
+import { callableFunction } from "../definitions";
 import { AllowList, DenyList, Job } from "../models";
 import dataSource from "../utils/DB";
-import { callableFunction } from "../utils/types";
 // import * as fs from "fs";
 
 const CHARACTERS =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
+// import * as fs from "fs";
+
 /**
  * Converts base64 string to binary form.
- *
- * @param {string} target b64 string to be encoded
- * @return {string} equivalent binary string
+ * @param target b64 string to be encoded
+ * @returns equivalent binary string
  */
 export function btoa(target: string): string {
   return Buffer.from(target, "base64").toString("binary");
@@ -21,9 +22,8 @@ export function btoa(target: string): string {
 
 /**
  * Converts binary string to base64.
- * 
- * @param {string} target binary string to be encoded
- * @returns {string} b64 encoding of target
+ * @param target binary string to be encoded
+ * @returns b64 encoding of target
  */
 export function atob(target: string): string {
   return Buffer.from(target).toString("base64");
@@ -31,8 +31,7 @@ export function atob(target: string): string {
 
 /**
  * Generates a random id composed of a number based on time and a random string of length 5. 
- * 
- * @returns {string} random 15 digit ID (number of unix digits + random string)
+ * @returns random 15 digit ID (number of unix digits + random string)
  */
 export function generateId(): string {
   return Math.round(new Date().getTime() / 1000) + randomStr(5);
@@ -40,13 +39,12 @@ export function generateId(): string {
 
 /**
  * Converts a job to a dictionary object, with logic for excluding certain fields. 
- *
- * @param {(Job | Job[])} job attributes of a job (can be recursively called)
- * @param {Array} [exclude=[]] list of attributes to exclude
- * @return {(object | object[])} job object including all attributes in the job list and excluding fields specified in exclude
+ * @param job attributes of a job (can be recursively called)
+ * @param [exclude] list of attributes to exclude
+ * @returns job object including all attributes in the job list and excluding fields specified in exclude
  */
 export function job2object(
-  job: Job | Job[], 
+  job: Job | Job[],
   exclude: string[] = []
 ): object | object[] {
   if (Array.isArray(job)) {
@@ -56,7 +54,7 @@ export function job2object(
     }
     return outArray;
   }
-  
+
   const out: Record<string, unknown> = {};
   const include = Object.getOwnPropertyNames(job);
 
@@ -68,19 +66,18 @@ export function job2object(
       // } else {
       out[i] = job[i as keyof Job];
       // }
-    } 
+    }
     else out[i] = null;
   }
-  
+
   return out;
 }
 
 /**
  *Generates a string of random length.
-  *
-  * @param {number} length desired length of the return string
-  * @return {string} random string of size length
-  */
+ * @param length desired length of the return string
+ * @returns random string of size length
+ */
 export function randomStr(length: number): string {
   let result = "";
   for (let i = 0; i < length; i++) {
@@ -91,10 +88,8 @@ export function randomStr(length: number): string {
 
 /**
  * Generate a random base 64 string with a given length.
- *
- * @export
- * @param {number} length length of desired string
- * @return {string} base 64 string
+ * @param length length of desired string
+ * @returns base 64 string
  */
 export function randomHash(length: number): string {
   const random = new Uint8Array(length);
@@ -107,9 +102,8 @@ export function randomHash(length: number): string {
 
 /**
  * Checks if an object is empty. Not used.
- *
- * @param {Object} obj object to check
- * @return {boolean} whether or not that object is empty
+ * @param {object} obj object to check
+ * @returns {boolean} whether or not that object is empty
  */
 // isObjectEmpty(obj: object): boolean {
 //   return Object.keys(obj).length === 0;
@@ -117,9 +111,8 @@ export function randomHash(length: number): string {
 
 /**
  * Checks if jupyter host is in the config.
- *
- * @param {string} host the exact JupyterHub host
- * @return {boolean} whether or not the Jupyter can submit
+ * @param host the exact JupyterHub host
+ * @returns whether or not the Jupyter can submit
  */
 export function isAllowlisted(host: string): boolean {
   const jupyterGlobus = jupyterGlobusMap[host];
@@ -133,11 +126,10 @@ export function isAllowlisted(host: string): boolean {
 
 /**
  *Checks if a user is authenticated for an HPC. 
-  *
-  * @param {string} user the user to check for
-  * @param {string} hpc the HPC to check for
-  * @return {boolean} whether the user is authenticated
-  */
+ * @param user the user to check for
+ * @param hpc the HPC to check for
+ * @returns whether the user is authenticated
+ */
 export function canAccessHPC(user: string, hpc: string): boolean {
   const allowList = hpcConfigMap[hpc].allowlist;
   const denyList = hpcConfigMap[hpc].denylist;
@@ -161,6 +153,12 @@ export function canAccessHPC(user: string, hpc: string): boolean {
   }
 }
 
+/**
+ * 
+ * @param user user accessing the hpc
+ * @param hpc hpc being accessed
+ * @returns whether or not the user can access the hpc
+ */
 export async function canAccessHPC_DB(user: string, hpc: string): Promise<boolean> {
   const denyListRepo = dataSource.getRepository(DenyList);
   const denied = await denyListRepo.findOneBy({ hpc, user, deletedAt: undefined });
@@ -186,9 +184,15 @@ export async function canAccessHPC_DB(user: string, hpc: string): Promise<boolea
   return false;
 }
 
+/**
+ * Asserts that an object is an error. 
+ * @param err error to assert
+ * @throws {TypeError} if the object is not an error
+ * @returns resulting error
+ */
 export function assertError(err: unknown): Error {
   if (!(err instanceof Error)) {
-    throw err;
+    throw new TypeError("object expected to be an error is not an error");
   }
 
   return err;
@@ -198,13 +202,17 @@ export const consoleEnd = "\x1b[0m";
 
 export const consoleGreen = "\x1b[32m";
 
+/**
+ * Checks if an object is nullish; if it is, it gives a soft warning
+ * @param x object to check
+ */
 export function nullGuard<T>(x: null | T | undefined): asserts x is T {
   const e = new Error();
   const frame = e.stack?.split("\n");
   if (!frame) {
     console.assert(
-      x !== null && x !== undefined, 
-      "%o", "Variable is undefined/null when it should not be. No stack frame found."  // eslint-disable-line
+      x !== null && x !== undefined,
+      "%o", "Variable is undefined/null when it should not be. No stack frame found."
     );
     return;
   }
@@ -212,28 +220,29 @@ export function nullGuard<T>(x: null | T | undefined): asserts x is T {
   const lineNumber = frame[2].split(":").reverse()[1];
   const functionName = frame[2].split(" ")[5];
   console.assert(
-    x !== null && x !== undefined, 
-    "%o", 
+    x !== null && x !== undefined,
+    "%o",
     `Variable is undefined/null when it should not be. Assertion at ${frame[0]}, ${functionName}: ${lineNumber}`
   );
 }
 
 /**
-   *
-   * @param funcCall - The function that is run with backoff
-   * @param parameters - What the function is input as parameters (in the form of one array)
-   * @param printOnError - Printed with error when catch block reached
-   */
+ *
+ * @param funcCall - The function that is run with backoff
+ * @param parameters - What the function is input as parameters (in the form of one array)
+ * @param printOnError - Printed with error when catch block reached
+ * @throws {Error} if unable to run the function within the specified backoff limit
+ */
 export async function runCommandWithBackoff(
-  funcCall: callableFunction, 
-  parameters: unknown[], 
+  funcCall: callableFunction,
+  parameters: unknown[],
   printOnError: string | null
 ) {
   const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
   let wait = 0;
   let end = false;
 
-  while (true && !end) {
+  while (!end) {
     if (wait > 100) {
       throw new Error("The function was attempted too mant times unsuccessfully");
     }
@@ -244,6 +253,6 @@ export async function runCommandWithBackoff(
     } catch (e) {
       console.error(printOnError ?? "" + assertError(e).stack);
     }
-    wait = wait == 0 ? 2 : wait * wait;
+    wait = wait === 0 ? 2 : wait * wait;
   }
 }

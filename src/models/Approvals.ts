@@ -33,15 +33,16 @@ export class Approvals {
     approvedAt?: Date;
 
   /**
-   * Set the createdAt time to the current time.
    *
-   * @return {Date} date - Date this job was created.
    */
   @BeforeInsert()
   setCreatedUpdated() {
     this.createdAt = new Date();
   }
 
+  /**
+   *
+   */
   approve() {
     this.approvedAt = new Date();
   }

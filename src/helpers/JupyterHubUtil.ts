@@ -1,0 +1,96 @@
+import axios from "axios";
+
+import * as path from "path";
+
+import { jupyterGlobusMap } from "../../configs/config";
+
+import * as Helper from "./Helper";
+
+interface decodedToken {
+  host: string;
+  token: string;
+}
+
+/**
+ * Functions for interfacing with JupyterHub. 
+ */
+
+const basePath = "/hub/api";
+
+/**
+ * Returns the username for a given jupyterHub authorization token.
+ * @param token the token for authorization to the jupterHub host
+ * @throws {Error} jupyterhubHost must be in whitelist
+ * @returns username
+ */
+export async function getUsername(token: string): Promise<string | null> {
+  const t = decodeToken(token);
+  const protocols = ["https", "http"];
+  const hosts = Object.keys(
+      JSON.parse(
+        JSON.stringify(jupyterGlobusMap)
+      ) as Record<string, unknown>
+  );
+    
+  let flag = false;
+
+  for (const host of hosts) {
+    if (t.host === host) {
+      flag = true;
+    }
+  }
+
+  if (!flag) {
+    throw new Error("Cannot find jupyterhubHost in whitelist");
+  }
+
+  let user: string | null = null;
+  for (const protocol of protocols) {
+    try {
+      const res = await axios.get(
+        `${protocol}://${path.join(t.host, basePath, "/user")}`,
+        {
+          headers: { Authorization: `token ${t.token}` },
+        }
+      );
+      
+      const data = res.data as { name: string };
+
+      user = `${data.name}@${t.host}`;
+      break;
+    } catch {}
+  }
+    
+  return user;
+}
+
+/**
+ * Gets the host associated with a token. Unused. 
+ * @param token token to get the host for
+ * @throws {RangeError} error if the token is unable to be decoded
+ * @returns the token
+ */
+export function getHost(token: string): string {
+  const t = decodeToken(token);
+  return t.host;
+}
+
+/**
+ * Decodes an authorization token.
+ * @param target authorization token
+ * @throws {RangeError} thrown if jupyterHub token incorrectly formatted -- unable to parse correctly
+ * @returns info relating to the host associated with the token
+ */
+function decodeToken(target: string): decodedToken {
+  const t = Helper.btoa(target); // base 64 to binary
+  const i = t.split("@");
+
+  if (i.length !== 2) {
+    throw new RangeError("JupyterHub Token is incorrectly formatted ");
+  }
+    
+  return {
+    host: i[0],
+    token: i[1],
+  };
+}
