@@ -182,7 +182,7 @@ class CommunityContributionMaintainer extends BaseMaintainer {
       // failing condition
       if (status === "ERROR" || status === "F" || status === "NF") {
         this.emitEvent(
-          "J`OB_FAILED",
+          "JOB_FAILED",
           "job [" + this.id + "] failed with status " + status
         );
         return;
