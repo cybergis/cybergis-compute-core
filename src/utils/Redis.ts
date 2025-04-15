@@ -6,10 +6,16 @@ import { Job } from "../models";
 
 import dataSource from "./DB";
 
+/**
+ * Base class for all redis stores, defines common methods. 
+ */
 class RedisStore {
 
   protected client: RedisClientType;
 
+  /**
+   *
+   */
   public constructor() {
     this.client = createClient({
       socket: {
@@ -25,6 +31,9 @@ class RedisStore {
       });
   }
 
+  /**
+   *
+   */
   public async disconnect() {
     await this.client.disconnect();
   }
@@ -32,19 +41,21 @@ class RedisStore {
 
 
 /**
- * Class for managing globus tasks, TODO: port the python scripts to the JS Globus SDK (https://www.globus.org/blog/globus-javascript-sdk-now-available)
+ * Class for managing globus tasks
  */
 export class GlobusTaskListManager extends RedisStore {
 
+  /**
+   *
+   */
   public constructor() {
     super();
   }
 
   /**
    * Assigns label to taskId
-   *
-   * @param {string} label - input label
-   * @param {string} taskId - setValue id
+   * @param label - input label
+   * @param taskId - setValue id
    */
   public async put(label: string, taskId: string) {
     await this.client.SET(`globus_task_${label}`, taskId);
@@ -52,9 +63,8 @@ export class GlobusTaskListManager extends RedisStore {
 
   /**
    * Get taskId for specified label
-   *
-   * @param {string} label - input label
-   * @return {Promise<string>} out - redis output
+   * @param label - input label
+   * @returns out - redis output
    */
   public async get(label: string): Promise<string | null> {
     return this.client.GET(`globus_task_${label}`);
@@ -62,8 +72,7 @@ export class GlobusTaskListManager extends RedisStore {
 
   /**
    * removes taskId for specified label
-   *
-   * @param {string} label - input label
+   * @param label - input label
    */
   public async remove(label: string) {
     const out = await this.get(label);
@@ -81,16 +90,17 @@ export class GlobusTaskListManager extends RedisStore {
  */
 export class ResultFolderContentManager extends RedisStore {
 
+  /**
+   *
+   */
   public constructor() {
     super();
   }
 
   /**
    * Set the value of the job result folder to the contents passed
-   *
-   * @async
-   * @param {string} jobId - This job
-   * @param {string[]} contents - Contents to be listed in the result folder
+   * @param jobId - This job
+   * @param contents - Contents to be listed in the result folder
    */
   public async put(jobId: string, contents: string[]) {
     await this.client.SET(`job_result_folder_content${jobId}`, JSON.stringify(contents));
@@ -98,10 +108,8 @@ export class ResultFolderContentManager extends RedisStore {
 
   /**
    * Return the parsed contents of the results folder
-   *
-   * @async
-   * @param {string} jobId - This job
-   * @returns {string[] | null} - Contents of the results folder
+   * @param jobId - This job
+   * @returns - Contents of the results folder
    */
   public async get(jobId: string): Promise<string[] | null> {
     const out = await this.client.GET(`job_result_folder_content${jobId}`);
@@ -110,9 +118,7 @@ export class ResultFolderContentManager extends RedisStore {
 
   /**
    * Delete the result folder content associated with this job
-   *
-   * @async
-   * @param {string} jobId - This job
+   * @param jobId - This job
    */
   public async remove(jobId: string) {
     const out = await this.get(jobId);
@@ -132,6 +138,10 @@ export class JobQueue extends RedisStore {
   private name: string;
   private credentialManager = new CredentialManager();
 
+  /**
+   *
+   * @param name name of the job queue
+   */
   public constructor(name: string) {
     super();
 
@@ -140,7 +150,6 @@ export class JobQueue extends RedisStore {
 
   /**
    * Pushes a job onto the queue. 
-   * 
    * @param item the job to push
    */
   public async push(item: Job) {
@@ -149,8 +158,7 @@ export class JobQueue extends RedisStore {
 
   /**
    * Shifts everything in the queue forwards and pops out the job at the front. 
-   * 
-   * @returns {Promise{Job | null}} the popped out job
+   * @returns the popped out job
    */
   public async pop(): Promise<Job | null> {
     const jobId = await this.client.LPOP(this.name);
@@ -164,7 +172,6 @@ export class JobQueue extends RedisStore {
 
   /**
    * Returns whether the queue is empty.
-   * 
    * @returns true if empty; false otherwise
    */
   public async isEmpty(): Promise<boolean> {
@@ -173,8 +180,7 @@ export class JobQueue extends RedisStore {
 
   /**
    * Returns the job at the front of the queue without mutating the queue. 
-   * 
-   * @returns {Promise{Job | null | undefined}} the job at the front or undefined if empty
+   * @returns the job at the front or undefined if empty
    */
   public async peek(): Promise<Job | null> {
     if (await this.isEmpty()) {
@@ -188,8 +194,7 @@ export class JobQueue extends RedisStore {
 
   /**
    * Returns the length of the redis queue. 
-   * 
-   * @returns {number} length
+   * @returns length
    */
   async length(): Promise<number> {
     return this.client.LLEN(this.name);
@@ -197,10 +202,8 @@ export class JobQueue extends RedisStore {
 
   /**
    * Gets a job by the jobId. Also populates the job's credentials. 
-   *
-   * @private
-   * @param {string} id jobId
-   * @return {Promise<Job | null>} job with the given jobId
+   * @param id jobId
+   * @returns job with the given jobId
    */
   private async getJobById(id: string): Promise<Job | null> {
     const jobRepo = dataSource.getRepository(Job);
@@ -228,15 +231,17 @@ export class JobQueue extends RedisStore {
  */
 export class CredentialManager extends RedisStore {
 
+  /**
+   *
+   */
   public constructor() {
     super();
   }
 
   /**
    * Adds a key-credential pair to the redis store.
-   *
-   * @param {string} key
-   * @param {credential} cred credential
+   * @param key key of the credential (user)
+   * @param cred credential
    */
   async add(key: string, cred: credential) {
     await this.client.SET(key, JSON.stringify(cred));
@@ -244,9 +249,8 @@ export class CredentialManager extends RedisStore {
 
   /**
    * Gets the credentials associated with a given key. 
-   *
-   * @param {string} key target key
-   * @return {Promise<credential>} associated credential
+   * @param key target key
+   * @returns associated credential
    */
   async get(key: string): Promise<credential | null> {
     const out = await this.client.GET(key);

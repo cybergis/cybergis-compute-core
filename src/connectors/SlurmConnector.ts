@@ -1,36 +1,89 @@
 import * as path from "path";
 
 import { config, hpcConfigMap } from "../../configs/config";
-import { slurm } from "../definitions";
 import { ConnectorError } from "../definitions";
+import { slurm } from "../definitions";
 import * as Helper from "../helpers/Helper";
+import BaseMaintainer from "../maintainers/BaseMaintainer";
 
-import BaseConnector from "./BaseConnector";
-// import { FolderUploaderHelper } from "../FolderUploader";
+import { SSHConnector } from "./SSHConnector";
 
 /**
  * Specialization of BaseConnector that, in addition to offering ssh connection, supports slurm connections with the HPC. 
  */
-class SlurmConnector extends BaseConnector {
-  
+export class SlurmConnector {
+
+  /** parent pointer */
+  protected maintainer: BaseMaintainer;
+
+  /** properties */
+  protected is_cvmfs: boolean;
+  protected remoteExecutableFolderPath!: string;
+  protected remoteDataFolderPath!: string;
+  protected remoteResultFolderPath!: string;
+
   public slurm_id!: string;
-  public modules: string[] = [];  // list of modules to load in slurm environment
-  public template!: string;
-  public isContainer = false;
+  protected modules: string[] = [];  // list of modules to load in slurm environment
+  protected template!: string;
+  protected isContainer = false;
+
+  /** config */
+  protected sshConnector: SSHConnector;
 
   /**
-   * Registers all of the specified modules.
    *
-   * @param {Array<string>} modules - Array of strings
+   * @param maintainer maintainer that this connector was created for
+   * @param connector sshconnector this connector should use
+   * @param is_cvmfs whether this connector is cvmfs
    */
-  registerModules(modules: string[]) {
+  protected constructor(
+    maintainer: BaseMaintainer,
+    connector: SSHConnector,
+    is_cvmfs = false
+  ) {
+    this.maintainer = maintainer;
+    this.is_cvmfs = is_cvmfs;
+    this.sshConnector = connector;
+  }
+
+  /**
+   * Creates a SlurmConnector, ensuring that the connector is functional while doing so
+   * @param maintainer maintainer to create a slurmconnector for
+   * @param is_cvmfs whether this connector should be cvmfs
+   * @returns the desired connector, or undefined if the construction was unsuccessful
+   */
+  public static async build(
+    maintainer: BaseMaintainer, 
+    is_cvmfs = false
+  ): Promise<SlurmConnector | undefined> { 
+    const connector = await SSHConnector.build(
+      maintainer.hpc, 
+      maintainer.job, 
+      (...args) => maintainer.emitLog(...args),
+      (...args) => maintainer.emitEvent(...args),
+      maintainer.job.env
+    );
+
+    if (connector === undefined) {
+      return undefined;
+    }
+
+    return new SlurmConnector(maintainer, connector, is_cvmfs);
+  }
+
+  /**
+   * Registers all of the specified modules
+   * @param modules - Array of strings
+   */
+  public registerModules(modules: string[]) {
     this.modules = this.modules.concat(modules);
   }
 
   /**
    * Creates a string to import the this.modules modules.
+   * @returns the module load string
    */
-  getModuleLoadString() {
+  private getModuleLoadString() {
     let modules = "\n";
     for (const module of this.modules) {
       modules += `module load ${module}\n`;
@@ -40,13 +93,11 @@ class SlurmConnector extends BaseConnector {
 
   /**
    * Creates slurm string with specified configuation. Saves it to this.template.
-   *
-   * @param {string} cmd - command that needs to be executed
-   * @param {slurm} config - slurm configuration
+   * @param cmd - command that needs to be executed
+   * @param config - slurm configuration
    */
-  prepare(cmd: string, config: slurm) {
+  protected prepare(cmd: string, config: slurm) {
     // prepare sbatch script
-    Helper.nullGuard(this.maintainer);
     const hpc = hpcConfigMap[this.maintainer.job.hpc];
     config = Object.assign(
       {
@@ -70,73 +121,58 @@ class SlurmConnector extends BaseConnector {
       this.registerModules(config.modules.split(/\s/));
     }
 
-
-    Helper.nullGuard(this.remote_result_folder_path);
+    Helper.nullGuard(this.remoteResultFolderPath);
     Helper.nullGuard(config.mail_type);
     Helper.nullGuard(config.mail_user);
 
     // https://researchcomputing.princeton.edu/support/knowledge-base/slurm
     this.template = `#!/bin/bash
-#SBATCH --job-name=${this.jobId}
-${
-  this.connectorConfig.init_sbatch_options
-    ? this.connectorConfig.init_sbatch_options.join("\n")
-    : ""
-}
+#SBATCH --job-name=${this.maintainer.job.id}
+${this.maintainer.hpcSettings.init_sbatch_options
+        ? this.maintainer.hpcSettings.init_sbatch_options.join("\n")
+        : ""}
 ${config.num_of_node ? `#SBATCH --nodes=${config.num_of_node}` : ""}
 #SBATCH --ntasks=${config.num_of_task}
 #SBATCH --time=${config.time}
-#SBATCH --error=${path.join(
-    this.remote_result_folder_path,
-    "slurm_log",
-    "job.stderr"
-  )}
-#SBATCH --output=${path.join(
-    this.remote_result_folder_path,
-    "slurm_log",
-    "job.stdout"
-  )}
+#SBATCH --error=${path.join(this.remoteResultFolderPath, "slurm_log", "job.stderr")}
+#SBATCH --output=${path.join(this.remoteResultFolderPath, "slurm_log", "job.stdout")}
 ${config.cpu_per_task ? `#SBATCH --cpus-per-task=${config.cpu_per_task}` : ""}
 ${config.memory_per_gpu ? `#SBATCH --mem-per-gpu=${config.memory_per_gpu}` : ""}
 ${config.memory_per_cpu ? `#SBATCH --mem-per-cpu=${config.memory_per_cpu}` : ""}
 ${config.memory ? `#SBATCH --mem=${config.memory}` : ""}
 ${config.gpus ? `#SBATCH --gpus=${config.gpus}` : ""}
 ${config.gpus_per_node ? `#SBATCH --gpus-per-node=${config.gpus_per_node}` : ""}
-${
-  config.gpus_per_socket
-    ? `#SBATCH --gpus-per-socket=${config.gpus_per_socket}`
-    : ""
-}
+${config.gpus_per_socket
+        ? `#SBATCH --gpus-per-socket=${config.gpus_per_socket}`
+        : ""}
 ${config.gpus_per_task ? `#SBATCH --gpus-per-task=${config.gpus_per_task}` : ""}
 ${config.partition ? `#SBATCH --partition=${config.partition}` : ""}
 ${config.allocation ? `#SBATCH -A ${config.allocation}` : ""}
 ${this.getSBatchTagsFromArray("mail-type", config.mail_type)}
 ${this.getSBatchTagsFromArray("mail-user", config.mail_user)}
 module purge
-${
-  this.connectorConfig.init_sbatch_script
-    ? this.connectorConfig.init_sbatch_script.join("\n")
-    : ""
-}
+${this.maintainer.hpcSettings.init_sbatch_script
+        ? this.maintainer.hpcSettings.init_sbatch_script.join("\n")
+        : ""}
 ${this.getModuleLoadString()}
 ${cmd}`;
   }
 
   /**
-   * @async
+   * 
    * Submit the slurm job.
+   * @throws {ConnectorError} when job cannot be submitted or ssh commands fail
    */
-  async submit() {
+  public async submit() {
     // create job.sbatch on HPC
-    await this.mkdir(path.join(this.remote_result_folder_path ?? "", "slurm_log"));
-    await this.createFile(
+    await this.sshConnector.mkdir(path.join(this.remoteResultFolderPath, "slurm_log"));
+    await this.sshConnector.createFile(
       this.template,
-      path.join(this.getRemoteExecutableFolderPath(), "job.sbatch"),
+      path.join(this.remoteExecutableFolderPath, "job.sbatch"),
       {},
       true
     );
 
-    Helper.nullGuard(this.maintainer);
     // create job.json on HPC
     const jobJSON = {
       job_id: this.maintainer.job.id,
@@ -156,7 +192,7 @@ ${cmd}`;
         : this.getRemoteResultFolderPath(),
     };
 
-    await this.createFile(
+    await this.sshConnector.createFile(
       jobJSON,
       path.join(this.getRemoteExecutableFolderPath(), "job.json")
     );
@@ -165,7 +201,7 @@ ${cmd}`;
     if (this.maintainer !== null)
       this.maintainer.emitEvent("SLURM_SUBMIT", "submitting slurm job");
 
-    const sbatchResult = await this.exec(
+    const sbatchResult = await this.sshConnector.exec(
       "sbatch job.sbatch",
       { cwd: this.getRemoteExecutableFolderPath() },
       true,
@@ -191,16 +227,16 @@ ${cmd}`;
         this.maintainer.emitEvent(
           "SLURM_SUBMIT_ERROR",
           "cannot submit job " +
-            this.maintainer.id +
-            ": " +
-            JSON.stringify(sbatchResult)
+          this.maintainer.id +
+          ": " +
+          JSON.stringify(sbatchResult)
         );
 
       throw new ConnectorError(
         "cannot submit job " +
-          this.maintainer?.id +
-          ": " +
-          JSON.stringify(sbatchResult)
+        this.maintainer?.id +
+        ": " +
+        JSON.stringify(sbatchResult)
       );
     }
 
@@ -225,15 +261,14 @@ ${cmd}`;
   // ['3142135', 'node', 'singular', 'cigi-gis', 'R', '0:11', '1', 'keeling-b08']
 
   /**
-   * @async
+   *
    * checks job status
-   * 
-   * @returns {Promise<string>} job status (RETRY, UNKNOWN, or a slurm job status)
+   * @returns job status (RETRY, UNKNOWN, or a slurm job status)
    */
-  async getStatus(): Promise<string> {
+  public async getStatus(): Promise<string> {
     try {
       // check the status of the current slurm job
-      const squeueResult = await this.exec(
+      const squeueResult = await this.sshConnector.exec(
         `squeue --job ${this.slurm_id}`,
         {},
         true,
@@ -249,7 +284,7 @@ ${cmd}`;
       }
 
       // if there was an error/didn't have stdout, try qstat
-      const qstatResult = await this.exec(
+      const qstatResult = await this.sshConnector.exec(
         `qstat ${this.slurm_id}`,
         {},
         true,
@@ -271,36 +306,36 @@ ${cmd}`;
   }
 
   /**
-   * @async
+   * 
    * cancels the job
    */
-  async cancel() {
-    await this.exec(`scancel ${this.slurm_id}`, {}, true);
+  public async cancel() {
+    await this.sshConnector.exec(`scancel ${this.slurm_id}`, {}, true);
   }
 
   /**
-   * @async
+   * 
    * pauses the job
    */
-  async pause() {
-    await this.exec(`scontrol suspend ${this.slurm_id}`, {}, true);
+  public async pause() {
+    await this.sshConnector.exec(`scontrol suspend ${this.slurm_id}`, {}, true);
   }
 
   /**
-   * @async
+   * 
    * resumes the job
    */
-  async resume() {
-    await this.exec(`scontrol resume ${this.slurm_id}`, {}, true);
+  public async resume() {
+    await this.sshConnector.exec(`scontrol resume ${this.slurm_id}`, {}, true);
   }
 
   /**
-   * @async
+   * 
    * gets SlurmStdOut and emit it as a log in the maintainer
    */
-  async getSlurmStdout() {
-    const out = await this.cat(
-      path.join(this.remote_result_folder_path ?? "", "slurm_log", "job.stdout"),
+  public async getSlurmStdout() {
+    const out = await this.sshConnector.cat(
+      path.join(this.remoteResultFolderPath, "slurm_log", "job.stdout"),
       {}
     );
 
@@ -308,12 +343,12 @@ ${cmd}`;
   }
 
   /**
-   * @async
+   * 
    * gets SlurmStderr and emit it as a log in the maintainer
    */
-  async getSlurmStderr() {
-    const out = await this.cat(
-      path.join(this.remote_result_folder_path ?? "", "slurm_log", "job.stderr"),
+  public async getSlurmStderr() {
+    const out = await this.sshConnector.cat(
+      path.join(this.remoteResultFolderPath ?? "", "slurm_log", "job.stderr"),
       {}
     );
 
@@ -322,11 +357,9 @@ ${cmd}`;
 
   /**
    * Get sbatch tags
-   *
-   * @private
-   * @param {string} tag sbatch tags
-   * @param {string[]} vals values of sbatch tags
-   * @return {string} sbatch string
+   * @param tag sbatch tags
+   * @param vals values of sbatch tags
+   * @returns sbatch string
    */
   private getSBatchTagsFromArray(tag: string, vals: string[]): string {
     if (!vals) return "";
@@ -338,57 +371,88 @@ ${cmd}`;
   }
 
   /**
-   * Get Container executable folder path
-   *
-   * @param {string} [providedPath=null] specified path
-   * @return {string}  executable path
+   * gets remote executable folder path
+   * @param [providedPath] specified path
+   * @returns command execution output
    */
-  getContainerExecutableFolderPath(providedPath: string | null = null): string {
+  public getRemoteExecutableFolderPath(providedPath: string | null = null): string {
+    if (providedPath)
+      return path.join(this.remoteExecutableFolderPath, providedPath);
+    else
+      return this.remoteExecutableFolderPath;
+  }
+
+  /**
+   * gets remote data folder path
+   * @param [providedPath] specified path
+   * @returns command execution output
+   */
+  public getRemoteDataFolderPath(providedPath: string | null = null): string | null {
+    if (providedPath)
+      return path.join(this.remoteDataFolderPath, providedPath);
+    else
+      return this.remoteDataFolderPath;
+  }
+
+  /**
+   * gets remote result folder path
+   * @param [providedPath] specified path
+   * @returns command execution output
+   */
+  public getRemoteResultFolderPath(providedPath: string | null = null): string {
+    if (providedPath)
+      return path.join(this.remoteResultFolderPath, providedPath);
+    else
+      return this.remoteResultFolderPath;
+  }
+
+  /**
+   * Get Container executable folder path
+   * @param [providedPath] specified path
+   * @returns  executable path
+   */
+  public getContainerExecutableFolderPath(providedPath: string | null = null): string {
     if (providedPath) return path.join("/job/executable", providedPath);
     else return "/job/executable";
   }
 
   /**
    * Get Container CVMFS folder path
-   *
-   * @param {string} [providedPath=null] specified path
-   * @return {string} executable path
+   * @param [providedPath] specified path
+   * @returns executable path
    */
-  getContainerCVMFSFolderPath(providedPath: string | null = null): string {
+  public getContainerCVMFSFolderPath(providedPath: string | null = null): string {
     if (providedPath) return path.join("/tmp/cvmfs", providedPath);
     else return "/tmp/cvmfs";
   }
 
   /**
    * Get Container data folder path
-   *
-   * @param {string} [providedPath=null] specified path
-   * @return {string} executable path
+   * @param [providedPath] specified path
+   * @returns executable path
    */
-  getContainerDataFolderPath(providedPath: string | null = null): string {
+  public getContainerDataFolderPath(providedPath: string | null = null): string {
     if (providedPath) return path.join("/job/data", providedPath);
     else return "/job/data";
   }
 
   /**
    * Get Container result folder path
-   *
-   * @param {string} [providedPath=null] specified path
-   * @return {string} executable path
+   * @param [providedPath] specified path
+   * @returns executable path
    */
-  getContainerResultFolderPath(providedPath: string | null = null): string {
+  public getContainerResultFolderPath(providedPath: string | null = null): string {
     if (providedPath) return path.join("/job/result", providedPath);
     else return "/job/result";
   }
 
   /**
-   * @async
-   *  Get remote results folder content
    *
-   * @return {Promise<string[]>} file content
+   * Get remote results folder content
+   * @returns file content
    */
-  async getRemoteResultFolderContent(): Promise<string[]> {
-    const findResult = await this.exec(
+  public async getRemoteResultFolderContent(): Promise<string[]> {
+    const findResult = await this.sshConnector.exec(
       "find . -type d -print",  // find all directories in the cwd and print it out
       { cwd: this.getRemoteResultFolderPath() },  // set cwd to the result folder path
       true,
@@ -445,10 +509,9 @@ ${cmd}`;
 
   /**
    * Get job usage
-   *
-   * @return {Promise<Record<string, number | null>>} - usage dictionary
+   * @returns - usage dictionary
    */
-  async getUsage(): Promise<Record<string, number | null>> {
+  public async getUsage(): Promise<Record<string, number | null>> {
     const seffOutput: Record<string, number | null> = {
       nodes: null,
       cpus: null,
@@ -460,15 +523,15 @@ ${cmd}`;
 
     try {
       // get usage details
-      const seffResult = await this.exec(`seff ${this.slurm_id}`, {}, true, true);
+      const seffResult = await this.sshConnector.exec(`seff ${this.slurm_id}`, {}, true, true);
       if (seffResult.stderr) return seffOutput;
 
       if (!seffResult.stdout) {
-        throw new Error();
+        return seffOutput;
       }
 
       const tmp = seffResult.stdout.split("\n");
-      
+
       // iterate over the lines in the usage output and do string processing
       // to motivate this string processing see the above output example
       for (const i of tmp) {
@@ -476,7 +539,7 @@ ${cmd}`;
         const k = j[0].trim();
         j.shift();
         let v = j.join(":").trim();
-        
+
         switch (k) {
           case "Nodes":
             seffOutput.nodes = parseInt(v);
@@ -548,16 +611,52 @@ ${cmd}`;
             break;
         }
       }
-      
+
       if (seffOutput.cpus && seffOutput.nodes) {
         seffOutput.cpus = seffOutput.cpus * seffOutput.nodes;
       } else {
         seffOutput.cpus = null;
       }
-    } catch {}
+    } catch { }
 
     return seffOutput;
   }
-}
 
-export default SlurmConnector;
+  /**
+   * @returns whether or not this connection is via a community account
+   */
+  public isCommunityAccount(): boolean {
+    return this.sshConnector.isCommunityAccount;
+  }
+
+  /**
+   *
+   * @param path remote executable folder path
+   */
+  public setRemoteExecutableFolderPath(path: string) {
+    this.remoteExecutableFolderPath = path;
+  }
+
+  /**
+   *
+   * @param path remote data folder path
+   */
+  public setRemoteDataFolderPath(path: string) {
+    this.remoteDataFolderPath = path;
+  }
+
+  /**
+   *
+   * @param path remote result folder path
+   */
+  public setRemoteResultFolderPath(path: string) {
+    this.remoteResultFolderPath = path;
+  }
+
+  /**
+   * @returns the ssh connection this connector uses
+   */
+  public getSSHConnection(): SSHConnector {
+    return this.sshConnector;
+  }
+}
