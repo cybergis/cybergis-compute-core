@@ -1,4 +1,5 @@
 import express from "express";
+import fileUpload from "express-fileupload";
 import { rootPath } from "get-root-path";
 
 import * as path from "path";
@@ -446,7 +447,7 @@ folderRouter.get(
 );
 
 folderRouter.post(
-  "//upload/browser",
+  "/upload/browser",
   authMiddleWare,
   async function (req, res) {
     if (!req.files || Object.keys(req.files).length === 0) {
@@ -484,6 +485,16 @@ folderRouter.post(
     
 
     return res.status(200);
+  }
+);
+
+folderRouter.post(
+  "/test-upload",
+  fileUpload(),
+  function (req, _res) {
+    console.log(req.headers);
+    console.log(req.ip);
+    console.log(req.files);
   }
 );
 
