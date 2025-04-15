@@ -491,10 +491,12 @@ folderRouter.post(
 folderRouter.post(
   "/test-upload",
   fileUpload(),
-  function (req, _res) {
+  function (req, res) {
     console.log(req.headers);
     console.log(req.ip);
     console.log(req.files);
+
+    return res.status(200);
   }
 );
 
