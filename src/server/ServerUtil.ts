@@ -1,5 +1,8 @@
 import { Request, NextFunction, Response } from "express";
+import { rootPath } from "get-root-path";
 import { z, ZodError, ZodIssue } from "zod";
+
+import path from "path";
 
 import {
   AuthReqBodySchema,
@@ -19,6 +22,7 @@ export const sshCredentialGuard = new SSHCredentialGuard();
 export const resultFolderContent = new ResultFolderContentManager();
 export const globusTaskList = new GlobusTaskListManager();
 
+export const localFileFolder = path.join(rootPath, "uploads");
 
 // function to take data and get it into dictionary format for DB interfacing
 /**

@@ -1,6 +1,5 @@
 import cors from "cors";
 import express from "express";
-import fileUpload from "express-fileupload";
 import { rootPath } from "get-root-path";
 import morgan from "morgan";
 import swaggerUi from "swagger-ui-express";
@@ -8,7 +7,7 @@ import swaggerUi from "swagger-ui-express";
 
 import { existsSync, mkdirSync } from "fs";
 import { readFile } from "fs/promises";
-import path, { join } from "path";
+import { join } from "path";
 
 import {
   config,
@@ -20,6 +19,8 @@ import folderRouter from "./FolderRoutes";
 import gitRouter from "./GitRoutes";
 import infoRouter from "./InfoRoutes";
 import jobRouter from "./JobRoutes";
+import { localFileFolder } from "./ServerUtil";
+import uploadRouter from "./UploadRoutes";
 import userRouter from "./UserRoutes";
 
 // create the express app
@@ -49,6 +50,7 @@ async function initHelloWorldGit() {
   }
 }
 
+app.use("/upload", uploadRouter);
 
 // handle parsing arguments
 // app.use(bodyParser.json());  // possibly unneeded now with newer versions of express
@@ -58,21 +60,6 @@ app.use(morgan("combined"));
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 // app.use(bodyParser.urlencoded({ extended: true }));
-
-// uploading files
-app.use(
-  fileUpload({
-    limits: { fileSize: config.local_file_system.limit_in_mb * 1024 * 1024 },
-    useTempFiles: true,
-    abortOnLimit: true,
-    tempFileDir: config.local_file_system.cache_path,
-    safeFileNames: true,
-    limitHandler: (req, res, _next) => {
-      res.json({ error: "file too large" });
-      res.status(402);
-    },
-  })
-);
 
 // create documentation routes
 app.use("/ts-docs", express.static(join(rootPath, "production/tsdoc")));
@@ -86,8 +73,8 @@ try {
   await initHelloWorldGit();
   console.log("Data Source has been initialized!");
 
-  if (!existsSync(path.join(rootPath, "uploads"))) {
-    mkdirSync(path.join(rootPath, "uploads"));
+  if (!existsSync(localFileFolder)) {
+    mkdirSync(localFileFolder);
   }
 } catch (err) {
   console.error("error setting up initializing server: ", err);

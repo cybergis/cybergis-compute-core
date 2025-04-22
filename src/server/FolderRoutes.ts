@@ -1,6 +1,4 @@
 import express from "express";
-import fileUpload from "express-fileupload";
-import { rootPath } from "get-root-path";
 
 import * as path from "path";
 
@@ -13,7 +11,6 @@ import {
   GlobusFolder,
   InitGlobusDownloadBodySchema,
   InitBrowserDownloadBodySchema,
-  InitBrowserUploadBodySchema,
   ConnectorError,
 } from "../definitions";
 import { GlobusClient } from "../helpers/GlobusTransferUtil";
@@ -21,11 +18,10 @@ import * as Helper from "../helpers/Helper";
 import { Folder, Job } from "../models";
 import dataSource from "../utils/DB";
 
+import { localFileFolder } from "./ServerUtil";
 import { authMiddleWare, prepareDataForDB, globusTaskList, validateZodSchema } from "./ServerUtil";
 
 const folderRouter = express.Router();
-
-const localFileFolder = path.join(rootPath, "uplaods");
 
 
 /**
@@ -443,60 +439,6 @@ folderRouter.get(
         });
       return;
     }
-  }
-);
-
-folderRouter.post(
-  "/upload/browser",
-  authMiddleWare,
-  async function (req, res) {
-    if (!req.files || Object.keys(req.files).length === 0) {
-      return res.status(400).json({ error: "no files were uploaded" }); 
-    }
-
-    const uploadedFile = req.files.file;
-
-    if (Array.isArray(uploadedFile)) {
-      return res.status(400).json({ error: "only accept uploads of single zip files" });
-    }
-
-    const validation = validateZodSchema(InitBrowserUploadBodySchema, req.body);
-  
-    if (!validation.success) {
-      res.status(402).json({ error: "invalid input", messages: validation.errors });
-      return;
-    }
-  
-    const body = validation.data;
-
-    if (
-      (uploadedFile.mimetype !== "application/zip" && uploadedFile.mimetype !== "application/x-zip-compressed")
-      || !uploadedFile.name.toLowerCase().endsWith(".zip")
-      || (uploadedFile.data.toString("hex", 0, 4) !== "504b0304")
-    ) {
-      return res.status(400).json({ error: "only accept zip files" });
-    }
-
-    try {
-      await uploadedFile.mv(path.join(localFileFolder, `${body.fileName}.zip`));
-    } catch (_) {
-      return res.status(500).json({ error: "server error during file upload" });
-    }
-    
-
-    return res.status(200);
-  }
-);
-
-folderRouter.post(
-  "/test-upload",
-  fileUpload(),
-  function (req, res) {
-    console.log(req.headers);
-    console.log(req.ip);
-    console.log(req.files);
-
-    return res.status(200);
   }
 );
 
