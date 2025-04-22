@@ -53,7 +53,7 @@ uploadRouter.post(
 
     console.log(uploadedFile.tempFilePath);
 
-    return res.status(200);
+    return res.status(200).send("successful upload");
   }
 );
 
@@ -65,7 +65,7 @@ uploadRouter.post(
     console.log(req.ip);
     console.log(req.files);
 
-    return res.status(200);
+    return res.status(200).send("successful upload");
   }
 );
 
