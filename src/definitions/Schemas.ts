@@ -34,7 +34,6 @@ export const InitBrowserDownloadBodySchema = z.object({
 
 export const InitBrowserUploadBodySchema = z.object({
   jupyterhubApiToken: z.string(),
-  fileName: z.string(),
 });
 
 export const SlurmSchema = z.object({

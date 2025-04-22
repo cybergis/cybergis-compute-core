@@ -1,12 +1,10 @@
 import express from "express";
 import fileUpload from "express-fileupload";
 
-import path from "path";
-
 import { config } from "../../configs/config";
 import { InitBrowserUploadBodySchema } from "../definitions";
 
-import { validateZodSchema, localFileFolder, authMiddleWare } from "./ServerUtil";
+import { validateZodSchema, authMiddleWare } from "./ServerUtil";
 
 const uploadRouter = express.Router();
 
@@ -28,7 +26,7 @@ uploadRouter.use(// uploading files
 uploadRouter.post(
   "/",
   authMiddleWare,
-  async function (req, res) {
+  function (req, res) {
     if (!req.files || Object.keys(req.files).length === 0) {
       return res.status(400).json({ error: "no files were uploaded" }); 
     }
@@ -45,23 +43,15 @@ uploadRouter.post(
       res.status(402).json({ error: "invalid input", messages: validation.errors });
       return;
     }
-  
-    const body = validation.data;
 
     if (
       (uploadedFile.mimetype !== "application/zip" && uploadedFile.mimetype !== "application/x-zip-compressed")
-      || !uploadedFile.name.toLowerCase().endsWith(".zip")
-      || (uploadedFile.data.toString("hex", 0, 4) !== "504b0304")
+      || !uploadedFile.name.toLowerCase().endsWith("zip")
     ) {
       return res.status(400).json({ error: "only accept zip files" });
     }
 
-    try {
-      await uploadedFile.mv(path.join(localFileFolder, `${body.fileName}.zip`));
-    } catch (_) {
-      return res.status(500).json({ error: "server error during file upload" });
-    }
-    
+    console.log(uploadedFile.tempFilePath);
 
     return res.status(200);
   }
