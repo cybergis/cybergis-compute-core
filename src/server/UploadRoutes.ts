@@ -10,6 +10,21 @@ import { validateZodSchema, localFileFolder, authMiddleWare } from "./ServerUtil
 
 const uploadRouter = express.Router();
 
+uploadRouter.use(// uploading files
+  fileUpload({
+    limits: { fileSize: config.local_file_system.limit_in_mb * 1024 * 1024 },
+    useTempFiles: true,
+    abortOnLimit: true,
+    tempFileDir: config.local_file_system.cache_path,
+    safeFileNames: true,
+    limitHandler: (req, res, _next) => {
+      res.json({ error: "file too large" });
+      res.status(402);
+    },
+    parseNested: true,
+  })
+);
+
 uploadRouter.post(
   "/",
   authMiddleWare,
@@ -62,20 +77,6 @@ uploadRouter.post(
 
     return res.status(200);
   }
-);
-
-uploadRouter.use(// uploading files
-  fileUpload({
-    limits: { fileSize: config.local_file_system.limit_in_mb * 1024 * 1024 },
-    useTempFiles: true,
-    abortOnLimit: true,
-    tempFileDir: config.local_file_system.cache_path,
-    safeFileNames: true,
-    limitHandler: (req, res, _next) => {
-      res.json({ error: "file too large" });
-      res.status(402);
-    },
-  })
 );
 
 export default uploadRouter;
