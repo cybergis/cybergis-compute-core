@@ -360,6 +360,48 @@ jobRouter.get("/:jobId/events", authMiddleWare, async function (req, res) {
     return;
   }
 });
+
+/**
+ * @openapi
+ * /job/:jobId/events:
+ *  post:
+ *      description: Gets an array of the job events for a given job ID (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns array of dictionary objects containing details of each event in the process of ssubmitting and fufilling a a job
+ *          401:
+ *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access token" if the events cannot be accessed
+ *          402:
+ *              description: Returns "invalid input" and a list of errors with the format of the req body
+ */
+jobRouter.post("/:jobId/events", authMiddleWare, async function (req, res) {
+  if (!res.locals.username) {
+    res
+      .status(401)
+      .json({ error: "listing events without login is not allowed", messages: [] });
+    return;
+  }
+  
+  try {
+    // get events from the job repo (updated in the supervisor/with individual maintainers)
+    const jobId = req.params.jobId;
+    const job = await dataSource
+      .getRepository(Job)
+      .findOneOrFail({
+        where: { id: jobId, userId: res.locals.username as string },
+        relations: ["events"]
+      });
+    res.json(job.events);
+  } catch (e) {
+    res
+      .status(401)
+      .json({ 
+        error: "invalid access token", 
+        messages: [Helper.assertError(e).toString()] 
+      });
+    return;
+  }
+});
   
 /**
  * @openapi
@@ -375,6 +417,49 @@ jobRouter.get("/:jobId/events", authMiddleWare, async function (req, res) {
  *              description: Returns "invalid input" and a list of errors with the format of the req body
  */
 jobRouter.get(
+  "/:jobId/result-folder-content", 
+  authMiddleWare, 
+  async function (req, res) {
+    if (!res.locals.username) {
+      res
+        .status(401)
+        .json({ error: "getting results without login is not allowed", messages: [] });
+      return;
+    }
+  
+    try {
+      // query the result folder content from the job repo
+      const jobId = req.params.jobId;
+      const job = await dataSource
+        .getRepository(Job)
+        .findOneByOrFail({ id: jobId, userId: res.locals.username as string });
+      
+      const out = await resultFolderContent.get(job.id);
+      res.json(out ?? []);
+    } catch (e) {
+      res.status(401).json({ 
+        error: "invalid access", 
+        messages: [Helper.assertError(e).toString()] 
+      });
+      return;
+    }
+  }
+);
+
+/**
+ * @openapi
+ * /job/:jobId/result-folder-content:
+ *  post:
+ *      description: Gets an array of the directories in the result folder for a given job ID (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns array of dirrectories in the given job"s result folder
+ *          401:
+ *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access" if the folder cannot be accessed
+ *          402:
+ *              description: Returns "invalid input" and a list of errors with the format of the req body
+ */
+jobRouter.post(
   "/:jobId/result-folder-content", 
   authMiddleWare, 
   async function (req, res) {
@@ -445,6 +530,48 @@ jobRouter.get("/:jobId/logs", authMiddleWare, async function (req, res) {
     return;
   }
 });
+
+/**
+ * @openapi
+ * /job/:jobId/logs:
+ *  post:
+ *      description: Gets an array of dictionary objects that represent logs for the given job ID (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns array of dictionary objects that represent logs for the given job ID
+ *          401:
+ *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access" if the logs cannot be accessed
+ *          402:
+ *              description: Returns "invalid input" and a list of errors with the format of the req body
+ */
+jobRouter.post("/:jobId/logs", authMiddleWare, async function (req, res) {
+  if (!res.locals.username) {
+    res.status(401).json({ 
+      error: "getting logs without login is not allowed", 
+      messages: [] 
+    });
+    return;
+  }
+  
+  try {
+    // try to get the logs from teh jobs database (continuously updated in the maintainer)
+    const jobId = req.params.jobId;
+  
+    const job = await dataSource
+      .getRepository(Job)
+      .findOneOrFail({
+        where: { id: jobId, userId: res.locals.username as string },
+        relations: ["logs"]
+      });
+    res.json(job.logs);
+  } catch (e) {
+    res.status(401).json({ 
+      error: "invalid access", 
+      messages: [Helper.assertError(e).toString()] 
+    });
+    return;
+  }
+});
   
 /**
  * @openapi
@@ -460,6 +587,52 @@ jobRouter.get("/:jobId/logs", authMiddleWare, async function (req, res) {
  *              description: Returns "invalid input" and a list of errors with the format of the req body
  */
 jobRouter.get("/:jobId", authMiddleWare, async function (req, res) {
+  if (!res.locals.username) {
+    res
+      .status(401)
+      .json({ error: "getting job info without login is not allowed", messages: [] });
+    return;
+  }
+  
+  try {
+    // query job database for all requested things, return it as a dictionary json
+    const jobId = req.params.jobId;
+      
+    const job = await dataSource.getRepository(Job).findOneOrFail({
+      where: { id: jobId, userId: res.locals.username as string },
+      relations: [
+        "remoteExecutableFolder",
+        "remoteDataFolder",
+        "remoteResultFolder",
+        "events",
+        "logs",
+      ],
+    });
+    res.json(Helper.job2object(job));
+  } catch (e) {
+    res.json({ 
+      error: "invalid access", 
+      messages: [Helper.assertError(e).toString()] 
+    });
+    res.status(401);
+    return;
+  }
+});
+
+/**
+ * @openapi
+ * /job/:jobId:
+ *  post:
+ *      description: Gets a dictionary object representing the given job ID that includes information on the job as well as events, logs, and folder information (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns a dictionary object representing the given job ID
+ *          401:
+ *              description: Returns "submit without login is not allowed" if the user is not logged in or "invalid access" if the job and job information cannot be accessed
+ *          402:
+ *              description: Returns "invalid input" and a list of errors with the format of the req body
+ */
+jobRouter.post("/:jobId", authMiddleWare, async function (req, res) {
   if (!res.locals.username) {
     res
       .status(401)
