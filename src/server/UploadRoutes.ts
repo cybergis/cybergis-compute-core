@@ -57,7 +57,7 @@ uploadRouter.post(
     const localFilePath = uploadedFile.tempFilePath;
 
     // test if job exists
-    const jobId = req.params.jobId;
+    const jobId = validation.data.jobId;
     await dataSource
       .getRepository(Job)
       .findOneByOrFail({ id: jobId, userId: res.locals.username as string });
