@@ -67,12 +67,15 @@ uploadRouter.post(
       await dataSource
         .createQueryBuilder()
         .update(Job)
-        .where("id = :id", { id: jobId })
         .set(
           {
-            localDataFolder: localFilePath
+            localDataFolder: { 
+              type: "local", 
+              localFilePath: localFilePath
+            }
           }
         )
+        .where("id = :id", { id: jobId })
         .execute();
     } catch (err) {
       res
