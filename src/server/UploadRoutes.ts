@@ -30,8 +30,8 @@ uploadRouter.post(
   "/",
   authMiddleWare,
   async function (req, res) {
-    if (!req.files || Object.keys(req.files).length === 0) {
-      return res.status(400).json({ error: "no files were uploaded" }); 
+    if (!req.files || Object.keys(req.files).length === 0 || !req.files.file) {
+      return res.status(400).json({ error: "no files were uploaded/file should be uploaded under file" }); 
     }
 
     const uploadedFile = req.files.file;
