@@ -20,7 +20,7 @@ const userRouter = express.Router();
  * @openapi
  * /user:
  *  get:
- *      description: Returns the current user"s username (Authentication REQUIRED)
+ *      description: Returns the current user"s username (Authentication REQUIRED). DEPRECATED use POST.
  *      responses:
  *          200:
  *              description: Returns the current user"s username
@@ -30,6 +30,33 @@ const userRouter = express.Router();
  *              description: Returns an error if the user"s username is not in the allowlist
  */
 userRouter.get("/", authMiddleWare, (req, res) => {
+  if (!Helper.isAllowlisted(res.locals.host as string)) {
+    res.status(404).json({ error: "Cannot find jupyterhubHost in allowlist" });
+    return;
+  }
+  
+  if (!res.locals.username) {
+    res.status(402).json({ error: "invalid token" });
+    return;
+  }
+  
+  res.json({ username: res.locals.username as string });
+});
+
+/**
+ * @openapi
+ * /user:
+ *  post:
+ *      description: Returns the current user"s username (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Returns the current user"s username
+ *          402:
+ *              description: Returns "invalid input" and a list of errors with the format of the req body or "invalid token" if a valid jupyter token authentication is not provided
+ *          404:
+ *              description: Returns an error if the user"s username is not in the allowlist
+ */
+userRouter.post("/", authMiddleWare, (req, res) => {
   if (!Helper.isAllowlisted(res.locals.host as string)) {
     res.status(404).json({ error: "Cannot find jupyterhubHost in allowlist" });
     return;
