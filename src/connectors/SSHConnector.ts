@@ -333,6 +333,8 @@ export class SSHConnector {
     // transfer file to HPC
     await this.transferFile(from, toZipFilePath);
 
+    console.log("upload:", toZipFilePath, toFilePath);
+
     if (unzip) {
       // decompress file on HPC
       await this.unzip(toZipFilePath, toFilePath);
@@ -499,6 +501,7 @@ export class SSHConnector {
    * unzips the file/folder at specified path
    * @param from input file/directory path
    * @param to compress file path with file name
+   * @param params additional parameters for the zip function
    * @param [options] dictionary with string options
    * @param [muteEvent] set to True if you want to mute maintauner emitted Event
    * @returns command execution output
@@ -506,12 +509,13 @@ export class SSHConnector {
   public async unzip(
     from: string,
     to: string,
+    params = "",
     options: options = {},
     muteEvent = false
   ): Promise<string | null> {
     this.emitEvent("SSH_UNZIP", `unzipping ${from} to ${to}`, muteEvent);
 
-    const out = await this.exec(`unzip -o -q ${from} -d ${to}`, options);  // quiet mode, overwrite, destination to
+    const out = await this.exec(`unzip -o -q ${from} -d ${to} ${params}`, options);  // quiet mode, overwrite, destination to
 
     return out.stdout;
   }

@@ -217,9 +217,11 @@ async function localFolderUpload(base: BaseFolderUploader, from: LocalFolder) {
     throw new Error(`could not find folder under path ${from.localPath}`);
   }
 
-  const zipFrom = await getZip(from.localPath);
-  await base.connector.upload(zipFrom, base.hpcPath, false, false);
-  await removeZip(zipFrom);
+  console.log(from.localPath, base.hpcPath);
+
+  await base.connector.upload(from.localPath, base.hpcPath, false, false);
+  // remove it: dont care about when
+  void removeZip(from.localPath);
 
   await base.register();
 }
