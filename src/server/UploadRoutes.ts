@@ -71,7 +71,7 @@ uploadRouter.post(
           {
             localDataFolder: { 
               type: "local", 
-              localFilePath: localFilePath
+              localPath: localFilePath
             }
           }
         )
