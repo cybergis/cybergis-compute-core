@@ -64,7 +64,7 @@ uploadRouter.post(
   
     // update the job with the given id
     try {
-      await dataSource
+      console.log(await dataSource
         .createQueryBuilder()
         .update(Job)
         .set(
@@ -76,7 +76,7 @@ uploadRouter.post(
           }
         )
         .where("id = :id", { id: jobId })
-        .execute();
+        .execute());
     } catch (err) {
       res
         .status(403)
