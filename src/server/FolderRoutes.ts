@@ -352,11 +352,11 @@ folderRouter.get(
  *          403:
  *              description: Returns error when the folder ID cannot be found, when the hpc config for globus cannot be found, when the globus download fails, or when a download is already running for the folder
  */
-folderRouter.get(
+folderRouter.post(
   "/:folderId/download/browser",
   authMiddleWare,
   async function (req, res) {
-    const validation = validateZodSchema(InitBrowserDownloadBodySchema, req.params);
+    const validation = validateZodSchema(InitBrowserDownloadBodySchema, req.body);
   
     if (!validation.success) {
       res.status(402).json({ error: "invalid input", messages: validation.errors });
