@@ -3,6 +3,9 @@ import fileUpload from "express-fileupload";
 
 import { config } from "../../configs/config";
 import { InitBrowserUploadBodySchema } from "../definitions";
+import * as Helper from "../helpers/Helper";
+import { Job } from "../models";
+import dataSource from "../utils/DB";
 
 import { validateZodSchema, authMiddleWare } from "./ServerUtil";
 
@@ -26,7 +29,7 @@ uploadRouter.use(// uploading files
 uploadRouter.post(
   "/",
   authMiddleWare,
-  function (req, res) {
+  async function (req, res) {
     if (!req.files || Object.keys(req.files).length === 0) {
       return res.status(400).json({ error: "no files were uploaded" }); 
     }
@@ -51,21 +54,48 @@ uploadRouter.post(
       return res.status(400).json({ error: "only accept zip files" });
     }
 
-    console.log(uploadedFile.tempFilePath);
+    const localFilePath = uploadedFile.tempFilePath;
 
-    return res.status(200).send("successful upload");
-  }
-);
+    // test if job exists
+    const jobId = req.params.jobId;
+    await dataSource
+      .getRepository(Job)
+      .findOneByOrFail({ id: jobId, userId: res.locals.username as string });
+  
+    // update the job with the given id
+    try {
+      await dataSource
+        .createQueryBuilder()
+        .update(Job)
+        .where("id = :id", { id: jobId })
+        .set(
+          {
+            localDataFolder: localFilePath
+          }
+        )
+        .execute();
+    } catch (err) {
+      res
+        .status(403)
+        .json({ 
+          error: "internal error", 
+          messages: Helper.assertError(err).toString() 
+        });
+      return;
+    }
+  
+    // return updated job as a dictionary
+    const job = await dataSource.getRepository(Job).findOneBy({
+      id: jobId
+    });
+  
+    if (job === null) {
+      return res.status(402).json({ error: "Updated job not found in the database." });
+    } else {
+      return res.status(200).json(Helper.job2object(job));
+    }
 
-uploadRouter.post(
-  "/test",
-  fileUpload(),
-  function (req, res) {
-    console.log(req.headers);
-    console.log(req.ip);
-    console.log(req.files);
-
-    return res.status(200).send("successful upload");
+    
   }
 );
 
