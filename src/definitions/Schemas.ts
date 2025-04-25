@@ -28,7 +28,12 @@ export const InitGlobusDownloadBodySchema = z.object({
 
 export const InitBrowserDownloadBodySchema = z.object({
   jupyterhubApiToken: z.string(),
-  jobId: z.string()
+  jobId: z.string(),
+  folderId: z.string()
+});
+
+export const InitBrowserUploadBodySchema = z.object({
+  jupyterhubApiToken: z.string(),
 });
 
 export const SlurmSchema = z.object({

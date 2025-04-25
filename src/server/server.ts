@@ -1,11 +1,11 @@
 import cors from "cors";
 import express from "express";
-import fileUpload from "express-fileupload";
 import { rootPath } from "get-root-path";
 import morgan from "morgan";
 import swaggerUi from "swagger-ui-express";
 
 
+import { existsSync, mkdirSync } from "fs";
 import { readFile } from "fs/promises";
 import { join } from "path";
 
@@ -19,6 +19,8 @@ import folderRouter from "./FolderRoutes";
 import gitRouter from "./GitRoutes";
 import infoRouter from "./InfoRoutes";
 import jobRouter from "./JobRoutes";
+import { localFileFolder } from "./ServerUtil";
+import uploadRouter from "./UploadRoutes";
 import userRouter from "./UserRoutes";
 
 // create the express app
@@ -48,39 +50,16 @@ async function initHelloWorldGit() {
   }
 }
 
-// establish database connection
-try {
-  await dataSource.initialize();
-  await initHelloWorldGit();
-  console.log("Data Source has been initialized!");
-} catch (err) {
-  console.error("Error during Data Source initialization:", err);
-  throw err;
-}
-
+app.use("/upload", uploadRouter);
 
 // handle parsing arguments
 // app.use(bodyParser.json());  // possibly unneeded now with newer versions of express
+// app.use(fileUpload());
 app.use(express.json());
 app.use(morgan("combined"));
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 // app.use(bodyParser.urlencoded({ extended: true }));
-
-// uploading files
-app.use(
-  fileUpload({
-    limits: { fileSize: config.local_file_system.limit_in_mb * 1024 * 1024 },
-    useTempFiles: true,
-    abortOnLimit: true,
-    tempFileDir: config.local_file_system.cache_path,
-    safeFileNames: true,
-    limitHandler: (req, res, _next) => {
-      res.json({ error: "file too large" });
-      res.status(402);
-    },
-  })
-);
 
 // create documentation routes
 app.use("/ts-docs", express.static(join(rootPath, "production/tsdoc")));
@@ -89,8 +68,16 @@ try {
   const file = await readFile(join(rootPath, "production/swagger.json"), "utf8");
   const swaggerDocument = JSON.parse(file) as Record<string, unknown>;
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+  await dataSource.initialize();
+  await initHelloWorldGit();
+  console.log("Data Source has been initialized!");
+
+  if (!existsSync(localFileFolder)) {
+    mkdirSync(localFileFolder);
+  }
 } catch (err) {
-  console.error("error setting up swagger docs: ", err);
+  console.error("error setting up initializing server: ", err);
 }
 
 

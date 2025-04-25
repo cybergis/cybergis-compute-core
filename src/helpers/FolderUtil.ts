@@ -89,8 +89,8 @@ export async function exists(filePath: string): Promise<boolean> {
 
 /**
  * Unzips a zip file. 
- * @param filePath file path to zip
- * @param zipFilePath path of the zipped file
+ * @param filePath output path
+ * @param zipFilePath path of the zip file
  * @throws {FileNotExistError} if zip file to unzip does not exist on file system
  * @returns promise for whether the zip was successful
  */
