@@ -12,7 +12,6 @@ import {
   hpcConfig,
   LocalFolder,
 } from "../definitions";
-import { getZip, removeZip } from "../helpers/FolderUtil";
 import GitUtil from "../helpers/GitUtil";
 import { GlobusClient } from "../helpers/GlobusTransferUtil";
 import * as Helper from "../helpers/Helper";
@@ -207,7 +206,7 @@ async function globusFolderUpload(base: BaseFolderUploader, from: GlobusFolder) 
 }
 
 /**
- *
+ * Uploads a data folder
  * @param base  given parameters for the uploaded folder
  * @param from source folder to upload
  * @throws {Error} if file to transfer does not exist on file system
@@ -219,9 +218,7 @@ async function localFolderUpload(base: BaseFolderUploader, from: LocalFolder) {
 
   console.log(from.localPath, base.hpcPath);
 
-  await base.connector.upload(from.localPath, base.hpcPath, false, false);
-  // remove it: dont care about when
-  void removeZip(from.localPath);
+  await base.connector.upload(from.localPath, base.hpcPath, false);
 
   await base.register();
 }
@@ -265,10 +262,7 @@ async function gitFolderUploadCached(base: CachedFolderUploader, from: GitFolder
   if (!(await base.cacheExists()) 
     || recordedUpdate < canonicalUpdate
   ) {
-    const zipFrom = await getZip(localPath);
-    await base.connector.upload(zipFrom, base.cachePath, false, false);
-    await removeZip(zipFrom);
-
+    await base.connector.upload(localPath, base.cachePath, false);
     await base.registerCache();
   }
 

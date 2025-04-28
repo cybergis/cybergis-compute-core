@@ -23,7 +23,7 @@ import {
 import { Git } from "../models";
 import dataSource from "../utils/DB";
 
-import { removeZip } from "./FolderUtil";
+import { removeZip } from "./LocalFolderUtil";
 
 const exec = promisify(execCallback);  
 

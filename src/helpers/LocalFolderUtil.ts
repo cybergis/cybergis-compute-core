@@ -13,7 +13,7 @@ import { FileNotExistError } from "../definitions";
  * @param filePath file/directory path
  * @returns true if the file is zipped; false otherwise
  */
-export async function isZipped(filePath: string): Promise<boolean> {
+async function isZipped(filePath: string): Promise<boolean> {
   try {
     await fs.promises.access(filePath + ".zip", fs.constants.F_OK);
     return true;
@@ -24,7 +24,7 @@ export async function isZipped(filePath: string): Promise<boolean> {
 
 /**
  * Zips a file/directory.
- * @param filePath - file/directory path
+ * @param filePath - file/directory path (absolute)
  * @throws {FileNotExistError} thrown if zipping fails/if the zip path doesn't exist
  * @returns the file path of the resulting zip file
  */
@@ -32,6 +32,8 @@ export async function getZip(filePath: string): Promise<string> {
   if (!(await exists(filePath))) throw new FileNotExistError("target file does not exist");
   if (await isZipped(filePath)) return filePath + ".zip";
 
+  // we need this zipping logic with the manual cwd, otherwise the zip file would have many layers due to the larger 
+  // path needed to specify the file being zipped
   const child = spawn(
     "zip",
     ["-q", // quiet mode
@@ -66,7 +68,7 @@ export async function removeZip(filePath: string) {
  * Deletes an (empty) folder.
  * @param filePath path to the directory
  */
-export async function removeFolder(filePath: string) {
+async function _removeFolder(filePath: string) {
   if (await exists(filePath)) {
     fs.rmdirSync(filePath, { recursive: true });
   }
@@ -77,7 +79,7 @@ export async function removeFolder(filePath: string) {
  * @param filePath file path to check existence for
  * @returns true if accessible; false otherwise
  */
-export async function exists(filePath: string): Promise<boolean> {
+async function exists(filePath: string): Promise<boolean> {
   try {
     await fs.promises.access(filePath, fs.constants.F_OK);
     return true;
@@ -87,31 +89,31 @@ export async function exists(filePath: string): Promise<boolean> {
 }
 
 
-/**
- * Unzips a zip file. 
- * @param filePath output path
- * @param zipFilePath path of the zip file
- * @throws {FileNotExistError} if zip file to unzip does not exist on file system
- * @returns promise for whether the zip was successful
- */
-export async function putFileFromZip(filePath: string, zipFilePath: string) {
-  if (!(await exists(filePath))) {
-    throw new FileNotExistError("file not exists or initialized");
-  }
+// /**
+//  * Unzips a zip file. 
+//  * @param filePath output path
+//  * @param zipFilePath path of the zip file
+//  * @throws {FileNotExistError} if zip file to unzip does not exist on file system
+//  * @returns promise for whether the zip was successful
+//  */
+// export async function putFileFromZip(filePath: string, zipFilePath: string) {
+//   if (!(await exists(filePath))) {
+//     throw new FileNotExistError("file not exists or initialized");
+//   }
 
-  const child = spawn("unzip", [
-    "-o", // overwrite
-    "-q", // quiet mode
-    `${zipFilePath}`, // thing to unzip
-    "-d", // specify output directory
-    `${filePath}`, // output directory
-  ]);
+//   const child = spawn("unzip", [
+//     "-o", // overwrite
+//     "-q", // quiet mode
+//     `${zipFilePath}`, // thing to unzip
+//     "-d", // specify output directory
+//     `${filePath}`, // output directory
+//   ]);
 
-  // handle errors in unzip
-  return new Promise((resolve, reject) => {
-    child.on("exit", () => resolve(`${filePath}.zip`));
-    child.on("close", () => resolve(`${filePath}.zip`));
-    child.on("error", () => reject(new Error(`${filePath}.zip`)));
-  });
-}
+//   // handle errors in unzip
+//   return new Promise((resolve, reject) => {
+//     child.on("exit", () => resolve(`${filePath}.zip`));
+//     child.on("close", () => resolve(`${filePath}.zip`));
+//     child.on("error", () => reject(new Error(`${filePath}.zip`)));
+//   });
+// }
 
