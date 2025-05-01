@@ -290,30 +290,10 @@ export class SSHConnector {
    * @throws {ConnectorError} - Thrown if maintainer emits 'SSH_SCP_DOWNLOAD_ERROR'
    */
   public async uploadFolderZip(fromLocal: string, toRemote: string, muteEvent = false) {
+    console.log(fromLocal, toRemote);
     const zipFrom = await folderZip(fromLocal);
-    const ssh = await this.getSSH();
-
-    try {
-      this.emitEvent(
-        "SSH_SCP_UPLOAD",
-        `put file from ${zipFrom} to ${toRemote}`,
-        muteEvent
-      );
-
-      // attempt to send the from file to the to folder
-      // wraps command with backoff -> takes lambda function and array of inputs to execute command
-      await Helper.runCommandWithBackoff.call(this, (async (from1: string, to1: string) => {
-        await ssh.putFile(from1, to1);
-      }), [zipFrom, toRemote], "Trying again to transfer file");
-    } catch (e) {
-      const error =
-        `unable to put file from ${zipFrom} to ${toRemote}: ` + Helper.assertError(e).toString();
-      this.emitEvent("SSH_SCP_UPLOAD_ERROR", error, muteEvent);
-      throw new ConnectorError(error);
-    } finally {
-      void removeZip(zipFrom);
-      this.releaseSSH();
-    }
+    await this.uploadFile(zipFrom, toRemote, muteEvent);
+    void removeZip(zipFrom);
   }
 
   /**

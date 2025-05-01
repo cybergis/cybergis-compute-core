@@ -14,13 +14,18 @@ import { FileNotExistError } from "../definitions";
  * @returns true if the file is zipped; false otherwise
  */
 export async function isZipped(filePath: string): Promise<boolean> {
+  let fileHandle: fs.FileHandle | undefined;
   try {
-    const fileHandle = await fs.open(filePath, "r");
+    fileHandle = await fs.open(filePath, "r");
     const { buffer } = await fileHandle.read(Buffer.alloc(4), 0, 4, 0);
     await fileHandle.close();
     return buffer.equals(Buffer.from([0x50, 0x4B, 0x03, 0x04])); // "PK\x03\x04"
   } catch (_) {
     return false;
+  } finally {
+    if (fileHandle) {
+      await fileHandle.close();
+    }
   }
 }
 
