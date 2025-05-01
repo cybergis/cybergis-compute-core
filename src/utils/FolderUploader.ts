@@ -227,7 +227,7 @@ async function localFolderUpload(base: BaseFolderUploader, from: LocalFolder) {
     await base.connector.mkdir(base.hpcPath);
     await base.connector.uploadFile(from.localPath, remoteFilePath, false);
 
-    if (await isZipped(base.hpcPath)) {
+    if (await isZipped(from.localPath)) {
       await base.connector.unzip(remoteFilePath, base.hpcPath);
       void base.connector.rm(remoteFilePath);
     }
