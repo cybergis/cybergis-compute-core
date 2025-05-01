@@ -246,9 +246,10 @@ export class SSHConnector {
    * @param from - input file string (input folder to download)
    * @param to - output folder
    * @param muteEvent - set to True if you want to mute maintainer emitted Event
+   * @param unzip whether or not to unzip the transferred file
    * @throws {ConnectorError} if exponentially backed off file transfer fails
    */
-  public async download(from: string, to: string, muteEvent = false) {
+  public async download(from: string, to: string, muteEvent = false, unzip = true) {
     // create from/to zip paths from raw files and zip the from file
     const fromZipFilePath = from.endsWith(".zip") ? from : `${from}.zip`;
     const toZipFilePath = `${to}.zip`;
@@ -271,7 +272,8 @@ export class SSHConnector {
       await this.rm(fromZipFilePath);
 
       // decompress the transferred file into the toZipFilePath directory
-      await putFileFromZip(to, toZipFilePath);
+      if (unzip)
+        await putFileFromZip(to, toZipFilePath);
     } catch (e) {
       const error = `unable to get file from ${from} to ${to}: ` + Helper.assertError(e).toString();
 

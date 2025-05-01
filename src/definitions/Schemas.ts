@@ -23,8 +23,11 @@ export const InitGlobusDownloadBodySchema = AuthReqBodySchema.extend({
   fromPath: z.string().optional()
 });
 
-export const InitBrowserDownloadBodySchema = AuthReqBodySchema.extend({
-  jobId: z.string()
+
+export const InitBrowserDownloadBodySchema = z.object({
+  jupyterhubApiToken: z.string(),
+  jobId: z.string(),
+  folderId: z.string()
 });
 
 export const SlurmSchema = z.object({
@@ -39,8 +42,8 @@ export const SlurmSchema = z.object({
   gpus_per_node: z.union([z.number(), z.string()]).optional(),
   gpus_per_socket: z.union([z.number(), z.string()]).optional(),
   gpus_per_task: z.union([z.number(), z.string()]).optional(),
-  partition: z.string().optional(),
-  allocation: z.string().optional(),
+  partition: z.string().nullable().optional(),
+  allocation: z.string().nullable().optional(),
   mail_type: z.array(z.string()).optional(),
   mail_user: z.array(z.string()).optional(),
   modules: z.string().optional()

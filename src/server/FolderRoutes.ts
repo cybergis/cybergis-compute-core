@@ -1,21 +1,24 @@
 import express from "express";
 
-
 import * as path from "path";
 
 import {
   hpcConfigMap,
 } from "../../configs/config";
+import { SSHConnector } from "../connectors";
 import {
   UpdateFolderBodySchema,
   GlobusFolder,
-  InitGlobusDownloadBodySchema
+  InitGlobusDownloadBodySchema,
+  InitBrowserDownloadBodySchema,
+  ConnectorError,
 } from "../definitions";
 import { GlobusClient } from "../helpers/GlobusTransferUtil";
 import * as Helper from "../helpers/Helper";
-import { Folder } from "../models";
+import { Folder, Job } from "../models";
 import dataSource from "../utils/DB";
 
+import { localFileFolder } from "./ServerUtil";
 import { authMiddleWare, prepareDataForDB, globusTaskList, validateZodSchema } from "./ServerUtil";
 
 const folderRouter = express.Router();
@@ -225,7 +228,7 @@ folderRouter.post(
     }
 
     // check if there is an existing globus job from the redis DB -- if so, error out
-    const existingTransferJob: string | null = (
+    const existingTransferJob = (
       await globusTaskList.get(folderId)
     );
 
@@ -330,6 +333,109 @@ folderRouter.get(
         .status(403)
         .json({
           error: `failed to query globus with error: ${Helper.assertError(err).toString()}`
+        });
+      return;
+    }
+  }
+);
+
+/**
+ * @openapi
+ * /folder/:folderId/download/browser:
+ *  post:
+ *      description: Get sends a request to initiate a download of the specified folder (Authentication REQUIRED)
+ *      responses:
+ *          200:
+ *              description: Download of the specific folder is successful and file returned
+ *          402:
+ *              description: Returns "invalid input" and a list of errors with the format of the req body or "invalid token" if a valid jupyter token authentication is not provided
+ *          403:
+ *              description: Returns error when the folder ID cannot be found, when the hpc config for globus cannot be found, when the globus download fails, or when a download is already running for the folder
+ */
+folderRouter.post(
+  "/:folderId/download/browser",
+  authMiddleWare,
+  async function (req, res) {
+    const validation = validateZodSchema(InitBrowserDownloadBodySchema, req.body);
+  
+    if (!validation.success) {
+      res.status(402).json({ error: "invalid input", messages: validation.errors });
+      return;
+    }
+  
+    const params = validation.data;
+
+    if (!res.locals.username) {
+      res.status(402).json({ error: "invalid token" });
+      return;
+    }
+
+    // get jobId from body
+    const jobId = params.jobId;
+
+    // get folder; if not found, error out
+    const folderId = params.folderId;
+    const folder = await (dataSource
+      .getRepository(Folder)
+      .findOneBy({
+        id: folderId
+      })
+    );
+
+    if (!folder) {
+      res.status(403).json({ error: `cannot find folder with id ${folderId}` });
+      return;
+    }
+
+    const job = await dataSource.getRepository(Job).findOne({
+      where: {
+        userId: res.locals.username as string,
+        id: jobId
+      },
+      relations: [
+        "remoteDataFolder",
+        "remoteResultFolder",
+        "remoteExecutableFolder",
+      ],
+    });
+
+    if (job === null) {
+      res.status(403).json({ error: `cannot find job with id ${jobId}` });
+      return;
+    }
+
+    let hpcPath, hpc;
+
+    try {
+      if (job.remoteExecutableFolder?.id === folderId) {
+        hpcPath = job.remoteExecutableFolder.hpcPath;
+        hpc = job.remoteExecutableFolder.hpc;
+      } else if (job.remoteResultFolder?.id === folderId) {
+        hpcPath = job.remoteResultFolder.hpcPath;
+        hpc = job.remoteResultFolder.hpc;
+      } else {
+        throw Error("folder id does not correspond with either the result of executable folder of the job");
+      }
+    } catch (err) {
+      return res.status(403).json({ error: `failed to get hpc path or hpc with error: ${Helper.assertError(err).toString()}` });
+    }
+
+    try {
+      // res.download(path.join(__dirname, 'FolderRoutes.js'));
+      const downloadPath = path.join(localFileFolder, folderId + ".zip");
+      const connector = await SSHConnector.build(hpc);
+      
+      if (!connector) {
+        throw new ConnectorError("unable to connect to HPC");
+      }
+      
+      await connector.download(hpcPath, downloadPath, true, false);
+      res.download(downloadPath);
+    } catch (err) {
+      res
+        .status(403)
+        .json({
+          error: `failed to download with error: ${Helper.assertError(err).toString()}`
         });
       return;
     }
