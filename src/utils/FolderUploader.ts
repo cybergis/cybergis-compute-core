@@ -218,6 +218,11 @@ async function localFolderUpload(base: BaseFolderUploader, from: LocalFolder) {
   }
 
   if (await isDirectory(from.localPath)) {
+    const zipPath = `${base.hpcPath}.zip`;
+    await base.connector.uploadFolderZip(from.localPath, zipPath, false);
+    await base.connector.unzip(zipPath, base.hpcPath);
+    void base.connector.rm(zipPath);
+  } else {
     const remoteFilePath = path.join(base.hpcPath, path.basename(from.localPath));
     await base.connector.mkdir(base.hpcPath);
     await base.connector.uploadFile(from.localPath, remoteFilePath, false);
@@ -226,11 +231,6 @@ async function localFolderUpload(base: BaseFolderUploader, from: LocalFolder) {
       await base.connector.unzip(remoteFilePath, base.hpcPath);
       void base.connector.rm(remoteFilePath);
     }
-  } else {
-    const zipPath = `${base.hpcPath}.zip`;
-    await base.connector.uploadFolderZip(from.localPath, zipPath, false);
-    await base.connector.unzip(zipPath, base.hpcPath);
-    void base.connector.rm(zipPath);
   }
 
   await base.register();

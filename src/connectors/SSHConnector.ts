@@ -290,7 +290,6 @@ export class SSHConnector {
    * @throws {ConnectorError} - Thrown if maintainer emits 'SSH_SCP_DOWNLOAD_ERROR'
    */
   public async uploadFolderZip(fromLocal: string, toRemote: string, muteEvent = false) {
-    console.log(fromLocal, toRemote);
     const zipFrom = await folderZip(fromLocal);
     await this.uploadFile(zipFrom, toRemote, muteEvent);
     void removeZip(zipFrom);
