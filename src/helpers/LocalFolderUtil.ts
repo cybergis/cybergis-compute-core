@@ -79,7 +79,7 @@ export async function folderZip(filePath: string): Promise<string> {
  */
 export async function removeZip(filePath: string) {
   if (await isZipped(filePath)) {
-    await fs.unlink(filePath + ".zip");
+    await fs.unlink(filePath);
   }
 }
 
