@@ -7,7 +7,7 @@ import { config, hpcConfigMap } from "../../configs/config";
 import { ConnectorError, SSH } from "../definitions";
 import { options, hpcConfig } from "../definitions";
 import * as Helper from "../helpers/Helper";
-import { getZip, removeZip } from "../helpers/LocalFolderUtil";
+import { folderZip, removeZip } from "../helpers/LocalFolderUtil";
 import { Job } from "../models";
 
 import { connectionPool } from "./ConnectionPool";
@@ -242,13 +242,13 @@ export class SSHConnector {
 
   /**
    *
-   * Uncompresses the specified zip file to the Local folder (downloads a folder from the HPC to the local machine)
-   * @param fromRemote - path to download
+   * Downloads the zip of a folder from the HPC to the local machine
+   * @param fromRemote - path of folder
    * @param toLocal - name of the output file
    * @param muteEvent - set to True if you want to mute maintainer emitted Event
    * @throws {ConnectorError} if exponentially backed off file transfer fails
    */
-  public async download(fromRemote: string, toLocal: string, muteEvent = false) {
+  public async downloadFolderZip(fromRemote: string, toLocal: string, muteEvent = false) {
     // create from/to zip paths from raw files and zip the from file
     const remoteOutputZipPath = `${fromRemote}.zip`;
 
@@ -270,7 +270,7 @@ export class SSHConnector {
       await Helper.runCommandWithBackoff.call(this, (async (to1: string, zipPath: string) => {
         await ssh.getFile(to1, zipPath);
       }) , [toLocal, remoteOutputZipPath], "Trying to download file again");
-      await this.rm(remoteOutputZipPath);
+      void this.rm(remoteOutputZipPath);
     } catch (e) {
       const error = `unable to get file from ${fromRemote} to ${toLocal}: ` + Helper.assertError(e).toString();
 
@@ -278,29 +278,25 @@ export class SSHConnector {
       throw new ConnectorError(error);
     } finally {
       this.releaseSSH();
-      void this.rm(remoteOutputZipPath);
     }
   }
 
   /**
    *
-   * Uploads a file/folder from the local machine to the target machine. After upload, decompresses the
-   * uploaded zip file and then deletes the zip file.
+   * Uploads the zip of a folder from the local machine to the target machine. 
    * @param fromLocal - input file string
    * @param toRemote - output folder
    * @param muteEvent set to True if you want to mute maintauner emitted Event (unused)
    * @throws {ConnectorError} - Thrown if maintainer emits 'SSH_SCP_DOWNLOAD_ERROR'
    */
-  public async upload(fromLocal: string, toRemote: string, muteEvent = false) {
-    const zipFrom = await getZip(fromLocal);
-    const toZipFilePath = toRemote.endsWith(".zip") ? toRemote : `${toRemote}.zip`;
-
+  public async uploadFolderZip(fromLocal: string, toRemote: string, muteEvent = false) {
+    const zipFrom = await folderZip(fromLocal);
     const ssh = await this.getSSH();
 
     try {
       this.emitEvent(
         "SSH_SCP_UPLOAD",
-        `put file from ${zipFrom} to ${toZipFilePath}`,
+        `put file from ${zipFrom} to ${toRemote}`,
         muteEvent
       );
 
@@ -308,14 +304,47 @@ export class SSHConnector {
       // wraps command with backoff -> takes lambda function and array of inputs to execute command
       await Helper.runCommandWithBackoff.call(this, (async (from1: string, to1: string) => {
         await ssh.putFile(from1, to1);
-      }), [zipFrom, toZipFilePath], "Trying again to transfer file");
+      }), [zipFrom, toRemote], "Trying again to transfer file");
     } catch (e) {
       const error =
-        `unable to put file from ${zipFrom} to ${toZipFilePath}: ` + Helper.assertError(e).toString();
+        `unable to put file from ${zipFrom} to ${toRemote}: ` + Helper.assertError(e).toString();
       this.emitEvent("SSH_SCP_UPLOAD_ERROR", error, muteEvent);
       throw new ConnectorError(error);
     } finally {
       void removeZip(zipFrom);
+      this.releaseSSH();
+    }
+  }
+
+  /**
+   *
+   * Uploads a file from the local machine to the target machine. 
+   * @param fromLocal - input file string
+   * @param toRemote - output folder
+   * @param muteEvent set to True if you want to mute maintauner emitted Event (unused)
+   * @throws {ConnectorError} - Thrown if maintainer emits 'SSH_SCP_DOWNLOAD_ERROR'
+   */
+  public async uploadFile(fromLocal: string, toRemote: string, muteEvent = false) {
+    const ssh = await this.getSSH();
+
+    try {
+      this.emitEvent(
+        "SSH_SCP_UPLOAD",
+        `put file from ${fromLocal} to ${toRemote}`,
+        muteEvent
+      );
+
+      // attempt to send the from file to the to folder
+      // wraps command with backoff -> takes lambda function and array of inputs to execute command
+      await Helper.runCommandWithBackoff.call(this, (async (from1: string, to1: string) => {
+        await ssh.putFile(from1, to1);
+      }), [fromLocal, toRemote], "Trying again to transfer file");
+    } catch (e) {
+      const error =
+        `unable to put file from ${fromLocal} to ${toRemote}: ` + Helper.assertError(e).toString();
+      this.emitEvent("SSH_SCP_UPLOAD_ERROR", error, muteEvent);
+      throw new ConnectorError(error);
+    } finally {
       this.releaseSSH();
     }
   }
@@ -597,7 +626,7 @@ export class SSHConnector {
     await writeFile(localPath, contentString, { flag: "w" });
 
     // upload the file
-    await this.upload(localPath, remotePath);
+    await this.uploadFile(localPath, remotePath);
 
     // delete the file
     unlink(localPath, function (err) {

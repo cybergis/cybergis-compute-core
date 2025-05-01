@@ -428,7 +428,7 @@ folderRouter.post(
         throw new ConnectorError("unable to connect to HPC");
       }
       
-      await connector.download(hpcPath, downloadPath, true);
+      await connector.downloadFolderZip(hpcPath, downloadPath, true);
       res.download(downloadPath);
     } catch (err) {
       res

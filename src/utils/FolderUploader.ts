@@ -1,6 +1,7 @@
 
 
 import * as fs from "fs";
+import { stat } from "fs/promises";
 import * as path from "path";
 
 import { hpcConfigMap } from "../../configs/config";
@@ -218,7 +219,16 @@ async function localFolderUpload(base: BaseFolderUploader, from: LocalFolder) {
 
   console.log(from.localPath, base.hpcPath);
 
-  await base.connector.upload(from.localPath, base.hpcPath, false);
+  const stats = await stat(from.localPath);
+
+  if (stats.isFile()) {
+    await base.connector.uploadFile(from.localPath, base.hpcPath, false);
+  } else {
+    const zipPath = `${base.hpcPath}.zip`;
+    await base.connector.uploadFolderZip(from.localPath, zipPath, false);
+    await base.connector.unzip(zipPath, base.hpcPath);
+    void base.connector.rm(zipPath);
+  }
 
   await base.register();
 }
@@ -262,7 +272,7 @@ async function gitFolderUploadCached(base: CachedFolderUploader, from: GitFolder
   if (!(await base.cacheExists()) 
     || recordedUpdate < canonicalUpdate
   ) {
-    await base.connector.upload(localPath, base.cachePath, false);
+    await base.connector.uploadFolderZip(localPath, base.cachePath, false);
     await base.registerCache();
   }
 
