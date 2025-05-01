@@ -30,6 +30,12 @@ export const InitBrowserDownloadBodySchema = z.object({
   folderId: z.string()
 });
 
+
+export const InitBrowserUploadBodySchema = z.object({
+  jupyterhubApiToken: z.string(),
+  jobId: z.string()
+});
+
 export const SlurmSchema = z.object({
   time: z.string().optional(),
   num_of_node: z.number().optional(),

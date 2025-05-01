@@ -1,6 +1,7 @@
 
 
 import * as fs from "fs";
+import { stat } from "fs/promises";
 import * as path from "path";
 
 import { hpcConfigMap } from "../../configs/config";
@@ -12,7 +13,6 @@ import {
   hpcConfig,
   LocalFolder,
 } from "../definitions";
-import { getZip, removeZip } from "../helpers/FolderUtil";
 import GitUtil from "../helpers/GitUtil";
 import { GlobusClient } from "../helpers/GlobusTransferUtil";
 import * as Helper from "../helpers/Helper";
@@ -207,7 +207,7 @@ async function globusFolderUpload(base: BaseFolderUploader, from: GlobusFolder) 
 }
 
 /**
- *
+ * Uploads a data folder
  * @param base  given parameters for the uploaded folder
  * @param from source folder to upload
  * @throws {Error} if file to transfer does not exist on file system
@@ -217,9 +217,18 @@ async function localFolderUpload(base: BaseFolderUploader, from: LocalFolder) {
     throw new Error(`could not find folder under path ${from.localPath}`);
   }
 
-  const zipFrom = await getZip(from.localPath);
-  await base.connector.upload(zipFrom, base.hpcPath, false, false);
-  await removeZip(zipFrom);
+  console.log(from.localPath, base.hpcPath);
+
+  const stats = await stat(from.localPath);
+
+  if (stats.isFile()) {
+    await base.connector.uploadFile(from.localPath, base.hpcPath, false);
+  } else {
+    const zipPath = `${base.hpcPath}.zip`;
+    await base.connector.uploadFolderZip(from.localPath, zipPath, false);
+    await base.connector.unzip(zipPath, base.hpcPath);
+    void base.connector.rm(zipPath);
+  }
 
   await base.register();
 }
@@ -263,10 +272,7 @@ async function gitFolderUploadCached(base: CachedFolderUploader, from: GitFolder
   if (!(await base.cacheExists()) 
     || recordedUpdate < canonicalUpdate
   ) {
-    const zipFrom = await getZip(localPath);
-    await base.connector.upload(zipFrom, base.cachePath, false, false);
-    await removeZip(zipFrom);
-
+    await base.connector.uploadFolderZip(localPath, base.cachePath, false);
     await base.registerCache();
   }
 
