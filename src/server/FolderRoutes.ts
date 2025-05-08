@@ -421,7 +421,6 @@ folderRouter.post(
     }
 
     try {
-      // res.download(path.join(__dirname, 'FolderRoutes.js'));
       const downloadPath = path.join(localFileFolder, folderId + ".zip");
       const connector = await SSHConnector.build(hpc);
       
@@ -429,7 +428,7 @@ folderRouter.post(
         throw new ConnectorError("unable to connect to HPC");
       }
       
-      await connector.download(hpcPath, downloadPath, true, false);
+      await connector.downloadFolderZip(hpcPath, downloadPath, true);
       res.download(downloadPath);
     } catch (err) {
       res
