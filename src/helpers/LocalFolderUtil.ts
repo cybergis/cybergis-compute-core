@@ -1,5 +1,5 @@
 import { spawn } from "child_process";
-import * as fs from "fs";
+import * as fs from "fs/promises";
 import * as path from "path";
 
 import { FileNotExistError } from "../definitions";
@@ -13,24 +13,48 @@ import { FileNotExistError } from "../definitions";
  * @param filePath file/directory path
  * @returns true if the file is zipped; false otherwise
  */
-async function isZipped(filePath: string): Promise<boolean> {
+export async function isZipped(filePath: string): Promise<boolean> {
+  let fileHandle: fs.FileHandle | undefined;
   try {
-    await fs.promises.access(filePath + ".zip", fs.constants.F_OK);
-    return true;
-  } catch {
+    fileHandle = await fs.open(filePath, "r");
+    const { buffer } = await fileHandle.read(Buffer.alloc(4), 0, 4, 0);
+    await fileHandle.close();
+    return buffer.equals(Buffer.from([0x50, 0x4B, 0x03, 0x04])); // "PK\x03\x04"
+  } catch (_) {
     return false;
+  } finally {
+    if (fileHandle) {
+      await fileHandle.close();
+    }
   }
 }
 
 /**
+ *
+ * @param filePath path to check
+ * @returns true if this path is a directory, false if a file
+ */
+export async function isDirectory(filePath: string): Promise<boolean> {
+  const stats = await fs.stat(filePath);
+    
+  if (stats.isDirectory()) {
+    return true;
+  } else if (stats.isFile()) {
+    return false;
+  }
+
+  throw new Error("file path is neither a directory nor a file");
+}
+
+/**
  * Zips a directory.
- * @param filePath - file/directory path (absolute)
+ * @param filePath - directory path (absolute)
  * @throws {FileNotExistError} thrown if zipping fails/if the zip path doesn't exist
  * @returns the file path of the resulting zip file
  */
 export async function folderZip(filePath: string): Promise<string> {
   if (!(await exists(filePath))) throw new FileNotExistError("target file does not exist");
-  if (await isZipped(filePath)) return filePath + ".zip";
+  if (!(await isDirectory(filePath))) throw new Error("zip file should be a folder");
 
   // we need this zipping logic with the manual cwd, otherwise the zip file would have many layers due to the larger 
   // path needed to specify the file being zipped
@@ -60,7 +84,7 @@ export async function folderZip(filePath: string): Promise<string> {
  */
 export async function removeZip(filePath: string) {
   if (await isZipped(filePath)) {
-    await fs.promises.unlink(filePath + ".zip");
+    await fs.unlink(filePath);
   }
 }
 
@@ -70,7 +94,7 @@ export async function removeZip(filePath: string) {
  */
 async function _removeFolder(filePath: string) {
   if (await exists(filePath)) {
-    fs.rmdirSync(filePath, { recursive: true });
+    await fs.rmdir(filePath, { recursive: true });
   }
 }
 
@@ -81,7 +105,7 @@ async function _removeFolder(filePath: string) {
  */
 async function exists(filePath: string): Promise<boolean> {
   try {
-    await fs.promises.access(filePath, fs.constants.F_OK);
+    await fs.access(filePath, fs.constants.F_OK);
     return true;
   } catch {
     return false;
@@ -116,4 +140,3 @@ async function exists(filePath: string): Promise<boolean> {
 //     child.on("error", () => reject(new Error(`${filePath}.zip`)));
 //   });
 // }
-

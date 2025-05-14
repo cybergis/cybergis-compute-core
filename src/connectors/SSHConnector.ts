@@ -324,7 +324,6 @@ export class SSHConnector {
       this.emitEvent("SSH_SCP_UPLOAD_ERROR", error, muteEvent);
       throw new ConnectorError(error);
     } finally {
-      void removeZip(zipFrom);
       this.releaseSSH();
     }
   }
