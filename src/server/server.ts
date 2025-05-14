@@ -51,6 +51,8 @@ async function initHelloWorldGit() {
   }
 }
 
+app.use(cors());
+
 app.use("/upload", uploadRouter);
 
 // handle parsing arguments
@@ -59,7 +61,6 @@ app.use("/upload", uploadRouter);
 app.use(express.json());
 app.use(morgan("combined"));
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
 // app.use(bodyParser.urlencoded({ extended: true }));
 
 // create documentation routes

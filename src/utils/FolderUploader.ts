@@ -16,6 +16,7 @@ import {
 import GitUtil from "../helpers/GitUtil";
 import { GlobusClient } from "../helpers/GlobusTransferUtil";
 import * as Helper from "../helpers/Helper";
+import { isDirectory, isZipped } from "../helpers/LocalFolderUtil";
 import { Cache, Folder } from "../models";
 
 import dataSource from "./DB";
@@ -217,17 +218,20 @@ async function localFolderUpload(base: BaseFolderUploader, from: LocalFolder) {
     throw new Error(`could not find folder under path ${from.localPath}`);
   }
 
-  console.log(from.localPath, base.hpcPath);
-
-  const stats = await stat(from.localPath);
-
-  if (stats.isFile()) {
-    await base.connector.uploadFile(from.localPath, base.hpcPath, false);
-  } else {
+  if (await isDirectory(from.localPath)) {
     const zipPath = `${base.hpcPath}.zip`;
     await base.connector.uploadFolderZip(from.localPath, zipPath, false);
     await base.connector.unzip(zipPath, base.hpcPath);
     void base.connector.rm(zipPath);
+  } else {
+    const remoteFilePath = path.join(base.hpcPath, path.basename(from.localPath));
+    await base.connector.mkdir(base.hpcPath);
+    await base.connector.uploadFile(from.localPath, remoteFilePath, false);
+
+    if (await isZipped(from.localPath)) {
+      await base.connector.unzip(remoteFilePath, base.hpcPath);
+      void base.connector.rm(remoteFilePath);
+    }
   }
 
   await base.register();
