@@ -6,7 +6,7 @@
             "keeling_community": "/data/keeling/a/cigi-gisolve/simages/python.sif",
             "expanse_community": "/home/cybergis/SUMMA_IMAGE/python.sif",
             "bridges_community_gpu": "/jet/home/cybergis/image/python.sif",
-            "anvil_community": "/home/x-cybergis/simages/python.sif",
+            "anvil_community": "/anvil/projects/x-cis220065/x-cybergis/simages/python.sif",
             "aces_community": "/scratch/user/u.cc85312/simages/python.sif"
         },
        "mount": {
@@ -28,7 +28,7 @@
             "expanse_community": "/home/cybergis/SUMMA_IMAGE/cybergisx_0.4.simg",
             "keeling_community": "/data/keeling/a/cigi-gisolve/simages/cybergisx_0.4.simg",
 	    "bridges_community_gpu": "/jet/home/cybergis/image/cybergisx_0.4.simg",
-            "anvil_community": "/home/x-cybergis/simages/cybergisx_0.4.simg"
+            "anvil_community": "/anvil/projects/x-cis220065/x-cybergis/simages/cybergisx_0.4.simg"
         },
        "mount": {
             "anvil_community": {
@@ -48,7 +48,7 @@
         "hpc_path": {
             "keeling_community": "/data/keeling/a/cigi-gisolve/simages/mpich34.simg",
             "expanse_community": "/home/cybergis/SUMMA_IMAGE/mpich34.simg",
-            "anvil_community": "/home/x-cybergis/simages/mpich34.simg"
+            "anvil_community": "/anvil/projects/x-cis220065/x-cybergis/simages/mpich34.simg"
         },
        "mount": {
             "anvil_community": {
@@ -68,7 +68,7 @@
        "hpc_path": {
             "keeling_community": "/data/keeling/a/cigi-gisolve/simages/summa3_xenial.simg",
             "expanse_community": "/home/cybergis/SUMMA_IMAGE/summa3_xenial.simg",
-             "anvil_community": "/home/x-cybergis/simages/summa3_xenial.simg"
+             "anvil_community": "/anvil/projects/x-cis220065/x-cybergis/simages/summa3_xenial.simg"
         },
        "mount": {
             "anvil_community": {
@@ -88,7 +88,7 @@
        "hpc_path": {
             "keeling_community": "/data/keeling/a/cigi-gisolve/simages/wrfhydro_focal.simg",
             "expanse_community": "/home/cybergis/SUMMA_IMAGE/wrfhydro_focal.simg",
-            "anvil_community": "/home/x-cybergis/simages/wrfhydro_focal.simg"
+            "anvil_community": "/anvil/projects/x-cis220065/x-cybergis/simages/wrfhydro_focal.simg"
         },
        "mount": {
             "anvil_community": {
@@ -119,7 +119,7 @@
        "dockerhub": "",
        "hpc_path": {
             "expanse_community": "/home/cybergis/SUMMA_IMAGE/damfiminput-connector.sif",
-            "anvil_community": "/home/x-cybergis/simages/damfiminput-connector.sif"
+            "anvil_community": "/anvil/projects/x-cis220065/x-cybergis/simages/damfiminput-connector.sif"
         },
        "mount": {
             "anvil_community": {
@@ -137,7 +137,7 @@
        "dockerfile": "",
        "dockerhub": "",
        "hpc_path": {
-            "anvil_community": "/home/x-cybergis/simages/era5input-connector.sif"
+            "anvil_community": "/anvil/projects/x-cis220065/x-cybergis/simages/era5input-connector.sif"
         },
        "mount": {
             "anvil_community": {
@@ -156,7 +156,7 @@
        "dockerfile": "",
        "dockerhub": "",
        "hpc_path": {
-            "anvil_community": "/home/x-cybergis/simages/subsetaorcforcingdata-processor.sif"
+            "anvil_community": "/anvil/projects/x-cis220065/x-cybergis/simages/subsetaorcforcingdata-processor.sif"
         },
        "mount": {
             "anvil_community": {
@@ -175,7 +175,7 @@
        "dockerfile": "",
        "dockerhub": "",
        "hpc_path": {
-            "anvil_community": "/home/x-cybergis/simages/cuahsisubsetterinput-connector.sif"
+            "anvil_community": "/anvil/projects/x-cis220065/x-cybergis/simages/cuahsisubsetterinput-connector.sif"
         },
        "mount": {
             "anvil_community": {
@@ -194,7 +194,7 @@
        "dockerfile": "",
        "dockerhub": "",
        "hpc_path": {
-            "anvil_community": "/home/x-cybergis/simages/extractinundationcensustracts-processor.sif",
+            "anvil_community": "/anvil/projects/x-cis220065/x-cybergis/simages/extractinundationcensustracts-processor.sif",
 	    "keeling_community": "/data/keeling/a/cigi-gisolve/simages/extractinundationcensustracts-processor.sif"
         },
        "mount": {
