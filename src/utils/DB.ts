@@ -5,9 +5,12 @@ import {
 
 import { config } from "../../configs/config";
 import * as Helper from "../helpers/Helper"; 
-import { Cache, Event, Folder, Git, GlobusTransferRefreshToken, Job, Log } from "../models";
+import { AllowList, Approvals, Cache, DenyList, Event, Folder, Git, GlobusTransferRefreshToken, Job, Log, UserInfo } from "../models";
 
-const entities = [Cache, Event, Folder, Git, GlobusTransferRefreshToken, Job, Log];
+const entities = [
+  Cache, Event, Folder, Git, GlobusTransferRefreshToken, 
+  Job, Log, AllowList, DenyList, Approvals, UserInfo
+];
 
 let dbConfig: DataSourceOptions = {
   name: "default",

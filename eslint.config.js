@@ -84,7 +84,7 @@ export default tseslint.config(
         },
       ],
       "@stylistic/max-len": [
-        "error",
+        "warn",
         {
           ignoreTemplateLiterals: true,
           code: 100,
@@ -97,7 +97,7 @@ export default tseslint.config(
         "always"
       ],
       "@typescript-eslint/unbound-method": [
-        "error",
+        "warn",
         {
           ignoreStatic: true
         }

@@ -28,7 +28,9 @@
       "allowlist": [],
       "denylist": [],
       "allocation": null,
-      "partition": null
+      "partition": null,
+      "admins": [],
+      "whitelist_enabled": false
     },
     "expanse_community": {
       "ip": "login.expanse.sdsc.edu",
@@ -67,7 +69,9 @@
       "allowlist": [],
       "denylist": [],
       "allocation": "TG-EAR190007",
-      "partition": "shared"
+      "partition": "shared",
+      "admins": [],
+      "whitelist_enabled": false
     },
     "bridges_community_gpu": {
       "ip": "bridges2.psc.edu",
@@ -91,6 +95,8 @@
       "init_sbatch_options": [],
       "allowlist": [],
       "denylist": [],
+      "admins": [],
+      "whitelist_enabled": false,
       "allocation": null,
       "partition": "GPU-shared"
     },
@@ -122,7 +128,9 @@
       "allowlist": [],
       "denylist": [],
       "allocation": null,
-      "partition": "shared"
+      "partition": "shared",
+      "admins": [],
+      "whitelist_enabled": false
     },
     "anvil_community_highmem": {
       "ip": "anvil.rcac.purdue.edu",
@@ -152,7 +160,8 @@
       "allowlist": [],
       "denylist": [],
       "allocation": null,
-      "partition": "highmem"      
+      "partition": "highmem",
+      "whitelist_enabled": false
     },
     "aces_community": {
       "ip": "aces-login1.hprc.tamu.edu",
@@ -183,7 +192,9 @@
       ],
       "denylist": [],
       "allocation": null,
-      "partition": null
+      "partition": null,
+      "admins": [],
+      "whitelist_enabled": false
     }
   
   }

@@ -4,33 +4,32 @@ export const AuthReqBodySchema = z.object({
   jupyterhubApiToken: z.string(),
 });
 
-export const UpdateFolderBodySchema = z.object({
-  jupyterhubApiToken: z.string(),
+export const UpdateFolderBodySchema = AuthReqBodySchema.extend({
   name: z.string().optional(),
   isWritable: z.boolean().optional(),
 });
 
-export const CreateJobBodySchema = z.object({
-  jupyterhubApiToken: z.string(),
+export const CreateJobBodySchema = AuthReqBodySchema.extend({
   maintainer: z.string().optional(),
   hpc: z.string().optional(),
   user: z.string().optional(),
   password: z.string().optional(),
 });
 
-export const InitGlobusDownloadBodySchema = z.object({
-  jupyterhubApiToken: z.string(),
+export const InitGlobusDownloadBodySchema = AuthReqBodySchema.extend({
   toEndpoint: z.string(),
   toPath: z.string(),
   jobId: z.string().optional(),
   fromPath: z.string().optional()
 });
 
+
 export const InitBrowserDownloadBodySchema = z.object({
   jupyterhubApiToken: z.string(),
   jobId: z.string(),
   folderId: z.string()
 });
+
 
 export const InitBrowserUploadBodySchema = z.object({
   jupyterhubApiToken: z.string(),
@@ -85,8 +84,7 @@ export const NeedUploadFolderSchema = z.discriminatedUnion("type", [
   LocalFolderSchema
 ]);
 
-export const UpdateJobBodySchema = z.object({
-  jupyterhubApiToken: z.string(),
+export const UpdateJobBodySchema = AuthReqBodySchema.extend({
   param: z.record(z.unknown()).optional(),
   env: z.record(z.string()).optional(),
   slurm: SlurmSchema.optional(),
@@ -96,39 +94,7 @@ export const UpdateJobBodySchema = z.object({
   remoteExecutableFolder: z.string().optional()
 });
 
-export interface authReqBody {
-  jupyterhubApiToken: string
-}
-
-export interface updateFolderBody { 
-  jupyterhubApiToken: string, 
-  name?: string, 
-  isWritable?: boolean 
-}
-
-export interface initGlobusDownloadBody { 
-  jupyterhubApiToken: string, 
-  toEndpoint: string, 
-  toPath: string, 
-  jobId?: string, 
-  fromPath?: string 
-}
-
-export interface createJobBody { 
-  jupyterhubApiToken: string, 
-  maintainer?: string, 
-  hpc?: string, 
-  user?: string, 
-  password?: string 
-}
-
-export interface updateJobBody {
-  jupyterhubApiToken: string,
-  param?: object,
-  env?: object,
-  slurm?: object,
-  localExecutableFolder?: object,
-  localDataFolder?: object,
-  remoteDataFolder?: object,
-  remoteExecutableFolder?: object,
-}
+export const modifyUserBodySchema = z.object({
+  user: z.string(),
+  hpc: z.string()
+});

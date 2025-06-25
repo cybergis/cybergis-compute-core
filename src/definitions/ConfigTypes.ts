@@ -36,6 +36,11 @@ export interface baseConfig {
     queue_consume_time_period_in_seconds: number;
     is_testing: boolean;
     is_jest: boolean; // reserve only for jest testing
+    cilogon_secret: string;
+    cilogon_base_uri: string;
+    cilogon_client_id: string;
+    confirmation_email: string;
+    smtp_server: string;
   }
 
 
@@ -73,6 +78,8 @@ export interface hpcConfig {
   denylist: string[];
   allocation?: string;
   partition?: string;
+  admins: string[];
+  whitelistEnabled: boolean;
 }
 
 export interface XSEDEJobLogCredential {

@@ -40,3 +40,25 @@ export interface GlobusAuthResponse {
   refresh_token: string;
   scope: string;
 }
+
+export enum ApprovalType {
+  APPROVAL = "approval",
+  DENIAL = "deny"
+}
+
+export interface CILogonTokenBody {
+  access_token: string,
+  id_token: string,
+  token_type: string,
+  expires_in: number
+}
+
+export interface CILogonUserInfo {
+  email?: string,
+  name?: string,
+  idp?: string,
+  idp_name?: string
+  sub?: string,
+  nbf?: number
+  eppn?: string
+}

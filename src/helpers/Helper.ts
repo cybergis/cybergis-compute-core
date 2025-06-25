@@ -1,6 +1,14 @@
+import getRandomValues from "get-random-values";
+
 import { config, hpcConfigMap, jupyterGlobusMap } from "../../configs/config";
 import { callableFunction } from "../definitions";
-import { Job } from "../models";
+import { AllowList, DenyList, Job } from "../models";
+import dataSource from "../utils/DB";
+// import * as fs from "fs";
+
+const CHARACTERS =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
 // import * as fs from "fs";
 
 /**
@@ -72,13 +80,24 @@ export function job2object(
  */
 export function randomStr(length: number): string {
   let result = "";
-  const characters =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  const charactersLength = characters.length;
   for (let i = 0; i < length; i++) {
-    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    result += CHARACTERS.charAt(Math.floor(Math.random() * CHARACTERS.length));
   }
   return result;
+}
+
+/**
+ * Generate a random base 64 string with a given length.
+ * @param length length of desired string
+ * @returns base 64 string
+ */
+export function randomHash(length: number): string {
+  const random = new Uint8Array(length);
+  getRandomValues(random);
+
+  const result = Array.from(random).map(x => CHARACTERS[x % CHARACTERS.length]).join("");
+
+  return result.slice(0, length);
 }
 
 /**
@@ -132,7 +151,37 @@ export function canAccessHPC(user: string, hpc: string): boolean {
     // if the allowList isn't blank, we need to check for them
     return allowList.includes(user);
   }
+}
 
+/**
+ * 
+ * @param user user accessing the hpc
+ * @param hpc hpc being accessed
+ * @returns whether or not the user can access the hpc
+ */
+export async function canAccessHPC_DB(user: string, hpc: string): Promise<boolean> {
+  const denyListRepo = dataSource.getRepository(DenyList);
+  const denied = await denyListRepo.findOneBy({ hpc, user, deletedAt: undefined });
+
+  // check if user is in the denylist
+  if (denied !== null) {
+    return false;
+  }
+
+  const allowListRepo = dataSource.getRepository(AllowList);
+  const allowList = await allowListRepo.findBy({ hpc });
+
+  if (allowList.length === 0) {
+    return true;
+  } else {
+    for (const entry of allowList) {
+      if (entry.user === user && entry.deletedAt === undefined) {
+        return true;
+      }
+    }
+  } 
+  
+  return false;
 }
 
 /**

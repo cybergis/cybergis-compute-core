@@ -15,6 +15,7 @@ import {
 import { Git } from "../models";
 import dataSource from "../utils/DB";
 
+import authRouter from "./AuthRoutes";
 import folderRouter from "./FolderRoutes";
 import gitRouter from "./GitRoutes";
 import infoRouter from "./InfoRoutes";
@@ -109,6 +110,7 @@ app.use("/git", gitRouter);
 app.use("/", infoRouter);
 app.use("/job", jobRouter);
 app.use("/user", userRouter);
+app.use("/auth", authRouter);
 
 app.listen(config.server_port, config.server_ip, () =>
   console.log(
