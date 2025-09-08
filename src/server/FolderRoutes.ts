@@ -1,6 +1,6 @@
 import express from "express";
-import fs from "fs";
 
+import fs from "fs";
 import * as path from "path";
 
 import {
@@ -433,23 +433,23 @@ folderRouter.post(
 
       // Check if the file exists
       fs.stat(downloadPath, (err, stats) => {
-          if (err || !stats.isFile()) {
-              return res.status(404).send('File not found');
-          }
+        if (err || !stats.isFile()) {
+          return res.status(404).send("File not found");
+        }
 
-          // Set headers for download
-          res.setHeader('Content-Disposition', `attachment; filename="result.zip"`);
-          res.setHeader('Content-Type', 'application/octet-stream'); // Or specific MIME type
-          res.setHeader('Content-Length', stats.size); // Optional, can be handled by chunked encoding
+        // Set headers for download
+        res.setHeader("Content-Disposition", "attachment; filename=\"result.zip\"");
+        res.setHeader("Content-Type", "application/octet-stream"); // Or specific MIME type
+        res.setHeader("Content-Length", stats.size); // Optional, can be handled by chunked encoding
 
-          // Create a read stream and pipe it to the response
-          const fileStream = fs.createReadStream(downloadPath);
-          fileStream.pipe(res);
+        // Create a read stream and pipe it to the response
+        const fileStream = fs.createReadStream(downloadPath);
+        fileStream.pipe(res);
 
-          fileStream.on('error', (streamErr) => {
-              console.error('Stream error:', streamErr);
-              res.status(500).end('Server error during file transfer');
-          });
+        fileStream.on("error", (streamErr) => {
+          console.error("Stream error:", streamErr);
+          res.status(500).end("Server error during file transfer");
+        });
       });
       // res.download(downloadPath);
     } catch (err) {
