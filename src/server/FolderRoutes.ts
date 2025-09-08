@@ -190,10 +190,7 @@ folderRouter.put("/:folderId", authMiddleWare, async function (req, res) {
  * /folder/:folderId/download/globus-init:
  *  post:
  *      description: Posts a request to initiate a globus download of the specified folder (Authentication REQUIRED)
- *      responses:eferenceError: require is not defined in ES module scope, you can use import instead
-This file is being treated as an ES module because it has a '.js' file extension and '/job_supervisor/package.json' contains "type": "module". To treat it as a CommonJS script, rename it to use the '.cjs' file extension.
-    at file:///job_supervisor/production/src/server/FolderRoutes.js:2:12
-
+ *      responses:
  *          200:
  *              description: Globus download of the specific folder is successful
  *          402:
@@ -426,8 +423,6 @@ folderRouter.post(
 
     try {
       const downloadPath = path.join(localFileFolder, folderId + ".zip");
-      console.log("Just after download path")
-      console.log(downloadPath)
       const connector = await SSHConnector.build(hpc);
       
       if (!connector) {
@@ -435,7 +430,6 @@ folderRouter.post(
       }
       
       await connector.downloadFolderZip(hpcPath, downloadPath, true);
-      console.log("Just before res.download")
 
       // Check if the file exists
       fs.stat(downloadPath, (err, stats) => {
