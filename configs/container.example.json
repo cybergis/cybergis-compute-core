@@ -221,6 +221,10 @@
             "keeling_community": "/data/keeling/a/cigi-gisolve/simages/pysal-access.simg"
     },
     "mount": {
+        "keeling_community": {
+          "/data/cigi/scratch/cigi-gisolve/compute_shared": "/compute_shared",
+          "/data/cigi/common/michels9/herop_access_data/": "/job/herop_access_data"
+        }
     }
   },
   "gearlab-r": {
